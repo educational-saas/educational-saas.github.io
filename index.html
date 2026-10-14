@@ -199,7 +199,36 @@ input,select,textarea{ font-family:inherit; }
 }
 .chip.active{ background:var(--accent); color:var(--accent-contrast); border-color:var(--accent); }
 
-.list{ padding:14px 14px 100px; max-width:760px; margin:0 auto; width:100%; }
+.list{ padding:14px 14px calc(96px + var(--safe-b)); max-width:760px; margin:0 auto; width:100%; }
+
+/* ---------- STAT CARDS (Dues dashboard) ---------- */
+.stat-row{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px; }
+.stat-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:13px 12px; text-align:left;
+}
+.stat-card .stat-num{ font-family:'Fraunces',serif; font-size:1.6rem; font-weight:600; line-height:1; color:var(--stat-color, var(--text)); }
+.stat-card .stat-label{ font-size:.72rem; color:var(--text-dim); margin-top:5px; font-weight:500; }
+
+/* ---------- Due / payment rows (share .ledger-row base) ---------- */
+.ledger-row.due-row .ledger-meta{ align-items:center; }
+.due-pill{ font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:999px; }
+.due-pill.overdue{ background:color-mix(in srgb, var(--danger-500) 18%, var(--surface-2)); color:var(--danger-500); }
+.due-pill.soon{ background:color-mix(in srgb, var(--warn-500) 20%, var(--surface-2)); color:var(--warn-500); }
+.due-pill.later{ background:color-mix(in srgb, var(--ok-500) 18%, var(--surface-2)); color:var(--ok-500); }
+.row-action{
+  flex-shrink:0; align-self:center; padding:7px 12px; border-radius:10px; border:1.3px solid var(--border);
+  background:var(--surface-2); color:var(--text); font-size:.76rem; font-weight:600; cursor:pointer;
+}
+
+.payment-row{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:13px 14px; margin-bottom:9px;
+}
+.payment-row .pay-amount{ font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; }
+.payment-row .pay-inst{ font-size:.86rem; font-weight:600; margin-bottom:2px; }
+.payment-row .pay-meta{ font-size:.76rem; color:var(--text-dim); }
 
 .ledger-row{
   display:flex; gap:12px; padding:14px 14px 14px 12px;
@@ -233,13 +262,29 @@ input,select,textarea{ font-family:inherit; }
 .empty-state h3{ color:var(--text); margin:0 0 6px; }
 
 .fab{
-  position:fixed; right:20px; bottom:calc(22px + var(--safe-b)); z-index:20;
+  position:fixed; right:20px; bottom:calc(78px + var(--safe-b)); z-index:20;
   width:58px; height:58px; border-radius:18px; border:none; cursor:pointer;
   background:var(--accent); color:var(--accent-contrast);
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 .fab svg{ width:24px; height:24px; }
+
+/* ---------- BOTTOM NAV ---------- */
+.bottom-nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:25;
+  display:flex; padding:6px 10px calc(8px + var(--safe-b));
+  background:color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+}
+.nav-item{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none; border:none; cursor:pointer; padding:7px 4px 5px;
+  color:var(--text-dim); font-size:.68rem; font-weight:600;
+}
+.nav-item svg{ width:21px; height:21px; }
+.nav-item.active{ color:var(--accent); }
 
 /* ---------- SHEET / MODAL ---------- */
 .sheet-overlay{
@@ -373,7 +418,7 @@ input,select,textarea{ font-family:inherit; }
   <div class="topbar">
     <div class="topbar-row">
       <div>
-        <h1>Institutions</h1>
+        <h1 id="tabHeading">Institutions</h1>
         <div class="count" id="countLabel">—</div>
       </div>
       <div class="topbar-actions">
@@ -385,24 +430,77 @@ input,select,textarea{ font-family:inherit; }
         </button>
       </div>
     </div>
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-      <input type="text" id="searchInput" placeholder="Search by name…" />
+
+    <!-- Institutions tab controls -->
+    <div id="institutionsControls">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Search by name…" />
+      </div>
+      <div class="filters" id="filterChips">
+        <button class="chip active" data-plan="all">All</button>
+        <button class="chip" data-plan="Basic">Basic</button>
+        <button class="chip" data-plan="Standard">Standard</button>
+        <button class="chip" data-plan="Premium">Premium</button>
+        <button class="chip" data-plan="inactive">Inactive</button>
+      </div>
     </div>
-    <div class="filters" id="filterChips">
-      <button class="chip active" data-plan="all">All</button>
-      <button class="chip" data-plan="Basic">Basic</button>
-      <button class="chip" data-plan="Standard">Standard</button>
-      <button class="chip" data-plan="Premium">Premium</button>
-      <button class="chip" data-plan="inactive">Inactive</button>
+
+    <!-- Dues tab controls -->
+    <div id="duesControls" class="hidden">
+      <div class="filters" id="dueFilterChips">
+        <button class="chip active" data-due="all">All with a due date</button>
+        <button class="chip" data-due="overdue">Overdue</button>
+        <button class="chip" data-due="week">Due in 7 days</button>
+        <button class="chip" data-due="month">Due in 30 days</button>
+      </div>
+    </div>
+
+    <!-- Payments tab controls -->
+    <div id="paymentsControls" class="hidden">
+      <div class="field-sm">
+        <select id="paymentInstitutionFilter">
+          <option value="all">All institutions</option>
+        </select>
+      </div>
     </div>
   </div>
 
-  <div class="list" id="listHost"></div>
+  <!-- -------- Institutions panel -------- -->
+  <div class="list" id="institutionsPanel"><div id="listHost"></div></div>
+
+  <!-- -------- Dues panel -------- -->
+  <div class="list hidden" id="duesPanel">
+    <div class="stat-row" id="dueStatRow"></div>
+    <div id="duesListHost"></div>
+  </div>
+
+  <!-- -------- Payments panel -------- -->
+  <div class="list hidden" id="paymentsPanel">
+    <div id="paymentsListHost"></div>
+  </div>
 
   <button class="fab" id="addBtn" title="Add institution">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
   </button>
+  <button class="fab hidden" id="recordPaymentFab" title="Record payment">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-tab="institutions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
+      <span>Institutions</span>
+    </button>
+    <button class="nav-item" data-tab="dues">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.4"/><path d="M8 3v4M16 3v4M3.5 10h17"/><path d="M8 14h2M8 17h2M14 14h2M14 17h2"/></svg>
+      <span>Dues</span>
+    </button>
+    <button class="nav-item" data-tab="payments">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg>
+      <span>Payments</span>
+    </button>
+  </nav>
 </div>
 
 <!-- =================== ADD/EDIT SHEET =================== -->
@@ -446,6 +544,15 @@ input,select,textarea{ font-family:inherit; }
           <div class="field-sm"><label>Student count</label><input id="f_student_count" type="number" min="0" /></div>
         </div>
 
+        <div class="section-label">Billing schedule</div>
+        <div class="form-grid">
+          <div class="field-sm span2">
+            <label>First payment date</label>
+            <input id="f_first_payment_date" type="date" />
+            <div class="err" style="color:var(--text-dim);">Leave blank to exclude this institution from due-date tracking.</div>
+          </div>
+        </div>
+
         <div class="section-label">Subscription</div>
         <div class="form-grid">
           <div class="field-sm"><label>Plan</label>
@@ -485,6 +592,48 @@ input,select,textarea{ font-family:inherit; }
         <button class="btn btn-outline" id="deleteCancelBtn" style="flex:1;">Cancel</button>
         <button class="btn btn-danger" id="deleteConfirmBtn" style="flex:1;">Delete</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== RECORD PAYMENT SHEET =================== -->
+<div class="sheet-overlay" id="paymentOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h2>Record payment</h2>
+      <button class="icon-btn" id="paymentCloseBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <form id="paymentForm" novalidate>
+        <div class="form-grid">
+          <div class="field-sm span2">
+            <label>Institution *</label>
+            <select id="p_institution_id" required></select>
+            <div class="err" id="e_p_institution_id"></div>
+          </div>
+          <div class="field-sm">
+            <label>Amount (₹) *</label>
+            <input id="p_amount" type="number" min="1" required />
+            <div class="err" id="e_p_amount"></div>
+          </div>
+          <div class="field-sm">
+            <label>Paid on *</label>
+            <input id="p_paid_at" type="datetime-local" required />
+            <div class="err" id="e_p_paid_at"></div>
+          </div>
+          <div class="field-sm span2">
+            <label>Note</label>
+            <textarea id="p_note" placeholder="e.g. UPI transfer, cheque no., quarter covered…"></textarea>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button type="button" class="btn btn-outline" id="paymentCancelBtn" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="paymentSaveBtn" style="flex:1.4;"><span>Save payment</span></button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -693,6 +842,7 @@ async function afterSignIn(){
   }
   await loadInstitutions();
   showScreen('appScreen');
+  switchTab('institutions');
 }
 
 // On load, honor an existing Supabase session (page refresh, etc.)
@@ -790,7 +940,7 @@ const formSaveBtn = document.getElementById('formSaveBtn');
 
 const fields = ['full_name','short_name','contact_person_name','supabase_url','supabase_anon_key',
   'logo_url','logo_transparent_url','address','contact','email','student_count',
-  'subscription_plan','subscription_period','subscription_amount','is_active'];
+  'subscription_plan','subscription_period','subscription_amount','first_payment_date','is_active'];
 
 function openForm(id=null){
   form.reset();
@@ -870,6 +1020,7 @@ form.addEventListener('submit', async e => {
     subscription_plan: document.getElementById('f_subscription_plan').value,
     subscription_period: document.getElementById('f_subscription_period').value,
     subscription_amount: Number(document.getElementById('f_subscription_amount').value || 499),
+    first_payment_date: document.getElementById('f_first_payment_date').value || null,
     is_active: document.getElementById('f_is_active').checked
   };
 
@@ -944,6 +1095,270 @@ openForm = function(id){
   _origOpenForm(id);
   removeLink.style.display = id != null ? 'block' : 'none';
 };
+
+/* ============================================================================
+   TABS — Institutions / Dues / Payments
+============================================================================ */
+const TAB_HEADINGS = { institutions: 'Institutions', dues: 'Dues', payments: 'Payments' };
+let currentTab = 'institutions';
+
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('tabHeading').textContent = TAB_HEADINGS[tab];
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+
+  document.getElementById('institutionsControls').classList.toggle('hidden', tab !== 'institutions');
+  document.getElementById('duesControls').classList.toggle('hidden', tab !== 'dues');
+  document.getElementById('paymentsControls').classList.toggle('hidden', tab !== 'payments');
+
+  document.getElementById('institutionsPanel').classList.toggle('hidden', tab !== 'institutions');
+  document.getElementById('duesPanel').classList.toggle('hidden', tab !== 'dues');
+  document.getElementById('paymentsPanel').classList.toggle('hidden', tab !== 'payments');
+
+  document.getElementById('addBtn').classList.toggle('hidden', tab !== 'institutions');
+  document.getElementById('recordPaymentFab').classList.toggle('hidden', tab !== 'payments');
+
+  if (tab === 'dues') renderDues();
+  if (tab === 'payments') { populatePaymentInstitutionFilter(); loadPayments(); }
+}
+document.getElementById('bottomNav').addEventListener('click', e => {
+  const btn = e.target.closest('.nav-item'); if (!btn) return;
+  switchTab(btn.dataset.tab);
+});
+
+function formatDate(d){
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+function formatDateTime(iso){
+  return new Date(iso).toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit' });
+}
+
+/* ============================================================================
+   DUES DASHBOARD
+   Next due date is computed purely from first_payment_date + subscription_period
+   (mirrors public.next_due_date() in the additive SQL) — recorded payments do
+   not shift this schedule; they're a separate bookkeeping trail.
+============================================================================ */
+const PERIOD_MONTHS = { Monthly: 1, Quarterly: 3, 'Semi-annually': 6, Yearly: 12 };
+let dueFilter = 'all';
+
+function addMonths(date, months){
+  const d = new Date(date.getTime());
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function nextDueDate(firstPaymentDate, period){
+  if (!firstPaymentDate) return null;
+  const months = PERIOD_MONTHS[period] || 1;
+  let due = new Date(firstPaymentDate + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  while (due.getTime() < today.getTime()){
+    due = addMonths(due, months);
+  }
+  return due;
+}
+
+function computeDues(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  return institutions
+    .filter(i => !!i.first_payment_date)
+    .map(i => {
+      const due = nextDueDate(i.first_payment_date, i.subscription_period);
+      const days_until = Math.round((due.getTime() - today.getTime()) / 86400000);
+      return Object.assign({}, i, { due_date: due, days_until });
+    })
+    .sort((a,b) => a.days_until - b.days_until);
+}
+
+function renderDues(){
+  const all = computeDues();
+  const overdue = all.filter(d => d.days_until < 0);
+  const week = all.filter(d => d.days_until >= 0 && d.days_until <= 7);
+  const month = all.filter(d => d.days_until >= 0 && d.days_until <= 30);
+
+  document.getElementById('dueStatRow').innerHTML = `
+    <div class="stat-card" style="--stat-color:var(--danger-500);"><div class="stat-num">${overdue.length}</div><div class="stat-label">Overdue</div></div>
+    <div class="stat-card" style="--stat-color:var(--warn-500);"><div class="stat-num">${week.length}</div><div class="stat-label">Due in 7 days</div></div>
+    <div class="stat-card" style="--stat-color:var(--ok-500);"><div class="stat-num">${all.length}</div><div class="stat-label">Tracked</div></div>
+  `;
+
+  let items = all;
+  if (dueFilter === 'overdue') items = overdue;
+  else if (dueFilter === 'week') items = week;
+  else if (dueFilter === 'month') items = month;
+
+  const host = document.getElementById('duesListHost');
+  if (!items.length){
+    host.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.4"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>
+        <h3>Nothing due here</h3>
+        <p>${all.length ? 'Try a different filter.' : 'Set a first payment date on an institution to start tracking it.'}</p>
+      </div>`;
+    return;
+  }
+
+  host.innerHTML = items.map(d => {
+    const status = d.days_until < 0 ? 'overdue' : (d.days_until <= 7 ? 'soon' : 'later');
+    const label = d.days_until < 0
+      ? `${Math.abs(d.days_until)} day${Math.abs(d.days_until) === 1 ? '' : 's'} overdue`
+      : d.days_until === 0 ? 'Due today'
+      : `Due in ${d.days_until} day${d.days_until === 1 ? '' : 's'}`;
+    return `
+    <div class="ledger-row due-row" style="--tier-color:${PLAN_COLOR[d.subscription_plan] || 'var(--accent)'}">
+      <div class="avatar">${initials(d.full_name)}</div>
+      <div class="ledger-body">
+        <div class="ledger-top"><h3>${escapeHtml(d.full_name)}</h3></div>
+        <div class="ledger-sub">${formatDate(d.due_date)} · ₹${d.subscription_amount} / ${d.subscription_period.toLowerCase()}${!d.is_active ? ' · inactive' : ''}</div>
+        <div class="ledger-meta">
+          <span class="due-pill ${status}">${label}</span>
+          <button type="button" class="row-action" data-record-id="${d.id}">Record payment</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  host.querySelectorAll('[data-record-id]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openPaymentForm(Number(btn.dataset.recordId));
+    });
+  });
+}
+
+document.getElementById('dueFilterChips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip'); if (!chip) return;
+  document.querySelectorAll('#dueFilterChips .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  dueFilter = chip.dataset.due;
+  renderDues();
+});
+
+/* ============================================================================
+   PAYMENTS
+============================================================================ */
+let paymentsCache = [];
+let paymentInstitutionFilterValue = 'all';
+
+function populatePaymentInstitutionFilter(){
+  const sel = document.getElementById('paymentInstitutionFilter');
+  const current = sel.value || 'all';
+  const sorted = institutions.slice().sort((a,b) => a.full_name.localeCompare(b.full_name));
+  sel.innerHTML = '<option value="all">All institutions</option>' +
+    sorted.map(i => `<option value="${i.id}">${escapeHtml(i.full_name)}</option>`).join('');
+  sel.value = [...sel.options].some(o => o.value === current) ? current : 'all';
+  paymentInstitutionFilterValue = sel.value;
+}
+document.getElementById('paymentInstitutionFilter').addEventListener('change', e => {
+  paymentInstitutionFilterValue = e.target.value;
+  renderPayments();
+});
+
+async function loadPayments(){
+  const { data, error } = await sb.from('payments')
+    .select('*, institutions(full_name, short_name)')
+    .order('paid_at', { ascending: false });
+  if (error){ toast('Could not load payments: ' + error.message, true); return; }
+  paymentsCache = data || [];
+  renderPayments();
+}
+
+function renderPayments(){
+  const host = document.getElementById('paymentsListHost');
+  let items = paymentsCache;
+  if (paymentInstitutionFilterValue !== 'all'){
+    items = items.filter(p => String(p.institution_id) === String(paymentInstitutionFilterValue));
+  }
+
+  if (!items.length){
+    host.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>
+        <h3>No payments recorded</h3>
+        <p>Tap + to record one.</p>
+      </div>`;
+    return;
+  }
+
+  host.innerHTML = items.map(p => `
+    <div class="payment-row">
+      <div>
+        <div class="pay-inst">${escapeHtml(p.institutions ? p.institutions.full_name : 'Unknown institution')}</div>
+        <div class="pay-meta">${formatDateTime(p.paid_at)}${p.note ? ' · ' + escapeHtml(p.note) : ''}</div>
+      </div>
+      <div class="pay-amount">₹${p.amount}</div>
+    </div>
+  `).join('');
+}
+
+/* -------- record-payment sheet -------- */
+const paymentOverlay = document.getElementById('paymentOverlay');
+const paymentForm = document.getElementById('paymentForm');
+const paymentSaveBtn = document.getElementById('paymentSaveBtn');
+
+function toLocalDatetimeInputValue(date){
+  const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0,16);
+}
+
+function openPaymentForm(prefillInstitutionId=null){
+  paymentForm.reset();
+  ['e_p_institution_id','e_p_amount','e_p_paid_at'].forEach(id => { document.getElementById(id).textContent = ''; });
+
+  const sel = document.getElementById('p_institution_id');
+  const sorted = institutions.slice().sort((a,b) => a.full_name.localeCompare(b.full_name));
+  sel.innerHTML = sorted.map(i => `<option value="${i.id}">${escapeHtml(i.full_name)}</option>`).join('');
+
+  document.getElementById('p_paid_at').value = toLocalDatetimeInputValue(new Date());
+
+  if (prefillInstitutionId != null){
+    sel.value = String(prefillInstitutionId);
+    const rec = institutions.find(i => i.id === prefillInstitutionId);
+    if (rec) document.getElementById('p_amount').value = rec.subscription_amount;
+  }
+  paymentOverlay.classList.add('open');
+}
+function closePaymentForm(){ paymentOverlay.classList.remove('open'); }
+
+document.getElementById('recordPaymentFab').addEventListener('click', () => openPaymentForm());
+document.getElementById('paymentCloseBtn').addEventListener('click', closePaymentForm);
+document.getElementById('paymentCancelBtn').addEventListener('click', closePaymentForm);
+paymentOverlay.addEventListener('click', e => { if (e.target === paymentOverlay) closePaymentForm(); });
+
+paymentForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const instId = document.getElementById('p_institution_id').value;
+  const amount = Number(document.getElementById('p_amount').value);
+  const paidAtLocal = document.getElementById('p_paid_at').value;
+  const note = document.getElementById('p_note').value.trim() || null;
+
+  let ok = true;
+  const setErr = (id, msg) => { document.getElementById(id).textContent = msg; if (msg) ok = false; };
+  setErr('e_p_institution_id', instId ? '' : 'Select an institution.');
+  setErr('e_p_amount', amount > 0 ? '' : 'Enter a valid amount.');
+  setErr('e_p_paid_at', paidAtLocal ? '' : 'Pick a date and time.');
+  if (!ok) return;
+
+  paymentSaveBtn.disabled = true;
+  const original = paymentSaveBtn.innerHTML;
+  paymentSaveBtn.innerHTML = '<span class="spinner"></span>';
+
+  const { error } = await sb.from('payments').insert({
+    institution_id: Number(instId),
+    amount,
+    paid_at: new Date(paidAtLocal).toISOString(),
+    note
+  });
+
+  paymentSaveBtn.disabled = false;
+  paymentSaveBtn.innerHTML = original;
+
+  if (error){ toast(error.message || 'Could not save payment.', true); return; }
+  toast('Payment recorded.');
+  closePaymentForm();
+  await loadPayments();
+});
 </script>
 </body>
 </html>
