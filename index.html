@@ -282,6 +282,7 @@ input,select,textarea{ font-family:inherit; }
   flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
   background:none; border:none; cursor:pointer; padding:7px 4px 5px;
   color:var(--text-dim); font-size:.68rem; font-weight:600;
+  text-decoration:none;
 }
 .nav-item svg{ width:21px; height:21px; }
 .nav-item.active{ color:var(--accent); }
@@ -500,6 +501,10 @@ input,select,textarea{ font-family:inherit; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg>
       <span>Payments</span>
     </button>
+    <a class="nav-item" href="code-manager.html" id="codeNavLink" title="Backend blueprint files &amp; env variables">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg>
+      <span>Code</span>
+    </a>
   </nav>
 </div>
 
@@ -1098,6 +1103,9 @@ openForm = function(id){
 
 /* ============================================================================
    TABS — Institutions / Dues / Payments
+   (The "Code" item in the bottom nav is a plain link to code-manager.html —
+   a separate admin-only page for the backend blueprint — and is intentionally
+   left out of this in-page tab switcher.)
 ============================================================================ */
 const TAB_HEADINGS = { institutions: 'Institutions', dues: 'Dues', payments: 'Payments' };
 let currentTab = 'institutions';
@@ -1105,7 +1113,7 @@ let currentTab = 'institutions';
 function switchTab(tab){
   currentTab = tab;
   document.getElementById('tabHeading').textContent = TAB_HEADINGS[tab];
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.nav-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
   document.getElementById('institutionsControls').classList.toggle('hidden', tab !== 'institutions');
   document.getElementById('duesControls').classList.toggle('hidden', tab !== 'dues');
@@ -1122,7 +1130,7 @@ function switchTab(tab){
   if (tab === 'payments') { populatePaymentInstitutionFilter(); loadPayments(); }
 }
 document.getElementById('bottomNav').addEventListener('click', e => {
-  const btn = e.target.closest('.nav-item'); if (!btn) return;
+  const btn = e.target.closest('.nav-item[data-tab]'); if (!btn) return;
   switchTab(btn.dataset.tab);
 });
 
