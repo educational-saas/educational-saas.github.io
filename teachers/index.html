@@ -703,7 +703,8 @@
     if(e.target === sheetBackdrop){ sheetBackdrop.classList.remove('show'); }
   });
   document.getElementById('confirm-signout').addEventListener('click', function(){
-    supabaseClient.auth.signOut().then(function(){
+    supabaseClient.auth.signOut().then(async function(){
+      await wipeInstitutionData();
       window.location.href = 'https://educational-saas.github.io/';
     });
   });
@@ -723,6 +724,14 @@
     SUPABASE_URL = cached.data.supabase_url;
     SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
   })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
 
   var AUTH_REDIRECT = 'https://educational-saas.github.io/';
 
