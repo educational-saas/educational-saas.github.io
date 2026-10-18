@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Manage Classes & Subjects</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --header-bg: rgba(250,248,243,.85);
+    --header-border: rgba(13,56,65,.08);
+
+    --danger:#c9432f;
+    --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b;
+    --success-bg: rgba(47,143,91,.1);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --header-bg: rgba(9,34,39,.85);
+    --header-border: rgba(255,255,255,.08);
+
+    --danger:#ff6b57;
+    --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492;
+    --success-bg: rgba(87,212,146,.12);
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ---------- Loading gate ---------- */
+  #gate{
+    position:fixed; inset:0; z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--cream);
+    transition:opacity .35s var(--ease), visibility .35s var(--ease);
+  }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid var(--border-card);
+    border-top-color:var(--gold-500);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  /* ---------- Access denied ---------- */
+  #denied{
+    position:fixed; inset:0; z-index:190;
+    display:none;
+    align-items:center; justify-content:center;
+    background:var(--cream);
+    padding:24px;
+    text-align:center;
+  }
+  #denied.show{ display:flex; }
+  .denied-box{ max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .denied-box svg{ width:44px; height:44px; stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .denied-box h2{ font-family:'Fraunces',serif; font-size:1.2rem; margin:0; }
+  .denied-box p{ color:var(--ink-500); font-size:.9rem; margin:0; line-height:1.5; }
+
+  /* ---------- App header ---------- */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:960px;
+    margin:0 auto;
+  }
+  .header-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.02rem;
+    color:var(--ink-900);
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .3s var(--ease);
+  }
+  .header-sub{
+    margin:1px 0 0;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--teal-700);
+  }
+
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    width:40px; height:40px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{
+    width:19px; height:19px;
+    fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute;
+    transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  /* ---------- Main ---------- */
+  main.dash{
+    flex:1;
+    width:100%;
+    max-width:960px;
+    margin:0 auto;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);
+  }
+
+  /* ---------- Tabs ---------- */
+  .tab-bar{
+    display:flex;
+    gap:8px;
+    margin-bottom:18px;
+    overflow-x:auto;
+  }
+  .tab-btn{
+    padding:10px 18px;
+    border-radius:999px;
+    border:1.5px solid var(--border-card);
+    background:var(--white);
+    font-weight:700;
+    font-size:.84rem;
+    color:var(--ink-500);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background-color .25s var(--ease), color .25s var(--ease), border-color .25s var(--ease);
+  }
+  .tab-btn.active{
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900));
+    color:#fff;
+    border-color:transparent;
+  }
+
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .section-heading{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:14px;
+  }
+  .section-heading h1{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0;
+  }
+  .heading-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .count-chip{
+    font-size:.72rem; font-weight:700; color:var(--teal-700);
+    background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap;
+  }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:18px;
+    box-shadow:var(--shadow-card);
+    transition:border-color .3s var(--ease), background-color .3s var(--ease);
+  }
+
+  .placeholder-note{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+    padding:36px 16px; color:var(--ink-500);
+  }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Search ---------- */
+  .search-wrap{ position:relative; margin-bottom:16px; }
+  .search-wrap svg{
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:17px; height:17px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    pointer-events:none;
+  }
+  .search-wrap input{ padding-left:40px; }
+
+  /* ---------- Row list (classes / subjects) ---------- */
+  #class-list, #subject-list{ display:flex; flex-direction:column; gap:10px; }
+  .row-card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:13px 14px;
+    box-shadow:var(--shadow-card);
+    display:flex; align-items:center; gap:12px;
+    cursor:pointer;
+    opacity:0; animation:rise .45s var(--ease) forwards;
+    transition:border-color .2s var(--ease), transform .2s var(--ease), background-color .3s var(--ease);
+  }
+  .row-card:hover{ border-color:var(--border-card-hover); transform:translateY(-1px); }
+  .row-card:active{ transform:scale(.99); }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  .row-badge{
+    width:42px; height:42px; border-radius:14px; flex-shrink:0;
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900));
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:600; font-size:.86rem;
+    text-align:center; line-height:1.1; padding:2px;
+  }
+  .row-badge.gold{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); }
+  .avatar{
+    width:42px; height:42px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900));
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:600; font-size:1rem;
+  }
+  .row-info{ min-width:0; flex:1; }
+  .row-name{ font-family:'Fraunces',serif; font-weight:600; font-size:.95rem; margin:0; color:var(--ink-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row-sub{ font-size:.76rem; color:var(--ink-500); margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row-sub.unassigned{ font-style:italic; }
+  .row-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .status-chip{
+    font-size:.72rem; font-weight:700; color:var(--teal-700);
+    background:var(--bg-tint-teal); padding:4px 10px; border-radius:999px; white-space:nowrap;
+  }
+  .status-chip.unassigned{ color:var(--ink-500); background:var(--border-card); }
+  .chev{ width:16px; height:16px; stroke:var(--ink-500); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+
+  .reorder-col{ display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+  .reorder-btn{
+    width:26px; height:22px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:7px;
+    border:1.5px solid var(--border-card);
+    background:var(--cream);
+    cursor:pointer;
+  }
+  .reorder-btn:disabled{ opacity:.3; cursor:not-allowed; }
+  .reorder-btn svg{ width:12px; height:12px; stroke:var(--ink-500); fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{
+    display:block;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--ink-500);
+    margin-bottom:7px;
+  }
+
+  input[type="text"], select{
+    width:100%;
+    padding:12px 14px;
+    border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card);
+    background:var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',sans-serif;
+    font-size:.92rem;
+    font-weight:500;
+    outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input.has-icon{ padding-left:40px; }
+  input[type="text"]:focus, select:focus{
+    border-color:var(--border-card-hover);
+    box-shadow:0 0 0 4px var(--bg-tint-gold);
+  }
+  .field-hint{ font-size:.74rem; color:var(--ink-500); margin-top:6px; }
+  .field-error{ font-size:.78rem; color:var(--danger); margin-top:12px; display:none; }
+  .field-error.show{ display:block; }
+
+  .btn{
+    padding:13px 18px;
+    border-radius:14px;
+    border:none;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:.88rem;
+    cursor:pointer;
+    transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+  .btn-sm{ padding:8px 14px; font-size:.78rem; border-radius:10px; }
+  .btn-icon-sm{
+    width:32px; height:32px; padding:0; border-radius:9px;
+    background:var(--cream); border:1.5px solid var(--border-card); color:var(--ink-500);
+  }
+  .btn-icon-sm svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .section-label{
+    font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--ink-500); margin:0 0 10px;
+  }
+  .sub-divider{ height:1px; background:var(--border-card); margin:20px 0; }
+
+  /* ---------- Editable name row (inside sheets) ---------- */
+  .name-edit-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .name-edit-row input{ flex:1; }
+  .name-display-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+  .name-display-row h3{ margin:0; }
+
+  /* ---------- Current CT summary (read-only) ---------- */
+  .ct-current{
+    display:flex; align-items:center; gap:12px;
+    background:var(--bg-tint-teal);
+    border-radius:var(--r-sm);
+    padding:12px 14px;
+  }
+  .ct-current .avatar{ width:38px; height:38px; font-size:.86rem; }
+  .ct-current-info{ min-width:0; flex:1; }
+  .ct-current-name{ font-weight:700; font-size:.88rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ct-current-email{ font-size:.74rem; color:var(--ink-500); margin:1px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ct-empty{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--border-card);
+    border-radius:var(--r-sm);
+    padding:16px 14px;
+    color:var(--ink-500);
+    font-size:.84rem;
+    text-align:center;
+  }
+
+  /* ---------- Chip toggle list (subject/class mapping) ---------- */
+  .chip-toggle-list{ display:flex; flex-wrap:wrap; gap:8px; max-height:44svh; overflow-y:auto; padding:2px; }
+  .chip-toggle{
+    padding:9px 15px;
+    border-radius:999px;
+    border:1.5px solid var(--border-card);
+    background:var(--cream);
+    font-size:.82rem;
+    font-weight:600;
+    color:var(--ink-900);
+    cursor:pointer;
+    user-select:none;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:background-color .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+  }
+  .chip-toggle svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; opacity:0; transition:opacity .2s var(--ease); }
+  .chip-toggle.active{ background:var(--bg-tint-teal); border-color:var(--teal-600); color:var(--teal-700); }
+  .chip-toggle.active svg{ opacity:1; }
+  .chip-toggle.busy{ opacity:.55; pointer-events:none; }
+  html[data-theme="dark"] .chip-toggle.active{ color:var(--teal-600); }
+
+  .chip-static{
+    padding:8px 14px;
+    border-radius:999px;
+    background:var(--bg-tint-teal);
+    font-size:.82rem;
+    font-weight:600;
+    color:var(--teal-700);
+    display:inline-block;
+  }
+  .chip-static-list{ display:flex; flex-wrap:wrap; gap:8px; }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:100;
+    background:rgba(9,34,39,.4);
+    opacity:0; visibility:hidden;
+    transition:opacity .25s var(--ease), visibility .25s var(--ease);
+    overflow-y:auto;
+  }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:101;
+    background:var(--cream);
+    border-radius:22px 22px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);
+    max-width:960px; margin:0 auto;
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);
+    transform:translateY(100%);
+    transition:transform .3s var(--ease);
+    max-height:92svh;
+    overflow-y:auto;
+  }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  /* ---------- Toast ---------- */
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px);
+    z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900);
+    color:var(--white);
+    font-size:.84rem;
+    font-weight:600;
+    padding:12px 18px;
+    border-radius:999px;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px);
+    transition:opacity .3s var(--ease), transform .3s var(--ease);
+    max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+</style>
+</head>
+<body>
+
+<!-- Loading / auth gate -->
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<!-- Access denied -->
+<div id="denied">
+  <div class="denied-box">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2>Staff only</h2>
+    <p>This page is restricted to school teachers and administrators. If you believe this is a mistake, contact your school admin.</p>
+    <button class="btn btn-ghost" id="denied-back" type="button">Back to dashboard</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Classes &amp; Subjects</p>
+          <p class="header-sub" id="header-sub">Curriculum</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="refresh-btn" type="button" aria-label="Refresh" title="Refresh">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;">
+            <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-btn-classes" type="button">Classes</button>
+      <button class="tab-btn" id="tab-btn-subjects" type="button">Subjects</button>
+    </div>
+
+    <!-- ===================== CLASSES TAB ===================== -->
+    <div class="tab-panel active" id="panel-classes">
+
+      <div class="section-heading">
+        <h1>Classes</h1>
+        <div class="heading-right">
+          <span class="count-chip" id="class-count">0 classes</span>
+          <button class="btn btn-primary btn-sm admin-only" id="add-class-btn" type="button" style="display:none;">+ Add</button>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input class="has-icon" type="text" id="class-search" placeholder="Search classes…" autocomplete="off">
+      </div>
+
+      <div id="class-list"></div>
+
+      <div class="placeholder-note" id="class-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+        <p id="class-placeholder-text">No classes found.</p>
+      </div>
+    </div>
+
+    <!-- ===================== SUBJECTS TAB ===================== -->
+    <div class="tab-panel" id="panel-subjects">
+
+      <div class="section-heading">
+        <h1>Subjects</h1>
+        <div class="heading-right">
+          <span class="count-chip" id="subject-count">0 subjects</span>
+          <button class="btn btn-primary btn-sm admin-only" id="add-subject-btn" type="button" style="display:none;">+ Add</button>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input class="has-icon" type="text" id="subject-search" placeholder="Search subjects…" autocomplete="off">
+      </div>
+
+      <div id="subject-list"></div>
+
+      <div class="placeholder-note" id="subject-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+        <p id="subject-placeholder-text">No subjects found.</p>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Class detail sheet -->
+<div class="sheet-backdrop" id="sheet-class">
+  <div class="sheet" role="dialog" aria-label="Class details">
+    <div class="sheet-handle"></div>
+
+    <!-- Read-only name (teacher view) -->
+    <div id="class-name-readonly" style="display:none;">
+      <h3 id="cs-class-name-ro">Class name</h3>
+    </div>
+
+    <!-- Editable name (admin view) -->
+    <div id="class-name-editable" style="display:none;">
+      <div class="name-display-row" id="class-name-static-row">
+        <h3 id="cs-class-name-admin">Class name</h3>
+        <button class="btn btn-icon-sm" id="class-rename-toggle" type="button" aria-label="Rename class" title="Rename class">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+      </div>
+      <div class="name-edit-row" id="class-name-edit-row" style="display:none;">
+        <input type="text" id="class-rename-input" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="class-rename-save" type="button">Save</button>
+        <button class="btn btn-ghost btn-sm" id="class-rename-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <p>Class teacher and the subjects taught in this class.</p>
+
+    <p class="section-label">Class teacher</p>
+    <div id="cs-ct-wrap" style="margin-bottom:20px;"></div>
+
+    <div class="sub-divider"></div>
+
+    <p class="section-label" id="cs-subjects-label">Subjects taught</p>
+    <div class="search-wrap admin-only" id="cs-subject-search-wrap" style="display:none; margin-bottom:12px;">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input class="has-icon" type="text" id="cs-subject-search" placeholder="Search subjects…" autocomplete="off">
+    </div>
+    <div class="chip-toggle-list" id="cs-subject-chips"></div>
+    <div class="chip-static-list" id="cs-subject-chips-readonly"></div>
+    <p class="field-hint" id="cs-subjects-empty" style="display:none;">No subjects assigned to this class yet.</p>
+
+    <div class="btn-row">
+      <button class="btn btn-danger admin-only" id="class-delete-btn" type="button" style="display:none;">Delete class</button>
+      <button class="btn btn-ghost" id="class-sheet-close" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Subject detail sheet -->
+<div class="sheet-backdrop" id="sheet-subject">
+  <div class="sheet" role="dialog" aria-label="Subject details">
+    <div class="sheet-handle"></div>
+
+    <div id="subject-name-readonly" style="display:none;">
+      <h3 id="ss-subject-name-ro">Subject name</h3>
+    </div>
+
+    <div id="subject-name-editable" style="display:none;">
+      <div class="name-display-row" id="subject-name-static-row">
+        <h3 id="ss-subject-name-admin">Subject name</h3>
+        <button class="btn btn-icon-sm" id="subject-rename-toggle" type="button" aria-label="Rename subject" title="Rename subject">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+      </div>
+      <div class="name-edit-row" id="subject-name-edit-row" style="display:none;">
+        <input type="text" id="subject-rename-input" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="subject-rename-save" type="button">Save</button>
+        <button class="btn btn-ghost btn-sm" id="subject-rename-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <p>Classes that are taught this subject.</p>
+
+    <p class="section-label" id="ss-classes-label">Classes</p>
+    <div class="search-wrap admin-only" id="ss-class-search-wrap" style="display:none; margin-bottom:12px;">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input class="has-icon" type="text" id="ss-class-search" placeholder="Search classes…" autocomplete="off">
+    </div>
+    <div class="chip-toggle-list" id="ss-class-chips"></div>
+    <div class="chip-static-list" id="ss-class-chips-readonly"></div>
+    <p class="field-hint" id="ss-classes-empty" style="display:none;">No classes are taught this subject yet.</p>
+
+    <div class="btn-row">
+      <button class="btn btn-danger admin-only" id="subject-delete-btn" type="button" style="display:none;">Delete subject</button>
+      <button class="btn btn-ghost" id="subject-sheet-close" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add class sheet -->
+<div class="sheet-backdrop" id="sheet-add-class">
+  <div class="sheet" role="dialog" aria-label="Add class">
+    <div class="sheet-handle"></div>
+    <h3>Add a class</h3>
+    <p>Give the new class a name, e.g. "1-A" or "Grade 5".</p>
+    <div class="field">
+      <label for="new-class-name">Class name</label>
+      <input type="text" id="new-class-name" placeholder="e.g. 1-A" autocomplete="off">
+      <p class="field-error" id="new-class-error">Please enter a class name.</p>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="add-class-cancel">Cancel</button>
+      <button class="btn btn-primary" id="add-class-confirm">Add class</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add subject sheet -->
+<div class="sheet-backdrop" id="sheet-add-subject">
+  <div class="sheet" role="dialog" aria-label="Add subject">
+    <div class="sheet-handle"></div>
+    <h3>Add a subject</h3>
+    <p>Give the new subject a name, e.g. "Mathematics".</p>
+    <div class="field">
+      <label for="new-subject-name">Subject name</label>
+      <input type="text" id="new-subject-name" placeholder="e.g. Mathematics" autocomplete="off">
+      <p class="field-error" id="new-subject-error">Please enter a subject name.</p>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="add-subject-cancel">Cancel</button>
+      <button class="btn btn-primary" id="add-subject-confirm">Add subject</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete class confirmation -->
+<div class="sheet-backdrop" id="sheet-delete-class">
+  <div class="sheet" role="dialog" aria-label="Delete class confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Delete this class?</h3>
+    <p id="delete-class-message">This removes the class and all of its subject assignments. This can't be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="delete-class-cancel">Cancel</button>
+      <button class="btn btn-danger" id="delete-class-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete subject confirmation -->
+<div class="sheet-backdrop" id="sheet-delete-subject">
+  <div class="sheet" role="dialog" aria-label="Delete subject confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Delete this subject?</h3>
+    <p id="delete-subject-message">This removes the subject and all of its class assignments. This can't be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="delete-subject-cancel">Cancel</button>
+      <button class="btn btn-danger" id="delete-subject-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = {
+  user: null,
+  isAdmin: false,
+  isTeacher: false,
+
+  classes: [],                  // [name, ...] sorted alphabetically
+  subjects: [],                 // [{name, display_order}, ...] sorted by display_order
+  classSubjects: [],            // [{class, subject}, ...]
+  subjectsByClass: {},          // { className: [subjectName, ...] }
+  classesBySubject: {},         // { subjectName: [className, ...] }
+
+  teacherById: {},              // { id: {id,name,email} }
+  classTeacherByClass: {},      // { className: teacherId }
+
+  activeTab: 'classes',
+  classSearchTerm: '',
+  subjectSearchTerm: '',
+
+  activeClass: null,
+  activeSubject: null,
+  csSubjectSearchTerm: '',
+  ssClassSearchTerm: '',
+
+  deleteTargetClass: null,
+  deleteTargetSubject: null
+};
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 2800);
+}
+
+/* =========================================================
+   NAV / SIGN OUT
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+document.getElementById('denied-back').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+document.getElementById('refresh-btn').addEventListener('click', function(){
+  loadAllData(true);
+});
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ 
+      await wipeInstitutionData();
+      window.location.href = AUTH_REDIRECT; 
+      });
+});
+
+/* =========================================================
+   TABS
+========================================================= */
+document.getElementById('tab-btn-classes').addEventListener('click', function(){ switchTab('classes'); });
+document.getElementById('tab-btn-subjects').addEventListener('click', function(){ switchTab('subjects'); });
+
+function switchTab(tab){
+  state.activeTab = tab;
+  document.getElementById('tab-btn-classes').classList.toggle('active', tab === 'classes');
+  document.getElementById('tab-btn-subjects').classList.toggle('active', tab === 'subjects');
+  document.getElementById('panel-classes').classList.toggle('active', tab === 'classes');
+  document.getElementById('panel-subjects').classList.toggle('active', tab === 'subjects');
+}
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+function initials(name){
+  if(!name) return '?';
+  var parts = name.trim().split(/\s+/);
+  var first = parts[0] ? parts[0][0] : '';
+  var last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+function setAdminVisibility(){
+  var els = document.querySelectorAll('.admin-only');
+  els.forEach(function(el){
+    el.style.display = state.isAdmin ? '' : 'none';
+  });
+}
+
+/* =========================================================
+   RENDER CLASS LIST
+========================================================= */
+function renderClassList(){
+  var list = document.getElementById('class-list');
+  var placeholder = document.getElementById('class-placeholder');
+  var placeholderText = document.getElementById('class-placeholder-text');
+  var countChip = document.getElementById('class-count');
+
+  countChip.textContent = state.classes.length + (state.classes.length === 1 ? ' class' : ' classes');
+
+  var term = state.classSearchTerm.trim().toLowerCase();
+  var filtered = state.classes.filter(function(c){
+    if(!term) return true;
+    if(c.toLowerCase().indexOf(term) !== -1) return true;
+    var subs = state.subjectsByClass[c] || [];
+    return subs.some(function(s){ return s.toLowerCase().indexOf(term) !== -1; });
+  });
+
+  if(filtered.length === 0){
+    list.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholderText.textContent = state.classes.length === 0
+      ? (state.isAdmin ? 'No classes yet. Add your first class above.' : 'No classes found.')
+      : 'No classes match your search.';
+    return;
+  }
+  placeholder.style.display = 'none';
+  list.style.display = 'flex';
+  list.innerHTML = '';
+
+  filtered.forEach(function(cls, i){
+    var teacherId = state.classTeacherByClass[cls];
+    var teacher = teacherId ? state.teacherById[teacherId] : null;
+    var subjectCount = (state.subjectsByClass[cls] || []).length;
+
+    var subParts = [];
+    subParts.push(subjectCount + (subjectCount === 1 ? ' subject' : ' subjects'));
+    subParts.push(teacher ? ('CT: ' + teacher.name) : 'No class teacher');
+
+    var card = document.createElement('div');
+    card.className = 'row-card';
+    card.style.animationDelay = (i * 0.03) + 's';
+    card.innerHTML =
+      '<div class="row-badge">' + escapeHtml(cls) + '</div>' +
+      '<div class="row-info">' +
+        '<p class="row-name">' + escapeHtml(cls) + '</p>' +
+        '<p class="row-sub' + (teacher ? '' : ' unassigned') + '">' + escapeHtml(subParts.join(' · ')) + '</p>' +
+      '</div>' +
+      '<div class="row-right">' +
+        '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>' +
+      '</div>';
+    card.addEventListener('click', function(){ openClassSheet(cls); });
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('class-search').addEventListener('input', function(e){
+  state.classSearchTerm = e.target.value;
+  renderClassList();
+});
+
+/* =========================================================
+   RENDER SUBJECT LIST
+========================================================= */
+function renderSubjectList(){
+  var list = document.getElementById('subject-list');
+  var placeholder = document.getElementById('subject-placeholder');
+  var placeholderText = document.getElementById('subject-placeholder-text');
+  var countChip = document.getElementById('subject-count');
+
+  countChip.textContent = state.subjects.length + (state.subjects.length === 1 ? ' subject' : ' subjects');
+
+  var term = state.subjectSearchTerm.trim().toLowerCase();
+  var filtered = state.subjects.filter(function(s){
+    if(!term) return true;
+    if(s.name.toLowerCase().indexOf(term) !== -1) return true;
+    var classes = state.classesBySubject[s.name] || [];
+    return classes.some(function(c){ return c.toLowerCase().indexOf(term) !== -1; });
+  });
+
+  if(filtered.length === 0){
+    list.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholderText.textContent = state.subjects.length === 0
+      ? (state.isAdmin ? 'No subjects yet. Add your first subject above.' : 'No subjects found.')
+      : 'No subjects match your search.';
+    return;
+  }
+  placeholder.style.display = 'none';
+  list.style.display = 'flex';
+  list.innerHTML = '';
+
+  filtered.forEach(function(subj, i){
+    var classCount = (state.classesBySubject[subj.name] || []).length;
+    var isSearching = !!term;
+
+    var card = document.createElement('div');
+    card.className = 'row-card';
+    card.style.animationDelay = (i * 0.03) + 's';
+
+    var reorderHtml = '';
+    if(state.isAdmin && !isSearching){
+      var idx = state.subjects.indexOf(subj);
+      var isFirst = idx === 0;
+      var isLast = idx === state.subjects.length - 1;
+      reorderHtml =
+        '<div class="reorder-col">' +
+          '<button class="reorder-btn" data-dir="up" data-name="' + escapeHtml(subj.name) + '"' + (isFirst ? ' disabled' : '') + ' aria-label="Move up" title="Move up"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>' +
+          '<button class="reorder-btn" data-dir="down" data-name="' + escapeHtml(subj.name) + '"' + (isLast ? ' disabled' : '') + ' aria-label="Move down" title="Move down"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>' +
+        '</div>';
+    }
+
+    card.innerHTML =
+      '<div class="row-badge gold">' + escapeHtml(initials(subj.name)) + '</div>' +
+      '<div class="row-info">' +
+        '<p class="row-name">' + escapeHtml(subj.name) + '</p>' +
+        '<p class="row-sub">' + classCount + (classCount === 1 ? ' class' : ' classes') + '</p>' +
+      '</div>' +
+      '<div class="row-right">' +
+        reorderHtml +
+        '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>' +
+      '</div>';
+
+    card.addEventListener('click', function(e){
+      if(e.target.closest('.reorder-btn')) return;
+      openSubjectSheet(subj.name);
+    });
+    list.appendChild(card);
+  });
+
+  if(state.isAdmin){
+    list.querySelectorAll('.reorder-btn').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        reorderSubject(btn.getAttribute('data-name'), btn.getAttribute('data-dir'));
+      });
+    });
+  }
+}
+
+document.getElementById('subject-search').addEventListener('input', function(e){
+  state.subjectSearchTerm = e.target.value;
+  renderSubjectList();
+});
+
+/* =========================================================
+   LOAD ALL DATA
+========================================================= */
+function loadAllData(isRefresh){
+  return Promise.all([
+    supabaseClient.from('classes').select('name').order('name', { ascending: true }),
+    supabaseClient.from('subjects').select('name, display_order').order('display_order', { ascending: true }),
+    supabaseClient.from('class_subjects').select('class, subject'),
+    supabaseClient.from('teachers').select('id, name, email').order('name', { ascending: true }),
+    supabaseClient.from('class_teachers').select('class, teacher_id')
+  ]).then(function(results){
+    var classesRes = results[0], subjectsRes = results[1], csRes = results[2],
+        teachersRes = results[3], ctRes = results[4];
+
+    var firstError = classesRes.error || subjectsRes.error || csRes.error || teachersRes.error || ctRes.error;
+    if(firstError){
+      toast('Could not load data: ' + firstError.message, true);
+      return;
+    }
+
+    state.classes = (classesRes.data || []).map(function(r){ return r.name; });
+    state.subjects = subjectsRes.data || [];
+    state.classSubjects = csRes.data || [];
+
+    var byTeacherId = {};
+    (teachersRes.data || []).forEach(function(t){ byTeacherId[t.id] = t; });
+    state.teacherById = byTeacherId;
+
+    var ctByClass = {};
+    (ctRes.data || []).forEach(function(row){ ctByClass[row.class] = row.teacher_id; });
+    state.classTeacherByClass = ctByClass;
+
+    rebuildMappingIndexes();
+
+    renderClassList();
+    renderSubjectList();
+
+    if(isRefresh){
+      toast('Refreshed.');
+      if(state.activeClass) renderClassSheetContent();
+      if(state.activeSubject) renderSubjectSheetContent();
+    }
+  });
+}
+
+function rebuildMappingIndexes(){
+  var byClass = {};
+  var bySubject = {};
+  state.classes.forEach(function(c){ byClass[c] = []; });
+  state.subjects.forEach(function(s){ bySubject[s.name] = []; });
+  state.classSubjects.forEach(function(row){
+    if(!byClass[row.class]) byClass[row.class] = [];
+    if(!bySubject[row.subject]) bySubject[row.subject] = [];
+    byClass[row.class].push(row.subject);
+    bySubject[row.subject].push(row.class);
+  });
+  Object.keys(byClass).forEach(function(c){ byClass[c].sort(function(a,b){ return a.localeCompare(b); }); });
+  Object.keys(bySubject).forEach(function(s){ bySubject[s].sort(function(a,b){ return a.localeCompare(b); }); });
+  state.subjectsByClass = byClass;
+  state.classesBySubject = bySubject;
+}
+
+function refetchClassSubjects(){
+  return supabaseClient.from('class_subjects').select('class, subject').then(function(res){
+    if(res.error){
+      toast('Could not refresh subject assignments: ' + res.error.message, true);
+      return;
+    }
+    state.classSubjects = res.data || [];
+    rebuildMappingIndexes();
+  });
+}
+
+/* =========================================================
+   CLASS SHEET
+========================================================= */
+var sheetClass = document.getElementById('sheet-class');
+
+function openClassSheet(cls){
+  state.activeClass = cls;
+  state.csSubjectSearchTerm = '';
+  document.getElementById('cs-subject-search').value = '';
+  document.getElementById('class-name-edit-row').style.display = 'none';
+  renderClassSheetContent();
+  sheetClass.classList.add('show');
+}
+
+document.getElementById('class-sheet-close').addEventListener('click', closeClassSheet);
+sheetClass.addEventListener('click', function(e){ if(e.target === sheetClass) closeClassSheet(); });
+function closeClassSheet(){
+  sheetClass.classList.remove('show');
+  state.activeClass = null;
+  renderClassList();
+}
+
+function renderClassSheetContent(){
+  var cls = state.activeClass;
+  if(!cls) return;
+
+  document.getElementById('class-name-readonly').style.display = state.isAdmin ? 'none' : 'block';
+  document.getElementById('class-name-editable').style.display = state.isAdmin ? 'block' : 'none';
+  document.getElementById('cs-class-name-ro').textContent = cls;
+  document.getElementById('cs-class-name-admin').textContent = cls;
+  document.getElementById('class-delete-btn').style.display = state.isAdmin ? 'inline-flex' : 'none';
+
+  renderClassSheetCT();
+  renderClassSheetSubjects();
+}
+
+function renderClassSheetCT(){
+  var wrap = document.getElementById('cs-ct-wrap');
+  var teacherId = state.classTeacherByClass[state.activeClass];
+  var teacher = teacherId ? state.teacherById[teacherId] : null;
+
+  if(!teacher){
+    wrap.innerHTML = '<div class="ct-empty">No class teacher assigned yet.</div>';
+    return;
+  }
+  wrap.innerHTML =
+    '<div class="ct-current">' +
+      '<div class="avatar">' + escapeHtml(initials(teacher.name)) + '</div>' +
+      '<div class="ct-current-info">' +
+        '<p class="ct-current-name">' + escapeHtml(teacher.name) + '</p>' +
+        '<p class="ct-current-email">' + escapeHtml(teacher.email) + '</p>' +
+      '</div>' +
+    '</div>';
+}
+
+function renderClassSheetSubjects(){
+  var chipsWrap = document.getElementById('cs-subject-chips');
+  var chipsRoWrap = document.getElementById('cs-subject-chips-readonly');
+  var emptyNote = document.getElementById('cs-subjects-empty');
+  var searchWrap = document.getElementById('cs-subject-search-wrap');
+  var assigned = state.subjectsByClass[state.activeClass] || [];
+
+  if(state.isAdmin){
+    chipsWrap.style.display = 'flex';
+    chipsRoWrap.style.display = 'none';
+    searchWrap.style.display = 'block';
+    emptyNote.style.display = 'none';
+
+    var term = state.csSubjectSearchTerm.trim().toLowerCase();
+    var subjectsToShow = state.subjects.filter(function(s){
+      return !term || s.name.toLowerCase().indexOf(term) !== -1;
+    });
+
+    chipsWrap.innerHTML = '';
+    if(subjectsToShow.length === 0){
+      var p = document.createElement('p');
+      p.className = 'field-hint';
+      p.textContent = state.subjects.length === 0 ? 'No subjects exist yet — add one from the Subjects tab.' : 'No subjects match your search.';
+      chipsWrap.appendChild(p);
+      return;
+    }
+
+    subjectsToShow.forEach(function(s){
+      var isActive = assigned.indexOf(s.name) !== -1;
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip-toggle' + (isActive ? ' active' : '');
+      chip.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span>' + escapeHtml(s.name) + '</span>';
+      chip.addEventListener('click', function(){
+        toggleClassSubjectMapping(state.activeClass, s.name, chip);
+      });
+      chipsWrap.appendChild(chip);
+    });
+  }else{
+    chipsWrap.style.display = 'none';
+    searchWrap.style.display = 'none';
+    chipsRoWrap.style.display = assigned.length ? 'flex' : 'none';
+    emptyNote.style.display = assigned.length ? 'none' : 'block';
+
+    chipsRoWrap.innerHTML = '';
+    assigned.forEach(function(name){
+      var chip = document.createElement('span');
+      chip.className = 'chip-static';
+      chip.textContent = name;
+      chipsRoWrap.appendChild(chip);
+    });
+  }
+}
+
+document.getElementById('cs-subject-search').addEventListener('input', function(e){
+  state.csSubjectSearchTerm = e.target.value;
+  renderClassSheetSubjects();
+});
+
+function toggleClassSubjectMapping(cls, subject, chipEl){
+  var isActive = chipEl.classList.contains('active');
+  chipEl.classList.add('busy');
+
+  var query = isActive
+    ? supabaseClient.from('class_subjects').delete().eq('class', cls).eq('subject', subject)
+    : supabaseClient.from('class_subjects').insert([{ class: cls, subject: subject }]);
+
+  query.then(function(res){
+    chipEl.classList.remove('busy');
+    if(res.error){
+      toast('Could not update subject assignment: ' + res.error.message, true);
+      return;
+    }
+    refetchClassSubjects().then(function(){
+      renderClassList();
+      renderSubjectList();
+      if(state.activeClass) renderClassSheetSubjects();
+      if(state.activeSubject) renderSubjectSheetClasses();
+      toast(isActive
+        ? (subject + ' removed from ' + cls + '.')
+        : (subject + ' added to ' + cls + '.'));
+    });
+  });
+}
+
+/* ----- Class rename (admin) ----- */
+document.getElementById('class-rename-toggle').addEventListener('click', function(){
+  document.getElementById('class-rename-input').value = state.activeClass;
+  document.getElementById('class-name-edit-row').style.display = 'flex';
+  document.getElementById('class-rename-input').focus();
+});
+document.getElementById('class-rename-cancel').addEventListener('click', function(){
+  document.getElementById('class-name-edit-row').style.display = 'none';
+});
+document.getElementById('class-rename-save').addEventListener('click', function(){
+  var newName = document.getElementById('class-rename-input').value.trim();
+  var oldName = state.activeClass;
+  if(!newName){ toast('Please enter a class name.', true); return; }
+  if(newName === oldName){ document.getElementById('class-name-edit-row').style.display = 'none'; return; }
+  if(state.classes.indexOf(newName) !== -1){ toast('A class with that name already exists.', true); return; }
+
+  var btn = document.getElementById('class-rename-save');
+  btn.disabled = true;
+
+  supabaseClient.from('classes').update({ name: newName }).eq('name', oldName).then(function(res){
+    if(res.error){
+      btn.disabled = false;
+      toast('Could not rename class: ' + res.error.message, true);
+      return;
+    }
+    // class_subjects cascades automatically via FK (on update cascade).
+    // class_teachers has no FK on the class column, so keep it in sync manually.
+    supabaseClient.from('class_teachers').update({ class: newName }).eq('class', oldName).then(function(){
+      btn.disabled = false;
+      state.activeClass = newName;
+      document.getElementById('class-name-edit-row').style.display = 'none';
+      loadAllData(false).then(function(){
+        renderClassSheetContent();
+        toast('Class renamed to ' + newName + '.');
+      });
+    });
+  });
+});
+
+/* ----- Class delete (admin) ----- */
+var sheetDeleteClass = document.getElementById('sheet-delete-class');
+document.getElementById('class-delete-btn').addEventListener('click', function(){
+  state.deleteTargetClass = state.activeClass;
+  var teacherId = state.classTeacherByClass[state.activeClass];
+  var hasSubjects = (state.subjectsByClass[state.activeClass] || []).length > 0;
+  var extra = [];
+  if(hasSubjects) extra.push('its subject assignments');
+  if(teacherId) extra.push('its class teacher assignment');
+  document.getElementById('delete-class-message').textContent =
+    'This deletes "' + state.activeClass + '"' + (extra.length ? ' along with ' + extra.join(' and ') : '') + '. This can\'t be undone.';
+  sheetDeleteClass.classList.add('show');
+});
+document.getElementById('delete-class-cancel').addEventListener('click', function(){
+  sheetDeleteClass.classList.remove('show');
+  state.deleteTargetClass = null;
+});
+sheetDeleteClass.addEventListener('click', function(e){ if(e.target === sheetDeleteClass){ sheetDeleteClass.classList.remove('show'); state.deleteTargetClass = null; } });
+document.getElementById('delete-class-confirm').addEventListener('click', function(){
+  var cls = state.deleteTargetClass;
+  if(!cls) return;
+  var btn = document.getElementById('delete-class-confirm');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+
+  supabaseClient.from('classes').delete().eq('name', cls).then(function(res){
+    if(res.error){
+      btn.disabled = false; btn.textContent = 'Delete';
+      toast('Could not delete class: ' + res.error.message, true);
+      return;
+    }
+    // class_subjects rows cascade automatically. class_teachers has no FK — clean up manually.
+    supabaseClient.from('class_teachers').delete().eq('class', cls).then(function(){
+      btn.disabled = false; btn.textContent = 'Delete';
+      sheetDeleteClass.classList.remove('show');
+      state.deleteTargetClass = null;
+      closeClassSheet();
+      loadAllData(false).then(function(){
+        toast('"' + cls + '" was deleted.');
+      });
+    });
+  });
+});
+
+/* =========================================================
+   SUBJECT SHEET
+========================================================= */
+var sheetSubject = document.getElementById('sheet-subject');
+
+function openSubjectSheet(name){
+  state.activeSubject = name;
+  state.ssClassSearchTerm = '';
+  document.getElementById('ss-class-search').value = '';
+  document.getElementById('subject-name-edit-row').style.display = 'none';
+  renderSubjectSheetContent();
+  sheetSubject.classList.add('show');
+}
+document.getElementById('subject-sheet-close').addEventListener('click', closeSubjectSheet);
+sheetSubject.addEventListener('click', function(e){ if(e.target === sheetSubject) closeSubjectSheet(); });
+function closeSubjectSheet(){
+  sheetSubject.classList.remove('show');
+  state.activeSubject = null;
+  renderSubjectList();
+}
+
+function renderSubjectSheetContent(){
+  var name = state.activeSubject;
+  if(!name) return;
+
+  document.getElementById('subject-name-readonly').style.display = state.isAdmin ? 'none' : 'block';
+  document.getElementById('subject-name-editable').style.display = state.isAdmin ? 'block' : 'none';
+  document.getElementById('ss-subject-name-ro').textContent = name;
+  document.getElementById('ss-subject-name-admin').textContent = name;
+  document.getElementById('subject-delete-btn').style.display = state.isAdmin ? 'inline-flex' : 'none';
+
+  renderSubjectSheetClasses();
+}
+
+function renderSubjectSheetClasses(){
+  var chipsWrap = document.getElementById('ss-class-chips');
+  var chipsRoWrap = document.getElementById('ss-class-chips-readonly');
+  var emptyNote = document.getElementById('ss-classes-empty');
+  var searchWrap = document.getElementById('ss-class-search-wrap');
+  var assigned = state.classesBySubject[state.activeSubject] || [];
+
+  if(state.isAdmin){
+    chipsWrap.style.display = 'flex';
+    chipsRoWrap.style.display = 'none';
+    searchWrap.style.display = 'block';
+    emptyNote.style.display = 'none';
+
+    var term = state.ssClassSearchTerm.trim().toLowerCase();
+    var classesToShow = state.classes.filter(function(c){
+      return !term || c.toLowerCase().indexOf(term) !== -1;
+    });
+
+    chipsWrap.innerHTML = '';
+    if(classesToShow.length === 0){
+      var p = document.createElement('p');
+      p.className = 'field-hint';
+      p.textContent = state.classes.length === 0 ? 'No classes exist yet — add one from the Classes tab.' : 'No classes match your search.';
+      chipsWrap.appendChild(p);
+      return;
+    }
+
+    classesToShow.forEach(function(c){
+      var isActive = assigned.indexOf(c) !== -1;
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip-toggle' + (isActive ? ' active' : '');
+      chip.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span>' + escapeHtml(c) + '</span>';
+      chip.addEventListener('click', function(){
+        toggleClassSubjectMapping(c, state.activeSubject, chip);
+      });
+      chipsWrap.appendChild(chip);
+    });
+  }else{
+    chipsWrap.style.display = 'none';
+    searchWrap.style.display = 'none';
+    chipsRoWrap.style.display = assigned.length ? 'flex' : 'none';
+    emptyNote.style.display = assigned.length ? 'none' : 'block';
+
+    chipsRoWrap.innerHTML = '';
+    assigned.forEach(function(name){
+      var chip = document.createElement('span');
+      chip.className = 'chip-static';
+      chip.textContent = name;
+      chipsRoWrap.appendChild(chip);
+    });
+  }
+}
+
+document.getElementById('ss-class-search').addEventListener('input', function(e){
+  state.ssClassSearchTerm = e.target.value;
+  renderSubjectSheetClasses();
+});
+
+/* ----- Subject rename (admin) ----- */
+document.getElementById('subject-rename-toggle').addEventListener('click', function(){
+  document.getElementById('subject-rename-input').value = state.activeSubject;
+  document.getElementById('subject-name-edit-row').style.display = 'flex';
+  document.getElementById('subject-rename-input').focus();
+});
+document.getElementById('subject-rename-cancel').addEventListener('click', function(){
+  document.getElementById('subject-name-edit-row').style.display = 'none';
+});
+document.getElementById('subject-rename-save').addEventListener('click', function(){
+  var newName = document.getElementById('subject-rename-input').value.trim();
+  var oldName = state.activeSubject;
+  if(!newName){ toast('Please enter a subject name.', true); return; }
+  if(newName === oldName){ document.getElementById('subject-name-edit-row').style.display = 'none'; return; }
+  if(state.subjects.some(function(s){ return s.name === newName; })){ toast('A subject with that name already exists.', true); return; }
+
+  var btn = document.getElementById('subject-rename-save');
+  btn.disabled = true;
+
+  supabaseClient.from('subjects').update({ name: newName }).eq('name', oldName).then(function(res){
+    btn.disabled = false;
+    if(res.error){
+      toast('Could not rename subject: ' + res.error.message, true);
+      return;
+    }
+    // class_subjects cascades automatically via FK (on update cascade).
+    state.activeSubject = newName;
+    document.getElementById('subject-name-edit-row').style.display = 'none';
+    loadAllData(false).then(function(){
+      renderSubjectSheetContent();
+      toast('Subject renamed to ' + newName + '.');
+    });
+  });
+});
+
+/* ----- Subject delete (admin) ----- */
+var sheetDeleteSubject = document.getElementById('sheet-delete-subject');
+document.getElementById('subject-delete-btn').addEventListener('click', function(){
+  state.deleteTargetSubject = state.activeSubject;
+  var hasClasses = (state.classesBySubject[state.activeSubject] || []).length > 0;
+  document.getElementById('delete-subject-message').textContent =
+    'This deletes "' + state.activeSubject + '"' + (hasClasses ? ' along with its class assignments' : '') + '. This can\'t be undone.';
+  sheetDeleteSubject.classList.add('show');
+});
+document.getElementById('delete-subject-cancel').addEventListener('click', function(){
+  sheetDeleteSubject.classList.remove('show');
+  state.deleteTargetSubject = null;
+});
+sheetDeleteSubject.addEventListener('click', function(e){ if(e.target === sheetDeleteSubject){ sheetDeleteSubject.classList.remove('show'); state.deleteTargetSubject = null; } });
+document.getElementById('delete-subject-confirm').addEventListener('click', function(){
+  var name = state.deleteTargetSubject;
+  if(!name) return;
+  var btn = document.getElementById('delete-subject-confirm');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+
+  supabaseClient.from('subjects').delete().eq('name', name).then(function(res){
+    btn.disabled = false; btn.textContent = 'Delete';
+    if(res.error){
+      toast('Could not delete subject: ' + res.error.message, true);
+      return;
+    }
+    sheetDeleteSubject.classList.remove('show');
+    state.deleteTargetSubject = null;
+    closeSubjectSheet();
+    loadAllData(false).then(function(){
+      toast('"' + name + '" was deleted.');
+    });
+  });
+});
+
+/* =========================================================
+   REORDER SUBJECTS (admin)
+========================================================= */
+function reorderSubject(name, dir){
+  var idx = state.subjects.findIndex(function(s){ return s.name === name; });
+  if(idx === -1) return;
+  var swapIdx = dir === 'up' ? idx - 1 : idx + 1;
+  if(swapIdx < 0 || swapIdx >= state.subjects.length) return;
+
+  var a = state.subjects[idx];
+  var b = state.subjects[swapIdx];
+
+  Promise.all([
+    supabaseClient.from('subjects').update({ display_order: b.display_order }).eq('name', a.name),
+    supabaseClient.from('subjects').update({ display_order: a.display_order }).eq('name', b.name)
+  ]).then(function(results){
+    var err = results[0].error || results[1].error;
+    if(err){
+      toast('Could not reorder subjects: ' + err.message, true);
+      return;
+    }
+    var tmp = a.display_order;
+    a.display_order = b.display_order;
+    b.display_order = tmp;
+    state.subjects.sort(function(x,y){ return x.display_order - y.display_order; });
+    renderSubjectList();
+  });
+}
+
+/* =========================================================
+   ADD CLASS (admin)
+========================================================= */
+var sheetAddClass = document.getElementById('sheet-add-class');
+document.getElementById('add-class-btn').addEventListener('click', function(){
+  document.getElementById('new-class-name').value = '';
+  document.getElementById('new-class-error').classList.remove('show');
+  sheetAddClass.classList.add('show');
+  document.getElementById('new-class-name').focus();
+});
+document.getElementById('add-class-cancel').addEventListener('click', function(){ sheetAddClass.classList.remove('show'); });
+sheetAddClass.addEventListener('click', function(e){ if(e.target === sheetAddClass) sheetAddClass.classList.remove('show'); });
+document.getElementById('add-class-confirm').addEventListener('click', function(){
+  var name = document.getElementById('new-class-name').value.trim();
+  var errorEl = document.getElementById('new-class-error');
+  if(!name){ errorEl.classList.add('show'); return; }
+  if(state.classes.indexOf(name) !== -1){
+    errorEl.textContent = 'A class with that name already exists.';
+    errorEl.classList.add('show');
+    return;
+  }
+  errorEl.classList.remove('show');
+
+  var btn = document.getElementById('add-class-confirm');
+  btn.disabled = true; btn.textContent = 'Adding…';
+
+  supabaseClient.from('classes').insert([{ name: name }]).then(function(res){
+    btn.disabled = false; btn.textContent = 'Add class';
+    if(res.error){
+      errorEl.textContent = 'Could not add class: ' + res.error.message;
+      errorEl.classList.add('show');
+      return;
+    }
+    sheetAddClass.classList.remove('show');
+    loadAllData(false).then(function(){
+      toast('"' + name + '" was added.');
+    });
+  });
+});
+
+/* =========================================================
+   ADD SUBJECT (admin)
+========================================================= */
+var sheetAddSubject = document.getElementById('sheet-add-subject');
+document.getElementById('add-subject-btn').addEventListener('click', function(){
+  document.getElementById('new-subject-name').value = '';
+  document.getElementById('new-subject-error').classList.remove('show');
+  sheetAddSubject.classList.add('show');
+  document.getElementById('new-subject-name').focus();
+});
+document.getElementById('add-subject-cancel').addEventListener('click', function(){ sheetAddSubject.classList.remove('show'); });
+sheetAddSubject.addEventListener('click', function(e){ if(e.target === sheetAddSubject) sheetAddSubject.classList.remove('show'); });
+document.getElementById('add-subject-confirm').addEventListener('click', function(){
+  var name = document.getElementById('new-subject-name').value.trim();
+  var errorEl = document.getElementById('new-subject-error');
+  if(!name){ errorEl.classList.add('show'); return; }
+  if(state.subjects.some(function(s){ return s.name === name; })){
+    errorEl.textContent = 'A subject with that name already exists.';
+    errorEl.classList.add('show');
+    return;
+  }
+  errorEl.classList.remove('show');
+
+  var btn = document.getElementById('add-subject-confirm');
+  btn.disabled = true; btn.textContent = 'Adding…';
+
+  var nextOrder = state.subjects.length
+    ? Math.max.apply(null, state.subjects.map(function(s){ return s.display_order; })) + 1
+    : 1;
+
+  supabaseClient.from('subjects').insert([{ name: name, display_order: nextOrder }]).then(function(res){
+    btn.disabled = false; btn.textContent = 'Add subject';
+    if(res.error){
+      errorEl.textContent = 'Could not add subject: ' + res.error.message;
+      errorEl.classList.add('show');
+      return;
+    }
+    sheetAddSubject.classList.remove('show');
+    loadAllData(false).then(function(){
+      toast('"' + name + '" was added.');
+    });
+  });
+});
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function showDenied(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('denied').classList.add('show');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    state.user = { id: session.user.id };
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    var teacherResult = await supabaseClient.rpc('is_teacher');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+    state.isTeacher = !!(teacherResult && teacherResult.data === true);
+
+    if(!state.isAdmin && !state.isTeacher){ showDenied(); return; }
+
+    document.getElementById('header-sub').textContent = state.isAdmin
+      ? 'Admin · Curriculum Setup'
+      : 'Teacher · Curriculum View';
+
+    setAdminVisibility();
+
+    await loadAllData(false);
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
