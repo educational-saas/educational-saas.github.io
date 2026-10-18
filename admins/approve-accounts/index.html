@@ -790,7 +790,10 @@ document.getElementById('signout-btn').addEventListener('click', function(){ she
 document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
 sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
 document.getElementById('confirm-signout').addEventListener('click', function(){
-  supabaseClient.auth.signOut().then(function(){ window.location.href = AUTH_REDIRECT; });
+  supabaseClient.auth.signOut().then(async function(){ 
+      await wipeInstitutionData();
+      window.location.href = AUTH_REDIRECT; 
+      });
 });
 
 /* =========================================================
