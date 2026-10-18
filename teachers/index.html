@@ -591,7 +591,7 @@
   // ==========================================
   {
     name: 'Approve Accounts',
-    href: 'https://educational-saas.github.io/admins/account-approval/',
+    href: 'https://educational-saas.github.io/admins/approve-accounts/',
     icon: '<path d="M12 2.5 19.5 5v6c0 5-3.2 8.8-7.5 10.5C7.7 19.8 4.5 16 4.5 11V5Z" fill="#10b981"/><path d="m9 12.2 2.1 2.1 4-4.3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
     adminOnly: true
   },
@@ -718,7 +718,7 @@
     try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
 
     if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
-      window.location.href = '/teacher-signin.html'; // no credentials on record — back to login
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
       throw new Error('Redirecting to sign-in.');
     }
     SUPABASE_URL = cached.data.supabase_url;
@@ -727,7 +727,7 @@
 
   async function wipeInstitutionData(){
     try{
-      const { clearInstitutionCache } = await import('/commons/control-plane.js');
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
       clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
     }catch(e){ /* ignore — nothing to clean up if this fails */ }
     localStorage.removeItem('gsms_last_institution_id');
