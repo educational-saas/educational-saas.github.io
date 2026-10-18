@@ -13,8 +13,7 @@
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Teacher Dashboard | My GSMS</title>
-<meta name="description" content="Teacher dashboard for Gopal Sharma Memorial School. Access lesson plans, marks entry, attendance, and classroom tools.">
+<title>Teacher Dashboard</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
 
@@ -665,6 +664,7 @@
 
   var grid = document.getElementById('tile-grid');
   var emptyState = document.getElementById('empty-state');
+  var allowedTools = TOOLS; // will be narrowed once admin status is known
 
   function renderTiles(list){
     grid.innerHTML = '';
@@ -687,7 +687,7 @@
 
   document.getElementById('search').addEventListener('input', function(e){
     var q = e.target.value.trim().toLowerCase();
-    var filtered = TOOLS.filter(function(t){ return t.name.toLowerCase().indexOf(q) !== -1; });
+    var filtered = allowedTools.filter(function(t){ return t.name.toLowerCase().indexOf(q) !== -1; });
     renderTiles(filtered);
   });
 
@@ -778,9 +778,10 @@
         return;
       }
 
-      renderTiles(TOOLS.filter(function(tool){
-      return !tool.adminOnly || adminResult.data === true;
-      }));
+      allowedTools = TOOLS.filter(function(tool){
+  return !tool.adminOnly || adminResult.data === true;
+});
+      renderTiles(allowedTools);
 
       document.querySelector('.header-sub').textContent = adminResult.data === true ? 'Admin Dashboard' : 'Teacher Dashboard';
       
