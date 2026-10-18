@@ -776,6 +776,51 @@ var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
 var PROFILE_PICTURE_FN_URL = SUPABASE_URL + '/functions/v1/profile-picture';
 var MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
+var ADMIN_ACCOUNTS_FN_URL = SUPABASE_URL + '/functions/v1/admin-user-accounts';
+
+async function deleteAuthAccounts(uuids){
+  if(!uuids || !uuids.length) return;
+  var token = await getAccessToken();
+  var res = await fetch(ADMIN_ACCOUNTS_FN_URL, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete', uuids: uuids })
+  });
+  var data = {};
+  try{ data = await res.json(); }catch(e){}
+  if(!res.ok) throw new Error(data.error || ('Account cleanup failed (' + res.status + ')'));
+  return data;
+}
+
+/* Figures out which auth accounts should be deleted alongside a students_master
+   row: the linked student account (if any), and any guardian whose ONLY ward
+   is this one (checked across both guardian_students and guardian_master_links). */
+async function resolveAccountsToDelete(student){
+  var result = { studentAccountId: null, guardianIds: [] };
+
+  var sres = await supabaseClient.from('students').select('id').eq('master_token', student.token).maybeSingle();
+  if(sres.error || !sres.data) return result;
+  result.studentAccountId = sres.data.id;
+
+  var gres = await supabaseClient.from('guardian_students').select('guardian_id').eq('student_id', result.studentAccountId);
+  if(gres.error || !gres.data || !gres.data.length) return result;
+
+  var guardianIds = gres.data.map(function(r){ return r.guardian_id; });
+
+  for(var i = 0; i < guardianIds.length; i++){
+    var gid = guardianIds[i];
+    var otherLinked = await supabaseClient.from('guardian_students')
+      .select('student_id', { count: 'exact', head: true })
+      .eq('guardian_id', gid).neq('student_id', result.studentAccountId);
+    var otherMaster = await supabaseClient.from('guardian_master_links')
+      .select('master_token', { count: 'exact', head: true })
+      .eq('guardian_id', gid);
+    var otherCount = (otherLinked.count || 0) + (otherMaster.count || 0);
+    if(otherCount === 0) result.guardianIds.push(gid);
+  }
+  return result;
+}
+
 var AVATAR_PLACEHOLDER_MALE = 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairShortCurly&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerSweater&eyeType=Happy&eyebrowType=Default&mouthType=Smile&skinColor=Light';
 var AVATAR_PLACEHOLDER_FEMALE = 'https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight2&hairColor=BrownDark&clotheType=BlazerSweater&eyeType=Happy&mouthType=Smile&skinColor=Light&facialHairType=Blank&accessoriesType=Blank';
 
@@ -1486,40 +1531,54 @@ studentDeleteBtn.addEventListener('click', function(){
 document.getElementById('delete-cancel').addEventListener('click', function(){ sheetDelete.classList.remove('show'); });
 sheetDelete.addEventListener('click', function(e){ if(e.target === sheetDelete){ sheetDelete.classList.remove('show'); } });
 
-document.getElementById('delete-confirm').addEventListener('click', function(){
+document.getElementById('delete-confirm').addEventListener('click', async function(){
   var student = state.activeStudent;
   if(!student) return;
 
   var btn = document.getElementById('delete-confirm');
   btn.disabled = true; btn.textContent = 'Deleting…';
 
-  supabaseClient.from('students_master').delete().eq('id', student.id).then(function(res){
-    btn.disabled = false; btn.textContent = 'Delete';
-    sheetDelete.classList.remove('show');
-
-    if(res.error){
-      toast('Delete failed: ' + res.error.message, true);
-      return;
-    }
-
-    sheetStudent.classList.remove('show');
-    state.students = state.students.filter(function(s){ return s.id !== student.id; });
-    if(state.totalCount !== null) state.totalCount -= 1;
-    var card = listEl.querySelector('.student-card[data-id="' + student.id + '"]');
-    if(card) card.remove();
-    placeholderEl.style.display = state.students.length === 0 ? 'flex' : 'none';
-    renderCount();
-    toast('Student record deleted.');
-    state.activeStudent = null;
-    resetPhotoState();
-
-    /* The row is already gone — now clean up its picture in R2, if it had one. */
-    if(student.profile_pic_key){
-      callProfilePictureFn('delete-object', { key: student.profile_pic_key }).catch(function(err){
-        console.warn('Could not clean up profile picture for deleted student:', err);
-      });
-    }
+  var accounts = await resolveAccountsToDelete(student).catch(function(err){
+    console.warn('Could not resolve linked accounts:', err);
+    return { studentAccountId: null, guardianIds: [] };
   });
+
+  var res = await supabaseClient.from('students_master').delete().eq('id', student.id);
+  btn.disabled = false; btn.textContent = 'Delete';
+  sheetDelete.classList.remove('show');
+
+  if(res.error){
+    toast('Delete failed: ' + res.error.message, true);
+    return;
+  }
+
+  sheetStudent.classList.remove('show');
+  state.students = state.students.filter(function(s){ return s.id !== student.id; });
+  if(state.totalCount !== null) state.totalCount -= 1;
+  var card = listEl.querySelector('.student-card[data-id="' + student.id + '"]');
+  if(card) card.remove();
+  placeholderEl.style.display = state.students.length === 0 ? 'flex' : 'none';
+  renderCount();
+  toast('Student record deleted.');
+  state.activeStudent = null;
+  resetPhotoState();
+
+  if(student.profile_pic_key){
+    callProfilePictureFn('delete-object', { key: student.profile_pic_key }).catch(function(err){
+      console.warn('Could not clean up profile picture for deleted student:', err);
+    });
+  }
+
+  var uuidsToDelete = accounts.studentAccountId
+    ? [accounts.studentAccountId].concat(accounts.guardianIds)
+    : accounts.guardianIds;
+
+  if(uuidsToDelete.length){
+    deleteAuthAccounts(uuidsToDelete).catch(function(err){
+      console.warn('Could not delete linked auth account(s):', err);
+      toast('Student record deleted, but linked account cleanup failed.', true);
+    });
+  }
 });
 
 /* =========================================================
