@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Registry · Backend Blueprint</title>
+<meta name="color-scheme" content="light dark" />
+
+<!-- Supabase JS client (pinned — same version as index.html, same localStorage
+     session key, so an admin already signed in on the Registry page is
+     already signed in here too; no separate login needed). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<!-- Prism.js (free, MIT) for VIEW-mode syntax highlighting only.
+     Pinned version, loaded from cdnjs. Core + SQL + TypeScript + line-numbers. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================================
+   Same design tokens as index.html, so this page feels like one product.
+============================================================================ */
+:root{
+  color-scheme: light dark;
+  --ink-950:#0d1220; --ink-900:#121a2e; --ink-800:#1a2440; --ink-700:#243154; --ink-600:#334170;
+  --paper-50:#faf7f0; --paper-100:#f3ecdc; --paper-200:#e7dcc1;
+  --brass-500:#c9962f; --brass-400:#d9ab52; --brass-300:#e7c585;
+  --ok-500:#4f9d69; --warn-500:#c97a3a; --danger-500:#c1473f;
+  --bg: var(--paper-50); --surface:#ffffff; --surface-2: var(--paper-100);
+  --border:#e3d9c4; --text:#211c12; --text-dim:#6b6252; --accent: var(--brass-500); --accent-contrast:#1c1206;
+  --shadow: 0 1px 2px rgba(30,20,0,.06), 0 8px 24px -12px rgba(30,20,0,.18);
+  --radius-sm:10px; --radius-md:16px; --radius-lg:22px;
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg: var(--ink-950); --surface: var(--ink-900); --surface-2: var(--ink-800);
+    --border:#2a3760; --text:#f1ede0; --text-dim:#93a0c2; --accent: var(--brass-400); --accent-contrast:#1c1206;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg: var(--ink-950); --surface: var(--ink-900); --surface-2: var(--ink-800);
+  --border:#2a3760; --text:#f1ede0; --text-dim:#93a0c2; --accent: var(--brass-400); --accent-contrast:#1c1206;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-top:var(--safe-t); padding-bottom:var(--safe-b);
+}
+h1,h2,h3,.serif{ font-family:'Fraunces',Georgia,serif; }
+button{ font-family:inherit; } input,select,textarea{ font-family:inherit; }
+
+.screen{ min-height:100%; display:flex; flex-direction:column; }
+.hidden{ display:none !important; }
+
+/* ---------- AUTH (identical pattern to index.html) ---------- */
+#authScreen{ align-items:center; justify-content:center; padding:32px 20px;
+  background: radial-gradient(1200px 500px at 50% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%), var(--bg); }
+.auth-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:32px 26px 28px; box-shadow:var(--shadow); }
+.mark{ width:46px; height:46px; margin-bottom:18px; color:var(--accent); }
+.auth-card h1{ font-size:1.5rem; margin:0 0 4px; font-weight:600; letter-spacing:-.01em; }
+.auth-card p.sub{ margin:0 0 22px; color:var(--text-dim); font-size:.92rem; line-height:1.5; }
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:.78rem; color:var(--text-dim); margin-bottom:6px; font-weight:500; }
+.field input[type="email"]{ width:100%; padding:13px 14px; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:var(--surface-2); color:var(--text); font-size:.98rem; outline:none; }
+.field input[type="email"]:focus{ border-color:var(--accent); }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px 16px; border-radius:var(--radius-sm); border:none; cursor:pointer; font-weight:600; font-size:.96rem; transition:transform .08s ease, opacity .15s ease; }
+.btn:active{ transform:scale(.98); }
+.btn:disabled{ opacity:.5; cursor:not-allowed; }
+.btn-primary{ background:var(--accent); color:var(--accent-contrast); }
+.btn-outline{ background:transparent; border:1.5px solid var(--border); color:var(--text); }
+.btn-danger{ background:var(--danger-500); color:#fff; }
+.otp-row{ display:flex; gap:8px; justify-content:space-between; margin:6px 0 4px; }
+.otp-row input{ width:15%; aspect-ratio:1/1; text-align:center; font-size:1.3rem; font-weight:600; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:var(--surface-2); color:var(--text); outline:none; }
+.otp-row input:focus{ border-color:var(--accent); }
+.otp-meta{ display:flex; justify-content:space-between; align-items:center; margin:14px 0 18px; font-size:.82rem; color:var(--text-dim); }
+.otp-meta button{ background:none; border:none; color:var(--accent); font-weight:600; cursor:pointer; padding:0; font-size:.82rem; }
+.otp-meta button:disabled{ color:var(--text-dim); cursor:default; }
+.form-error{ color:var(--danger-500); font-size:.84rem; margin:-4px 0 12px; min-height:1.2em; }
+.form-hint{ color:var(--text-dim); font-size:.8rem; margin-top:14px; text-align:center; }
+@media (min-width:640px){ .otp-row input{ width:46px; } }
+
+/* ---------- APP SHELL ---------- */
+.topbar{ position:sticky; top:0; z-index:10; padding:calc(14px + var(--safe-t)) 18px 12px;
+  background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); }
+.topbar-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.topbar-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+.topbar h1{ font-size:1.25rem; margin:0; font-weight:600; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.topbar .count{ font-size:.76rem; color:var(--text-dim); font-weight:500; margin-top:2px; }
+.icon-btn{ width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:11px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; flex-shrink:0; }
+.icon-btn svg{ width:18px; height:18px; }
+.topbar-actions{ display:flex; gap:8px; flex-shrink:0; }
+
+.scope-switch{ display:flex; gap:6px; margin-top:12px; }
+.scope-btn{ flex:1; padding:10px 10px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); color:var(--text-dim); font-weight:700; font-size:.82rem; cursor:pointer; }
+.scope-btn.active{ background:var(--accent); color:var(--accent-contrast); border-color:var(--accent); }
+
+.client-picker{ margin-top:10px; }
+.client-picker select{ width:100%; padding:11px 12px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:.9rem; }
+
+.subtabs{ display:flex; gap:6px; margin-top:10px; }
+.subtab-btn{ flex:1; padding:9px 10px; border-radius:999px; border:1.3px solid var(--border); background:transparent; color:var(--text-dim); font-weight:600; font-size:.8rem; cursor:pointer; }
+.subtab-btn.active{ background:var(--surface-2); color:var(--text); border-color:var(--text-dim); }
+
+.search-wrap{ position:relative; margin-top:10px; }
+.search-wrap svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-dim); }
+.search-wrap input{ width:100%; padding:11px 14px 11px 38px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:.92rem; outline:none; }
+.search-wrap input:focus{ border-color:var(--accent); }
+
+.list{ padding:14px 14px calc(96px + var(--safe-b)); max-width:760px; margin:0 auto; width:100%; }
+
+.file-row{ display:flex; gap:12px; padding:13px 14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:9px; cursor:pointer; position:relative; overflow:hidden; }
+.file-row::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--type-color, var(--accent)); }
+.file-row .ftype-badge{ width:40px; height:40px; border-radius:11px; flex-shrink:0; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:.68rem; font-weight:800; color:var(--type-color, var(--accent)); border:1px solid var(--border); }
+.file-body{ flex:1; min-width:0; }
+.file-top{ display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+.file-top h3{ margin:0; font-size:.95rem; font-weight:600; font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.file-sub{ font-size:.78rem; color:var(--text-dim); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.file-meta{ display:flex; gap:8px; margin-top:7px; flex-wrap:wrap; }
+.tag{ font-size:.7rem; font-weight:600; padding:3px 8px; border-radius:999px; background:var(--surface-2); color:var(--text-dim); }
+
+.env-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:9px; }
+.env-key{ font-family:var(--mono); font-weight:700; font-size:.86rem; }
+.env-desc{ font-size:.76rem; color:var(--text-dim); margin-top:2px; }
+.env-val{ font-family:var(--mono); font-size:.8rem; color:var(--text-dim); margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.env-actions{ display:flex; gap:6px; flex-shrink:0; }
+.chip-btn{ padding:7px 10px; border-radius:9px; border:1.3px solid var(--border); background:var(--surface-2); color:var(--text); font-size:.74rem; font-weight:600; cursor:pointer; }
+
+.empty-state{ text-align:center; padding:60px 20px; color:var(--text-dim); }
+.empty-state svg{ width:48px; height:48px; margin-bottom:14px; color:var(--text-dim); opacity:.6; }
+.empty-state h3{ color:var(--text); margin:0 0 6px; }
+
+.fab{ position:fixed; right:20px; bottom:calc(20px + var(--safe-b)); z-index:20; width:58px; height:58px; border-radius:18px; border:none; cursor:pointer; background:var(--accent); color:var(--accent-contrast); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 24px -8px color-mix(in srgb, var(--accent) 70%, transparent); }
+.fab svg{ width:24px; height:24px; }
+
+/* ---------- FULLSCREEN FILE VIEWER / EDITOR ---------- */
+.file-screen{ position:fixed; inset:0; z-index:50; background:var(--bg); display:flex; flex-direction:column; transform:translateY(100%); transition:transform .22s ease; }
+.file-screen.open{ transform:translateY(0); }
+.file-screen-top{ position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:10px; padding:calc(12px + var(--safe-t)) 14px 12px; border-bottom:1px solid var(--border); background:var(--bg); }
+.file-screen-top .ft-name{ flex:1; min-width:0; font-family:var(--mono); font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.file-screen-body{ flex:1; overflow:auto; -webkit-overflow-scrolling:touch; }
+.file-screen-foot{ display:flex; gap:10px; padding:12px 14px calc(14px + var(--safe-b)); border-top:1px solid var(--border); background:var(--bg); }
+.file-screen-foot .btn{ flex:1; }
+
+/* view mode: Prism-highlighted, read-only */
+.view-pane{ padding:0; }
+.view-pane pre{ margin:0 !important; border-radius:0 !important; font-size:.82rem !important; line-height:1.55 !important; min-height:100%; font-family:var(--mono) !important; }
+.view-pane pre[class*="language-"]{ background:var(--surface-2) !important; }
+.view-meta-bar{ padding:12px 14px; display:flex; gap:8px; flex-wrap:wrap; border-bottom:1px solid var(--border); }
+
+/* edit mode: plain textarea, deliberately boring so mobile typing never glitches */
+.edit-pane{ height:100%; display:flex; flex-direction:column; }
+.edit-meta{ padding:12px 14px; display:flex; flex-direction:column; gap:10px; border-bottom:1px solid var(--border); }
+.edit-meta .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.field-sm label{ display:block; font-size:.74rem; color:var(--text-dim); margin-bottom:5px; font-weight:500; }
+.field-sm input, .field-sm select, .field-sm textarea{ width:100%; padding:11px 12px; border-radius:11px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:1rem; outline:none; }
+.field-sm input:focus, .field-sm select:focus, .field-sm textarea:focus{ border-color:var(--accent); }
+#f_content{
+  flex:1; width:100%; resize:none; border:none; outline:none; padding:14px;
+  background:var(--surface-2); color:var(--text);
+  font-family:var(--mono); font-size:16px; /* 16px prevents iOS auto-zoom-on-focus */
+  line-height:1.6; white-space:pre; tab-size:2;
+}
+#env_v{ font-family:var(--mono); font-size:16px; }
+
+.err{ color:var(--danger-500); font-size:.72rem; margin-top:4px; min-height:1em; }
+
+/* ---------- SHEET (used for create/edit metadata on small forms) ---------- */
+.sheet-overlay{ position:fixed; inset:0; z-index:55; background:rgba(10,10,10,.45); display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+.sheet-overlay.open{ opacity:1; pointer-events:auto; }
+.sheet{ width:100%; max-width:560px; max-height:92vh; background:var(--bg); border-radius:24px 24px 0 0; overflow-y:auto; -webkit-overflow-scrolling:touch; transform:translateY(16px); transition:transform .22s ease; padding-bottom:calc(24px + var(--safe-b)); border:1px solid var(--border); border-bottom:none; }
+.sheet-overlay.open .sheet{ transform:translateY(0); }
+.sheet-handle{ width:36px; height:4px; background:var(--border); border-radius:99px; margin:10px auto 2px; }
+.sheet-head{ display:flex; align-items:center; justify-content:space-between; padding:12px 20px 14px; position:sticky; top:0; background:var(--bg); z-index:2; border-bottom:1px solid var(--border); }
+.sheet-head h2{ font-size:1.1rem; margin:0; font-weight:600; }
+.sheet-body{ padding:18px 20px 6px; }
+.sheet-actions{ display:flex; gap:10px; padding:20px 20px 4px; }
+.confirm-card{ padding:22px 20px 6px; text-align:center; }
+.confirm-card svg{ width:40px; height:40px; color:var(--danger-500); margin-bottom:10px; }
+.confirm-card h3{ margin:0 0 6px; }
+.confirm-card p{ color:var(--text-dim); font-size:.9rem; margin:0 0 18px; }
+
+/* ---------- TOAST ---------- */
+#toastHost{ position:fixed; top:calc(16px + var(--safe-t)); left:0; right:0; z-index:90; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+.toast{ background:var(--text); color:var(--bg); padding:10px 18px; border-radius:99px; font-size:.85rem; font-weight:500; box-shadow:0 8px 20px -6px rgba(0,0,0,.3); opacity:0; transform:translateY(-10px); transition:all .25s ease; }
+.toast.show{ opacity:1; transform:translateY(0); }
+.toast.err{ background:var(--danger-500); color:#fff; }
+
+.spinner{ width:16px; height:16px; border-radius:50%; border:2.5px solid currentColor; border-right-color:transparent; animation:spin .7s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+#bootScreen{ align-items:center; justify-content:center; }
+</style>
+</head>
+<body>
+
+<div id="toastHost"></div>
+
+<div id="bootScreen" class="screen">
+  <div class="spinner" style="width:28px;height:28px;border-width:3px;color:var(--accent);"></div>
+</div>
+
+<!-- =================== AUTH SCREEN =================== -->
+<div id="authScreen" class="screen hidden">
+  <div class="auth-card">
+    <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 18L24 8l16 10v4L24 12 8 22z" fill="currentColor"/>
+      <path d="M12 21v15a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V21" stroke="currentColor" stroke-width="2.4" fill="none"/>
+      <path d="M20 38v-9h8v9" stroke="currentColor" stroke-width="2.4" fill="none"/>
+    </svg>
+    <div id="stepEmail">
+      <h1>Backend Blueprint</h1>
+      <p class="sub">Sign in with your admin email. We'll send a one-time code — no password needed.</p>
+      <div class="field">
+        <label for="emailInput">Work email</label>
+        <input type="email" id="emailInput" placeholder="you@yourbusiness.com" autocomplete="email" />
+      </div>
+      <div class="form-error" id="emailError"></div>
+      <button class="btn btn-primary" id="sendOtpBtn"><span>Send code</span></button>
+      <p class="form-hint"><a href="index.html" style="color:var(--text-dim);">&larr; Back to Registry</a></p>
+    </div>
+    <div id="stepOtp" class="hidden">
+      <h1>Enter your code</h1>
+      <p class="sub">We sent a 6-digit code to <strong id="otpEmailLabel"></strong>. It expires in 5 minutes.</p>
+      <div class="otp-row" id="otpRow">
+        <input inputmode="numeric" maxlength="1" /><input inputmode="numeric" maxlength="1" />
+        <input inputmode="numeric" maxlength="1" /><input inputmode="numeric" maxlength="1" />
+        <input inputmode="numeric" maxlength="1" /><input inputmode="numeric" maxlength="1" />
+      </div>
+      <div class="form-error" id="otpError"></div>
+      <div class="otp-meta">
+        <span id="expiryLabel">Expires in 5:00</span>
+        <button id="resendBtn" disabled>Resend code (60s)</button>
+      </div>
+      <button class="btn btn-primary" id="verifyOtpBtn"><span>Verify &amp; sign in</span></button>
+      <p class="form-hint"><button id="backToEmailBtn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:.85rem;">&larr; Use a different email</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- =================== APP SCREEN =================== -->
+<div id="appScreen" class="screen hidden">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-left">
+        <a href="index.html" class="icon-btn" title="Back to Registry">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+          <h1>Backend Blueprint</h1>
+          <div class="count" id="countLabel">—</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="themeToggle" title="Toggle theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+        </button>
+        <button class="icon-btn" id="logoutBtn" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="scope-switch">
+      <button class="scope-btn active" data-scope="common">Common (all clients)</button>
+      <button class="scope-btn" data-scope="client">Client-specific</button>
+    </div>
+    <div class="client-picker hidden" id="clientPicker">
+      <select id="clientSelect"><option value="">Select a client…</option></select>
+    </div>
+
+    <div class="subtabs">
+      <button class="subtab-btn active" data-sub="files">Files</button>
+      <button class="subtab-btn" data-sub="env">Env variables</button>
+    </div>
+
+    <div class="search-wrap" id="fileSearchWrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="Search file name…" />
+    </div>
+  </div>
+
+  <div class="list">
+    <div id="filesListHost"></div>
+    <div id="envListHost" class="hidden"></div>
+  </div>
+
+  <button class="fab" id="addBtn" title="Add">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- =================== FULLSCREEN FILE VIEW/EDIT =================== -->
+<div class="file-screen" id="fileScreen">
+  <div class="file-screen-top">
+    <button class="icon-btn" id="fileScreenClose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="ft-name" id="ftName">Untitled</div>
+    <button class="icon-btn" id="fileScreenCopy" title="Copy content">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+    </button>
+  </div>
+
+  <!-- VIEW MODE -->
+  <div class="file-screen-body view-pane hidden" id="viewPane">
+    <div class="view-meta-bar" id="viewMetaBar"></div>
+    <pre class="line-numbers"><code id="viewCode" class="language-sql"></code></pre>
+  </div>
+
+  <!-- EDIT MODE -->
+  <div class="file-screen-body edit-pane hidden" id="editPane">
+    <div class="edit-meta">
+      <div class="field-sm">
+        <label>File path / name *</label>
+        <input id="f_file_path" placeholder="e.g. 01_schema.sql or functions/webhook.ts" autocapitalize="off" autocorrect="off" spellcheck="false" />
+        <div class="err" id="e_file_path"></div>
+      </div>
+      <div class="row2">
+        <div class="field-sm">
+          <label>Type</label>
+          <select id="f_file_type">
+            <option value="sql">SQL</option>
+            <option value="edge_function">Edge Function (.ts)</option>
+            <option value="markdown">Markdown / notes</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field-sm">
+          <label>Description</label>
+          <input id="f_description" placeholder="optional" />
+        </div>
+      </div>
+    </div>
+    <textarea id="f_content" placeholder="Paste or write the file content here…" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" wrap="off"></textarea>
+  </div>
+
+  <div class="file-screen-foot">
+    <button class="btn btn-outline hidden" id="toEditBtn">Edit</button>
+    <button class="btn btn-danger hidden" id="deleteFileBtn" style="flex:.6;">Delete</button>
+    <button class="btn btn-primary hidden" id="saveFileBtn"><span>Save file</span></button>
+  </div>
+</div>
+
+<!-- =================== ENV VAR SHEET =================== -->
+<div class="sheet-overlay" id="envOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h2 id="envFormTitle">Add environment variable</h2>
+      <button class="icon-btn" id="envCloseBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <form id="envForm" novalidate>
+        <input type="hidden" id="env_id" />
+        <div class="field-sm" style="margin-bottom:12px;">
+          <label>Key *</label>
+          <input id="env_k" placeholder="e.g. SUPABASE_SERVICE_ROLE_KEY" autocapitalize="off" autocorrect="off" spellcheck="false" style="font-family:var(--mono);" />
+          <div class="err" id="e_env_k"></div>
+        </div>
+        <div class="field-sm" style="margin-bottom:12px;">
+          <label>Value *</label>
+          <textarea id="env_v" placeholder="value" autocapitalize="off" autocorrect="off" spellcheck="false" style="min-height:80px;"></textarea>
+          <div class="err" id="e_env_v"></div>
+        </div>
+        <div class="field-sm">
+          <label>Description</label>
+          <input id="env_d" placeholder="optional" />
+        </div>
+        <div class="sheet-actions">
+          <button type="button" class="btn btn-outline" id="envCancelBtn" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="envSaveBtn" style="flex:1.4;"><span>Save</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- =================== DELETE CONFIRM (env) =================== -->
+<div class="sheet-overlay" id="envDeleteOverlay">
+  <div class="sheet" style="max-width:380px;border-radius:24px;margin-bottom:0;">
+    <div class="confirm-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      <h3>Delete this variable?</h3>
+      <p>This removes <strong id="envDeleteTargetName"></strong>. This can't be undone.</p>
+      <div class="sheet-actions" style="padding:0 0 18px;">
+        <button class="btn btn-outline" id="envDeleteCancelBtn" style="flex:1;">Cancel</button>
+        <button class="btn btn-danger" id="envDeleteConfirmBtn" style="flex:1;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== DELETE CONFIRM (file) =================== -->
+<div class="sheet-overlay" id="fileDeleteOverlay">
+  <div class="sheet" style="max-width:380px;border-radius:24px;margin-bottom:0;">
+    <div class="confirm-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      <h3>Delete this file?</h3>
+      <p>This permanently removes <strong id="fileDeleteTargetName"></strong>. This can't be undone.</p>
+      <div class="sheet-actions" style="padding:0 0 18px;">
+        <button class="btn btn-outline" id="fileDeleteCancelBtn" style="flex:1;">Cancel</button>
+        <button class="btn btn-danger" id="fileDeleteConfirmBtn" style="flex:1;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+  CONFIG — same control-plane project as index.html.
+============================================================================ */
+const SUPABASE_URL = "https://xwagmgbucvsporjkpoqr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_LHUDkZmuh53STL3HvbEanw_ebweG-FS";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ---------------------------------------------------------------- THEME --- */
+const root = document.documentElement;
+(function initTheme(){
+  const saved = localStorage.getItem('registry-theme'); // shared key with index.html
+  if (saved) root.setAttribute('data-theme', saved);
+})();
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const current = root.getAttribute('data-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = current === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('registry-theme', next);
+});
+
+/* ---------------------------------------------------------------- TOAST --- */
+function toast(msg, isErr=false){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.textContent = msg;
+  host.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); }, 3200);
+}
+function showScreen(id){
+  ['bootScreen','authScreen','appScreen'].forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
+}
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ------------------------------------------------------------- AUTH FLOW -- */
+let pendingEmail = '';
+let otpExpiryTimer = null, resendCooldownTimer = null;
+const OTP_TTL_SECONDS = 300, RESEND_COOLDOWN_SECONDS = 60;
+const emailInput = document.getElementById('emailInput');
+const emailError = document.getElementById('emailError');
+const sendOtpBtn = document.getElementById('sendOtpBtn');
+const stepEmail = document.getElementById('stepEmail');
+const stepOtp = document.getElementById('stepOtp');
+const otpInputs = [...document.querySelectorAll('#otpRow input')];
+const otpError = document.getElementById('otpError');
+const otpEmailLabel = document.getElementById('otpEmailLabel');
+const expiryLabel = document.getElementById('expiryLabel');
+const resendBtn = document.getElementById('resendBtn');
+const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+async function sendOtp(isResend=false){
+  const email = emailInput.value.trim();
+  if (!isValidEmail(email)){ emailError.textContent = 'Enter a valid email address.'; return; }
+  emailError.textContent = ''; pendingEmail = email;
+  const btn = isResend ? resendBtn : sendOtpBtn;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  if (!isResend) sendOtpBtn.innerHTML = '<span class="spinner"></span>';
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+  if (!isResend) sendOtpBtn.innerHTML = originalHtml;
+  if (error){ toast(error.message || 'Could not send code.', true); if (!isResend) sendOtpBtn.disabled = false; else startResendCooldown(); return; }
+  otpEmailLabel.textContent = pendingEmail;
+  otpInputs.forEach(i => i.value = '');
+  otpError.textContent = '';
+  stepEmail.classList.add('hidden'); stepOtp.classList.remove('hidden');
+  otpInputs[0].focus();
+  startExpiryCountdown(); startResendCooldown();
+  toast(isResend ? 'New code sent.' : 'Code sent — check your inbox.');
+}
+function startExpiryCountdown(){
+  clearInterval(otpExpiryTimer); let remaining = OTP_TTL_SECONDS;
+  const render = () => { const m=Math.floor(remaining/60), s=remaining%60;
+    expiryLabel.textContent = remaining>0 ? `Expires in ${m}:${String(s).padStart(2,'0')}` : 'Code expired — request a new one';
+    expiryLabel.style.color = remaining<=30 ? 'var(--danger-500)' : 'var(--text-dim)'; };
+  render();
+  otpExpiryTimer = setInterval(() => { remaining -= 1; render(); if (remaining<=0) clearInterval(otpExpiryTimer); }, 1000);
+}
+function startResendCooldown(){
+  clearInterval(resendCooldownTimer); let remaining = RESEND_COOLDOWN_SECONDS;
+  resendBtn.disabled = true;
+  const render = () => { resendBtn.textContent = `Resend code (${remaining}s)`; };
+  render();
+  resendCooldownTimer = setInterval(() => { remaining -= 1;
+    if (remaining<=0){ clearInterval(resendCooldownTimer); resendBtn.disabled=false; resendBtn.textContent='Resend code'; } else render(); }, 1000);
+}
+sendOtpBtn.addEventListener('click', () => sendOtp(false));
+emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendOtp(false); });
+resendBtn.addEventListener('click', () => sendOtp(true));
+document.getElementById('backToEmailBtn').addEventListener('click', () => {
+  clearInterval(otpExpiryTimer); clearInterval(resendCooldownTimer);
+  stepOtp.classList.add('hidden'); stepEmail.classList.remove('hidden'); sendOtpBtn.disabled = false;
+});
+otpInputs.forEach((input, idx) => {
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/[^0-9]/g, '').slice(0,1);
+    if (input.value && idx < otpInputs.length - 1) otpInputs[idx+1].focus();
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Backspace' && !input.value && idx > 0) otpInputs[idx-1].focus(); });
+  input.addEventListener('paste', e => {
+    e.preventDefault();
+    const digits = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g,'').slice(0,6).split('');
+    digits.forEach((d,i) => { if (otpInputs[i]) otpInputs[i].value = d; });
+    (otpInputs[digits.length] || otpInputs[otpInputs.length-1]).focus();
+  });
+});
+async function verifyOtp(){
+  const code = otpInputs.map(i => i.value).join('');
+  if (code.length !== 6){ otpError.textContent = 'Enter all 6 digits.'; return; }
+  otpError.textContent = '';
+  const original = verifyOtpBtn.innerHTML; verifyOtpBtn.disabled = true; verifyOtpBtn.innerHTML = '<span class="spinner"></span>';
+  const { error } = await sb.auth.verifyOtp({ email: pendingEmail, token: code, type: 'email' });
+  verifyOtpBtn.disabled = false; verifyOtpBtn.innerHTML = original;
+  if (error){ otpError.textContent = error.message || 'Invalid or expired code.'; return; }
+  clearInterval(otpExpiryTimer); clearInterval(resendCooldownTimer);
+  await afterSignIn();
+}
+verifyOtpBtn.addEventListener('click', verifyOtp);
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  showScreen('authScreen'); stepOtp.classList.add('hidden'); stepEmail.classList.remove('hidden');
+  emailInput.value = ''; sendOtpBtn.disabled = false;
+});
+
+async function afterSignIn(){
+  showScreen('bootScreen');
+  const { data, error } = await sb.rpc('is_admin');
+  if (error || data !== true){
+    toast('This account is not registered as an admin.', true);
+    await sb.auth.signOut();
+    showScreen('authScreen');
+    return;
+  }
+  await loadInstitutionsForPicker();
+  await refreshCurrentList();
+  showScreen('appScreen');
+}
+(async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (session){ await afterSignIn(); } else { showScreen('authScreen'); }
+})();
+
+/* ============================================================================
+   STATE
+============================================================================ */
+let scope = 'common';            // 'common' | 'client'
+let currentInstitutionId = null; // bigint or null
+let subTab = 'files';            // 'files' | 'env'
+let searchTerm = '';
+let filesCache = [];
+let envCache = [];
+let institutionsList = [];
+
+document.querySelectorAll('.scope-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scope-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    scope = btn.dataset.scope;
+    document.getElementById('clientPicker').classList.toggle('hidden', scope !== 'client');
+    if (scope === 'client' && !currentInstitutionId && institutionsList.length){
+      currentInstitutionId = institutionsList[0].id;
+      document.getElementById('clientSelect').value = String(currentInstitutionId);
+    }
+    refreshCurrentList();
+  });
+});
+document.getElementById('clientSelect').addEventListener('change', e => {
+  currentInstitutionId = e.target.value ? Number(e.target.value) : null;
+  refreshCurrentList();
+});
+document.querySelectorAll('.subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    subTab = btn.dataset.sub;
+    document.getElementById('filesListHost').classList.toggle('hidden', subTab !== 'files');
+    document.getElementById('envListHost').classList.toggle('hidden', subTab !== 'env');
+    document.getElementById('fileSearchWrap').classList.toggle('hidden', subTab !== 'files');
+    refreshCurrentList();
+  });
+});
+document.getElementById('searchInput').addEventListener('input', e => { searchTerm = e.target.value; renderFiles(); });
+
+async function loadInstitutionsForPicker(){
+  const { data, error } = await sb.from('institutions').select('id, full_name').order('full_name', { ascending: true });
+  if (error){ toast('Could not load clients: ' + error.message, true); return; }
+  institutionsList = data || [];
+  const sel = document.getElementById('clientSelect');
+  sel.innerHTML = '<option value="">Select a client…</option>' +
+    institutionsList.map(i => `<option value="${i.id}">${escapeHtml(i.full_name)}</option>`).join('');
+}
+
+async function refreshCurrentList(){
+  if (scope === 'client' && !currentInstitutionId){
+    filesCache = []; envCache = [];
+    document.getElementById('countLabel').textContent = 'Pick a client to continue';
+    renderFiles(); renderEnv();
+    return;
+  }
+  if (subTab === 'files') await loadFiles(); else await loadEnv();
+}
+
+/* ============================================================================
+   FILES
+============================================================================ */
+const TYPE_COLOR = { sql: 'var(--accent)', edge_function: 'var(--ok-500)', markdown: 'var(--warn-500)', other: 'var(--text-dim)' };
+const TYPE_LABEL = { sql: 'SQL', edge_function: 'EDGE', markdown: 'MD', other: 'FILE' };
+
+async function loadFiles(){
+  let q = sb.from('backend_files').select('*').eq('scope', scope).order('file_path', { ascending: true });
+  q = scope === 'client' ? q.eq('institution_id', currentInstitutionId) : q.is('institution_id', null);
+  const { data, error } = await q;
+  if (error){ toast('Could not load files: ' + error.message, true); return; }
+  filesCache = data || [];
+  document.getElementById('countLabel').textContent = `${filesCache.length} file${filesCache.length===1?'':'s'} · ${scope === 'common' ? 'common' : (institutionsList.find(i=>i.id===currentInstitutionId)?.full_name || 'client')}`;
+  renderFiles();
+}
+
+function renderFiles(){
+  const host = document.getElementById('filesListHost');
+  let items = filesCache;
+  if (searchTerm.trim()){
+    const q = searchTerm.trim().toLowerCase();
+    items = items.filter(f => f.file_path.toLowerCase().includes(q));
+  }
+  if (scope === 'client' && !currentInstitutionId){
+    host.innerHTML = `<div class="empty-state"><h3>Pick a client</h3><p>Select a client above to see their backend files.</p></div>`;
+    return;
+  }
+  if (!items.length){
+    host.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>
+        <h3>No files yet</h3>
+        <p>Tap + to add the first ${scope === 'common' ? 'shared' : 'client-specific'} SQL or Edge Function file.</p>
+      </div>`;
+    return;
+  }
+  host.innerHTML = items.map(f => `
+    <div class="file-row" style="--type-color:${TYPE_COLOR[f.file_type] || 'var(--accent)'}" data-id="${f.id}">
+      <div class="ftype-badge">${TYPE_LABEL[f.file_type] || 'FILE'}</div>
+      <div class="file-body">
+        <div class="file-top"><h3>${escapeHtml(f.file_path)}</h3></div>
+        <div class="file-sub">${escapeHtml(f.description || '')}</div>
+        <div class="file-meta">
+          <span class="tag">${(f.content||'').length.toLocaleString()} chars</span>
+          <span class="tag">updated ${new Date(f.updated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>
+        </div>
+      </div>
+    </div>`).join('');
+  host.querySelectorAll('.file-row').forEach(row => row.addEventListener('click', () => openFileView(Number(row.dataset.id))));
+}
+
+/* ------------------------- fullscreen view / edit ------------------------- */
+const fileScreen = document.getElementById('fileScreen');
+const viewPane = document.getElementById('viewPane');
+const editPane = document.getElementById('editPane');
+const ftName = document.getElementById('ftName');
+const toEditBtn = document.getElementById('toEditBtn');
+const saveFileBtn = document.getElementById('saveFileBtn');
+const deleteFileBtn = document.getElementById('deleteFileBtn');
+let activeFile = null; // record being viewed/edited, or null = new
+
+function langForType(type, path){
+  if (type === 'edge_function') return 'typescript';
+  if (type === 'markdown') return 'markdown';
+  if (type === 'sql') return 'sql';
+  if (/\.ts$/i.test(path||'')) return 'typescript';
+  if (/\.sql$/i.test(path||'')) return 'sql';
+  return 'markup';
+}
+
+function openFileView(id){
+  activeFile = filesCache.find(f => f.id === id) || null;
+  if (!activeFile) return;
+  ftName.textContent = activeFile.file_path;
+  document.getElementById('viewMetaBar').innerHTML = `
+    <span class="tag">${TYPE_LABEL[activeFile.file_type] || 'FILE'}</span>
+    <span class="tag">${scope === 'common' ? 'common' : 'client-specific'}</span>
+    ${activeFile.description ? `<span class="tag">${escapeHtml(activeFile.description)}</span>` : ''}
+  `;
+  const codeEl = document.getElementById('viewCode');
+  codeEl.className = 'language-' + langForType(activeFile.file_type, activeFile.file_path);
+  codeEl.textContent = activeFile.content || '';
+  viewPane.classList.remove('hidden'); editPane.classList.add('hidden');
+  toEditBtn.classList.remove('hidden'); saveFileBtn.classList.add('hidden'); deleteFileBtn.classList.remove('hidden');
+  fileScreen.classList.add('open');
+  requestAnimationFrame(() => { if (window.Prism) Prism.highlightElement(codeEl); });
+}
+
+function openFileEdit(id){
+  activeFile = id != null ? filesCache.find(f => f.id === id) : null;
+  ftName.textContent = activeFile ? activeFile.file_path : 'New file';
+  document.getElementById('f_file_path').value = activeFile ? activeFile.file_path : '';
+  document.getElementById('f_file_type').value = activeFile ? activeFile.file_type : 'sql';
+  document.getElementById('f_description').value = activeFile ? (activeFile.description || '') : '';
+  document.getElementById('f_content').value = activeFile ? (activeFile.content || '') : '';
+  document.getElementById('e_file_path').textContent = '';
+  viewPane.classList.add('hidden'); editPane.classList.remove('hidden');
+  toEditBtn.classList.add('hidden'); saveFileBtn.classList.remove('hidden');
+  deleteFileBtn.classList.toggle('hidden', !activeFile);
+  fileScreen.classList.add('open');
+}
+
+document.getElementById('fileScreenClose').addEventListener('click', () => { fileScreen.classList.remove('open'); activeFile = null; });
+document.getElementById('fileScreenCopy').addEventListener('click', async () => {
+  const text = !editPane.classList.contains('hidden') ? document.getElementById('f_content').value : (activeFile ? activeFile.content : '');
+  await copyText(text);
+});
+toEditBtn.addEventListener('click', () => openFileEdit(activeFile ? activeFile.id : null));
+document.getElementById('addBtn').addEventListener('click', () => {
+  if (subTab === 'files') openFileEdit(null); else openEnvForm(null);
+});
+
+async function copyText(text){
+  try{
+    if (navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    toast('Copied to clipboard.');
+  } catch(e){ toast('Could not copy — select and copy manually.', true); }
+}
+
+saveFileBtn.addEventListener('click', async () => {
+  const file_path = document.getElementById('f_file_path').value.trim();
+  const file_type = document.getElementById('f_file_type').value;
+  const description = document.getElementById('f_description').value.trim() || null;
+  const content = document.getElementById('f_content').value;
+
+  if (!file_path){ document.getElementById('e_file_path').textContent = 'Required.'; return; }
+  if (scope === 'client' && !currentInstitutionId){ toast('Pick a client first.', true); return; }
+  document.getElementById('e_file_path').textContent = '';
+
+  const payload = {
+    scope, institution_id: scope === 'client' ? currentInstitutionId : null,
+    file_path, file_type, description, content
+  };
+
+  const original = saveFileBtn.innerHTML;
+  saveFileBtn.disabled = true; saveFileBtn.innerHTML = '<span class="spinner"></span>';
+  let error;
+  if (activeFile){
+    ({ error } = await sb.from('backend_files').update(payload).eq('id', activeFile.id));
+  } else {
+    ({ error } = await sb.from('backend_files').insert(payload));
+  }
+  saveFileBtn.disabled = false; saveFileBtn.innerHTML = original;
+
+  if (error){ toast(error.message || 'Could not save file.', true); return; }
+  toast(activeFile ? 'File updated.' : 'File created.');
+  fileScreen.classList.remove('open');
+  activeFile = null;
+  await loadFiles();
+});
+
+const fileDeleteOverlay = document.getElementById('fileDeleteOverlay');
+deleteFileBtn.addEventListener('click', () => {
+  if (!activeFile) return;
+  document.getElementById('fileDeleteTargetName').textContent = activeFile.file_path;
+  fileDeleteOverlay.classList.add('open');
+});
+document.getElementById('fileDeleteCancelBtn').addEventListener('click', () => fileDeleteOverlay.classList.remove('open'));
+fileDeleteOverlay.addEventListener('click', e => { if (e.target === fileDeleteOverlay) fileDeleteOverlay.classList.remove('open'); });
+document.getElementById('fileDeleteConfirmBtn').addEventListener('click', async () => {
+  if (!activeFile) return;
+  const btn = document.getElementById('fileDeleteConfirmBtn');
+  btn.disabled = true;
+  const { error } = await sb.from('backend_files').delete().eq('id', activeFile.id);
+  btn.disabled = false;
+  if (error){ toast(error.message || 'Could not delete.', true); return; }
+  fileDeleteOverlay.classList.remove('open');
+  fileScreen.classList.remove('open');
+  activeFile = null;
+  toast('File deleted.');
+  await loadFiles();
+});
+
+/* ============================================================================
+   ENVIRONMENT VARIABLES
+============================================================================ */
+async function loadEnv(){
+  let q = sb.from('backend_env_vars').select('*').eq('scope', scope).order('key', { ascending: true });
+  q = scope === 'client' ? q.eq('institution_id', currentInstitutionId) : q.is('institution_id', null);
+  const { data, error } = await q;
+  if (error){ toast('Could not load env vars: ' + error.message, true); return; }
+  envCache = data || [];
+  document.getElementById('countLabel').textContent = `${envCache.length} variable${envCache.length===1?'':'s'} · ${scope === 'common' ? 'common' : (institutionsList.find(i=>i.id===currentInstitutionId)?.full_name || 'client')}`;
+  renderEnv();
+}
+
+function renderEnv(){
+  const host = document.getElementById('envListHost');
+  if (scope === 'client' && !currentInstitutionId){
+    host.innerHTML = `<div class="empty-state"><h3>Pick a client</h3><p>Select a client above to see their environment variables.</p></div>`;
+    return;
+  }
+  if (!envCache.length){
+    host.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+        <h3>No variables yet</h3>
+        <p>Tap + to store the first ${scope === 'common' ? 'shared' : 'client-specific'} variable.</p>
+      </div>`;
+    return;
+  }
+  host.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <button class="chip-btn" id="copyAllEnvBtn">Copy all as .env</button>
+    </div>
+  ` + envCache.map(v => `
+    <div class="env-row">
+      <div style="min-width:0;flex:1;">
+        <div class="env-key">${escapeHtml(v.key)}</div>
+        ${v.description ? `<div class="env-desc">${escapeHtml(v.description)}</div>` : ''}
+        <div class="env-val">${escapeHtml(v.value)}</div>
+      </div>
+      <div class="env-actions">
+        <button class="chip-btn" data-copy-id="${v.id}">Copy</button>
+        <button class="chip-btn" data-edit-id="${v.id}">Edit</button>
+      </div>
+    </div>`).join('');
+
+  host.querySelectorAll('[data-copy-id]').forEach(btn => btn.addEventListener('click', () => {
+    const rec = envCache.find(v => v.id === Number(btn.dataset.copyId));
+    if (rec) copyText(rec.value);
+  }));
+  host.querySelectorAll('[data-edit-id]').forEach(btn => btn.addEventListener('click', () => openEnvForm(Number(btn.dataset.editId))));
+  const copyAllBtn = document.getElementById('copyAllEnvBtn');
+  if (copyAllBtn) copyAllBtn.addEventListener('click', () => {
+    const text = envCache.map(v => `${v.key}=${v.value}`).join('\n');
+    copyText(text);
+  });
+}
+
+const envOverlay = document.getElementById('envOverlay');
+const envForm = document.getElementById('envForm');
+const envSaveBtn = document.getElementById('envSaveBtn');
+let activeEnv = null;
+
+function openEnvForm(id){
+  activeEnv = id != null ? envCache.find(v => v.id === id) : null;
+  document.getElementById('envFormTitle').textContent = activeEnv ? 'Edit variable' : 'Add environment variable';
+  document.getElementById('env_id').value = activeEnv ? activeEnv.id : '';
+  document.getElementById('env_k').value = activeEnv ? activeEnv.key : '';
+  document.getElementById('env_v').value = activeEnv ? activeEnv.value : '';
+  document.getElementById('env_d').value = activeEnv ? (activeEnv.description || '') : '';
+  document.getElementById('e_env_k').textContent = ''; document.getElementById('e_env_v').textContent = '';
+  envOverlay.classList.add('open');
+}
+document.getElementById('envCloseBtn').addEventListener('click', () => envOverlay.classList.remove('open'));
+document.getElementById('envCancelBtn').addEventListener('click', () => envOverlay.classList.remove('open'));
+envOverlay.addEventListener('click', e => { if (e.target === envOverlay) envOverlay.classList.remove('open'); });
+
+envForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const key = document.getElementById('env_k').value.trim();
+  const value = document.getElementById('env_v').value;
+  const description = document.getElementById('env_d').value.trim() || null;
+
+  let ok = true;
+  const setErr = (id, msg) => { document.getElementById(id).textContent = msg; if (msg) ok = false; };
+  setErr('e_env_k', key ? (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? '' : 'Letters, numbers, underscore — must not start with a digit.') : 'Required.');
+  setErr('e_env_v', value ? '' : 'Required.');
+  if (!ok) return;
+  if (scope === 'client' && !currentInstitutionId){ toast('Pick a client first.', true); return; }
+
+  const payload = { scope, institution_id: scope === 'client' ? currentInstitutionId : null, key, value, description };
+  const original = envSaveBtn.innerHTML;
+  envSaveBtn.disabled = true; envSaveBtn.innerHTML = '<span class="spinner"></span>';
+  let error;
+  if (activeEnv){
+    ({ error } = await sb.from('backend_env_vars').update(payload).eq('id', activeEnv.id));
+  } else {
+    ({ error } = await sb.from('backend_env_vars').insert(payload));
+  }
+  envSaveBtn.disabled = false; envSaveBtn.innerHTML = original;
+  if (error){ toast(error.message || 'Could not save variable.', true); return; }
+  toast(activeEnv ? 'Variable updated.' : 'Variable added.');
+  envOverlay.classList.remove('open');
+  await loadEnv();
+});
+
+// delete env var (triggered from edit sheet via a long-press-free ghost link)
+const envDeleteOverlay = document.getElementById('envDeleteOverlay');
+const envRemoveLink = document.createElement('button');
+envRemoveLink.type = 'button';
+envRemoveLink.textContent = 'Delete this variable';
+envRemoveLink.style.cssText = 'width:100%;background:none;border:none;cursor:pointer;color:var(--danger-500);font-size:.85rem;font-weight:600;padding:14px 20px 4px;display:none;';
+document.querySelector('#envForm .sheet-actions').insertAdjacentElement('afterend', envRemoveLink);
+envRemoveLink.addEventListener('click', () => {
+  if (!activeEnv) return;
+  document.getElementById('envDeleteTargetName').textContent = activeEnv.key;
+  envDeleteOverlay.classList.add('open');
+});
+const _origOpenEnvForm = openEnvForm;
+openEnvForm = function(id){ _origOpenEnvForm(id); envRemoveLink.style.display = id != null ? 'block' : 'none'; };
+
+document.getElementById('envDeleteCancelBtn').addEventListener('click', () => envDeleteOverlay.classList.remove('open'));
+envDeleteOverlay.addEventListener('click', e => { if (e.target === envDeleteOverlay) envDeleteOverlay.classList.remove('open'); });
+document.getElementById('envDeleteConfirmBtn').addEventListener('click', async () => {
+  if (!activeEnv) return;
+  const btn = document.getElementById('envDeleteConfirmBtn');
+  btn.disabled = true;
+  const { error } = await sb.from('backend_env_vars').delete().eq('id', activeEnv.id);
+  btn.disabled = false;
+  if (error){ toast(error.message || 'Could not delete.', true); return; }
+  envDeleteOverlay.classList.remove('open');
+  envOverlay.classList.remove('open');
+  activeEnv = null;
+  toast('Variable deleted.');
+  await loadEnv();
+});
+</script>
+</body>
+</html>
