@@ -806,6 +806,7 @@ async function resolveAccountsToDelete(student){
   if(gres.error || !gres.data || !gres.data.length) return result;
 
   var guardianIds = gres.data.map(function(r){ return r.guardian_id; });
+  var soleWardGuardians = [];
 
   for(var i = 0; i < guardianIds.length; i++){
     var gid = guardianIds[i];
@@ -816,8 +817,24 @@ async function resolveAccountsToDelete(student){
       .select('master_token', { count: 'exact', head: true })
       .eq('guardian_id', gid);
     var otherCount = (otherLinked.count || 0) + (otherMaster.count || 0);
-    if(otherCount === 0) result.guardianIds.push(gid);
+    if(otherCount === 0) soleWardGuardians.push(gid);
   }
+
+  if(!soleWardGuardians.length) return result;
+
+  /* Only delete the auth account if it holds no other role. Ward-linking
+     cleanup (guardian_students / guardian_master_links rows) happens on its
+     own via the existing ON DELETE CASCADE FKs once the student/master row
+     is gone — no manual unlink needed either way. */
+  var teachersRes = await supabaseClient.from('teachers').select('id').in('id', soleWardGuardians);
+  var adminsRes = await supabaseClient.from('admins').select('id').in('id', soleWardGuardians);
+  var storekeepersRes = await supabaseClient.from('storekeepers').select('id').in('id', soleWardGuardians);
+
+  var otherRoleIds = new Set(
+    [].concat(teachersRes.data || [], adminsRes.data || [], storekeepersRes.data || []).map(function(r){ return r.id; })
+  );
+
+  result.guardianIds = soleWardGuardians.filter(function(gid){ return !otherRoleIds.has(gid); });
   return result;
 }
 
