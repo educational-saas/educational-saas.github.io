@@ -881,7 +881,17 @@ async function routeSignedInUser(user){
     return;
   }
 
-  // Authenticated, but not yet added to teachers/students/admins by the admin
+  if (error){
+    // Session no longer corresponds to a valid account (e.g. the
+    // sign-up was dismissed and the auth user no longer exists).
+    // Drop the stale session and let them start fresh.
+    await sb.auth.signOut();
+    showStep('email');
+    emailInput.focus();
+    return;
+  }
+
+  // No error, but also no role yet: genuinely still pending
   pendingUid.textContent = 'Account ID: ' + user.id;
   showStep('pending');
 }
