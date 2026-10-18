@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>My GSMS — Gamified School Management System</title>
+<meta name="description" content="My GSMS is an independent Gamified School Management System offering smart classroom resources and fun learning tools.">
+<meta name="keywords" content="GSMS, Gamified School Management System, school portal, student login, teacher login, school management system">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://educational-saas.github.io">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="My GSMS — Gamified School Management System">
+<meta property="og:description" content="An independent Gamified School Management System with smart classroom resources and fun learning tools.">
+<meta property="og:image" content="https://educational-saas.github.io/gsms-logo-white-bg.png">
+<meta property="og:url" content="https://educational-saas.github.io">
+<meta name="twitter:card" content="summary">
+
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "My GSMS",
+    "alternateName": "Gamified School Management System",
+    "url": "https://educational-saas.github.io",
+    "applicationCategory": "EducationalApplication",
+    "logo": "https://educational-saas.github.io/gsms-logo-white-bg.png"
+  }
+]
+</script>
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    /* ---------- Semantic tokens (change with theme) ---------- */
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    /* Decorative flame ribbon */
+    --flame-a-start:#1b6b78;
+    --flame-a-end:#f5a623;
+    --flame-b-start:#227d8b;
+    --flame-b-end:#ffc65c;
+    --flame-opacity:.5;
+
+    /* Theme toggle control */
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --flame-a-start:#2f9aab;
+    --flame-a-end:#ffc65c;
+    --flame-b-start:#3fb2c2;
+    --flame-b-end:#ffd685;
+    --flame-opacity:.3;
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    overflow-x:hidden;
+    position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+
+  /* ---------- Theme toggle ---------- */
+  .theme-toggle{
+    position:fixed;
+    top:18px;
+    right:18px;
+    z-index:50;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), box-shadow .3s var(--ease), transform .2s var(--ease);
+  }
+  .theme-toggle:hover{transform:translateY(-2px) scale(1.05);}
+  .theme-toggle:active{transform:translateY(0) scale(.96);}
+  .theme-toggle:focus-visible{outline:3px solid var(--gold-500); outline-offset:3px;}
+  .theme-toggle svg{
+    width:20px; height:20px; position:absolute;
+    fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    transition:opacity .3s var(--ease), transform .4s var(--ease), stroke .3s var(--ease);
+  }
+  .theme-toggle .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .theme-toggle .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .theme-toggle .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .theme-toggle .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+  .quick-link{
+  position:fixed;
+  bottom:18px;
+  right:18px;
+  z-index:50;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 18px 10px 14px;
+  border-radius:999px;
+  background:var(--toggle-bg);
+  border:1.5px solid var(--toggle-border);
+  box-shadow:var(--toggle-shadow);
+  color:var(--teal-800);
+  text-decoration:none;
+  font-family:'Manrope',sans-serif;
+  font-weight:700;
+  font-size:.8rem;
+  letter-spacing:.01em;
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+  transition:background-color .3s var(--ease), border-color .3s var(--ease), box-shadow .3s var(--ease), transform .2s var(--ease), color .3s var(--ease);
+}
+.quick-link:hover{ transform:translateY(-2px) scale(1.03); border-color:var(--border-card-hover); }
+.quick-link:active{ transform:translateY(0) scale(.97); }
+.quick-link:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+.quick-link svg{
+  width:17px; height:17px; flex:none;
+  fill:none; stroke:var(--gold-600); stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round;
+}
+
+@media (max-width:480px){
+  .quick-link{ padding:0; width:50px; height:50px; justify-content:center; bottom:14px; right:14px; }
+  .quick-link span{ display:none; }
+}
+
+  /* ---------- Ambient flame-ribbon background (echoes the GSMS mark) ---------- */
+  .flame-field{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .flame-field svg{
+    position:absolute;
+    top:-6%;
+    right:-8%;
+    width:min(62vw,780px);
+    height:auto;
+    opacity:var(--flame-opacity);
+    transition:opacity .35s var(--ease);
+  }
+  .flame-field .ribbon{
+    fill:none;
+    stroke-linecap:round;
+    transform-origin:center;
+    animation:sway 9s var(--ease) infinite alternate;
+  }
+  .flame-field .r1{stroke:url(#flameGradA);stroke-width:14;animation-delay:0s;}
+  .flame-field .r2{stroke:url(#flameGradB);stroke-width:11;animation-delay:.6s;}
+  .flame-field .r3{stroke:url(#flameGradA);stroke-width:8;animation-delay:1.2s;}
+  .flame-field .r4{stroke:url(#flameGradB);stroke-width:6;animation-delay:1.8s;}
+
+  @keyframes sway{
+    0%{ transform:translateY(0) rotate(0deg); }
+    100%{ transform:translateY(-14px) rotate(1.2deg); }
+  }
+
+  /* ---------- Layout shell ---------- */
+  .brand{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:clamp(20px,4vw,36px) clamp(20px,6vw,56px) 0;
+    width:100%;
+    max-width:1180px;
+  }
+  .brand img{
+    width:70px;
+    height:70px;
+    border-radius:12px;
+    object-fit:cover;
+    /*box-shadow:0 6px 16px -6px rgba(13,56,65,.4);*/
+  }
+  .brand-name{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.05rem;
+    color:var(--teal-800);
+    letter-spacing:.2px;
+    transition:color .3s var(--ease);
+  }
+  .brand-name span{
+    display:block;
+    font-family:'Manrope',sans-serif;
+    font-weight:600;
+    font-size:.68rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold-600);
+    margin-top:1px;
+  }
+
+  main.hero{
+    position:relative;
+    z-index:1;
+    flex:1;
+    width:100%;
+    max-width:880px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding:clamp(48px,9vh,88px) 24px 40px;
+  }
+
+  .eyebrow{
+    margin:0 0 14px;
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--teal-700);
+    background:var(--teal-100);
+    padding:7px 16px;
+    border-radius:999px;
+    opacity:0;
+    animation:rise .7s var(--ease) .05s forwards;
+    transition:background-color .3s var(--ease), color .3s var(--ease);
+  }
+
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(2.1rem,5vw,3.4rem);
+    line-height:1.12;
+    margin:0 0 14px;
+    color:var(--ink-900);
+    opacity:0;
+    animation:rise .8s var(--ease) .15s forwards;
+    transition:color .3s var(--ease);
+  }
+  h1 em{
+    font-style:italic;
+    font-weight:500;
+    color:var(--teal-700);
+    background:linear-gradient(180deg,transparent 62%, var(--gold-100) 62%);
+    padding:0 2px;
+    transition:color .3s var(--ease), background .3s var(--ease);
+  }
+
+  .subtitle{
+    margin:0 0 46px;
+    font-size:clamp(1rem,1.6vw,1.15rem);
+    color:var(--ink-500);
+    max-width:46ch;
+    opacity:0;
+    animation:rise .8s var(--ease) .25s forwards;
+    transition:color .3s var(--ease);
+  }
+
+  /* ---------- Role cards ---------- */
+  .role-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+    width:100%;
+  }
+
+  @media (max-width:900px){
+    .role-grid{
+      grid-template-columns:repeat(2,1fr);
+    }
+  }
+
+  @media (max-width:760px){
+    .role-grid{
+      grid-template-columns:1fr;
+      max-width:380px;
+    }
+  }
+
+  .role-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    text-decoration:none;
+    color:inherit;
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-lg);
+    padding:34px 22px 28px;
+    box-shadow:var(--shadow-card);
+    transition:transform .35s var(--ease), box-shadow .35s var(--ease), border-color .35s var(--ease), background-color .35s var(--ease);
+    opacity:0;
+    animation:rise .7s var(--ease) forwards;
+  }
+  .role-card:nth-child(1){animation-delay:.35s;}
+  .role-card:nth-child(2){animation-delay:.45s;}
+  .role-card:nth-child(3){animation-delay:.55s;}
+  .role-card:nth-child(4){animation-delay:.65s;}
+
+  .role-card:hover,
+  .role-card:focus-visible{
+    transform:translateY(-6px);
+    box-shadow:var(--shadow-card-hover);
+    border-color:var(--border-card-hover);
+  }
+  .role-card:focus-visible{
+    outline:3px solid var(--gold-500);
+    outline-offset:3px;
+  }
+
+  .role-icon{
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(150deg,var(--teal-100),var(--white));
+    transition:background .35s var(--ease), transform .35s var(--ease);
+  }
+  .role-card:hover .role-icon{
+    background:linear-gradient(150deg,var(--gold-100),var(--white));
+    transform:scale(1.06) rotate(-4deg);
+  }
+  .role-icon svg{width:28px;height:28px;stroke:var(--teal-700);transition:stroke .35s var(--ease);}
+  .role-card:hover .role-icon svg{stroke:var(--gold-600);}
+
+  .role-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.2rem;
+    margin:0;
+  }
+  .role-desc{
+    margin:0;
+    font-size:.86rem;
+    color:var(--ink-500);
+    line-height:1.5;
+    transition:color .3s var(--ease);
+  }
+  .role-go{
+    margin-top:6px;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--gold-600);
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .role-go svg{width:13px;height:13px;stroke:var(--gold-600);transition:transform .3s var(--ease);}
+  .role-card:hover .role-go svg{transform:translateX(4px);}
+
+  @keyframes rise{
+    from{opacity:0; transform:translateY(16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  footer{
+    position:relative;
+    z-index:1;
+    width:100%;
+    text-align:center;
+    padding:22px 20px 28px;
+    font-size:.78rem;
+    color:var(--ink-500);
+    transition:color .3s var(--ease);
+  }
+  footer a{color:var(--teal-700); text-decoration:none; font-weight:600; transition:color .3s var(--ease);}
+  footer a:hover{text-decoration:underline;}
+
+  @media (max-width:480px){
+    .theme-toggle{width:40px; height:40px; top:14px; right:14px;}
+    .theme-toggle svg{width:18px; height:18px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .flame-field .ribbon{animation:none;}
+    .eyebrow,h1,.subtitle,.role-card{animation:none; opacity:1;}
+    .quick-link{transition:none;}
+  }
+
+  /* =====================================================================
+     NATIVE APP LAYOUT — mobile & tablet (handheld / WebView) only.
+     Nothing in this block touches desktop: it is entirely scoped inside
+     @media (max-width:900px) and only restyles existing elements.
+     ===================================================================== */
+  @media (max-width:900px){
+
+    html, body{ height:100%; }
+
+    body{
+      min-height:100dvh;
+      justify-content:space-between;
+      overflow-y:auto;
+      overflow-x:hidden;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+      padding-top:env(safe-area-inset-top,0px);
+      padding-bottom:env(safe-area-inset-bottom,0px);
+    }
+    body::-webkit-scrollbar{ display:none; }
+
+    /* Drop the decorative ribbon artwork — a native app screen reads
+       cleaner without a webby background flourish. */
+    .flame-field{ display:none; }
+
+    .theme-toggle,
+    .quick-link,
+    .role-card{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+
+    .theme-toggle{
+      top:calc(env(safe-area-inset-top,0px) + 14px);
+      right:14px;
+    }
+    .quick-link{
+      bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+    }
+
+    /* App splash-style header: centered mark instead of a left-aligned
+       website logo lockup. */
+    .brand{
+      flex-direction:column;
+      justify-content:center;
+      text-align:center;
+      gap:10px;
+      padding:calc(env(safe-area-inset-top,0px) + 30px) 24px 0;
+    }
+    .brand img{
+      width:145px;
+      /*height:76px;*/
+      border-radius:20px;
+    }
+    .brand-name{ font-size:1.1rem; }
+    .brand-name span{ font-size:.6rem; }
+
+    main.hero{
+      flex:1;
+      justify-content:flex-start;
+      padding:28px 22px calc(env(safe-area-inset-bottom,0px) + 24px);
+      animation:none;
+    }
+
+    h1{
+      font-size:1.55rem;
+      line-height:1.18;
+      margin-bottom:8px;
+    }
+    .subtitle{
+      font-size:.92rem;
+      margin-bottom:28px;
+    }
+
+    /* Role chooser becomes a native-style selection list: full-width
+       rows, icon + label + chevron, no card copy or hover chrome. */
+    .role-grid{
+      grid-template-columns:1fr !important;
+      width:100%;
+      max-width:420px;
+      gap:12px;
+    }
+    .role-card{
+      flex-direction:row;
+      align-items:center;
+      text-align:left;
+      gap:16px;
+      padding:14px 16px;
+      border-radius:var(--r-md);
+    }
+    .role-card:hover,
+    .role-card:active{
+      transform:none;
+    }
+    .role-card:active{
+      background:var(--teal-100);
+    }
+    .role-icon{
+      width:46px;
+      height:46px;
+      flex:none;
+    }
+    .role-icon svg{ width:21px; height:21px; }
+    .role-title{ font-size:1rem; }
+    .role-desc{ display:none; }
+    .role-go{
+      margin-top:0;
+      margin-left:auto;
+      font-size:0;
+      gap:0;
+    }
+    .role-go svg{ width:15px; height:15px; }
+
+    /* A website credit line doesn't belong on an app's launch screen. */
+    footer{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2"/>
+    <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+  </svg>
+  <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+  </svg>
+</button>
+
+<a class="quick-link" href="teachers/quick-share/" aria-label="Quick Share — send or get a file">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+  <span>Quick Share</span>
+</a>
+
+<div class="flame-field" aria-hidden="true">
+  <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="flameGradA" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" style="stop-color:var(--flame-a-start)"/>
+        <stop offset="100%" style="stop-color:var(--flame-a-end)"/>
+      </linearGradient>
+      <linearGradient id="flameGradB" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" style="stop-color:var(--flame-b-start)"/>
+        <stop offset="100%" style="stop-color:var(--flame-b-end)"/>
+      </linearGradient>
+    </defs>
+    <path class="ribbon r1" d="M70,360 C30,300 40,220 100,160 C70,220 90,260 120,280"/>
+    <path class="ribbon r2" d="M150,370 C100,300 120,200 190,110 C150,190 175,240 200,260"/>
+    <path class="ribbon r3" d="M230,370 C185,290 210,190 270,90 C235,175 255,230 275,255"/>
+    <path class="ribbon r4" d="M300,360 C265,290 285,200 335,120 C305,195 320,240 335,260"/>
+  </svg>
+</div>
+
+<header class="brand">
+  <img src="gsms-logo.png" alt="My GSMS logo" width="44" height="44">
+  <p class="brand-name">My GSMS<span>Gamified School Management System</span></p>
+</header>
+
+<main class="hero">
+  <p style="display: none" class="eyebrow">School Portal</p>
+  <h1>Welcome. Let's get you<br><em>where you need to be.</em></h1>
+  <p class="subtitle">Please select your role to continue.</p>
+
+  <div class="role-grid">
+
+    <a class="role-card" href="teachers/auth.html" aria-label="Continue as Teacher">
+      <span class="role-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3 1 8l11 5 9-4.09V17h2V8L12 3Z"/>
+          <path d="M5 10.5V16c0 1.5 3 3 7 3s7-1.5 7-3v-5.5"/>
+        </svg>
+      </span>
+      <h2 class="role-title">Teacher</h2>
+      <p class="role-desc">Attendance, lesson plans and your classroom tools.</p>
+      <span class="role-go">Continue
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </a>
+
+    <a style="display: none" class="role-card" href="#" aria-label="Continue as Parent or Guardian">
+  <span class="role-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="8" r="3"/>
+      <path d="M3.5 20c.5-3.5 2.4-5.5 5.5-5.5s5 2 5.5 5.5"/>
+      <circle cx="17" cy="9" r="2.2"/>
+      <path d="M15 14.5c2.8-.2 4.7 1.5 5.2 4.5"/>
+    </svg>
+  </span>
+
+  <h2 class="role-title">Parent/Guardian</h2>
+
+  <p class="role-desc">View your ward's results, updates and school information.</p>
+
+  <span class="role-go">Continue
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14M13 6l6 6-6 6"/>
+    </svg>
+  </span>
+</a>
+
+    <a class="role-card" href="students/" aria-label="Continue as Student">
+      <span class="role-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
+          <path d="M9 7h7M9 11h7"/>
+        </svg>
+      </span>
+      <h2 class="role-title">Student</h2>
+      <p class="role-desc">Your classes, results and school updates.</p>
+      <span class="role-go">Continue
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </a>
+    
+    <!-- Storekeeper Role -->
+    <a class="role-card" href="admins/manage-stock/" aria-label="Continue as Storekeeper">
+      <span class="role-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Storage box -->
+          <path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/>
+          <path d="M3 7.5V17l9 4 9-4V7.5"/>
+          <path d="M12 12v9"/>
+          <!-- Box label -->
+          <path d="M8 9.5v3l4 2 4-2v-3"/>
+        </svg>
+      </span>
+
+      <h2 class="role-title">Storekeeper</h2>
+
+      <p class="role-desc">
+        Manage stock, inventory and store records.
+      </p>
+
+      <span class="role-go">Continue
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+      </span>
+    </a>
+
+    <a style="display: none" class="role-card" href="teachers/auth.html" aria-label="Continue as Admin">
+      <span class="role-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/>
+          <path d="m9.5 12 1.8 1.8L14.8 10"/>
+        </svg>
+      </span>
+      <h2 class="role-title">Admin</h2>
+      <p class="role-desc">Manage students, staff and school records.</p>
+      <span class="role-go">Continue
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  © <span id="year"></span> My GSMS · Built with care by <a href="https://sunejatech.com">Suneja Tech</a>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  var themeToggleBtn = document.getElementById('theme-toggle');
+  themeToggleBtn.addEventListener('click', function(){
+    var root = document.documentElement;
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+  });
+</script>
+
+</body>
+</html>
