@@ -881,19 +881,17 @@ async function routeSignedInUser(user){
     return;
   }
 
-  if (error){
-    // Session no longer corresponds to a valid account (e.g. the
-    // sign-up was dismissed and the auth user no longer exists).
-    // Drop the stale session and let them start fresh.
-    await sb.auth.signOut();
-    showStep('email');
-    emailInput.focus();
+  if (!error && role === 'pending'){
+    pendingUid.textContent = 'Account ID: ' + user.id;
+    showStep('pending');
     return;
   }
 
-  // No error, but also no role yet: genuinely still pending
-  pendingUid.textContent = 'Account ID: ' + user.id;
-  showStep('pending');
+  // role === 'rejected', or an unexpected error: the account no longer
+  // exists or was dismissed — drop the stale session and start fresh
+  await sb.auth.signOut();
+  showStep('email');
+  emailInput.focus();
 }
 
 /* ---------- passkeys ---------- */
