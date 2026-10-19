@@ -413,7 +413,10 @@ var I18N = {
     summary: "Summary:",
     summaryAbsent: "Absent: {n}",
     summaryLeave: "Leave: {n}",
-    summaryMedical: "Medical: {n}"
+    summaryMedical: "Medical: {n}",
+    discardTitle: "Discard changes?",
+   discardMsg: "Unsaved marks for this class and date will be lost.",
+   discardBtn: "Discard"
   },
   hi: {
     loading: "लोड हो रहा है",
@@ -487,7 +490,10 @@ var I18N = {
     summary: "सारांश:",
     summaryAbsent: "अनुपस्थित: {n}",
     summaryLeave: "छुट्टी: {n}",
-    summaryMedical: "मेडिकल: {n}"
+    summaryMedical: "मेडिकल: {n}",
+    discardTitle: "बदलाव रद्द करें?",
+    discardMsg: "इस कक्षा और तारीख़ के अनसेव किए गए निशान हट जाएँगे।",
+    discardBtn: "रद्द करें",
   }
 };
 
@@ -668,8 +674,9 @@ $('confirm-ok').addEventListener('click', function(){ var f = confirmOk; closeCo
 // Discard guard for class/date changes
 function guard(proceed, revert){
   if(!S.dirty){ proceed(); return; }
-  askConfirm('Discard changes?', 'Unsaved marks for this class and date will be lost.', proceed, 'Discard', revert);
+  askConfirm(t('discardTitle'), t('discardMsg'), proceed, t('discardBtn'), revert);
 }
+
 
 var noteId = null;
 function openNote(id){
