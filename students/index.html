@@ -1468,16 +1468,30 @@
   var state = {
     isStudent: false,
     name: null,
-    gender: null
+    gender: null,
+    profilePicUrl: null
   };
 
   var AVATAR_MALE   = 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairShortCurly&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerSweater&eyeType=Happy&eyebrowType=Default&mouthType=Smile&skinColor=Light';
   var AVATAR_FEMALE = 'https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight2&hairColor=BrownDark&clotheType=BlazerSweater&eyeType=Happy&mouthType=Smile&skinColor=Light&facialHairType=Blank&accessoriesType=Blank';
 
   function updateAvatar(){
-    document.getElementById('avatar-img').src = (state.gender === 'F') ? AVATAR_FEMALE : AVATAR_MALE;
+  var img = document.getElementById('avatar-img');
+  if(state.profilePicUrl){
+    img.src = state.profilePicUrl;
+    return;
   }
-  updateAvatar();
+  img.src = (state.gender === 'F') ? AVATAR_FEMALE : AVATAR_MALE;
+}
+updateAvatar();
+
+// Safety net: if the signed URL ever 403s/expires mid-session, fall back silently.
+document.getElementById('avatar-img').addEventListener('error', function(){
+  if(state.profilePicUrl){
+    state.profilePicUrl = null;
+    updateAvatar();
+  }
+});
 
   document.getElementById('avatar-btn').addEventListener('click', function(){
     if(!state.isStudent){
@@ -1584,7 +1598,7 @@ var AUTH_REDIRECT = 'https://educational-saas.github.io/';
 
       var profileResult = await supabaseClient
         .from('students')
-        .select('name, gender, class')
+        .select('name, gender, class, master_token')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -1595,6 +1609,26 @@ var AUTH_REDIRECT = 'https://educational-saas.github.io/';
       state.isStudent = true;
       state.name = profileResult.data.name;
       state.gender = profileResult.data.gender;
+
+      // Pre-check: does this student even have a profile_pic_key? No Edge Function hit otherwise.
+if(profileResult.data.master_token){
+  try{
+    var masterResult = await supabaseClient
+      .from('students_master')
+      .select('profile_pic_key')
+      .eq('token', profileResult.data.master_token)
+      .maybeSingle();
+
+    if(!masterResult.error && masterResult.data && masterResult.data.profile_pic_key){
+      var picResult = await supabaseClient.functions.invoke('profile-picture', {
+        body: { action: 'get-own-download-url' }
+      });
+      if(!picResult.error && picResult.data && picResult.data.download_url){
+        state.profilePicUrl = picResult.data.download_url;
+      }
+    }
+  }catch(e){ /* ignore — falls back to default gender avatar */ }
+}
 
       document.getElementById('greeting').textContent = 'Hi, ' + state.name.split(' ')[0] + '!';
       setIdentityLabel('Class ' + profileResult.data.class);
