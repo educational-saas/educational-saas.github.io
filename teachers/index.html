@@ -12,6 +12,15 @@
     }catch(e){}
   })();
 </script>
+<script>
+  /* Apply saved/preferred language immediately to avoid a flash of the wrong language */
+  (function(){
+    try{
+      var savedLang = localStorage.getItem('gsms-lang');
+      document.documentElement.setAttribute('data-lang', savedLang === 'hi' ? 'hi' : 'en');
+    }catch(e){}
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Teacher Dashboard</title>
 <meta name="robots" content="noindex, nofollow">
@@ -19,7 +28,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -421,6 +430,86 @@
   .btn:active{ transform:scale(.97); }
   .btn-ghost{ background:var(--white); color:var(--ink-900); border:1.5px solid var(--border-card); }
   .btn-danger{ background:var(--gold-500); color:var(--teal-900); }
+
+  /* ---------- Utility tile (e.g. Change Language) rendered as a <button> ---------- */
+  button.tile{
+    border:1px solid var(--border-card);
+    background:var(--white);
+    font:inherit;
+    width:100%;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+
+  /* ---------- Language modal ---------- */
+  .lang-modal-backdrop{
+    position:fixed; inset:0; z-index:110;
+    background:rgba(9,34,39,.45);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    opacity:0; visibility:hidden;
+    transition:opacity .25s var(--ease), visibility .25s var(--ease);
+  }
+  .lang-modal-backdrop.show{ opacity:1; visibility:visible; }
+  .lang-modal{
+    width:100%; max-width:360px;
+    background:var(--cream);
+    border-radius:var(--r-lg);
+    padding:24px 22px calc(env(safe-area-inset-bottom) + 22px);
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.4);
+    transform:translateY(14px) scale(.97);
+    opacity:0;
+    transition:transform .3s var(--ease), opacity .3s var(--ease);
+  }
+  .lang-modal-backdrop.show .lang-modal{ transform:translateY(0) scale(1); opacity:1; }
+  .lang-modal-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;
+  }
+  .lang-modal-head h3{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.1rem; margin:0; color:var(--ink-900);
+    transition:color .3s var(--ease);
+  }
+  .lang-modal-close{
+    width:32px; height:32px; border-radius:50%; border:none; background:var(--bg-tint-teal);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; padding:0;
+    transition:background-color .25s var(--ease), transform .2s var(--ease);
+  }
+  .lang-modal-close:hover{ transform:scale(1.06); }
+  .lang-modal-close:active{ transform:scale(.94); }
+  .lang-modal-close svg{ width:15px; height:15px; stroke:var(--teal-700); fill:none; stroke-width:2.2; stroke-linecap:round; }
+  .lang-modal > p{ margin:0 0 18px; color:var(--ink-500); font-size:.86rem; transition:color .3s var(--ease); }
+  .lang-options{ display:flex; flex-direction:column; gap:10px; }
+  .lang-option{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 16px; border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card); background:var(--white);
+    cursor:pointer; text-align:left; width:100%;
+    font-family:'Manrope',sans-serif;
+    transition:border-color .25s var(--ease), background-color .25s var(--ease), transform .2s var(--ease);
+  }
+  .lang-option:hover{ transform:translateY(-1px); border-color:var(--border-card-hover); }
+  .lang-option:active{ transform:translateY(0) scale(.98); }
+  .lang-option-label{ font-weight:700; font-size:.92rem; color:var(--ink-900); }
+  .lang-option-native{ font-weight:600; font-size:.92rem; color:var(--gold-600); }
+  .lang-option.is-selected{
+    border-color:var(--gold-500);
+    background:var(--bg-tint-gold);
+  }
+  .lang-option.is-selected .lang-option-label{ color:var(--teal-800); }
+
+  /* ---------- Hindi language typography ---------- */
+  html[data-lang="hi"] body,
+  html[data-lang="hi"] #search,
+  html[data-lang="hi"] .btn,
+  html[data-lang="hi"] .tile-name,
+  html[data-lang="hi"] .lang-option{
+    font-family:'Noto Sans Devanagari','Manrope',system-ui,sans-serif;
+  }
+  html[data-lang="hi"] .header-greeting,
+  html[data-lang="hi"] .sheet h3,
+  html[data-lang="hi"] .lang-modal-head h3{
+    font-family:'Noto Sans Devanagari','Fraunces',serif;
+  }
 </style>
 </head>
 <body>
@@ -484,6 +573,29 @@
     <div class="sheet-actions">
       <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
       <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Language selection modal -->
+<div class="lang-modal-backdrop" id="lang-modal-backdrop">
+  <div class="lang-modal" role="dialog" aria-modal="true" aria-label="Change language">
+    <div class="lang-modal-head">
+      <h3 id="lang-modal-title">Change Language</h3>
+      <button class="lang-modal-close" id="lang-modal-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <p id="lang-modal-sub">Choose your preferred language</p>
+    <div class="lang-options" id="lang-options">
+      <button class="lang-option" data-lang-value="en" type="button">
+        <span class="lang-option-label" id="lang-option-en-label">English</span>
+        <span class="lang-option-native">English</span>
+      </button>
+      <button class="lang-option" data-lang-value="hi" type="button">
+        <span class="lang-option-label" id="lang-option-hi-label">Hindi</span>
+        <span class="lang-option-native">हिंदी</span>
+      </button>
     </div>
   </div>
 </div>
@@ -662,6 +774,188 @@
   }
 ];
 
+  /* ==========================================
+     Internationalization (English / Hindi)
+     Keep all translated UI strings here so new elements can be
+     added later with minimal changes to the rendering logic.
+     ========================================== */
+  var LANG_KEY = 'gsms-lang'; // shared localStorage key so other pages can read the same preference
+  var currentLang = 'en';
+  var lastSearchQuery = '';
+  var isAdminUser = false;
+  var currentTeacherName = '';
+  var hindiNameCache = {};
+
+  var I18N = {
+    en: {
+      headerSubTeacher: 'Teacher Dashboard',
+      headerSubAdmin: 'Admin Dashboard',
+      greetingPrefix: 'Hello,',
+      greetingFallbackName: 'Teacher',
+      searchPlaceholder: 'Search tools…',
+      sectionLabel: 'Your Tools',
+      emptyStateText: 'No tools match your search.',
+      signoutTitle: 'Sign out?',
+      signoutText: "You'll need to sign in again to access your dashboard.",
+      signoutCancel: 'Cancel',
+      signoutConfirm: 'Sign out',
+      langToolName: 'Change Language',
+      langModalTitle: 'Change Language',
+      langModalSub: 'Choose your preferred language',
+      langOptionEnLabel: 'English',
+      langOptionHiLabel: 'Hindi'
+    },
+    hi: {
+      headerSubTeacher: 'शिक्षक डैशबोर्ड',
+      headerSubAdmin: 'एडमिन डैशबोर्ड',
+      greetingPrefix: 'नमस्ते,',
+      greetingFallbackName: 'शिक्षक',
+      searchPlaceholder: 'टूल खोजें…',
+      sectionLabel: 'आपके टूल',
+      emptyStateText: 'आपकी खोज से कोई टूल नहीं मिला।',
+      signoutTitle: 'साइन आउट करें?',
+      signoutText: 'डैशबोर्ड देखने के लिए आपको दोबारा साइन इन करना होगा।',
+      signoutCancel: 'रद्द करें',
+      signoutConfirm: 'साइन आउट करें',
+      langToolName: 'भाषा बदलें',
+      langModalTitle: 'भाषा बदलें',
+      langModalSub: 'अपनी पसंदीदा भाषा चुनें',
+      langOptionEnLabel: 'अंग्रेज़ी',
+      langOptionHiLabel: 'हिंदी'
+    }
+  };
+
+  // Tool-name translations, keyed by the exact English name used in TOOLS above.
+  // Add a new line here whenever a new tool is added to TOOLS to translate it too.
+  var TOOL_NAME_I18N = {
+    hi: {
+      'Weekly Lesson Plan': 'साप्ताहिक पाठ योजना',
+      'Morning Assembly Planner': 'सुबह की सभा योजना',
+      'Syllabus Tracker': 'पाठ्यक्रम ट्रैकर',
+      'Blueprint Tracker': 'ब्लूप्रिंट ट्रैकर',
+      'Student Lists': 'छात्रों की सूची',
+      'Attendance': 'उपस्थिति',
+      'Classwork/Homework': 'कक्षा कार्य/गृह कार्य',
+      'Marks Entry': 'अंक दर्ज करें',
+      'Checking Record': 'जांच रिकॉर्ड',
+      'File Vault': 'फाइल वॉल्ट',
+      'Certificate Generator': 'प्रमाणपत्र जनरेटर',
+      'Quick Share': 'जल्दी शेयर करें',
+      'Image Enlarger': 'फोटो बड़ा करें',
+      'File Approvals': 'फाइल स्वीकृति',
+      'Approve Accounts': 'खाते स्वीकृत करें',
+      'Manage Admins': 'एडमिन प्रबंधित करें',
+      'Assign Subjects': 'विषय आवंटित करें',
+      'Assign Class Teachers': 'कक्षा शिक्षक नियुक्त करें',
+      'Manage Storekeepers': 'स्टोरकीपर प्रबंधित करें',
+      'Subjects & Classes': 'विषय और कक्षाएं',
+      'Manage Students': 'छात्र प्रबंधित करें',
+      'Link Guardians to Wards': 'अभिभावकों को छात्रों से जोड़ें',
+      'Manage Exams': 'परीक्षा प्रबंधित करें',
+      'Manage Stock': 'स्टॉक प्रबंधित करें',
+      'Manage Storage': 'भंडारण प्रबंधित करें'
+    }
+  };
+
+  function t(key){
+    var dict = I18N[currentLang] || I18N.en;
+    if(dict && dict[key] !== undefined){ return dict[key]; }
+    return I18N.en[key] || '';
+  }
+
+  function translateToolName(name){
+    if(currentLang === 'hi' && TOOL_NAME_I18N.hi && TOOL_NAME_I18N.hi[name]){
+      return TOOL_NAME_I18N.hi[name];
+    }
+    return name;
+  }
+
+  function getStoredLang(){
+    try{
+      var v = localStorage.getItem(LANG_KEY);
+      return v === 'hi' ? 'hi' : 'en';
+    }catch(e){ return 'en'; }
+  }
+
+  // Small globe icon for the "Change Language" utility tile, matching the other tile icons' style.
+  var LANG_TILE_ICON = '<circle cx="12" cy="12" r="9.5" fill="#1b6b78"/><path d="M2.5 12h19M12 2.5c2.6 2.7 4 6.1 4 9.5s-1.4 6.8-4 9.5c-2.6-2.7-4-6.1-4-9.5s1.4-6.8 4-9.5Z" stroke="#eaf4f4" stroke-width="1.3" fill="none"/>';
+
+  /* ---------------- Free, keyless transliteration (Latin → Devanagari) ---------------- */
+  /* Uses Google's public Input Tools transliteration endpoint. Best-effort only: if it is
+     unreachable or blocked, we silently keep showing the name as typed — nothing breaks. */
+  function transliterateToHindi(word, callback){
+    if(!word){ callback(word); return; }
+    if(hindiNameCache[word]){ callback(hindiNameCache[word]); return; }
+    try{
+      fetch('https://inputtools.google.com/request?text=' + encodeURIComponent(word) + '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=jsapi')
+        .then(function(res){ return res.json(); })
+        .then(function(data){
+          var result = word;
+          if(data && data[0] === 'SUCCESS' && data[1] && data[1][0] && data[1][0][1] && data[1][0][1][0]){
+            result = data[1][0][1][0];
+          }
+          hindiNameCache[word] = result;
+          callback(result);
+        })
+        .catch(function(){ callback(word); });
+    }catch(e){ callback(word); }
+  }
+
+  /* ---------------- Dynamic, per-institution tool routing ---------------- */
+  /* If an institution-specific page exists at the same route as a tool's normal page
+     (filename convention: "i-<institutionId>.html"), send users there instead. */
+  var institutionUrlCache = {}; // original href -> resolved institution-specific href
+  var currentInstitutionId = null;
+  try{ currentInstitutionId = localStorage.getItem('gsms_last_institution_id'); }catch(e){}
+
+  function buildInstitutionUrl(href, institutionId){
+    try{
+      var u = new URL(href, window.location.href);
+      var path = u.pathname;
+      if(path.slice(-5) === '.html'){
+        path = path.substring(0, path.lastIndexOf('/') + 1) + 'i-' + institutionId + '.html';
+      } else if(path.slice(-1) === '/'){
+        path = path + 'i-' + institutionId + '.html';
+      } else {
+        path = path + '/i-' + institutionId + '.html';
+      }
+      u.pathname = path;
+      return u.toString();
+    }catch(e){ return null; }
+  }
+
+  function updateTileHref(originalHref, resolvedHref){
+    var anchors = grid.querySelectorAll('a.tile[data-tool-href]');
+    for(var i = 0; i < anchors.length; i++){
+      if(anchors[i].getAttribute('data-tool-href') === originalHref){
+        anchors[i].href = resolvedHref;
+      }
+    }
+  }
+
+  function checkInstitutionPages(tools, institutionId){
+    if(!institutionId) return;
+    tools.forEach(function(tool){
+      if(!tool.href || tool.href === '#') return;
+      var candidate = buildInstitutionUrl(tool.href, institutionId);
+      if(!candidate) return;
+      var controller = ('AbortController' in window) ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, 4000) : null;
+      fetch(candidate, { method: 'HEAD', signal: controller ? controller.signal : undefined })
+        .then(function(res){
+          if(timeoutId) clearTimeout(timeoutId);
+          if(res && res.ok){
+            institutionUrlCache[tool.href] = candidate;
+            updateTileHref(tool.href, candidate);
+          }
+        })
+        .catch(function(){ if(timeoutId) clearTimeout(timeoutId); /* keep default href */ });
+    });
+  }
+
+  // Kick off the background check as early as possible, in parallel with auth.
+  checkInstitutionPages(TOOLS, currentInstitutionId);
+
   var grid = document.getElementById('tile-grid');
   var emptyState = document.getElementById('empty-state');
   var allowedTools = TOOLS; // will be narrowed once admin status is known
@@ -671,25 +965,131 @@
     list.forEach(function(tool, i){
       var a = document.createElement('a');
       a.className = 'tile';
-      a.href = tool.href;
+      a.href = institutionUrlCache[tool.href] || tool.href;
+      a.setAttribute('data-tool-href', tool.href);
       a.style.animationDelay = (i * 0.04) + 's';
-      a.setAttribute('aria-label', tool.name);
+      var displayName = translateToolName(tool.name);
+      a.setAttribute('aria-label', displayName);
       a.innerHTML =
         '<span class="tile-icon" aria-hidden="true">' +
           '<svg viewBox="0 0 24 24">' + tool.icon + '</svg>' +
         '</span>' +
-        '<span class="tile-name">' + tool.name + '</span>';
+        '<span class="tile-name">' + displayName + '</span>';
       grid.appendChild(a);
     });
+
+    /* Utility tile: Change Language — always appended last, not part of TOOLS and never filtered out. */
+    var langTile = document.createElement('button');
+    langTile.type = 'button';
+    langTile.className = 'tile tile-lang';
+    langTile.style.animationDelay = (list.length * 0.04) + 's';
+    var langLabel = t('langToolName');
+    langTile.setAttribute('aria-label', langLabel);
+    langTile.innerHTML =
+      '<span class="tile-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24">' + LANG_TILE_ICON + '</svg>' +
+      '</span>' +
+      '<span class="tile-name">' + langLabel + '</span>';
+    langTile.addEventListener('click', openLangModal);
+    grid.appendChild(langTile);
+
     emptyState.classList.toggle('show', list.length === 0);
-    grid.style.display = list.length === 0 ? 'none' : 'grid';
+    grid.style.display = 'grid';
   }
 
   document.getElementById('search').addEventListener('input', function(e){
     var q = e.target.value.trim().toLowerCase();
-    var filtered = allowedTools.filter(function(t){ return t.name.toLowerCase().indexOf(q) !== -1; });
+    lastSearchQuery = q;
+    var filtered = allowedTools.filter(function(t){
+      return t.name.toLowerCase().indexOf(q) !== -1 || translateToolName(t.name).toLowerCase().indexOf(q) !== -1;
+    });
     renderTiles(filtered);
   });
+
+  /* ---------------- Language switcher ---------------- */
+  var langModalBackdrop = document.getElementById('lang-modal-backdrop');
+
+  function openLangModal(){
+    highlightSelectedLang();
+    langModalBackdrop.classList.add('show');
+  }
+  function closeLangModal(){
+    langModalBackdrop.classList.remove('show');
+  }
+  document.getElementById('lang-modal-close').addEventListener('click', closeLangModal);
+  langModalBackdrop.addEventListener('click', function(e){
+    if(e.target === langModalBackdrop){ closeLangModal(); }
+  });
+  var langOptionButtons = document.querySelectorAll('.lang-option');
+  for(var loi = 0; loi < langOptionButtons.length; loi++){
+    langOptionButtons[loi].addEventListener('click', function(){
+      applyLanguage(this.getAttribute('data-lang-value'));
+      closeLangModal();
+    });
+  }
+
+  function highlightSelectedLang(){
+    var buttons = document.querySelectorAll('.lang-option');
+    for(var i = 0; i < buttons.length; i++){
+      buttons[i].classList.toggle('is-selected', buttons[i].getAttribute('data-lang-value') === currentLang);
+    }
+  }
+
+  function updateHeaderSub(){
+    document.querySelector('.header-sub').textContent = isAdminUser ? t('headerSubAdmin') : t('headerSubTeacher');
+  }
+
+  function updateGreeting(){
+    var greetingEl = document.getElementById('greeting');
+    var firstName = (currentTeacherName || '').trim().split(' ')[0];
+    var fallback = t('greetingFallbackName');
+    if(currentLang === 'hi' && firstName){
+      if(hindiNameCache[firstName]){
+        greetingEl.textContent = t('greetingPrefix') + ' ' + hindiNameCache[firstName];
+      } else {
+        greetingEl.textContent = t('greetingPrefix') + ' ' + firstName; // show immediately, upgrade once transliterated
+        transliterateToHindi(firstName, function(translated){
+          if(currentLang === 'hi' && (currentTeacherName || '').trim().split(' ')[0] === firstName){
+            document.getElementById('greeting').textContent = t('greetingPrefix') + ' ' + translated;
+          }
+        });
+      }
+    } else {
+      greetingEl.textContent = t('greetingPrefix') + ' ' + (firstName || fallback);
+    }
+  }
+
+  function applyLanguage(lang){
+    currentLang = (lang === 'hi') ? 'hi' : 'en';
+    document.documentElement.setAttribute('data-lang', currentLang);
+    try{ localStorage.setItem(LANG_KEY, currentLang); }catch(e){}
+
+    document.getElementById('search').setAttribute('placeholder', t('searchPlaceholder'));
+    document.querySelector('.section-label').textContent = t('sectionLabel');
+    document.querySelector('#empty-state p').textContent = t('emptyStateText');
+    document.querySelector('#sheet-backdrop .sheet h3').textContent = t('signoutTitle');
+    document.querySelector('#sheet-backdrop .sheet p').textContent = t('signoutText');
+    document.getElementById('cancel-signout').textContent = t('signoutCancel');
+    document.getElementById('confirm-signout').textContent = t('signoutConfirm');
+    document.getElementById('lang-modal-title').textContent = t('langModalTitle');
+    document.getElementById('lang-modal-sub').textContent = t('langModalSub');
+    document.getElementById('lang-option-en-label').textContent = t('langOptionEnLabel');
+    document.getElementById('lang-option-hi-label').textContent = t('langOptionHiLabel');
+
+    updateHeaderSub();
+    updateGreeting();
+
+    var q = lastSearchQuery;
+    var filtered = allowedTools.filter(function(tl){
+      return q === '' || tl.name.toLowerCase().indexOf(q) !== -1 || translateToolName(tl.name).toLowerCase().indexOf(q) !== -1;
+    });
+    renderTiles(filtered);
+    highlightSelectedLang();
+  }
+
+  // Apply the stored (or default) language right away so every static label is correct
+  // before the app becomes visible — nothing here is shown until showApp() runs.
+  applyLanguage(getStoredLang());
 
   /* ---------------- Sign-out sheet ---------------- */
   var sheetBackdrop = document.getElementById('sheet-backdrop');
@@ -738,7 +1138,8 @@
   var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   function showApp(teacherName){
-    document.getElementById('greeting').textContent = 'Hello, ' + (teacherName || 'Teacher').split(' ')[0];
+    currentTeacherName = teacherName || '';
+    updateGreeting();
     document.getElementById('gate').classList.add('hidden');
     document.getElementById('app').classList.add('ready');
   }
@@ -781,10 +1182,11 @@
       allowedTools = TOOLS.filter(function(tool){
   return !tool.adminOnly || adminResult.data === true;
 });
+      isAdminUser = adminResult.data === true;
       renderTiles(allowedTools);
 
-      document.querySelector('.header-sub').textContent = adminResult.data === true ? 'Admin Dashboard' : 'Teacher Dashboard';
-      
+      updateHeaderSub();
+
       showApp(teacherResult.data.name);
     }catch(err){
       console.error('Auth check failed:', err);
