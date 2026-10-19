@@ -1276,10 +1276,18 @@ document.getElementById('dismiss-confirm').addEventListener('click', function(){
     btn.disabled = false; btn.textContent = 'Dismiss';
     sheetDismiss.classList.remove('show');
     if(res.error){ toast('Dismiss failed: ' + res.error.message, true); return; }
-    toast('Sign-up request dismissed.');
-    state.activeRow = null;
-    state.pending = state.pending.filter(function(r){ return r.id !== row.id; });
-    renderPending();
+        supabaseClient.functions.invoke('admin-user-accounts', {
+      body: { action: 'delete', uuids: [row.id] }
+    }).then(function(fnRes){
+      if(fnRes.error){
+        toast('Sign-up dismissed, but the auth account could not be removed — check manually.', true);
+      } else {
+        toast('Sign-up request dismissed.');
+      }
+      state.activeRow = null;
+      state.pending = state.pending.filter(function(r){ return r.id !== row.id; });
+      renderPending();
+    });
   });
 });
 
