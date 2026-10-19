@@ -1,7 +1,7 @@
 {
   "name": "My GSMS — Gamified School Management System",
   "short_name": "My GSMS",
-  "description": "All-in-one app for managing student data.",
+  "description": "All-in-one app for educators to manage student data.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
