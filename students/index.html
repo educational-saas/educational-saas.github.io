@@ -821,6 +821,10 @@
     }
   }
 
+// A small helper to format student name (capitalise first letter, keep all others small)
+function capitalizeFirstLetter(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
   window.addEventListener('popstate', function(){
     if(document.body.classList.contains('viewer-open')){
       closePageInternal();
@@ -1630,7 +1634,7 @@ if(profileResult.data.master_token){
   }catch(e){ /* ignore — falls back to default gender avatar */ }
 }
 
-      document.getElementById('greeting').textContent = 'Hi, ' + state.name.split(' ')[0] + '!';
+      document.getElementById('greeting').textContent = 'Hi, ' + capitalizeFirstLetter(state.name.split(' ')[0]);
       setIdentityLabel('Class ' + profileResult.data.class);
       updateAvatar();
       renderTiles(filterTools(document.getElementById('search').value));
