@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<script>
+  (function(){
+    try{
+      var savedLang = localStorage.getItem('gsms-lang');
+      var lang = (savedLang === 'hi' || savedLang === 'en') ? savedLang : 'en';
+      document.documentElement.setAttribute('data-lang', lang);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Attendance</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold:rgba(245,166,35,.10); --bg-tint-teal:rgba(27,107,120,.10);
+    --border:rgba(13,56,65,.08); --border-hover:rgba(245,166,35,.45);
+    --toggle-bg:rgba(255,255,255,.75); --toggle-border:rgba(13,56,65,.14);
+    --header-bg:rgba(250,248,243,.85);
+    --danger:#c9432f; --danger-bg:rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg:rgba(47,143,91,.1);
+    --medical:#0e7fb0; --holiday:#7c5ce0;
+    --shadow:0 18px 40px -22px rgba(13,56,65,.35);
+    --ease:cubic-bezier(.22,1,.36,1);
+    --r-md:18px; --r-sm:14px;
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-700:#5fd0de; --teal-600:#7fdbe6;
+    --gold-600:#ffb648; --gold-400:#ffd685;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold:rgba(255,182,72,.07); --bg-tint-teal:rgba(95,208,222,.10);
+    --border:rgba(255,255,255,.08); --border-hover:rgba(255,198,92,.4);
+    --toggle-bg:rgba(24,36,37,.85); --toggle-border:rgba(255,255,255,.14);
+    --header-bg:rgba(9,34,39,.85);
+    --danger:#ff6b57; --danger-bg:rgba(255,107,87,.12);
+    --success:#57d492; --success-bg:rgba(87,212,146,.12);
+    --medical:#5cc8f0; --holiday:#a994ff;
+    --shadow:0 18px 40px -22px rgba(0,0,0,.55);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100svh; overflow-x:hidden;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,sans-serif;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color:transparent;
+  }
+  button,input,select{font-family:inherit;}
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+
+  /* Hindi typography — scoped only to data-lang="hi", English mode untouched */
+  html[data-lang="hi"] body{ font-family:'Noto Sans Devanagari','Manrope',system-ui,sans-serif; }
+  html[data-lang="hi"] .hdr-title,
+  html[data-lang="hi"] .sheet h3,
+  html[data-lang="hi"] .stat b{ font-family:'Noto Sans Devanagari','Fraunces',serif; }
+
+  /* Loading gate */
+  #gate{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s;}
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{width:36px; height:36px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--gold-500); animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{display:none; min-height:100svh; flex-direction:column;}
+  #app.ready{display:flex;}
+
+  /* Header */
+  .app-header{
+    position:sticky; top:0; z-index:40; background:var(--header-bg);
+    border-bottom:1px solid var(--border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+  }
+  .hdr-top{display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto;}
+  .hdr-brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .hdr-title{font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; margin:0; color:var(--ink-900);}
+  .hdr-sub{margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600);}
+  .hdr-actions{display:flex; gap:8px;}
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; flex-shrink:0; position:relative;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    background:var(--toggle-bg); border:1.5px solid var(--toggle-border);
+    box-shadow:0 10px 24px -12px rgba(13,56,65,.4);
+    transition:transform .2s var(--ease);
+  }
+  .icon-btn:hover{transform:translateY(-2px);}
+  .icon-btn:active{transform:scale(.96);}
+  .icon-btn:focus-visible{outline:3px solid var(--gold-500); outline-offset:3px;}
+  .icon-btn.sm{width:44px; height:44px; font-size:1.3rem; color:var(--teal-700); font-weight:700;}
+  .icon-btn svg{width:19px; height:19px; fill:none; stroke:var(--teal-700); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s, transform .4s var(--ease);}
+  .icon-sun{opacity:1; transform:rotate(0) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0) scale(1);}
+  html[data-theme="dark"] .icon-btn svg{stroke:var(--gold-400);}
+
+  /* Layout */
+  main{flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 40px); display:flex; flex-direction:column; gap:14px;}
+  .card{background:var(--white); border:1px solid var(--border); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:560px){ .row2{grid-template-columns:1fr;} }
+  .field label{display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px;}
+  .field + .field{margin-top:14px;}
+  select,input[type="date"],input[type="text"]{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border);
+    background:var(--cream); color:var(--ink-900); font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease);
+  }
+  select{appearance:none; -webkit-appearance:none; padding-right:36px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;}
+  select:focus,input:focus{border-color:var(--border-hover); box-shadow:0 0 0 4px var(--bg-tint-gold);}
+  input:disabled,select:disabled{opacity:.55; cursor:not-allowed;}
+  .date-row{display:flex; gap:8px; align-items:center;}
+  .date-row input{flex:1; min-width:0;}
+  .placeholder{display:flex; flex-direction:column; align-items:center; text-align:center; padding:36px 16px; color:var(--ink-500); font-size:.9rem;}
+  .placeholder p{margin:0;}
+
+  /* Stats */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px;}
+  .stat{background:var(--white); border:1px solid var(--border); border-radius:var(--r-sm); padding:12px 14px; box-shadow:var(--shadow);}
+  .stat b{display:block; font-family:'Fraunces',serif; font-size:1.4rem; font-weight:600;}
+  .stat span{font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500);}
+
+  /* Holiday */
+  .hol-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .hol-row strong{font-size:.92rem;}
+  .hol-row input[type="checkbox"]{width:20px; height:20px; accent-color:var(--holiday); cursor:pointer;}
+  #holiday-reason{margin-top:12px; display:none;}
+  .lock{display:none; margin:0; font-size:.84rem; font-weight:600; padding:10px 14px; border-radius:var(--r-sm); background:var(--gold-500); color:var(--teal-900); background:var(--bg-tint-gold); color:var(--gold-600);}
+
+  /* Toolbar & buttons */
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap;}
+  .toolbar .btn{flex:1; min-width:150px;}
+  .btn{padding:13px 18px; border-radius:14px; border:none; font-weight:700; font-size:.88rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:transform .2s var(--ease), opacity .2s;}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .btn-primary{background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55);}
+  .btn-ghost{background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border);}
+  .btn-danger{background:var(--danger-bg); color:var(--danger);}
+  .footer-actions{display:flex; gap:10px; margin-top:6px;}
+  .footer-actions .btn-primary{flex:1;}
+
+  /* Student list */
+  .list{display:flex; flex-direction:column; gap:8px;}
+  .srow{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; cursor:pointer; user-select:none;
+    background:var(--white); border:1px solid var(--border); border-left:4px solid var(--border);
+    border-radius:var(--r-sm); transition:background-color .2s, border-color .2s, transform .15s var(--ease);
+  }
+  .srow:active{transform:scale(.99);}
+  .srow.is-P{border-left-color:var(--success);}
+  .srow.is-A{border-left-color:var(--danger); background:var(--danger-bg);}
+  .srow.is-L{border-left-color:var(--gold-600); background:var(--bg-tint-gold);}
+  .srow.is-M{border-left-color:var(--medical); background:rgba(14,127,176,.08);}
+  .srow.is-H{border-left-color:var(--holiday); background:rgba(124,92,224,.10); cursor:default;}
+  .roll{width:36px; flex-shrink:0; text-align:center; font-size:.76rem; font-weight:800; color:var(--ink-500); background:var(--cream); border-radius:8px; padding:5px 0;}
+  .who{flex:1; min-width:0;}
+  .name{font-weight:600; font-size:.96rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .note{font-size:.78rem; color:var(--ink-500); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ic{width:34px; height:34px; border-radius:10px; border:1.5px solid var(--border); background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+  .ic svg{width:16px; height:16px; fill:none; stroke:var(--ink-500); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .badge{min-width:40px; height:34px; padding:0 10px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.8rem; color:#fff; background:var(--border); flex-shrink:0; letter-spacing:.02em;}
+  .is-P .badge{background:var(--success);}
+  .is-A .badge{background:var(--danger);}
+  .is-L .badge{background:var(--gold-600);}
+  .is-M .badge{background:var(--medical);}
+  .is-H .badge{background:var(--holiday);}
+  .badge.none{background:transparent; color:var(--ink-500); border:1.5px dashed var(--border);}
+  html[data-theme="dark"] .badge{color:var(--teal-900);}
+  html[data-theme="dark"] .badge.none{color:var(--ink-500);}
+  .loader{display:flex; justify-content:center; padding:40px 0;}
+
+  /* Sheets & toast */
+  .sheet-backdrop{position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s;}
+  .sheet-backdrop.show{opacity:1; visibility:visible;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:101; max-width:960px; margin:0 auto; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); transform:translateY(100%); transition:transform .3s var(--ease); box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);}
+  .sheet-backdrop.show .sheet{transform:translateY(0);}
+  .sheet-handle{width:38px; height:4px; border-radius:99px; background:var(--border); margin:0 auto 18px;}
+  .sheet h3{font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem;}
+  .sheet p{margin:0 0 16px; color:var(--ink-500); font-size:.88rem;}
+  .sheet .btn-row{display:flex; gap:10px;}
+  .sheet .btn-row .btn{flex:1;}
+  #toast-wrap{position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;}
+  .toast{background:var(--teal-900); color:#fff; font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s, transform .3s var(--ease); max-width:88vw;}
+  html[data-theme="dark"] .toast{background:var(--gold-400); color:var(--teal-900);}
+  .toast.error{background:var(--danger); color:#fff;}
+  .toast.show{opacity:1; transform:translateY(0);}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" id="gate-spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+  <header class="app-header">
+    <div class="hdr-top">
+      <div class="hdr-brand">
+        <button class="icon-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div>
+          <p class="hdr-title" id="app-title">Attendance</p>
+          <p class="hdr-sub" id="role-badge">Mark &bull; View</p>
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="field">
+        <label for="class-select" id="lbl-class">Class</label>
+        <select id="class-select"><option value="">Select class…</option></select>
+      </div>
+      <div class="field">
+        <label for="date-input" id="lbl-date">Date</label>
+        <div class="date-row">
+          <button class="icon-btn sm" id="prev-day" type="button" aria-label="Previous day">‹</button>
+          <input type="date" id="date-input" aria-label="Attendance date">
+          <button class="icon-btn sm" id="next-day" type="button" aria-label="Next day">›</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="placeholder card" id="empty"><p id="empty-text">Choose a class to mark or view its attendance.</p></div>
+
+    <div id="body" style="display:none; flex-direction:column; gap:14px;">
+      <div class="stats" id="stats"></div>
+
+      <section class="card">
+        <label class="hol-row">
+          <strong id="holiday-label">Holiday for this class</strong>
+          <input type="checkbox" id="holiday-switch">
+        </label>
+        <input type="text" id="holiday-reason" placeholder="Reason (e.g. Sunday, Diwali)" maxlength="200">
+      </section>
+
+      <p class="lock" id="lock-note"></p>
+
+      <div class="toolbar">
+        <button class="btn btn-ghost" id="btn-all-p" type="button">Mark unmarked present</button>
+        <button class="btn btn-ghost" id="btn-share" type="button">Share absentees</button>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div class="footer-actions">
+        <button class="btn btn-danger" id="btn-delete-day" type="button">Delete day</button>
+        <button class="btn btn-primary" id="btn-save" type="button" disabled>Save attendance</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Sign-out sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out">
+    <div class="sheet-handle"></div>
+    <h3 id="signout-title">Sign out?</h3>
+    <p id="signout-msg">You'll need to sign in again to access attendance.</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="cancel-signout" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout" type="button">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm sheet (delete / discard) -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-msg"></p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="confirm-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note sheet -->
+<div class="sheet-backdrop" id="sheet-note">
+  <div class="sheet" role="dialog" aria-label="Add note">
+    <div class="sheet-handle"></div>
+    <h3 id="note-title">Note</h3>
+    <p id="note-desc">Reason for absence, leave or medical leave. Visible in the shared list.</p>
+    <input type="text" id="note-input" placeholder="e.g. Fever, Family wedding" maxlength="200">
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-ghost" id="note-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="note-save" type="button">Save note</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   I18N — single translation dictionary + helper.
+   Language is read (never written) from the shared gsms-lang
+   preference by the <head> script, before paint. No toggle
+   lives on this page.
+========================================================= */
+var LANG = document.documentElement.getAttribute('data-lang') || 'en';
+function currentLang(){ return LANG; }
+
+var I18N = {
+  en: {
+    loading: "Loading",
+    backToDashboard: "Back to dashboard",
+    appTitle: "Attendance",
+    defaultRoleBadge: "Mark \u2022 View",
+    toggleDarkMode: "Toggle dark mode",
+    signOut: "Sign out",
+    classLabel: "Class",
+    selectClass: "Select class\u2026",
+    yourClasses: "Your classes",
+    allClasses: "All classes",
+    viewOnly: "View only",
+    dateLabel: "Date",
+    prevDay: "Previous day",
+    nextDay: "Next day",
+    attendanceDate: "Attendance date",
+    chooseClass: "Choose a class to mark or view its attendance.",
+    holidayForClass: "Holiday for this class",
+    holidayReasonPlaceholder: "Reason (e.g. Sunday, Diwali)",
+    markUnmarkedPresent: "Mark unmarked present",
+    shareAbsentees: "Share absentees",
+    deleteDay: "Delete day",
+    saveAttendance: "Save attendance",
+    markHoliday: "Mark holiday",
+    statTotal: "Total",
+    statPresent: "Present",
+    statAbsent: "Absent",
+    statLeave: "Leave",
+    statMedical: "Medical",
+    statUnmarked: "Unmarked",
+    holiday: "Holiday",
+    noReasonSet: "No reason set",
+    noStudents: "No students in this class yet.",
+    signOutQ: "Sign out?",
+    signOutMsg: "You'll need to sign in again to access attendance.",
+    cancel: "Cancel",
+    areYouSure: "Are you sure?",
+    deleteBtn: "Delete",
+    noteTitle: "Note",
+    noteTitleFor: "Note for {name}",
+    noteDesc: "Reason for absence, leave or medical leave. Visible in the shared list.",
+    notePlaceholder: "e.g. Fever, Family wedding",
+    saveNote: "Save note",
+    addNoteFor: "Add note for {name}",
+    student: "student",
+    statusPresent: "Present",
+    statusAbsent: "Absent",
+    statusLeave: "Leave",
+    statusMedical: "Medical leave",
+    statusHoliday: "Holiday",
+    noStatus: "no status",
+    couldNotLoad: "Could not load attendance: {msg}",
+    attendanceSaved: "Attendance saved.",
+    nothingToSave: "Nothing to save.",
+    saveFailed: "Save failed: {msg}",
+    attendanceDeleted: "Attendance deleted.",
+    deleteFailed: "Delete failed: {msg}",
+    dayLocked: "This day is locked.",
+    isHoliday: "It is a holiday.",
+    everyonePresent: "Everyone is present or unmarked.",
+    copiedToClipboard: "List copied to clipboard.",
+    deleteDayTitle: "Delete this day\u2019s attendance?",
+    deleteDayMsg: "All marks and notes for {cls} on {date} will be removed.",
+    viewOnlyLock: "View only. You are not the class teacher for {cls}.",
+    lockedNoCaveat: "Locked. Only today's attendance can be changed.",
+    lockedWithCaveat: "Locked. Only today's attendance can be changed; past dates are admin-only.",
+    adminBadge: "Admin \u2022 all classes",
+    teacherBadge: "{name} \u2022 Mark & view",
+    absenteesHeader: "Absentees - Class {cls}",
+    summary: "Summary:",
+    summaryAbsent: "Absent: {n}",
+    summaryLeave: "Leave: {n}",
+    summaryMedical: "Medical: {n}"
+  },
+  hi: {
+    loading: "लोड हो रहा है",
+    backToDashboard: "डैशबोर्ड पर वापस जाएँ",
+    appTitle: "हाज़िरी",
+    defaultRoleBadge: "हाज़िरी लगाएँ • देखें",
+    toggleDarkMode: "डार्क मोड बदलें",
+    signOut: "साइन आउट",
+    classLabel: "कक्षा",
+    selectClass: "कक्षा चुनें…",
+    yourClasses: "आपकी कक्षाएँ",
+    allClasses: "सभी कक्षाएँ",
+    viewOnly: "केवल देखें",
+    dateLabel: "तारीख़",
+    prevDay: "पिछला दिन",
+    nextDay: "अगला दिन",
+    attendanceDate: "हाज़िरी की तारीख़",
+    chooseClass: "हाज़िरी लगाने या देखने के लिए कक्षा चुनें।",
+    holidayForClass: "इस कक्षा की छुट्टी",
+    holidayReasonPlaceholder: "कारण (जैसे रविवार, दिवाली)",
+    markUnmarkedPresent: "बाकी सबको उपस्थित करें",
+    shareAbsentees: "अनुपस्थित सूची भेजें",
+    deleteDay: "दिन हटाएँ",
+    saveAttendance: "हाज़िरी सेव करें",
+    markHoliday: "छुट्टी दर्ज करें",
+    statTotal: "कुल",
+    statPresent: "उपस्थित",
+    statAbsent: "अनुपस्थित",
+    statLeave: "छुट्टी",
+    statMedical: "मेडिकल",
+    statUnmarked: "अंकित नहीं",
+    holiday: "छुट्टी",
+    noReasonSet: "कोई कारण नहीं दिया गया",
+    noStudents: "इस कक्षा में अभी कोई छात्र नहीं है।",
+    signOutQ: "साइन आउट करें?",
+    signOutMsg: "हाज़िरी देखने के लिए आपको दोबारा साइन इन करना होगा।",
+    cancel: "रद्द करें",
+    areYouSure: "क्या आप सुनिश्चित हैं?",
+    deleteBtn: "हटाएँ",
+    noteTitle: "टिप्पणी",
+    noteTitleFor: "{name} के लिए टिप्पणी",
+    noteDesc: "अनुपस्थिति, छुट्टी या मेडिकल लीव का कारण। यह शेयर की गई सूची में दिखेगा।",
+    notePlaceholder: "जैसे बुखार, घर में शादी",
+    saveNote: "टिप्पणी सेव करें",
+    addNoteFor: "{name} के लिए टिप्पणी जोड़ें",
+    student: "छात्र",
+    statusPresent: "उपस्थित",
+    statusAbsent: "अनुपस्थित",
+    statusLeave: "छुट्टी",
+    statusMedical: "मेडिकल लीव",
+    statusHoliday: "छुट्टी",
+    noStatus: "कोई स्थिति नहीं",
+    couldNotLoad: "हाज़िरी लोड नहीं हो पाई: {msg}",
+    attendanceSaved: "हाज़िरी सेव हो गई।",
+    nothingToSave: "सेव करने के लिए कुछ नहीं है।",
+    saveFailed: "सेव नहीं हो पाया: {msg}",
+    attendanceDeleted: "हाज़िरी हटा दी गई।",
+    deleteFailed: "हटाया नहीं जा सका: {msg}",
+    dayLocked: "यह दिन लॉक है।",
+    isHoliday: "आज छुट्टी है।",
+    everyonePresent: "सब उपस्थित हैं या अंकित नहीं हैं।",
+    copiedToClipboard: "सूची क्लिपबोर्ड पर कॉपी हो गई।",
+    deleteDayTitle: "इस दिन की हाज़िरी हटाएँ?",
+    deleteDayMsg: "{cls} की {date} की सभी हाज़िरी और टिप्पणियाँ हट जाएँगी।",
+    viewOnlyLock: "केवल देखने के लिए। आप {cls} के क्लास टीचर नहीं हैं।",
+    lockedNoCaveat: "लॉक है। केवल आज की हाज़िरी बदली जा सकती है।",
+    lockedWithCaveat: "लॉक है। केवल आज की हाज़िरी बदली जा सकती है; पुरानी तारीखें केवल एडमिन बदल सकते हैं।",
+    adminBadge: "एडमिन • सभी कक्षाएँ",
+    teacherBadge: "{name} • हाज़िरी लगाएँ और देखें",
+    absenteesHeader: "अनुपस्थित सूची - कक्षा {cls}",
+    summary: "सारांश:",
+    summaryAbsent: "अनुपस्थित: {n}",
+    summaryLeave: "छुट्टी: {n}",
+    summaryMedical: "मेडिकल: {n}"
+  }
+};
+
+function t(key, vars){
+  var dict = I18N[LANG] || I18N.en;
+  var str = dict[key] != null ? dict[key] : I18N.en[key];
+  if(str == null) str = key;
+  if(vars){
+    Object.keys(vars).forEach(function(k){ str = str.split('{' + k + '}').join(vars[k]); });
+  }
+  return str;
+}
+
+/* Best-effort name transliteration (Hindi only), progressive enhancement. */
+var nameCache = {};
+var namePending = {};
+function getDisplayName(name){
+  if(LANG !== 'hi') return name;
+  return nameCache[name] || name;
+}
+function transliterateName(name){
+  if(LANG !== 'hi' || !name || nameCache[name] || namePending[name]) return;
+  namePending[name] = true;
+  try{
+    fetch('https://inputtools.google.com/request?text=' + encodeURIComponent(name) + '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=jsapi')
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        try{
+          var result = data && data[0] === 'SUCCESS' && data[1] && data[1][0] && data[1][0][1] && data[1][0][1][0];
+          if(result){ nameCache[name] = result; render(); }
+        }catch(e){}
+      })
+      .catch(function(){})
+      .then(function(){ delete namePending[name]; });
+  }catch(e){ delete namePending[name]; }
+}
+
+function statusText(v){
+  if(v === 'P') return t('statusPresent');
+  if(v === 'A') return t('statusAbsent');
+  if(v === 'L') return t('statusLeave');
+  if(v === 'M') return t('statusMedical');
+  if(v === 'H') return t('statusHoliday');
+  return t('noStatus');
+}
+
+/* Apply translations to static page chrome. Dynamically generated
+   content (class list, student list, stats, messages) is produced
+   with t() directly inside the functions that build it, so it is
+   always in the current language whenever it (re)renders. */
+function applyLanguage(){
+  var gs = document.getElementById('gate-spinner'); if(gs) gs.setAttribute('aria-label', t('loading'));
+  $('back-btn').setAttribute('aria-label', t('backToDashboard'));
+  $('back-btn').setAttribute('title', t('backToDashboard'));
+  var at = document.getElementById('app-title'); if(at) at.textContent = t('appTitle');
+  var rb = $('role-badge'); if(rb) rb.textContent = t('defaultRoleBadge');
+  $('theme-toggle').setAttribute('aria-label', t('toggleDarkMode'));
+  $('theme-toggle').setAttribute('title', t('toggleDarkMode'));
+  $('signout-btn').setAttribute('aria-label', t('signOut'));
+  $('signout-btn').setAttribute('title', t('signOut'));
+  var lblClass = document.getElementById('lbl-class'); if(lblClass) lblClass.textContent = t('classLabel');
+  var opt0 = document.querySelector('#class-select option[value=""]'); if(opt0) opt0.textContent = t('selectClass');
+  var lblDate = document.getElementById('lbl-date'); if(lblDate) lblDate.textContent = t('dateLabel');
+  $('prev-day').setAttribute('aria-label', t('prevDay'));
+  $('next-day').setAttribute('aria-label', t('nextDay'));
+  $('date-input').setAttribute('aria-label', t('attendanceDate'));
+  var emptyTxt = document.getElementById('empty-text'); if(emptyTxt) emptyTxt.textContent = t('chooseClass');
+  var holLbl = document.getElementById('holiday-label'); if(holLbl) holLbl.textContent = t('holidayForClass');
+  $('holiday-reason').setAttribute('placeholder', t('holidayReasonPlaceholder'));
+  $('btn-all-p').textContent = t('markUnmarkedPresent');
+  $('btn-share').textContent = t('shareAbsentees');
+  $('btn-delete-day').textContent = t('deleteDay');
+  $('btn-save').textContent = t('saveAttendance');
+  var sot = document.getElementById('signout-title'); if(sot) sot.textContent = t('signOutQ');
+  var som = document.getElementById('signout-msg'); if(som) som.textContent = t('signOutMsg');
+  $('cancel-signout').textContent = t('cancel');
+  $('confirm-signout').textContent = t('signOut');
+  $('confirm-title').textContent = t('areYouSure');
+  $('confirm-cancel').textContent = t('cancel');
+  $('confirm-ok').textContent = t('deleteBtn');
+  $('note-title').textContent = t('noteTitle');
+  var ndesc = document.getElementById('note-desc'); if(ndesc) ndesc.textContent = t('noteDesc');
+  $('note-input').setAttribute('placeholder', t('notePlaceholder'));
+  $('note-cancel').textContent = t('cancel');
+  $('note-save').textContent = t('saveNote');
+}
+
+/* =========================================================
+   SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Status codes stored in the DB. null = no status (no row).
+var CYCLE = [null, 'P', 'A', 'L', 'M'];
+var LABEL = { P: 'P', A: 'A', L: 'L', M: 'ML', H: '' };
+var NAME  = { P: 'Present', A: 'Absent', L: 'Leave', M: 'Medical leave', H: 'Holiday' };
+
+var S = {
+  isAdmin: false,
+  classes: [],     // class names, oldest created_at first
+  mine: {},        // classes this user may mark
+  cls: '',
+  date: '',
+  students: [],    // [{id, roll_no, name}]
+  cur: {},         // student id -> status or null (working copy)
+  orig: {},        // student id -> status in DB
+  notes: {},       // student id -> note (working copy)
+  origNotes: {},   // student id -> note in DB
+  holiday: false,
+  holidayReason: '',
+  dirty: false
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function $(id){ return document.getElementById(id); }
+function esc(s){ var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+function todayIST(){ return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); }
+function addDays(iso, n){ var d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function fmtDay(iso){ return new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'short', year:'numeric' }); }
+function canEdit(){ return !!S.cls && (S.isAdmin || (!!S.mine[S.cls] && S.date === todayIST())); }
+
+function toast(msg, isError){
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  $('toast-wrap').appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2600);
+}
+
+/* =========================================================
+   SHEETS
+========================================================= */
+var confirmOk = null, confirmCancel = null;
+function askConfirm(title, msg, onOk, okLabel, onCancel){
+  $('confirm-title').textContent = title;
+  $('confirm-msg').textContent = msg;
+  $('confirm-ok').textContent = okLabel || t('deleteBtn');
+  confirmOk = onOk; confirmCancel = onCancel || null;
+  $('sheet-confirm').classList.add('show');
+}
+function closeConfirm(fromCancel){
+  $('sheet-confirm').classList.remove('show');
+  var c = confirmCancel;
+  confirmOk = confirmCancel = null;
+  if(fromCancel && c) c();
+}
+$('confirm-cancel').addEventListener('click', function(){ closeConfirm(true); });
+$('confirm-ok').addEventListener('click', function(){ var f = confirmOk; closeConfirm(false); if(f) f(); });
+
+// Discard guard for class/date changes
+function guard(proceed, revert){
+  if(!S.dirty){ proceed(); return; }
+  askConfirm('Discard changes?', 'Unsaved marks for this class and date will be lost.', proceed, 'Discard', revert);
+}
+
+var noteId = null;
+function openNote(id){
+  var s = S.students.filter(function(x){ return x.id === id; })[0];
+  noteId = id;
+  var nm = s ? getDisplayName(s.name) : t('student');
+  $('note-title').textContent = t('noteTitleFor', {name: nm});
+  $('note-input').value = S.notes[id] || '';
+  $('sheet-note').classList.add('show');
+  setTimeout(function(){ $('note-input').focus(); }, 250);
+}
+function closeNote(){ $('sheet-note').classList.remove('show'); noteId = null; }
+$('note-cancel').addEventListener('click', closeNote);
+$('note-save').addEventListener('click', function(){
+  if(noteId != null){ S.notes[noteId] = $('note-input').value.trim(); S.dirty = true; }
+  closeNote();
+  render();
+});
+$('sheet-note').addEventListener('click', function(e){ if(e.target === this) closeNote(); });
+
+$('signout-btn').addEventListener('click', function(){ $('sheet-signout').classList.add('show'); });
+$('cancel-signout').addEventListener('click', function(){ $('sheet-signout').classList.remove('show'); });
+$('confirm-signout').addEventListener('click', function(){
+  sb.auth.signOut().then(async function(){ await wipeInstitutionData(); location.href = AUTH_REDIRECT; });
+});
+
+/* =========================================================
+   THEME + NAV
+========================================================= */
+$('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+$('back-btn').addEventListener('click', function(){ location.href = DASHBOARD_URL; });
+
+/* =========================================================
+   CLASS + DATE SELECTION
+========================================================= */
+function populateClasses(){
+  var mine = S.classes.filter(function(c){ return S.mine[c]; });
+  var others = S.classes.filter(function(c){ return !S.mine[c]; });
+  function opt(c){ return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }
+  var h = '<option value="">' + esc(t('selectClass')) + '</option>';
+  if(mine.length) h += '<optgroup label="' + esc(S.isAdmin ? t('allClasses') : t('yourClasses')) + '">' + mine.map(opt).join('') + '</optgroup>';
+  if(others.length) h += '<optgroup label="' + esc(t('viewOnly')) + '">' + others.map(opt).join('') + '</optgroup>';
+  $('class-select').innerHTML = h;
+}
+
+function changeTo(cls, date){
+  var prevCls = S.cls, prevDate = S.date;
+  guard(function(){
+    S.cls = cls; S.date = date;
+    $('class-select').value = cls;
+    $('date-input').value = date;
+    loadDay();
+  }, function(){
+    $('class-select').value = prevCls;
+    $('date-input').value = prevDate;
+  });
+}
+
+$('class-select').addEventListener('change', function(){ changeTo(this.value, S.date); });
+$('date-input').addEventListener('change', function(){ if(this.value) changeTo(S.cls, this.value); else this.value = S.date; });
+$('prev-day').addEventListener('click', function(){ changeTo(S.cls, addDays(S.date, -1)); });
+$('next-day').addEventListener('click', function(){ changeTo(S.cls, addDays(S.date, 1)); });
+
+/* =========================================================
+   LOAD DAY
+========================================================= */
+async function loadDay(){
+  if(!S.cls){ S.students = []; render(); return; }
+  $('list').innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+  try{
+    var sRes = await sb.from('students_master').select('id, roll_no, name')
+      .eq('class', S.cls).order('roll_no', { ascending: true, nullsFirst: false });
+    if(sRes.error) throw sRes.error;
+
+    var aRes = await sb.from('attendance').select('student_id, status, note')
+      .eq('class', S.cls).eq('att_date', S.date);
+    if(aRes.error) throw aRes.error;
+
+    S.students = sRes.data || [];
+    S.cur = {}; S.orig = {}; S.notes = {}; S.origNotes = {};
+    S.holiday = false; S.holidayReason = '';
+
+    (aRes.data || []).forEach(function(r){
+      S.cur[r.student_id] = r.status;
+      S.orig[r.student_id] = r.status;
+      S.origNotes[r.student_id] = r.note || null;
+      if(r.note) S.notes[r.student_id] = r.note;
+      if(r.status === 'H'){
+        S.holiday = true;
+        if(r.note) S.holidayReason = r.note;
+      }
+    });
+    if(S.holiday && !S.holidayReason){ S.holidayReason = ''; }
+    if(!S.holiday && new Date(S.date + 'T12:00:00').getDay() === 0) S.holidayReason = S.holidayReason || 'Sunday';
+
+    S.dirty = false;
+    render();
+  }catch(e){
+    console.error(e);
+    toast(t('couldNotLoad', {msg: e.message}), true);
+  }
+}
+
+/* =========================================================
+   RENDER
+========================================================= */
+function render(){
+  var hasClass = !!S.cls;
+  $('empty').style.display = hasClass ? 'none' : 'flex';
+  $('body').style.display = hasClass ? 'flex' : 'none';
+  if(!hasClass) return;
+
+  var edit = canEdit();
+  var counts = { P:0, A:0, L:0, M:0, none:0 };
+  S.students.forEach(function(s){
+    var v = S.cur[s.id];
+    if(v === 'H') return;
+    if(!v) counts.none++; else counts[v]++;
+  });
+
+  $('stats').innerHTML = S.holiday
+    ? '<div class="stat" style="grid-column:1/-1"><b style="color:var(--holiday)">' + esc(t('holiday')) + '</b><span>' + esc(S.holidayReason || t('noReasonSet')) + '</span></div>'
+    : [
+        [t('statTotal'), S.students.length, 'var(--ink-900)'],
+        [t('statPresent'), counts.P, 'var(--success)'],
+        [t('statAbsent'), counts.A, 'var(--danger)'],
+        [t('statLeave'), counts.L, 'var(--gold-600)'],
+        [t('statMedical'), counts.M, 'var(--medical)'],
+        [t('statUnmarked'), counts.none, 'var(--ink-500)']
+      ].map(function(x){ return '<div class="stat"><b style="color:' + x[2] + '">' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('');
+
+  $('holiday-switch').checked = S.holiday;
+  $('holiday-switch').disabled = !edit;
+  $('holiday-reason').value = S.holidayReason;
+  $('holiday-reason').style.display = S.holiday ? 'block' : 'none';
+  $('holiday-reason').disabled = !edit;
+
+  var lock = $('lock-note');
+  if(!edit){
+    lock.style.display = 'block';
+    lock.textContent = !S.mine[S.cls] && !S.isAdmin
+      ? t('viewOnlyLock', {cls: S.cls})
+      : (S.isAdmin ? t('lockedNoCaveat') : t('lockedWithCaveat'));
+  } else {
+    lock.style.display = 'none';
+  }
+
+  ['btn-all-p','btn-share','btn-delete-day'].forEach(function(id){ $(id).disabled = !edit && id !== 'btn-share'; });
+  $('btn-all-p').disabled = !edit || S.holiday;
+  $('btn-save').disabled = !edit || !S.dirty;
+  $('btn-save').textContent = S.holiday ? t('markHoliday') : t('saveAttendance');
+
+  $('list').innerHTML = S.students.map(function(s){
+    var v = S.cur[s.id] || null;
+    var cls = v ? ' is-' + v : '';
+    var note = S.notes[s.id];
+    var showNote = note && v && v !== 'P' && v !== 'H';
+    var displayName = getDisplayName(s.name);
+    if(LANG === 'hi') transliterateName(s.name);
+    var badge = v === 'H' ? '<span class="badge">HOL</span>'
+              : v ? '<span class="badge">' + LABEL[v] + '</span>'
+              : '<span class="badge none">–</span>';
+    var noteBtn = (edit && !S.holiday && v && v !== 'P')
+      ? '<button class="ic" type="button" data-act="note" aria-label="' + esc(t('addNoteFor', {name: displayName})) + '"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+      : '';
+    return '<div class="srow' + cls + '" data-id="' + s.id + '" role="button" tabindex="0" aria-label="' + esc(displayName) + ', ' + esc(v ? statusText(v) : t('noStatus')) + '">' +
+      '<div class="roll">' + esc(s.roll_no != null ? s.roll_no : '–') + '</div>' +
+      '<div class="who"><div class="name">' + esc(displayName) + '</div>' +
+      (showNote ? '<div class="note">' + esc(note) + '</div>' : '') + '</div>' +
+      noteBtn + badge + '</div>';
+  }).join('') || '<p class="placeholder" style="padding:20px">' + esc(t('noStudents')) + '</p>';
+}
+
+/* Event delegation for the student list */
+$('list').addEventListener('click', function(e){
+  var row = e.target.closest('.srow');
+  if(!row || !canEdit() || S.holiday) return;
+  var id = Number(row.getAttribute('data-id'));
+  if(e.target.closest('[data-act="note"]')){ openNote(id); return; }
+  var i = CYCLE.indexOf(S.cur[id] || null);
+  S.cur[id] = CYCLE[(i + 1) % CYCLE.length];
+  S.dirty = true;
+  render();
+});
+$('list').addEventListener('keydown', function(e){
+  if((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('srow')){ e.preventDefault(); e.target.click(); }
+});
+
+/* Holiday */
+$('holiday-switch').addEventListener('change', function(){
+  S.holiday = this.checked;
+  S.dirty = true;
+  S.students.forEach(function(s){ S.cur[s.id] = S.holiday ? 'H' : null; });
+  render();
+});
+$('holiday-reason').addEventListener('input', function(){ S.holidayReason = this.value; S.dirty = true; $('btn-save').disabled = !canEdit(); });
+
+/* Bulk present for unmarked students */
+$('btn-all-p').addEventListener('click', function(){
+  S.students.forEach(function(s){ if(!S.cur[s.id]) S.cur[s.id] = 'P'; });
+  S.dirty = true;
+  render();
+});
+
+/* =========================================================
+   SAVE (writes only changed rows, deletes cleared rows)
+========================================================= */
+$('btn-save').addEventListener('click', async function(){
+  if(!canEdit()){ toast(t('dayLocked'), true); return; }
+
+  var upserts = [], deletes = [];
+  S.students.forEach(function(s){
+    var v = S.cur[s.id] || null;
+    var o = S.orig[s.id] || null;
+    var note = v === 'H' ? (S.holidayReason || null)
+             : (v === 'A' || v === 'L' || v === 'M') ? (S.notes[s.id] || null)
+             : null;
+    var oNote = S.origNotes[s.id] || null;
+    if(v){
+      if(v !== o || note !== oNote){
+        upserts.push({ class: S.cls, att_date: S.date, student_id: s.id, status: v, note: note });
+      }
+    } else if(o){
+      deletes.push(s.id);
+    }
+  });
+
+  if(!upserts.length && !deletes.length){ toast(t('nothingToSave')); return; }
+
+  var btn = $('btn-save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    if(upserts.length){
+      var u = await sb.from('attendance').upsert(upserts, { onConflict: 'class,att_date,student_id' });
+      if(u.error) throw u.error;
+    }
+    if(deletes.length){
+      var d = await sb.from('attendance').delete()
+        .eq('class', S.cls).eq('att_date', S.date).in('student_id', deletes);
+      if(d.error) throw d.error;
+    }
+    toast(t('attendanceSaved'));
+    await loadDay();   // re-sync working copy with the database
+  }catch(e){
+    console.error(e);
+    toast(t('saveFailed', {msg: e.message}), true);
+    btn.disabled = false; btn.textContent = S.holiday ? t('markHoliday') : t('saveAttendance');
+  }
+});
+
+/* Delete the whole day (class teacher: today only; admin: any day). RLS enforces it. */
+$('btn-delete-day').addEventListener('click', function(){
+  askConfirm(t('deleteDayTitle'),
+    t('deleteDayMsg', {cls: S.cls, date: fmtDay(S.date)}),
+    async function(){
+      var r = await sb.from('attendance').delete().eq('class', S.cls).eq('att_date', S.date);
+      if(r.error){ toast(t('deleteFailed', {msg: r.error.message}), true); return; }
+      toast(t('attendanceDeleted'));
+      loadDay();
+    }, t('deleteBtn'));
+});
+
+/* Share absentee list in the same format as the mobile app */
+$('btn-share').addEventListener('click', function(){
+  if(S.holiday){ toast(t('isHoliday')); return; }
+  var list = S.students.filter(function(s){ return ['A','L','M'].indexOf(S.cur[s.id]) !== -1; });
+  if(!list.length){ toast(t('everyonePresent')); return; }
+
+  var msg = '*' + t('absenteesHeader', {cls: S.cls}) + '*\n' + fmtDay(S.date) + '\n\n';
+  list.forEach(function(s, i){
+    var v = S.cur[s.id];
+    var suffix = v === 'L' ? ' (L)' : v === 'M' ? ' (ML)' : '';
+    var note = S.notes[s.id] ? ' - ' + S.notes[s.id] : '';
+    msg += (i + 1) + '. ' + s.name + ' (' + (s.roll_no != null ? s.roll_no : '-') + ')' + suffix + note + '\n';
+  });
+  var c = { A:0, L:0, M:0 };
+  list.forEach(function(s){ c[S.cur[s.id]]++; });
+  msg += '\n' + t('summary');
+  if(c.A) msg += '\n' + t('summaryAbsent', {n: c.A});
+  if(c.L) msg += '\n' + t('summaryLeave', {n: c.L});
+  if(c.M) msg += '\n' + t('summaryMedical', {n: c.M});
+
+  if(navigator.share){
+    navigator.share({ text: msg }).catch(function(){});
+  }else if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(function(){ toast(t('copiedToClipboard')); });
+  }
+});
+
+/* Apply static-chrome translations now (page content is already in the
+   DOM since this script runs at the end of <body>; nothing is visible
+   yet behind #gate, so there is no flash either way). */
+applyLanguage();
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+   Role model: admin = all classes; teacher = only classes in class_teachers.
+   Every teacher can view every class (enforced by RLS).
+========================================================= */
+(async function init(){
+  try{
+    var sess = await sb.auth.getSession();
+    var session = sess && sess.data ? sess.data.session : null;
+    if(!session){ location.href = AUTH_REDIRECT; return; }
+    var uid = session.user.id;
+
+    var teacherRow = await sb.from('teachers').select('name').eq('id', uid).maybeSingle();
+    if(teacherRow.error || !teacherRow.data){ location.href = AUTH_REDIRECT; return; }
+
+    var a = await sb.rpc('is_admin');
+    S.isAdmin = !!(a && a.data === true);
+
+    // All classes in creation order (oldest first)
+    var cl = await sb.from('classes').select('name, created_at').order('created_at', { ascending: true });
+    if(cl.error) throw cl.error;
+    S.classes = (cl.data || []).map(function(c){ return c.name; });
+
+    if(S.isAdmin){
+      S.classes.forEach(function(c){ S.mine[c] = true; });
+    }else{
+      var ct = await sb.from('class_teachers').select('class').eq('teacher_id', uid);
+      if(ct.error) throw ct.error;
+      (ct.data || []).forEach(function(r){ S.mine[r.class] = true; });
+    }
+
+    $('role-badge').textContent = S.isAdmin ? t('adminBadge')
+      : t('teacherBadge', {name: teacherRow.data.name.split(' ')[0]});
+
+    populateClasses();
+    S.date = todayIST();
+    $('date-input').value = S.date;
+
+    $('gate').classList.add('hidden');
+    $('app').classList.add('ready');
+  }catch(e){
+    console.error('Bootstrap failed:', e);
+    location.href = AUTH_REDIRECT;
+  }
+})();
+</script>
+</body>
+</html>
