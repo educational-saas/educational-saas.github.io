@@ -910,16 +910,16 @@
   var currentInstitutionId = null;
   try{ currentInstitutionId = localStorage.getItem('gsms_last_institution_id'); }catch(e){}
 
-  function buildInstitutionUrl(href, institutionId){
+    function buildCandidateUrl(href, filename){
     try{
       var u = new URL(href, window.location.href);
       var path = u.pathname;
       if(path.slice(-5) === '.html'){
-        path = path.substring(0, path.lastIndexOf('/') + 1) + 'i-' + institutionId + '.html';
+        path = path.substring(0, path.lastIndexOf('/') + 1) + filename;
       } else if(path.slice(-1) === '/'){
-        path = path + 'i-' + institutionId + '.html';
+        path = path + filename;
       } else {
-        path = path + '/i-' + institutionId + '.html';
+        path = path + '/' + filename;
       }
       u.pathname = path;
       return u.toString();
@@ -935,23 +935,45 @@
     }
   }
 
+  // Ordered candidate filenames to try before falling back to the tool's own default
+  // href (which already serves as "index.html"). Always reads data-lang live, not
+  // a cached variable, so it reflects the latest preference even mid-session.
+  function getCandidateFilenames(institutionId){
+    var lang = document.documentElement.getAttribute('data-lang') === 'hi' ? 'hi' : 'en';
+    if(lang === 'hi'){
+      return ['hi-i-' + institutionId + '.html', 'hi.html'];
+    }
+    return ['i-' + institutionId + '.html'];
+  }
+
+  function tryCandidates(originalHref, candidates, index){
+    if(index >= candidates.length) return; // nothing matched — default href stands in for index.html
+    var candidateUrl = buildCandidateUrl(originalHref, candidates[index]);
+    if(!candidateUrl){ tryCandidates(originalHref, candidates, index + 1); return; }
+    var controller = ('AbortController' in window) ? new AbortController() : null;
+    var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, 4000) : null;
+    fetch(candidateUrl, { method: 'HEAD', signal: controller ? controller.signal : undefined })
+      .then(function(res){
+        if(timeoutId) clearTimeout(timeoutId);
+        if(res && res.ok){
+          institutionUrlCache[originalHref] = candidateUrl;
+          updateTileHref(originalHref, candidateUrl);
+        } else {
+          tryCandidates(originalHref, candidates, index + 1);
+        }
+      })
+      .catch(function(){
+        if(timeoutId) clearTimeout(timeoutId);
+        tryCandidates(originalHref, candidates, index + 1);
+      });
+  }
+
   function checkInstitutionPages(tools, institutionId){
     if(!institutionId) return;
+    var candidates = getCandidateFilenames(institutionId);
     tools.forEach(function(tool){
       if(!tool.href || tool.href === '#') return;
-      var candidate = buildInstitutionUrl(tool.href, institutionId);
-      if(!candidate) return;
-      var controller = ('AbortController' in window) ? new AbortController() : null;
-      var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, 4000) : null;
-      fetch(candidate, { method: 'HEAD', signal: controller ? controller.signal : undefined })
-        .then(function(res){
-          if(timeoutId) clearTimeout(timeoutId);
-          if(res && res.ok){
-            institutionUrlCache[tool.href] = candidate;
-            updateTileHref(tool.href, candidate);
-          }
-        })
-        .catch(function(){ if(timeoutId) clearTimeout(timeoutId); /* keep default href */ });
+      tryCandidates(tool.href, candidates, 0);
     });
   }
 
@@ -1065,6 +1087,7 @@
     currentLang = (lang === 'hi') ? 'hi' : 'en';
     document.documentElement.setAttribute('data-lang', currentLang);
     try{ localStorage.setItem(LANG_KEY, currentLang); }catch(e){}
+    institutionUrlCache = {}; // previous language's resolved hrefs no longer apply
 
     document.getElementById('search').setAttribute('placeholder', t('searchPlaceholder'));
     document.querySelector('.section-label').textContent = t('sectionLabel');
@@ -1086,6 +1109,7 @@
       return q === '' || tl.name.toLowerCase().indexOf(q) !== -1 || translateToolName(tl.name).toLowerCase().indexOf(q) !== -1;
     });
     renderTiles(filtered);
+    checkInstitutionPages(TOOLS, currentInstitutionId); // re-resolve per-language routing against the new data-lang
     highlightSelectedLang();
   }
 
