@@ -11,22 +11,13 @@
     }catch(e){}
   })();
 </script>
-<script>
-  (function(){
-    try{
-      var savedLang = localStorage.getItem('gsms-lang');
-      var lang = (savedLang === 'hi' || savedLang === 'en') ? savedLang : 'en';
-      document.documentElement.setAttribute('data-lang', lang);
-    }catch(e){}
-  })();
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Attendance</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -74,12 +65,6 @@
   }
   button,input,select{font-family:inherit;}
   ::selection{background:var(--gold-400); color:var(--teal-900);}
-
-  /* Hindi typography — scoped only to data-lang="hi", English mode untouched */
-  html[data-lang="hi"] body{ font-family:'Noto Sans Devanagari','Manrope',system-ui,sans-serif; }
-  html[data-lang="hi"] .hdr-title,
-  html[data-lang="hi"] .sheet h3,
-  html[data-lang="hi"] .stat b{ font-family:'Noto Sans Devanagari','Fraunces',serif; }
 
   /* Loading gate */
   #gate{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s;}
@@ -216,7 +201,7 @@
 </head>
 <body>
 
-<div id="gate"><div class="spinner" id="gate-spinner" role="status" aria-label="Loading"></div></div>
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
 
 <div id="app">
   <header class="app-header">
@@ -226,7 +211,7 @@
           <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
         </button>
         <div>
-          <p class="hdr-title" id="app-title">Attendance</p>
+          <p class="hdr-title">Attendance</p>
           <p class="hdr-sub" id="role-badge">Mark &bull; View</p>
         </div>
       </div>
@@ -245,11 +230,11 @@
   <main>
     <section class="card">
       <div class="field">
-        <label for="class-select" id="lbl-class">Class</label>
+        <label for="class-select">Class</label>
         <select id="class-select"><option value="">Select class…</option></select>
       </div>
       <div class="field">
-        <label for="date-input" id="lbl-date">Date</label>
+        <label for="date-input">Date</label>
         <div class="date-row">
           <button class="icon-btn sm" id="prev-day" type="button" aria-label="Previous day">‹</button>
           <input type="date" id="date-input" aria-label="Attendance date">
@@ -258,14 +243,14 @@
       </div>
     </section>
 
-    <div class="placeholder card" id="empty"><p id="empty-text">Choose a class to mark or view its attendance.</p></div>
+    <div class="placeholder card" id="empty"><p>Choose a class to mark or view its attendance.</p></div>
 
     <div id="body" style="display:none; flex-direction:column; gap:14px;">
       <div class="stats" id="stats"></div>
 
       <section class="card">
         <label class="hol-row">
-          <strong id="holiday-label">Holiday for this class</strong>
+          <strong>Holiday for this class</strong>
           <input type="checkbox" id="holiday-switch">
         </label>
         <input type="text" id="holiday-reason" placeholder="Reason (e.g. Sunday, Diwali)" maxlength="200">
@@ -292,8 +277,8 @@
 <div class="sheet-backdrop" id="sheet-signout">
   <div class="sheet" role="dialog" aria-label="Sign out">
     <div class="sheet-handle"></div>
-    <h3 id="signout-title">Sign out?</h3>
-    <p id="signout-msg">You'll need to sign in again to access attendance.</p>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access attendance.</p>
     <div class="btn-row">
       <button class="btn btn-ghost" id="cancel-signout" type="button">Cancel</button>
       <button class="btn btn-danger" id="confirm-signout" type="button">Sign out</button>
@@ -319,7 +304,7 @@
   <div class="sheet" role="dialog" aria-label="Add note">
     <div class="sheet-handle"></div>
     <h3 id="note-title">Note</h3>
-    <p id="note-desc">Reason for absence, leave or medical leave. Visible in the shared list.</p>
+    <p>Reason for absence, leave or medical leave. Visible in the shared list.</p>
     <input type="text" id="note-input" placeholder="e.g. Fever, Family wedding" maxlength="200">
     <div class="btn-row" style="margin-top:16px;">
       <button class="btn btn-ghost" id="note-cancel" type="button">Cancel</button>
@@ -331,256 +316,6 @@
 <div id="toast-wrap"></div>
 
 <script>
-/* =========================================================
-   I18N — single translation dictionary + helper.
-   Language is read (never written) from the shared gsms-lang
-   preference by the <head> script, before paint. No toggle
-   lives on this page.
-========================================================= */
-var LANG = document.documentElement.getAttribute('data-lang') || 'en';
-function currentLang(){ return LANG; }
-
-var I18N = {
-  en: {
-    loading: "Loading",
-    backToDashboard: "Back to dashboard",
-    appTitle: "Attendance",
-    defaultRoleBadge: "Mark \u2022 View",
-    toggleDarkMode: "Toggle dark mode",
-    signOut: "Sign out",
-    classLabel: "Class",
-    selectClass: "Select class\u2026",
-    yourClasses: "Your classes",
-    allClasses: "All classes",
-    viewOnly: "View only",
-    dateLabel: "Date",
-    prevDay: "Previous day",
-    nextDay: "Next day",
-    attendanceDate: "Attendance date",
-    chooseClass: "Choose a class to mark or view its attendance.",
-    holidayForClass: "Holiday for this class",
-    holidayReasonPlaceholder: "Reason (e.g. Sunday, Diwali)",
-    markUnmarkedPresent: "Mark unmarked present",
-    shareAbsentees: "Share absentees",
-    deleteDay: "Delete day",
-    saveAttendance: "Save attendance",
-    markHoliday: "Mark holiday",
-    statTotal: "Total",
-    statPresent: "Present",
-    statAbsent: "Absent",
-    statLeave: "Leave",
-    statMedical: "Medical",
-    statUnmarked: "Unmarked",
-    holiday: "Holiday",
-    noReasonSet: "No reason set",
-    noStudents: "No students in this class yet.",
-    signOutQ: "Sign out?",
-    signOutMsg: "You'll need to sign in again to access attendance.",
-    cancel: "Cancel",
-    areYouSure: "Are you sure?",
-    deleteBtn: "Delete",
-    noteTitle: "Note",
-    noteTitleFor: "Note for {name}",
-    noteDesc: "Reason for absence, leave or medical leave. Visible in the shared list.",
-    notePlaceholder: "e.g. Fever, Family wedding",
-    saveNote: "Save note",
-    addNoteFor: "Add note for {name}",
-    student: "student",
-    statusPresent: "Present",
-    statusAbsent: "Absent",
-    statusLeave: "Leave",
-    statusMedical: "Medical leave",
-    statusHoliday: "Holiday",
-    noStatus: "no status",
-    couldNotLoad: "Could not load attendance: {msg}",
-    attendanceSaved: "Attendance saved.",
-    nothingToSave: "Nothing to save.",
-    saveFailed: "Save failed: {msg}",
-    attendanceDeleted: "Attendance deleted.",
-    deleteFailed: "Delete failed: {msg}",
-    dayLocked: "This day is locked.",
-    isHoliday: "It is a holiday.",
-    everyonePresent: "Everyone is present or unmarked.",
-    copiedToClipboard: "List copied to clipboard.",
-    deleteDayTitle: "Delete this day\u2019s attendance?",
-    deleteDayMsg: "All marks and notes for {cls} on {date} will be removed.",
-    viewOnlyLock: "View only. You are not the class teacher for {cls}.",
-    lockedNoCaveat: "Locked. Only today's attendance can be changed.",
-    lockedWithCaveat: "Locked. Only today's attendance can be changed; past dates are admin-only.",
-    adminBadge: "Admin \u2022 all classes",
-    teacherBadge: "{name} \u2022 Mark & view",
-    absenteesHeader: "Absentees - Class {cls}",
-    summary: "Summary:",
-    summaryAbsent: "Absent: {n}",
-    summaryLeave: "Leave: {n}",
-    summaryMedical: "Medical: {n}",
-    discardTitle: "Discard changes?",
-   discardMsg: "Unsaved marks for this class and date will be lost.",
-   discardBtn: "Discard"
-  },
-  hi: {
-    loading: "लोड हो रहा है",
-    backToDashboard: "डैशबोर्ड पर वापस जाएँ",
-    appTitle: "हाज़िरी",
-    defaultRoleBadge: "हाज़िरी लगाएँ • देखें",
-    toggleDarkMode: "डार्क मोड बदलें",
-    signOut: "साइन आउट",
-    classLabel: "कक्षा",
-    selectClass: "कक्षा चुनें…",
-    yourClasses: "आपकी कक्षाएँ",
-    allClasses: "सभी कक्षाएँ",
-    viewOnly: "केवल देखें",
-    dateLabel: "तारीख़",
-    prevDay: "पिछला दिन",
-    nextDay: "अगला दिन",
-    attendanceDate: "हाज़िरी की तारीख़",
-    chooseClass: "हाज़िरी लगाने या देखने के लिए कक्षा चुनें।",
-    holidayForClass: "इस कक्षा की छुट्टी",
-    holidayReasonPlaceholder: "कारण (जैसे रविवार, दिवाली)",
-    markUnmarkedPresent: "बाकी सबको उपस्थित करें",
-    shareAbsentees: "अनुपस्थित सूची भेजें",
-    deleteDay: "दिन हटाएँ",
-    saveAttendance: "हाज़िरी सेव करें",
-    markHoliday: "छुट्टी दर्ज करें",
-    statTotal: "कुल",
-    statPresent: "उपस्थित",
-    statAbsent: "अनुपस्थित",
-    statLeave: "छुट्टी",
-    statMedical: "मेडिकल",
-    statUnmarked: "अंकित नहीं",
-    holiday: "छुट्टी",
-    noReasonSet: "कोई कारण नहीं दिया गया",
-    noStudents: "इस कक्षा में अभी कोई छात्र नहीं है।",
-    signOutQ: "साइन आउट करें?",
-    signOutMsg: "हाज़िरी देखने के लिए आपको दोबारा साइन इन करना होगा।",
-    cancel: "रद्द करें",
-    areYouSure: "क्या आप सुनिश्चित हैं?",
-    deleteBtn: "हटाएँ",
-    noteTitle: "टिप्पणी",
-    noteTitleFor: "{name} के लिए टिप्पणी",
-    noteDesc: "अनुपस्थिति, छुट्टी या मेडिकल लीव का कारण। यह शेयर की गई सूची में दिखेगा।",
-    notePlaceholder: "जैसे बुखार, घर में शादी",
-    saveNote: "टिप्पणी सेव करें",
-    addNoteFor: "{name} के लिए टिप्पणी जोड़ें",
-    student: "छात्र",
-    statusPresent: "उपस्थित",
-    statusAbsent: "अनुपस्थित",
-    statusLeave: "छुट्टी",
-    statusMedical: "मेडिकल लीव",
-    statusHoliday: "छुट्टी",
-    noStatus: "कोई स्थिति नहीं",
-    couldNotLoad: "हाज़िरी लोड नहीं हो पाई: {msg}",
-    attendanceSaved: "हाज़िरी सेव हो गई।",
-    nothingToSave: "सेव करने के लिए कुछ नहीं है।",
-    saveFailed: "सेव नहीं हो पाया: {msg}",
-    attendanceDeleted: "हाज़िरी हटा दी गई।",
-    deleteFailed: "हटाया नहीं जा सका: {msg}",
-    dayLocked: "यह दिन लॉक है।",
-    isHoliday: "आज छुट्टी है।",
-    everyonePresent: "सब उपस्थित हैं या अंकित नहीं हैं।",
-    copiedToClipboard: "सूची क्लिपबोर्ड पर कॉपी हो गई।",
-    deleteDayTitle: "इस दिन की हाज़िरी हटाएँ?",
-    deleteDayMsg: "{cls} की {date} की सभी हाज़िरी और टिप्पणियाँ हट जाएँगी।",
-    viewOnlyLock: "केवल देखने के लिए। आप {cls} के क्लास टीचर नहीं हैं।",
-    lockedNoCaveat: "लॉक है। केवल आज की हाज़िरी बदली जा सकती है।",
-    lockedWithCaveat: "लॉक है। केवल आज की हाज़िरी बदली जा सकती है; पुरानी तारीखें केवल एडमिन बदल सकते हैं।",
-    adminBadge: "एडमिन • सभी कक्षाएँ",
-    teacherBadge: "{name} • हाज़िरी लगाएँ और देखें",
-    absenteesHeader: "अनुपस्थित सूची - कक्षा {cls}",
-    summary: "सारांश:",
-    summaryAbsent: "अनुपस्थित: {n}",
-    summaryLeave: "छुट्टी: {n}",
-    summaryMedical: "मेडिकल: {n}",
-    discardTitle: "बदलाव रद्द करें?",
-    discardMsg: "इस कक्षा और तारीख़ के अनसेव किए गए निशान हट जाएँगे।",
-    discardBtn: "रद्द करें",
-  }
-};
-
-function t(key, vars){
-  var dict = I18N[LANG] || I18N.en;
-  var str = dict[key] != null ? dict[key] : I18N.en[key];
-  if(str == null) str = key;
-  if(vars){
-    Object.keys(vars).forEach(function(k){ str = str.split('{' + k + '}').join(vars[k]); });
-  }
-  return str;
-}
-
-/* Best-effort name transliteration (Hindi only), progressive enhancement. */
-var nameCache = {};
-var namePending = {};
-function getDisplayName(name){
-  if(LANG !== 'hi') return name;
-  return nameCache[name] || name;
-}
-function transliterateName(name){
-  if(LANG !== 'hi' || !name || nameCache[name] || namePending[name]) return;
-  namePending[name] = true;
-  try{
-    fetch('https://inputtools.google.com/request?text=' + encodeURIComponent(name) + '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=jsapi')
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        try{
-          var result = data && data[0] === 'SUCCESS' && data[1] && data[1][0] && data[1][0][1] && data[1][0][1][0];
-          if(result){ nameCache[name] = result; render(); }
-        }catch(e){}
-      })
-      .catch(function(){})
-      .then(function(){ delete namePending[name]; });
-  }catch(e){ delete namePending[name]; }
-}
-
-function statusText(v){
-  if(v === 'P') return t('statusPresent');
-  if(v === 'A') return t('statusAbsent');
-  if(v === 'L') return t('statusLeave');
-  if(v === 'M') return t('statusMedical');
-  if(v === 'H') return t('statusHoliday');
-  return t('noStatus');
-}
-
-/* Apply translations to static page chrome. Dynamically generated
-   content (class list, student list, stats, messages) is produced
-   with t() directly inside the functions that build it, so it is
-   always in the current language whenever it (re)renders. */
-function applyLanguage(){
-  var gs = document.getElementById('gate-spinner'); if(gs) gs.setAttribute('aria-label', t('loading'));
-  $('back-btn').setAttribute('aria-label', t('backToDashboard'));
-  $('back-btn').setAttribute('title', t('backToDashboard'));
-  var at = document.getElementById('app-title'); if(at) at.textContent = t('appTitle');
-  var rb = $('role-badge'); if(rb) rb.textContent = t('defaultRoleBadge');
-  $('theme-toggle').setAttribute('aria-label', t('toggleDarkMode'));
-  $('theme-toggle').setAttribute('title', t('toggleDarkMode'));
-  $('signout-btn').setAttribute('aria-label', t('signOut'));
-  $('signout-btn').setAttribute('title', t('signOut'));
-  var lblClass = document.getElementById('lbl-class'); if(lblClass) lblClass.textContent = t('classLabel');
-  var opt0 = document.querySelector('#class-select option[value=""]'); if(opt0) opt0.textContent = t('selectClass');
-  var lblDate = document.getElementById('lbl-date'); if(lblDate) lblDate.textContent = t('dateLabel');
-  $('prev-day').setAttribute('aria-label', t('prevDay'));
-  $('next-day').setAttribute('aria-label', t('nextDay'));
-  $('date-input').setAttribute('aria-label', t('attendanceDate'));
-  var emptyTxt = document.getElementById('empty-text'); if(emptyTxt) emptyTxt.textContent = t('chooseClass');
-  var holLbl = document.getElementById('holiday-label'); if(holLbl) holLbl.textContent = t('holidayForClass');
-  $('holiday-reason').setAttribute('placeholder', t('holidayReasonPlaceholder'));
-  $('btn-all-p').textContent = t('markUnmarkedPresent');
-  $('btn-share').textContent = t('shareAbsentees');
-  $('btn-delete-day').textContent = t('deleteDay');
-  $('btn-save').textContent = t('saveAttendance');
-  var sot = document.getElementById('signout-title'); if(sot) sot.textContent = t('signOutQ');
-  var som = document.getElementById('signout-msg'); if(som) som.textContent = t('signOutMsg');
-  $('cancel-signout').textContent = t('cancel');
-  $('confirm-signout').textContent = t('signOut');
-  $('confirm-title').textContent = t('areYouSure');
-  $('confirm-cancel').textContent = t('cancel');
-  $('confirm-ok').textContent = t('deleteBtn');
-  $('note-title').textContent = t('noteTitle');
-  var ndesc = document.getElementById('note-desc'); if(ndesc) ndesc.textContent = t('noteDesc');
-  $('note-input').setAttribute('placeholder', t('notePlaceholder'));
-  $('note-cancel').textContent = t('cancel');
-  $('note-save').textContent = t('saveNote');
-}
-
 /* =========================================================
    SETUP
 ========================================================= */
@@ -658,7 +393,7 @@ var confirmOk = null, confirmCancel = null;
 function askConfirm(title, msg, onOk, okLabel, onCancel){
   $('confirm-title').textContent = title;
   $('confirm-msg').textContent = msg;
-  $('confirm-ok').textContent = okLabel || t('deleteBtn');
+  $('confirm-ok').textContent = okLabel || 'Delete';
   confirmOk = onOk; confirmCancel = onCancel || null;
   $('sheet-confirm').classList.add('show');
 }
@@ -674,16 +409,14 @@ $('confirm-ok').addEventListener('click', function(){ var f = confirmOk; closeCo
 // Discard guard for class/date changes
 function guard(proceed, revert){
   if(!S.dirty){ proceed(); return; }
-  askConfirm(t('discardTitle'), t('discardMsg'), proceed, t('discardBtn'), revert);
+  askConfirm('Discard changes?', 'Unsaved marks for this class and date will be lost.', proceed, 'Discard', revert);
 }
-
 
 var noteId = null;
 function openNote(id){
   var s = S.students.filter(function(x){ return x.id === id; })[0];
   noteId = id;
-  var nm = s ? getDisplayName(s.name) : t('student');
-  $('note-title').textContent = t('noteTitleFor', {name: nm});
+  $('note-title').textContent = 'Note for ' + (s ? s.name : 'student');
   $('note-input').value = S.notes[id] || '';
   $('sheet-note').classList.add('show');
   setTimeout(function(){ $('note-input').focus(); }, 250);
@@ -721,9 +454,9 @@ function populateClasses(){
   var mine = S.classes.filter(function(c){ return S.mine[c]; });
   var others = S.classes.filter(function(c){ return !S.mine[c]; });
   function opt(c){ return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }
-  var h = '<option value="">' + esc(t('selectClass')) + '</option>';
-  if(mine.length) h += '<optgroup label="' + esc(S.isAdmin ? t('allClasses') : t('yourClasses')) + '">' + mine.map(opt).join('') + '</optgroup>';
-  if(others.length) h += '<optgroup label="' + esc(t('viewOnly')) + '">' + others.map(opt).join('') + '</optgroup>';
+  var h = '<option value="">Select class…</option>';
+  if(mine.length) h += '<optgroup label="' + (S.isAdmin ? 'All classes' : 'Your classes') + '">' + mine.map(opt).join('') + '</optgroup>';
+  if(others.length) h += '<optgroup label="View only">' + others.map(opt).join('') + '</optgroup>';
   $('class-select').innerHTML = h;
 }
 
@@ -781,7 +514,7 @@ async function loadDay(){
     render();
   }catch(e){
     console.error(e);
-    toast(t('couldNotLoad', {msg: e.message}), true);
+    toast('Could not load attendance: ' + e.message, true);
   }
 }
 
@@ -803,14 +536,14 @@ function render(){
   });
 
   $('stats').innerHTML = S.holiday
-    ? '<div class="stat" style="grid-column:1/-1"><b style="color:var(--holiday)">' + esc(t('holiday')) + '</b><span>' + esc(S.holidayReason || t('noReasonSet')) + '</span></div>'
+    ? '<div class="stat" style="grid-column:1/-1"><b style="color:var(--holiday)">Holiday</b><span>' + esc(S.holidayReason || 'No reason set') + '</span></div>'
     : [
-        [t('statTotal'), S.students.length, 'var(--ink-900)'],
-        [t('statPresent'), counts.P, 'var(--success)'],
-        [t('statAbsent'), counts.A, 'var(--danger)'],
-        [t('statLeave'), counts.L, 'var(--gold-600)'],
-        [t('statMedical'), counts.M, 'var(--medical)'],
-        [t('statUnmarked'), counts.none, 'var(--ink-500)']
+        ['Total', S.students.length, 'var(--ink-900)'],
+        ['Present', counts.P, 'var(--success)'],
+        ['Absent', counts.A, 'var(--danger)'],
+        ['Leave', counts.L, 'var(--gold-600)'],
+        ['Medical', counts.M, 'var(--medical)'],
+        ['Unmarked', counts.none, 'var(--ink-500)']
       ].map(function(x){ return '<div class="stat"><b style="color:' + x[2] + '">' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('');
 
   $('holiday-switch').checked = S.holiday;
@@ -823,8 +556,8 @@ function render(){
   if(!edit){
     lock.style.display = 'block';
     lock.textContent = !S.mine[S.cls] && !S.isAdmin
-      ? t('viewOnlyLock', {cls: S.cls})
-      : (S.isAdmin ? t('lockedNoCaveat') : t('lockedWithCaveat'));
+      ? 'View only. You are not the class teacher for ' + S.cls + '.'
+      : 'Locked. Only today\'s attendance can be changed' + (S.isAdmin ? '' : '; past dates are admin-only') + '.';
   } else {
     lock.style.display = 'none';
   }
@@ -832,27 +565,25 @@ function render(){
   ['btn-all-p','btn-share','btn-delete-day'].forEach(function(id){ $(id).disabled = !edit && id !== 'btn-share'; });
   $('btn-all-p').disabled = !edit || S.holiday;
   $('btn-save').disabled = !edit || !S.dirty;
-  $('btn-save').textContent = S.holiday ? t('markHoliday') : t('saveAttendance');
+  $('btn-save').textContent = S.holiday ? 'Mark holiday' : 'Save attendance';
 
   $('list').innerHTML = S.students.map(function(s){
     var v = S.cur[s.id] || null;
     var cls = v ? ' is-' + v : '';
     var note = S.notes[s.id];
     var showNote = note && v && v !== 'P' && v !== 'H';
-    var displayName = getDisplayName(s.name);
-    if(LANG === 'hi') transliterateName(s.name);
     var badge = v === 'H' ? '<span class="badge">HOL</span>'
               : v ? '<span class="badge">' + LABEL[v] + '</span>'
               : '<span class="badge none">–</span>';
     var noteBtn = (edit && !S.holiday && v && v !== 'P')
-      ? '<button class="ic" type="button" data-act="note" aria-label="' + esc(t('addNoteFor', {name: displayName})) + '"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+      ? '<button class="ic" type="button" data-act="note" aria-label="Add note for ' + esc(s.name) + '"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
       : '';
-    return '<div class="srow' + cls + '" data-id="' + s.id + '" role="button" tabindex="0" aria-label="' + esc(displayName) + ', ' + esc(v ? statusText(v) : t('noStatus')) + '">' +
+    return '<div class="srow' + cls + '" data-id="' + s.id + '" role="button" tabindex="0" aria-label="' + esc(s.name) + ', ' + (v ? NAME[v] : 'no status') + '">' +
       '<div class="roll">' + esc(s.roll_no != null ? s.roll_no : '–') + '</div>' +
-      '<div class="who"><div class="name">' + esc(displayName) + '</div>' +
+      '<div class="who"><div class="name">' + esc(s.name) + '</div>' +
       (showNote ? '<div class="note">' + esc(note) + '</div>' : '') + '</div>' +
       noteBtn + badge + '</div>';
-  }).join('') || '<p class="placeholder" style="padding:20px">' + esc(t('noStudents')) + '</p>';
+  }).join('') || '<p class="placeholder" style="padding:20px">No students in this class yet.</p>';
 }
 
 /* Event delegation for the student list */
@@ -890,7 +621,7 @@ $('btn-all-p').addEventListener('click', function(){
    SAVE (writes only changed rows, deletes cleared rows)
 ========================================================= */
 $('btn-save').addEventListener('click', async function(){
-  if(!canEdit()){ toast(t('dayLocked'), true); return; }
+  if(!canEdit()){ toast('This day is locked.', true); return; }
 
   var upserts = [], deletes = [];
   S.students.forEach(function(s){
@@ -909,7 +640,7 @@ $('btn-save').addEventListener('click', async function(){
     }
   });
 
-  if(!upserts.length && !deletes.length){ toast(t('nothingToSave')); return; }
+  if(!upserts.length && !deletes.length){ toast('Nothing to save.'); return; }
 
   var btn = $('btn-save'); btn.disabled = true; btn.textContent = 'Saving…';
   try{
@@ -922,34 +653,34 @@ $('btn-save').addEventListener('click', async function(){
         .eq('class', S.cls).eq('att_date', S.date).in('student_id', deletes);
       if(d.error) throw d.error;
     }
-    toast(t('attendanceSaved'));
+    toast('Attendance saved.');
     await loadDay();   // re-sync working copy with the database
   }catch(e){
     console.error(e);
-    toast(t('saveFailed', {msg: e.message}), true);
-    btn.disabled = false; btn.textContent = S.holiday ? t('markHoliday') : t('saveAttendance');
+    toast('Save failed: ' + e.message, true);
+    btn.disabled = false; btn.textContent = S.holiday ? 'Mark holiday' : 'Save attendance';
   }
 });
 
 /* Delete the whole day (class teacher: today only; admin: any day). RLS enforces it. */
 $('btn-delete-day').addEventListener('click', function(){
-  askConfirm(t('deleteDayTitle'),
-    t('deleteDayMsg', {cls: S.cls, date: fmtDay(S.date)}),
+  askConfirm('Delete this day\u2019s attendance?',
+    'All marks and notes for ' + S.cls + ' on ' + fmtDay(S.date) + ' will be removed.',
     async function(){
       var r = await sb.from('attendance').delete().eq('class', S.cls).eq('att_date', S.date);
-      if(r.error){ toast(t('deleteFailed', {msg: r.error.message}), true); return; }
-      toast(t('attendanceDeleted'));
+      if(r.error){ toast('Delete failed: ' + r.error.message, true); return; }
+      toast('Attendance deleted.');
       loadDay();
-    }, t('deleteBtn'));
+    }, 'Delete');
 });
 
 /* Share absentee list in the same format as the mobile app */
 $('btn-share').addEventListener('click', function(){
-  if(S.holiday){ toast(t('isHoliday')); return; }
+  if(S.holiday){ toast('It is a holiday.'); return; }
   var list = S.students.filter(function(s){ return ['A','L','M'].indexOf(S.cur[s.id]) !== -1; });
-  if(!list.length){ toast(t('everyonePresent')); return; }
+  if(!list.length){ toast('Everyone is present or unmarked.'); return; }
 
-  var msg = '*' + t('absenteesHeader', {cls: S.cls}) + '*\n' + fmtDay(S.date) + '\n\n';
+  var msg = '*Absentees - Class ' + S.cls + '*\n' + fmtDay(S.date) + '\n\n';
   list.forEach(function(s, i){
     var v = S.cur[s.id];
     var suffix = v === 'L' ? ' (L)' : v === 'M' ? ' (ML)' : '';
@@ -958,22 +689,17 @@ $('btn-share').addEventListener('click', function(){
   });
   var c = { A:0, L:0, M:0 };
   list.forEach(function(s){ c[S.cur[s.id]]++; });
-  msg += '\n' + t('summary');
-  if(c.A) msg += '\n' + t('summaryAbsent', {n: c.A});
-  if(c.L) msg += '\n' + t('summaryLeave', {n: c.L});
-  if(c.M) msg += '\n' + t('summaryMedical', {n: c.M});
+  msg += '\nSummary:';
+  if(c.A) msg += '\nAbsent: ' + c.A;
+  if(c.L) msg += '\nLeave: ' + c.L;
+  if(c.M) msg += '\nMedical: ' + c.M;
 
   if(navigator.share){
     navigator.share({ text: msg }).catch(function(){});
   }else if(navigator.clipboard){
-    navigator.clipboard.writeText(msg).then(function(){ toast(t('copiedToClipboard')); });
+    navigator.clipboard.writeText(msg).then(function(){ toast('List copied to clipboard.'); });
   }
 });
-
-/* Apply static-chrome translations now (page content is already in the
-   DOM since this script runs at the end of <body>; nothing is visible
-   yet behind #gate, so there is no flash either way). */
-applyLanguage();
 
 /* =========================================================
    AUTH + BOOTSTRAP
@@ -987,8 +713,8 @@ applyLanguage();
     if(!session){ location.href = AUTH_REDIRECT; return; }
     var uid = session.user.id;
 
-    var teacherRow = await sb.from('teachers').select('name').eq('id', uid).maybeSingle();
-    if(teacherRow.error || !teacherRow.data){ location.href = AUTH_REDIRECT; return; }
+    var t = await sb.from('teachers').select('name').eq('id', uid).maybeSingle();
+    if(t.error || !t.data){ location.href = AUTH_REDIRECT; return; }
 
     var a = await sb.rpc('is_admin');
     S.isAdmin = !!(a && a.data === true);
@@ -1006,8 +732,8 @@ applyLanguage();
       (ct.data || []).forEach(function(r){ S.mine[r.class] = true; });
     }
 
-    $('role-badge').textContent = S.isAdmin ? t('adminBadge')
-      : t('teacherBadge', {name: teacherRow.data.name.split(' ')[0]});
+    $('role-badge').textContent = S.isAdmin ? 'Admin \u2022 all classes'
+      : t.data.name.split(' ')[0] + ' \u2022 Mark & view';
 
     populateClasses();
     S.date = todayIST();
