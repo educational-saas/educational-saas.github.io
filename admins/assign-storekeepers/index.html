@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Manage Storekeepers</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --header-bg: rgba(250,248,243,.85);
+    --header-border: rgba(13,56,65,.08);
+
+    --danger:#c9432f;
+    --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b;
+    --success-bg: rgba(47,143,91,.1);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --header-bg: rgba(9,34,39,.85);
+    --header-border: rgba(255,255,255,.08);
+
+    --danger:#ff6b57;
+    --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492;
+    --success-bg: rgba(87,212,146,.12);
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ---------- Loading gate ---------- */
+  #gate{
+    position:fixed; inset:0; z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--cream);
+    transition:opacity .35s var(--ease), visibility .35s var(--ease);
+  }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid var(--border-card);
+    border-top-color:var(--gold-500);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  /* ---------- Access denied ---------- */
+  #denied{
+    position:fixed; inset:0; z-index:190;
+    display:none;
+    align-items:center; justify-content:center;
+    background:var(--cream);
+    padding:24px;
+    text-align:center;
+  }
+  #denied.show{ display:flex; }
+  .denied-box{ max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .denied-box svg{ width:44px; height:44px; stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .denied-box h2{ font-family:'Fraunces',serif; font-size:1.2rem; margin:0; }
+  .denied-box p{ color:var(--ink-500); font-size:.9rem; margin:0; line-height:1.5; }
+
+  /* ---------- App header ---------- */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:960px;
+    margin:0 auto;
+  }
+  .header-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.02rem;
+    color:var(--ink-900);
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .3s var(--ease);
+  }
+  .header-sub{
+    margin:1px 0 0;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--teal-700);
+  }
+
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    width:40px; height:40px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{
+    width:19px; height:19px;
+    fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute;
+    transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  /* ---------- Main ---------- */
+  main.dash{
+    flex:1;
+    width:100%;
+    max-width:960px;
+    margin:0 auto;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);
+  }
+
+  .section-heading{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:14px;
+  }
+  .section-heading h1{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0;
+  }
+  .count-chip{
+    font-size:.72rem; font-weight:700; color:var(--teal-700);
+    background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap;
+  }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:18px;
+    box-shadow:var(--shadow-card);
+    transition:border-color .3s var(--ease), background-color .3s var(--ease);
+  }
+
+  .placeholder-note{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+    padding:36px 16px; color:var(--ink-500);
+  }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Info banner ---------- */
+  .info-banner{
+    display:flex; gap:10px; align-items:flex-start;
+    background:var(--bg-tint-teal);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-sm);
+    padding:12px 14px;
+    margin-bottom:18px;
+  }
+  .info-banner svg{ width:18px; height:18px; flex-shrink:0; margin-top:1px; stroke:var(--teal-700); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .info-banner p{ margin:0; font-size:.8rem; color:var(--ink-500); line-height:1.5; }
+
+  /* ---------- Search ---------- */
+  .search-wrap{ position:relative; margin-bottom:16px; }
+  .search-wrap svg{
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:17px; height:17px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    pointer-events:none;
+  }
+  .search-wrap input{ padding-left:40px; }
+
+  /* ---------- Storekeeper list ---------- */
+  #sk-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:22px; }
+  .sk-card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:13px 14px;
+    box-shadow:var(--shadow-card);
+    display:flex; align-items:center; gap:12px;
+    opacity:0; animation:rise .45s var(--ease) forwards;
+    transition:border-color .2s var(--ease), background-color .3s var(--ease);
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  .avatar{
+    width:42px; height:42px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900));
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:600; font-size:1rem;
+  }
+  .avatar.generic{ background:linear-gradient(150deg,var(--ink-500),var(--ink-900)); }
+  .avatar.admin-av{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); }
+  .sk-info{ min-width:0; flex:1; }
+  .sk-name{ font-family:'Fraunces',serif; font-weight:600; font-size:.95rem; margin:0; color:var(--ink-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
+  .sk-sub{ font-size:.76rem; color:var(--ink-500); margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .admin-tag{
+    font-size:.64rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--teal-900); background:var(--gold-400); padding:2px 8px; border-radius:999px; flex-shrink:0;
+  }
+  html[data-theme="dark"] .admin-tag{ color:var(--teal-900); }
+  .sk-right{ flex-shrink:0; }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{
+    display:block;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--ink-500);
+    margin-bottom:7px;
+  }
+
+  input[type="text"], input[type="email"], select{
+    width:100%;
+    padding:12px 14px;
+    border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card);
+    background:var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',sans-serif;
+    font-size:.92rem;
+    font-weight:500;
+    outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="text"]:focus, input[type="email"]:focus, select:focus{
+    border-color:var(--border-card-hover);
+    box-shadow:0 0 0 4px var(--bg-tint-gold);
+  }
+  .search-wrap input{ padding-left:40px; }
+  .field-hint{ font-size:.74rem; color:var(--ink-500); margin-top:6px; }
+  .field-error{ font-size:.78rem; color:var(--danger); margin-top:12px; display:none; }
+  .field-error.show{ display:block; }
+
+  .btn{
+    padding:13px 18px;
+    border-radius:14px;
+    border:none;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:.88rem;
+    cursor:pointer;
+    transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+  .btn-sm{ padding:8px 14px; font-size:.78rem; border-radius:10px; }
+
+  .section-label{
+    font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--ink-500); margin:0 0 10px;
+  }
+  .sub-divider{ height:1px; background:var(--border-card); margin:20px 0; }
+
+  /* ---------- Add-storekeeper trigger card ---------- */
+  .add-sk-btn{
+    width:100%;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    background:var(--white);
+    border:1.5px dashed var(--border-card-hover);
+    border-radius:var(--r-md);
+    padding:15px;
+    color:var(--teal-700);
+    font-weight:700;
+    font-size:.9rem;
+    cursor:pointer;
+    transition:background-color .2s var(--ease), transform .2s var(--ease);
+  }
+  html[data-theme="dark"] .add-sk-btn{ color:var(--gold-400); }
+  .add-sk-btn:hover{ background:var(--bg-tint-gold); }
+  .add-sk-btn:active{ transform:scale(.98); }
+  .add-sk-btn svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* ---------- Teacher pick list (inside sheet) ---------- */
+  #candidate-list{ display:flex; flex-direction:column; gap:8px; max-height:38svh; overflow-y:auto; padding-right:2px; }
+  .pick-row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--white);
+    border:1.5px solid var(--border-card);
+    border-radius:var(--r-sm);
+    padding:10px 12px;
+    transition:border-color .2s var(--ease);
+  }
+  .pick-row .avatar{ width:36px; height:36px; font-size:.8rem; }
+  .pick-info{ min-width:0; flex:1; }
+  .pick-name{ font-weight:700; font-size:.86rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pick-email{ font-size:.72rem; color:var(--ink-500); margin:1px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .manual-add-grid{ display:flex; flex-direction:column; gap:12px; }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:100;
+    background:rgba(9,34,39,.4);
+    opacity:0; visibility:hidden;
+    transition:opacity .25s var(--ease), visibility .25s var(--ease);
+    overflow-y:auto;
+  }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:101;
+    background:var(--cream);
+    border-radius:22px 22px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);
+    max-width:960px; margin:0 auto;
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);
+    transform:translateY(100%);
+    transition:transform .3s var(--ease);
+    max-height:92svh;
+    overflow-y:auto;
+  }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  /* ---------- Toast ---------- */
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px);
+    z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900);
+    color:var(--white);
+    font-size:.84rem;
+    font-weight:600;
+    padding:12px 18px;
+    border-radius:999px;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px);
+    transition:opacity .3s var(--ease), transform .3s var(--ease);
+    max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+</style>
+</head>
+<body>
+
+<!-- Loading / auth gate -->
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<!-- Access denied (non-admins) -->
+<div id="denied">
+  <div class="denied-box">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2>Admins only</h2>
+    <p>This page is restricted to school administrators. If you believe this is a mistake, contact your school admin.</p>
+    <button class="btn btn-ghost" id="denied-back" type="button">Back to dashboard</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Storekeepers</p>
+          <p class="header-sub">Admin &bull; Stock Module Access Management</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="refresh-btn" type="button" aria-label="Refresh" title="Refresh">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;">
+            <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <div class="info-banner">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      <p>Admins already have full stock-module access, so they're listed below as storekeepers automatically and can't be added or removed separately. Use this page to grant or revoke stock access for everyone else.</p>
+    </div>
+
+    <div class="section-heading">
+      <h1>Current storekeepers</h1>
+      <span class="count-chip" id="sk-count">0 storekeepers</span>
+    </div>
+
+    <div id="sk-list"></div>
+
+    <div class="placeholder-note" id="sk-placeholder" style="display:none;">
+      <svg viewBox="0 0 24 24"><path d="M3 7l2-4h14l2 4M3 7v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7M3 7h18M9 11h6"/></svg>
+      <p>No storekeepers found.</p>
+    </div>
+
+    <button class="add-sk-btn" id="open-add-sk" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Make someone a storekeeper
+    </button>
+
+  </main>
+
+</div>
+
+<!-- Add storekeeper sheet -->
+<div class="sheet-backdrop" id="sheet-add-sk">
+  <div class="sheet" role="dialog" aria-label="Make someone a storekeeper">
+    <div class="sheet-handle"></div>
+    <h3>Make someone a storekeeper</h3>
+    <p>Search for a teacher, or add an existing account directly by its user ID.</p>
+
+    <div class="search-wrap" style="margin-bottom:12px;">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="candidate-search" placeholder="Search teachers by name or email…" autocomplete="off">
+    </div>
+    <div id="candidate-list"></div>
+
+    <div class="sub-divider"></div>
+
+    <p class="section-label">Add by user ID</p>
+    <div class="manual-add-grid">
+      <div class="field">
+        <label for="manual-uid">User ID (UUID)</label>
+        <input type="text" id="manual-uid" placeholder="e.g. 3fa2c9b1-...">
+      </div>
+      <div class="field">
+        <label for="manual-name">Full name</label>
+        <input type="text" id="manual-name" placeholder="e.g. Priya Sharma">
+      </div>
+      <div class="field">
+        <label for="manual-email">Email</label>
+        <input type="email" id="manual-email" placeholder="e.g. priya@example.com">
+      </div>
+      <button class="btn btn-primary btn-block" id="manual-add-btn" type="button">Add as storekeeper</button>
+    </div>
+    <p class="field-hint">Use this for accounts that aren't teachers (e.g. a dedicated store clerk account). Name and email are required since they're shown throughout the stock module.</p>
+    <p class="field-error" id="manual-add-error"></p>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="add-sk-close" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Remove storekeeper confirmation -->
+<div class="sheet-backdrop" id="sheet-remove-sk">
+  <div class="sheet" role="dialog" aria-label="Remove storekeeper confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Remove storekeeper access?</h3>
+    <p id="remove-sk-message">This person will lose access to the stock tracking module.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="remove-sk-cancel">Cancel</button>
+      <button class="btn btn-danger" id="remove-sk-confirm">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+var state = {
+  currentUserId: null,
+  admins: [],               // [{id, created_at}]
+  adminIdSet: {},            // { id: true }
+  storekeepers: [],          // [{id, name, email, created_at}]
+  storekeeperIdSet: {},      // { id: true }
+  teachers: [],               // [{id,name,email}] sorted by name
+  teacherById: {},            // { id: {id,name,email} }
+  candidateSearchTerm: '',
+  removeTarget: null          // {id, name}
+};
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 2800);
+}
+
+/* =========================================================
+   NAV / SIGN OUT
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+document.getElementById('denied-back').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+document.getElementById('refresh-btn').addEventListener('click', function(){
+  loadAllData(true);
+});
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+function initials(name){
+  if(!name) return '?';
+  var parts = name.trim().split(/\s+/);
+  var first = parts[0] ? parts[0][0] : '';
+  var last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+function shortId(id){
+  return id ? (id.substring(0, 8) + '…') : '';
+}
+
+/* =========================================================
+   RENDER STOREKEEPER LIST
+   Admins are shown first (read-only, tagged "Admin"), since they already
+   carry full stock-module privileges. Actual storekeepers.* rows follow,
+   each removable by an admin.
+========================================================= */
+function renderList(){
+  var list = document.getElementById('sk-list');
+  var placeholder = document.getElementById('sk-placeholder');
+  var countChip = document.getElementById('sk-count');
+
+  var totalCount = state.admins.length + state.storekeepers.length;
+  countChip.textContent = totalCount + (totalCount === 1 ? ' storekeeper' : ' storekeepers');
+
+  if(totalCount === 0){
+    list.style.display = 'none';
+    placeholder.style.display = 'flex';
+    return;
+  }
+  placeholder.style.display = 'none';
+  list.style.display = 'flex';
+  list.innerHTML = '';
+
+  var rowIndex = 0;
+
+  // --- Admins (auto-included, not manageable here) ---
+  var sortedAdmins = state.admins.slice().sort(function(a, b){
+    var ta = state.teacherById[a.id], tb = state.teacherById[b.id];
+    if(ta && tb) return ta.name.localeCompare(tb.name);
+    if(ta && !tb) return -1;
+    if(!ta && tb) return 1;
+    return a.id.localeCompare(b.id);
+  });
+
+  sortedAdmins.forEach(function(admin){
+    var teacher = state.teacherById[admin.id];
+    var card = document.createElement('div');
+    card.className = 'sk-card';
+    card.style.animationDelay = (rowIndex++ * 0.03) + 's';
+
+    var avatarHtml = teacher
+      ? '<div class="avatar admin-av">' + escapeHtml(initials(teacher.name)) + '</div>'
+      : '<div class="avatar admin-av">' + escapeHtml(shortId(admin.id).substring(0,2).toUpperCase()) + '</div>';
+
+    var nameHtml = teacher ? escapeHtml(teacher.name) : 'Admin account';
+    var subHtml = teacher ? escapeHtml(teacher.email) : ('User ID: ' + escapeHtml(shortId(admin.id)));
+
+    card.innerHTML =
+      avatarHtml +
+      '<div class="sk-info">' +
+        '<p class="sk-name">' + nameHtml + '</p>' +
+        '<p class="sk-sub">' + subHtml + '</p>' +
+      '</div>' +
+      '<div class="sk-right"><span class="admin-tag">Admin</span></div>';
+
+    list.appendChild(card);
+  });
+
+  // --- Actual storekeeper rows (manageable) ---
+  var sortedStorekeepers = state.storekeepers.slice().sort(function(a, b){
+    return (a.name || '').localeCompare(b.name || '');
+  });
+
+  sortedStorekeepers.forEach(function(sk){
+    var isSelf = sk.id === state.currentUserId;
+
+    var card = document.createElement('div');
+    card.className = 'sk-card';
+    card.style.animationDelay = (rowIndex++ * 0.03) + 's';
+
+    card.innerHTML =
+      '<div class="avatar">' + escapeHtml(initials(sk.name)) + '</div>' +
+      '<div class="sk-info">' +
+        '<p class="sk-name">' + escapeHtml(sk.name) + (isSelf ? ' <span class="admin-tag" style="background:var(--bg-tint-teal); color:var(--teal-700);">You</span>' : '') + '</p>' +
+        '<p class="sk-sub">' + escapeHtml(sk.email) + '</p>' +
+      '</div>' +
+      '<div class="sk-right"><button class="btn btn-danger btn-sm" type="button">Remove</button></div>';
+
+    card.querySelector('.sk-right button').addEventListener('click', function(){
+      openRemoveSheet(sk);
+    });
+
+    list.appendChild(card);
+  });
+}
+
+/* =========================================================
+   LOAD ALL DATA
+========================================================= */
+function loadAllData(isRefresh){
+  return Promise.all([
+    supabaseClient.from('admins').select('id, created_at'),
+    supabaseClient.from('storekeepers').select('id, name, email, created_at'),
+    supabaseClient.from('teachers').select('id, name, email').order('name', { ascending: true })
+  ]).then(function(results){
+    var adminsRes = results[0], storekeepersRes = results[1], teachersRes = results[2];
+
+    var firstError = adminsRes.error || storekeepersRes.error || teachersRes.error;
+    if(firstError){
+      toast('Could not load data: ' + firstError.message, true);
+      return;
+    }
+
+    state.admins = adminsRes.data || [];
+    var adminIdSet = {};
+    state.admins.forEach(function(a){ adminIdSet[a.id] = true; });
+    state.adminIdSet = adminIdSet;
+
+    state.storekeepers = storekeepersRes.data || [];
+    var skIdSet = {};
+    state.storekeepers.forEach(function(s){ skIdSet[s.id] = true; });
+    state.storekeeperIdSet = skIdSet;
+
+    state.teachers = teachersRes.data || [];
+    var byId = {};
+    state.teachers.forEach(function(t){ byId[t.id] = t; });
+    state.teacherById = byId;
+
+    renderList();
+
+    if(isRefresh){
+      toast('Refreshed.');
+      var sheetAdd = document.getElementById('sheet-add-sk');
+      if(sheetAdd.classList.contains('show')){ renderCandidateList(); }
+    }
+  });
+}
+
+function refetchStorekeepers(){
+  return supabaseClient.from('storekeepers').select('id, name, email, created_at').then(function(res){
+    if(res.error){
+      toast('Could not refresh storekeeper list: ' + res.error.message, true);
+      return;
+    }
+    state.storekeepers = res.data || [];
+    var skIdSet = {};
+    state.storekeepers.forEach(function(s){ skIdSet[s.id] = true; });
+    state.storekeeperIdSet = skIdSet;
+  });
+}
+
+/* =========================================================
+   ADD STOREKEEPER SHEET
+========================================================= */
+var sheetAddSk = document.getElementById('sheet-add-sk');
+
+document.getElementById('open-add-sk').addEventListener('click', function(){
+  state.candidateSearchTerm = '';
+  document.getElementById('candidate-search').value = '';
+  document.getElementById('manual-uid').value = '';
+  document.getElementById('manual-name').value = '';
+  document.getElementById('manual-email').value = '';
+  var manualError = document.getElementById('manual-add-error');
+  manualError.classList.remove('show');
+  manualError.textContent = '';
+  renderCandidateList();
+  sheetAddSk.classList.add('show');
+});
+document.getElementById('add-sk-close').addEventListener('click', function(){
+  sheetAddSk.classList.remove('show');
+});
+sheetAddSk.addEventListener('click', function(e){
+  if(e.target === sheetAddSk){ sheetAddSk.classList.remove('show'); }
+});
+
+function renderCandidateList(){
+  var list = document.getElementById('candidate-list');
+  list.innerHTML = '';
+
+  var term = state.candidateSearchTerm.trim().toLowerCase();
+  var candidates = state.teachers.filter(function(t){
+    // Already a storekeeper, or an admin (who already has full access)
+    if(state.storekeeperIdSet[t.id] || state.adminIdSet[t.id]) return false;
+    if(!term) return true;
+    return t.name.toLowerCase().indexOf(term) !== -1 || t.email.toLowerCase().indexOf(term) !== -1;
+  });
+
+  if(candidates.length === 0){
+    var empty = document.createElement('p');
+    empty.className = 'field-hint';
+    empty.textContent = state.teachers.length === 0
+      ? 'No teachers found.'
+      : 'No matching teachers (or all teachers already have stock access).';
+    list.appendChild(empty);
+    return;
+  }
+
+  candidates.forEach(function(t){
+    var row = document.createElement('div');
+    row.className = 'pick-row';
+    row.innerHTML =
+      '<div class="avatar">' + escapeHtml(initials(t.name)) + '</div>' +
+      '<div class="pick-info">' +
+        '<p class="pick-name">' + escapeHtml(t.name) + '</p>' +
+        '<p class="pick-email">' + escapeHtml(t.email) + '</p>' +
+      '</div>' +
+      '<button class="btn btn-primary btn-sm" type="button">Make storekeeper</button>';
+    row.querySelector('button').addEventListener('click', function(){
+      makeStorekeeper(t.id, t.name, t.email);
+    });
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('candidate-search').addEventListener('input', function(e){
+  state.candidateSearchTerm = e.target.value;
+  renderCandidateList();
+});
+
+function makeStorekeeper(userId, name, email){
+  if(state.adminIdSet[userId]){
+    toast(name + ' is an admin and already has stock access.');
+    return;
+  }
+  if(state.storekeeperIdSet[userId]){
+    toast(name + ' is already a storekeeper.');
+    return;
+  }
+
+  supabaseClient
+    .from('storekeepers')
+    .upsert([{ id: userId, name: name, email: email }], { onConflict: 'id', ignoreDuplicates: true })
+    .then(function(res){
+      if(res.error){
+        toast('Could not add storekeeper: ' + res.error.message, true);
+        return;
+      }
+      refetchStorekeepers().then(function(){
+        renderList();
+        renderCandidateList();
+        toast(name + ' is now a storekeeper.');
+      });
+    });
+}
+
+document.getElementById('manual-add-btn').addEventListener('click', function(){
+  var uidInput = document.getElementById('manual-uid');
+  var nameInput = document.getElementById('manual-name');
+  var emailInput = document.getElementById('manual-email');
+  var manualError = document.getElementById('manual-add-error');
+
+  var uid = uidInput.value.trim();
+  var name = nameInput.value.trim();
+  var email = emailInput.value.trim();
+
+  manualError.classList.remove('show');
+  manualError.textContent = '';
+
+  if(!UUID_RE.test(uid)){
+    manualError.textContent = 'Please enter a valid user ID (UUID).';
+    manualError.classList.add('show');
+    return;
+  }
+  if(!name){
+    manualError.textContent = 'Please enter a name.';
+    manualError.classList.add('show');
+    return;
+  }
+  if(!EMAIL_RE.test(email)){
+    manualError.textContent = 'Please enter a valid email address.';
+    manualError.classList.add('show');
+    return;
+  }
+  if(state.adminIdSet[uid]){
+    manualError.textContent = 'This user is an admin and already has stock access.';
+    manualError.classList.add('show');
+    return;
+  }
+  if(state.storekeeperIdSet[uid]){
+    manualError.textContent = 'This user is already a storekeeper.';
+    manualError.classList.add('show');
+    return;
+  }
+
+  var btn = document.getElementById('manual-add-btn');
+  btn.disabled = true; btn.textContent = 'Adding…';
+
+  supabaseClient
+    .from('storekeepers')
+    .upsert([{ id: uid, name: name, email: email }], { onConflict: 'id', ignoreDuplicates: true })
+    .then(function(res){
+      btn.disabled = false; btn.textContent = 'Add as storekeeper';
+      if(res.error){
+        manualError.textContent = res.error.message;
+        manualError.classList.add('show');
+        return;
+      }
+      refetchStorekeepers().then(function(){
+        renderList();
+        renderCandidateList();
+        uidInput.value = '';
+        nameInput.value = '';
+        emailInput.value = '';
+        toast(name + ' added as storekeeper.');
+      });
+    });
+});
+
+/* =========================================================
+   REMOVE STOREKEEPER
+========================================================= */
+var sheetRemoveSk = document.getElementById('sheet-remove-sk');
+
+function openRemoveSheet(sk){
+  state.removeTarget = { id: sk.id, name: sk.name };
+  document.getElementById('remove-sk-message').textContent =
+    state.removeTarget.name + ' will lose access to the stock tracking module.';
+  sheetRemoveSk.classList.add('show');
+}
+document.getElementById('remove-sk-cancel').addEventListener('click', function(){
+  sheetRemoveSk.classList.remove('show');
+  state.removeTarget = null;
+});
+sheetRemoveSk.addEventListener('click', function(e){
+  if(e.target === sheetRemoveSk){ sheetRemoveSk.classList.remove('show'); state.removeTarget = null; }
+});
+document.getElementById('remove-sk-confirm').addEventListener('click', function(){
+  var target = state.removeTarget;
+  if(!target) return;
+
+  var btn = document.getElementById('remove-sk-confirm');
+  btn.disabled = true; btn.textContent = 'Removing…';
+
+  supabaseClient
+    .from('storekeepers')
+    .delete()
+    .eq('id', target.id)
+    .then(function(res){
+      btn.disabled = false; btn.textContent = 'Remove';
+      sheetRemoveSk.classList.remove('show');
+      if(res.error){
+        toast('Could not remove storekeeper: ' + res.error.message, true);
+        return;
+      }
+      state.removeTarget = null;
+      refetchStorekeepers().then(function(){
+        renderList();
+        toast(target.name + ' is no longer a storekeeper.');
+      });
+    });
+});
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+   (Only admins can manage storekeepers, matching the RLS policies
+   sk_admin_insert / sk_admin_update / sk_admin_delete on public.storekeepers.)
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function showDenied(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('denied').classList.add('show');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    state.currentUserId = session.user.id;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    var isAdmin = !!(adminResult && adminResult.data === true);
+
+    if(!isAdmin){ showDenied(); return; }
+
+    await loadAllData(false);
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
