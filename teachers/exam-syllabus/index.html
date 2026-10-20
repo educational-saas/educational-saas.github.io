@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Exam Syllabus</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Devanagari-capable web font. With the print-based PDF approach, the browser embeds only the
+     glyphs actually used as real selectable text, so the PDF stays lightweight and Hindi text
+     (including conjuncts and matras) renders correctly without any rasterisation step. -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="ai-help.js"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --header-bg: rgba(250,248,243,.85);
+    --header-border: rgba(13,56,65,.08);
+
+    --danger:#c9432f;
+    --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b;
+    --success-bg: rgba(47,143,91,.1);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --header-bg: rgba(9,34,39,.85);
+    --header-border: rgba(255,255,255,.08);
+
+    --danger:#ff6b57;
+    --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492;
+    --success-bg: rgba(87,212,146,.12);
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ---------- Loading gate ---------- */
+  #gate{
+    position:fixed; inset:0; z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--cream);
+    transition:opacity .35s var(--ease), visibility .35s var(--ease);
+  }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid var(--border-card);
+    border-top-color:var(--gold-500);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  /* ---------- App header ---------- */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:960px;
+    margin:0 auto 14px;
+  }
+  .header-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.02rem;
+    color:var(--ink-900);
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .3s var(--ease);
+  }
+  .header-sub{
+    margin:1px 0 0;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--gold-600);
+  }
+  .header-sub.admin-badge{ color:var(--teal-700); }
+
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    width:40px; height:40px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{
+    width:19px; height:19px;
+    fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute;
+    transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  /* ---------- Tabs ---------- */
+  .tabs{
+    max-width:960px;
+    margin:0 auto;
+    display:flex;
+    gap:6px;
+    background:var(--white);
+    border:1.5px solid var(--border-card);
+    border-radius:999px;
+    padding:5px;
+  }
+  .tab-btn{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--ink-500);
+    font-weight:700;
+    font-size:.86rem;
+    padding:10px 8px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background-color .25s var(--ease), color .25s var(--ease);
+  }
+  .tab-btn.active{
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900));
+    color:var(--white);
+    box-shadow:0 10px 22px -12px rgba(13,56,65,.5);
+  }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--teal-900); }
+
+  /* ---------- Main ---------- */
+  main.dash{
+    flex:1;
+    width:100%;
+    max-width:960px;
+    margin:0 auto;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);
+  }
+
+  .panel{ display:none; flex-direction:column; gap:16px; }
+  .panel.active{ display:flex; }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:18px;
+    box-shadow:var(--shadow-card);
+    transition:border-color .3s var(--ease), background-color .3s var(--ease);
+  }
+  .card-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1rem;
+    margin:0 0 14px;
+    color:var(--ink-900);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .chip{
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.02em;
+    color:var(--teal-700);
+    background:var(--bg-tint-teal);
+    padding:5px 11px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .chip.level-low{ color:var(--danger); background:var(--danger-bg); }
+  .chip.level-mid{ color:var(--gold-600); background:var(--bg-tint-gold); }
+  .chip.level-high{ color:var(--teal-700); background:var(--bg-tint-teal); }
+  .chip.level-done{ color:var(--success); background:var(--success-bg); }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{
+    display:block;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--ink-500);
+    margin-bottom:7px;
+  }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:480px){ .row2{ grid-template-columns:1fr; } }
+
+  input[type="date"], select, textarea{
+    width:100%;
+    padding:12px 14px;
+    border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card);
+    background:var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',sans-serif;
+    font-size:.92rem;
+    font-weight:500;
+    outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="date"]:focus, select:focus, textarea:focus{
+    border-color:var(--border-card-hover);
+    box-shadow:0 0 0 4px var(--bg-tint-gold);
+  }
+  textarea{ resize:vertical; min-height:64px; line-height:1.5; }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;
+    padding-right:36px;
+  }
+  select:disabled, input:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .btn{
+    padding:13px 18px;
+    border-radius:14px;
+    border:none;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:.88rem;
+    cursor:pointer;
+    transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-teal{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); }
+  html[data-theme="dark"] .btn-teal{ color:var(--teal-900); }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+
+  .ai-gen-row{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-ai{ padding:8px 14px; font-size:.78rem; border-radius:10px; }
+  .btn-ai:disabled{ opacity:.6; }
+
+  .last-modified{ font-size:.76rem; color:var(--ink-500); margin-top:12px; text-align:right; }
+
+  .placeholder-note{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+    padding:36px 16px; color:var(--ink-500);
+  }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Completion seeker ---------- */
+  .seeker-wrap{ padding-top:6px; }
+  .seeker-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .seeker-value{ font-family:'Fraunces',serif; font-weight:600; font-size:1.3rem; color:var(--ink-900); }
+  input[type="range"].seeker{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:10px; border-radius:999px;
+    outline:none; cursor:pointer;
+    background:linear-gradient(90deg, var(--danger) 0%, var(--danger) 0%, var(--border-card) 0%);
+    transition:background-color .2s var(--ease);
+  }
+  input[type="range"].seeker::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--white);
+    border:4px solid var(--teal-700);
+    box-shadow:0 6px 14px -6px rgba(13,56,65,.5);
+    cursor:grab;
+    transition:transform .15s var(--ease);
+  }
+  input[type="range"].seeker::-webkit-slider-thumb:active{ cursor:grabbing; transform:scale(1.12); }
+  input[type="range"].seeker::-moz-range-thumb{
+    width:22px; height:22px; border-radius:50%;
+    background:var(--white); border:4px solid var(--teal-700);
+    box-shadow:0 6px 14px -6px rgba(13,56,65,.5); cursor:grab;
+  }
+  input[type="range"].seeker::-moz-range-track{ height:10px; border-radius:999px; background:transparent; }
+  .seeker-ticks{ display:flex; justify-content:space-between; margin-top:6px; font-size:.68rem; font-weight:600; color:var(--ink-500); }
+
+  /* ---------- Browse results ---------- */
+  .results-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px; flex-wrap:wrap; }
+  .subject-card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:16px;
+    box-shadow:var(--shadow-card);
+    opacity:0; animation:rise .5s var(--ease) forwards;
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .subject-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .subject-name{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; color:var(--teal-700); margin:0; }
+  .subject-meta{ font-size:.74rem; color:var(--ink-500); margin-top:3px; }
+  .subject-actions{ display:flex; gap:6px; flex-shrink:0; align-items:center; }
+  .mini-btn{
+    width:32px; height:32px; border-radius:10px; border:1.5px solid var(--border-card);
+    background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:transform .2s var(--ease), border-color .2s var(--ease);
+  }
+  .mini-btn:hover{ transform:translateY(-1px); border-color:var(--border-card-hover); }
+  .mini-btn svg{ width:15px; height:15px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .mini-btn.danger svg{ stroke:var(--danger); }
+  .plan-field{ margin-bottom:9px; }
+  .plan-field:last-child{ margin-bottom:0; }
+  .plan-field-label{ font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-600); margin-bottom:3px; margin-top:6px; }
+  .plan-field-value{ font-size:.86rem; line-height:1.5; color:var(--ink-900); white-space:pre-wrap; }
+  .plan-field-value.empty{ color:var(--ink-500); font-style:italic; }
+  .progress-track{ height:8px; border-radius:999px; background:var(--border-card); overflow:hidden; margin-top:4px; }
+  .progress-fill{ height:100%; border-radius:999px; transition:width .4s var(--ease), background-color .3s var(--ease); }
+  .hint{ font-size:.78rem; color:var(--ink-500); margin:0; }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:100;
+    background:rgba(9,34,39,.4);
+    opacity:0; visibility:hidden;
+    transition:opacity .25s var(--ease), visibility .25s var(--ease);
+  }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:101;
+    background:var(--cream);
+    border-radius:22px 22px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);
+    max-width:960px; margin:0 auto;
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);
+    transform:translateY(100%);
+    transition:transform .3s var(--ease);
+    max-height:86svh; overflow-y:auto;
+  }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  .pdf-field-option{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px; border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card);
+    background:var(--white);
+    margin-bottom:10px; cursor:pointer;
+    transition:border-color .2s var(--ease);
+  }
+  .pdf-field-option:hover{ border-color:var(--border-card-hover); }
+  .pdf-field-option input[type="checkbox"]{ width:19px; height:19px; accent-color:var(--teal-700); flex-shrink:0; }
+  .pdf-field-option span{ font-size:.88rem; font-weight:600; color:var(--ink-900); }
+
+  /* ---------- Toast ---------- */
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px);
+    z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900);
+    color:var(--white);
+    font-size:.84rem;
+    font-weight:600;
+    padding:12px 18px;
+    border-radius:999px;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px);
+    transition:opacity .3s var(--ease), transform .3s var(--ease);
+    max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+  textarea.auto-resize{ overflow:hidden; resize:none; }
+
+  /* ---------- Print sheet: hidden on screen, the ONLY thing printed ---------- */
+  #print-sheet{ display:none; }
+
+  @page{
+    size:A4; margin:14mm 14mm 16mm;
+    @bottom-center{ content:"Gopal Sharma Memorial School — Exam Syllabus  |  Page " counter(page) " of " counter(pages); font:8pt Helvetica,Arial,sans-serif; color:#5f6f70; }
+  }
+  @media print{
+    html{ color-scheme: light !important; }
+    html,body{ background:#fff !important; color:#1c2626 !important; }
+    #gate,#app,.sheet-backdrop,#toast-wrap{ display:none !important; }
+    #print-sheet{ display:block; font-family:'Noto Sans','Noto Sans Devanagari',Helvetica,Arial,sans-serif; color:#1c2626; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .p-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; background:#0d3841; color:#fff; padding:12px 16px; border-radius:6px; margin-bottom:14px; }
+    .p-brand{ display:flex; align-items:center; gap:12px; }
+    .p-brand img{ width:42px; height:42px; object-fit:contain; }
+    .p-school{ font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:15pt; }
+    .p-title{ font-size:9.5pt; color:#ffd685; margin-top:2px; }
+    .p-right{ text-align:right; font-size:9.5pt; }
+    .p-right .p-range{ color:#ffd685; font-size:8.6pt; margin-top:2px; }
+    .p-card{ border-left:3px solid #e2941a; padding:6px 0 8px 14px; margin-bottom:12px; break-inside:avoid; page-break-inside:avoid; }
+    .p-subject-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:5px; border-bottom:1.4px solid #e2941a; }
+    .p-subject{ font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:13pt; color:#124f59; }
+    .p-badge{ font-family:Helvetica,Arial,sans-serif; font-weight:700; font-size:8.6pt; padding:3px 10px; border-radius:999px; color:#fff; white-space:nowrap; }
+    .p-badge-low{ background:#c9432f; }
+    .p-badge-mid{ background:#e2941a; }
+    .p-badge-high{ background:#227d8b; }
+    .p-badge-done{ background:#2f8f5b; }
+    .p-label{ font-size:8pt; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#b26a12; margin-top:8px; }
+    .p-value{ font-size:10pt; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; margin-top:1px; }
+    .p-value.empty{ color:#5f6f70; font-style:italic; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading / auth gate -->
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Exam Syllabus</p>
+          <p class="header-sub" id="role-badge">Track &bull; Update &bull; Share</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;">
+            <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-edit-btn" type="button">My Syllabus</button>
+      <button class="tab-btn" id="tab-browse-btn" type="button">Browse &amp; Share</button>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ PANEL: MY SYLLABUS (add / edit) ============ -->
+    <section class="panel active" id="panel-edit">
+
+      <div class="card">
+        <p class="card-title">Select exam, class &amp; subject</p>
+
+        <div class="field">
+          <label for="edit-class">Class</label>
+          <select id="edit-class"><option value="">Select class…</option></select>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="edit-exam">Exam</label>
+            <select id="edit-exam" disabled><option value="">Select class first…</option></select>
+          </div>
+          <div class="field">
+            <label for="edit-subject">Subject</label>
+            <select id="edit-subject" disabled><option value="">Select class first…</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="edit-form-card" style="display:none;">
+        <p class="card-title">Syllabus details <span class="chip" id="edit-existing-chip" style="display:none;">Existing entry</span></p>
+
+        <div class="field">
+          <label for="f-syllabus">Syllabus content</label>
+          <textarea id="f-syllabus" rows="3" placeholder="e.g. Chapters 1–6: Number systems through Mensuration"></textarea>
+          <div class="ai-gen-row">
+            <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-syllabus">🩹 Auto-correct</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-chapters-remaining">Chapters remaining</label>
+          <textarea id="f-chapters-remaining" rows="2" placeholder="What's still left to cover"></textarea>
+          <div class="ai-gen-row">
+            <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-chapters-remaining">🩹 Auto-correct</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-completion">Syllabus completed</label>
+          <div class="seeker-wrap">
+            <div class="seeker-top">
+              <span class="seeker-value" id="f-completion-value">0%</span>
+              <span class="chip" id="f-completion-chip">Just started</span>
+            </div>
+            <input type="range" class="seeker" id="f-completion" min="0" max="100" step="5" value="0">
+            <div class="seeker-ticks"><span>0%</span><span>50%</span><span>100%</span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-expected-date">Expected completion date</label>
+          <input type="date" id="f-expected-date">
+        </div>
+
+        <div class="field">
+          <label for="f-notes">Notes</label>
+          <textarea id="f-notes" rows="2" placeholder="Anything else worth flagging"></textarea>
+          <div class="ai-gen-row">
+            <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-notes">🩹 Auto-correct</button>
+          </div>
+        </div>
+
+        <p class="last-modified" id="edit-last-modified"></p>
+
+        <div class="btn-row">
+          <button class="btn btn-danger" id="btn-delete-syllabus" type="button" style="display:none;">Delete</button>
+          <button class="btn btn-primary" id="btn-save-syllabus" type="button">Save syllabus</button>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="edit-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3.5 9h17"/><rect x="3" y="4.5" width="18" height="17" rx="3"/></svg>
+        <p>Choose a class, exam and subject above to add or update the syllabus.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ PANEL: BROWSE & SHARE ============ -->
+    <section class="panel" id="panel-browse">
+
+      <div class="card">
+        <p class="card-title">Find an exam's syllabus</p>
+        <div class="field">
+          <label for="browse-class">Class</label>
+          <select id="browse-class"><option value="">Select class…</option></select>
+        </div>
+        <div class="field">
+          <label for="browse-exam">Exam</label>
+          <select id="browse-exam" disabled><option value="">Select class first…</option></select>
+        </div>
+        <button class="btn btn-teal btn-block" id="btn-load-exam" type="button" style="margin-top:6px;">View this exam's syllabus</button>
+      </div>
+
+      <div id="browse-results-wrap" style="display:none;">
+        <div class="results-header">
+          <p class="card-title" style="margin:0;" id="browse-results-title">Results</p>
+          <button class="btn btn-primary" id="btn-share-pdf" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+            Share PDF
+          </button>
+          <button class="btn btn-ghost" id="btn-download-pdf" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            Download PDF
+          </button>
+        </div>
+        <p class="hint" style="margin-top:8px;">In the print dialog, choose <strong>Save as PDF</strong> to download, or use Share directly on phones.</p>
+        <div id="browse-results" style="display:flex;flex-direction:column;gap:12px;margin-top:12px;"></div>
+      </div>
+
+      <div class="placeholder-note" id="browse-placeholder">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <p>Pick a class and an exam to view every subject's syllabus.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<!-- Print-only compiled document -->
+<div id="print-sheet" aria-hidden="true"></div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm sheet (delete) -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm action">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-message">This action cannot be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF field-selection sheet -->
+<div class="sheet-backdrop" id="sheet-pdf-fields">
+  <div class="sheet" role="dialog" aria-label="Choose PDF fields">
+    <div class="sheet-handle"></div>
+    <h3>What should the PDF include?</h3>
+    <p>Pick the fields you want on the exported syllabus.</p>
+    <div id="pdf-field-options"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="pdf-fields-cancel">Cancel</button>
+      <button class="btn btn-primary" id="pdf-fields-continue">Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var LOGO_URL = 'https://sourabhsuneja.github.io/gsms-logo.png';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = {
+  user: null,
+  teacherName: '',
+  isAdmin: false,
+  myAssignments: [],     // [{class,subject}] for this teacher
+  allCombos: [],          // [{class,subject}] across everyone (used for admin dropdowns)
+  allClasses: [],          // sorted unique class list
+  examClasses: [],          // [{exam,class}] from exam_classes
+  editingExists: false,
+  subjectOrder: {}
+};
+
+/* =========================================================
+   TEXTAREA AUTO-RESIZE
+========================================================= */
+function autoResizeTextarea(el){
+  el.classList.add('auto-resize');
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+function autoResizeAll(selector){
+  document.querySelectorAll(selector).forEach(autoResizeTextarea);
+}
+document.querySelectorAll('#panel-edit textarea').forEach(function(ta){
+  autoResizeTextarea(ta);
+  ta.addEventListener('input', function(){ autoResizeTextarea(ta); });
+});
+
+/* =========================================================
+   COMPLETION SEEKER
+========================================================= */
+function completionLevel(pct){
+  if(pct >= 100) return { key:'done', label:'Complete', color:'var(--success)' };
+  if(pct >= 67)  return { key:'high', label:'On track', color:'var(--teal-600)' };
+  if(pct >= 34)  return { key:'mid',  label:'In progress', color:'var(--gold-600)' };
+  return { key:'low', label:'Just started', color:'var(--danger)' };
+}
+var completionInput = document.getElementById('f-completion');
+var completionValueEl = document.getElementById('f-completion-value');
+var completionChipEl = document.getElementById('f-completion-chip');
+
+function renderCompletionSeeker(){
+  var pct = parseInt(completionInput.value, 10) || 0;
+  completionValueEl.textContent = pct + '%';
+  var lvl = completionLevel(pct);
+  completionValueEl.style.color = lvl.color;
+  completionChipEl.textContent = lvl.label;
+  completionChipEl.className = 'chip level-' + lvl.key;
+  completionInput.style.background =
+    'linear-gradient(90deg, ' + lvl.color + ' 0%, ' + lvl.color + ' ' + pct + '%, var(--border-card) ' + pct + '%, var(--border-card) 100%)';
+}
+completionInput.addEventListener('input', renderCompletionSeeker);
+renderCompletionSeeker();
+
+/* =========================================================
+   AI "AUTO-CORRECT" FEATURE
+========================================================= */
+var AI_FIELD_LABELS = {
+  'f-syllabus': 'Syllabus content',
+  'f-chapters-remaining': 'Chapters remaining',
+  'f-notes': 'Notes'
+};
+
+function extractAiText(data){
+  if(typeof data === 'string') return data;
+  if(data && typeof data === 'object'){
+    if(typeof data.text === 'string') return data.text;
+    if(typeof data.result === 'string') return data.result;
+    if(typeof data.response === 'string') return data.response;
+  }
+  return data == null ? '' : String(data);
+}
+
+document.querySelectorAll('.btn-ai-correct').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var fieldId = btn.getAttribute('data-correct-field');
+    var textarea = document.getElementById(fieldId);
+    var currentText = textarea.value.trim();
+
+    if(!currentText){
+      toast('Nothing to correct — this field is empty.', true);
+      return;
+    }
+
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Correcting…';
+
+    window.correct(currentText)
+      .then(function(data){
+        var corrected = extractAiText(data).trim();
+        if(!corrected){
+          toast('AI did not return any content. Please try again.', true);
+          return;
+        }
+        textarea.value = corrected;
+        autoResizeTextarea(textarea);
+        toast(AI_FIELD_LABELS[fieldId] + ' corrected.');
+      })
+      .catch(function(err){
+        console.error('AI auto-correct failed:', err);
+        toast('Auto-correct failed. Please try again.', true);
+      })
+      .finally(function(){
+        btn.disabled = false;
+        btn.textContent = originalText;
+      });
+  });
+});
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+  renderCompletionSeeker();
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 2800);
+}
+
+/* =========================================================
+   SHEETS (signout / confirm / pdf-fields)
+========================================================= */
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+var sheetConfirm = document.getElementById('sheet-confirm');
+var confirmCallback = null;
+function askConfirm(title, message, onConfirm){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  confirmCallback = onConfirm;
+  sheetConfirm.classList.add('show');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); confirmCallback = null; });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm){ sheetConfirm.classList.remove('show'); confirmCallback = null; } });
+document.getElementById('confirm-ok').addEventListener('click', function(){
+  var cb = confirmCallback;
+  sheetConfirm.classList.remove('show');
+  confirmCallback = null;
+  if(cb) cb();
+});
+
+var PDF_FIELD_DEFS = [
+  { key:'syllabus_content',    label:'Syllabus content' },
+  { key:'chapters_remaining',  label:'Chapters remaining' },
+  { key:'completion_percentage', label:'Completion percentage' },
+  { key:'expected_completion_date', label:'Expected completion date' },
+  { key:'notes',                label:'Notes' },
+  { key:'teacher_name',         label:'Teacher name' }
+];
+var sheetPdfFields = document.getElementById('sheet-pdf-fields');
+var pdfFieldsOptionsEl = document.getElementById('pdf-field-options');
+var pdfFieldsContinueCb = null;
+
+function buildPdfFieldOptions(){
+  pdfFieldsOptionsEl.innerHTML = PDF_FIELD_DEFS.map(function(f){
+    return '<label class="pdf-field-option">' +
+      '<input type="checkbox" value="' + f.key + '" checked>' +
+      '<span>' + f.label + '</span></label>';
+  }).join('');
+}
+buildPdfFieldOptions();
+
+function askPdfFields(onContinue){
+  pdfFieldsOptionsEl.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked = true; });
+  pdfFieldsContinueCb = onContinue;
+  sheetPdfFields.classList.add('show');
+}
+document.getElementById('pdf-fields-cancel').addEventListener('click', function(){
+  sheetPdfFields.classList.remove('show');
+  pdfFieldsContinueCb = null;
+});
+sheetPdfFields.addEventListener('click', function(e){ if(e.target === sheetPdfFields){ sheetPdfFields.classList.remove('show'); pdfFieldsContinueCb = null; } });
+document.getElementById('pdf-fields-continue').addEventListener('click', function(){
+  var selected = Array.prototype.slice.call(pdfFieldsOptionsEl.querySelectorAll('input[type="checkbox"]:checked')).map(function(cb){ return cb.value; });
+  if(selected.length === 0){
+    toast('Pick at least one field to include.', true);
+    return;
+  }
+  var cb = pdfFieldsContinueCb;
+  sheetPdfFields.classList.remove('show');
+  pdfFieldsContinueCb = null;
+  if(cb) cb(selected);
+});
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+
+/* =========================================================
+   TABS
+========================================================= */
+var tabEditBtn = document.getElementById('tab-edit-btn');
+var tabBrowseBtn = document.getElementById('tab-browse-btn');
+var panelEdit = document.getElementById('panel-edit');
+var panelBrowse = document.getElementById('panel-browse');
+tabEditBtn.addEventListener('click', function(){ setTab('edit'); });
+tabBrowseBtn.addEventListener('click', function(){ setTab('browse'); });
+function setTab(which){
+  var isEdit = which === 'edit';
+  tabEditBtn.classList.toggle('active', isEdit);
+  tabBrowseBtn.classList.toggle('active', !isEdit);
+  panelEdit.classList.toggle('active', isEdit);
+  panelBrowse.classList.toggle('active', !isEdit);
+}
+
+/* =========================================================
+   EDIT PANEL — class / exam / subject population
+========================================================= */
+var editClassSel = document.getElementById('edit-class');
+var editExamSel = document.getElementById('edit-exam');
+var editSubjectSel = document.getElementById('edit-subject');
+
+function uniqueClasses(combos){
+  var set = {};
+  combos.forEach(function(c){ set[c.class] = true; });
+  return Object.keys(set).sort();
+}
+function subjectsForClass(combos, cls){
+  var set = {};
+  combos.forEach(function(c){ if(c.class === cls) set[c.subject] = true; });
+  return Object.keys(set).sort();
+}
+function examsForClass(cls){
+  var set = {};
+  state.examClasses.forEach(function(ec){ if(ec.class === cls) set[ec.exam] = true; });
+  return Object.keys(set).sort();
+}
+function sortEntriesByDisplayOrder(entries){
+  return entries.slice().sort(function(a, b){
+    var oa = state.subjectOrder[a.subject] != null ? state.subjectOrder[a.subject] : 1;
+    var ob = state.subjectOrder[b.subject] != null ? state.subjectOrder[b.subject] : 1;
+    if(oa !== ob) return oa - ob;
+    return a.subject.localeCompare(b.subject); // tie-break alphabetically
+  });
+}
+
+function populateEditClassDropdown(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  editClassSel.innerHTML = '<option value="">Select class…</option>' +
+    classes.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  editClassSel.disabled = classes.length === 0;
+  if(classes.length === 0){
+    toast(state.isAdmin ? 'No class-subject assignments found yet.' : 'You have no class-subject assignments yet. Contact an admin.', true);
+  }
+}
+
+editClassSel.addEventListener('change', function(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var subs = subjectsForClass(combos, editClassSel.value);
+  editSubjectSel.innerHTML = '<option value="">Select subject…</option>' +
+    subs.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+  editSubjectSel.disabled = subs.length === 0;
+
+  var exams = examsForClass(editClassSel.value);
+  editExamSel.innerHTML = '<option value="">Select exam…</option>' +
+    exams.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
+  editExamSel.disabled = exams.length === 0;
+  if(editClassSel.value && exams.length === 0){
+    toast('No exams have been mapped to this class yet.', true);
+  }
+
+  hideEditForm();
+});
+editExamSel.addEventListener('change', function(){ maybeLoadEditEntry(); });
+editSubjectSel.addEventListener('change', function(){ maybeLoadEditEntry(); });
+
+function hideEditForm(){
+  document.getElementById('edit-form-card').style.display = 'none';
+  document.getElementById('edit-placeholder').style.display = 'flex';
+}
+function showEditForm(){
+  document.getElementById('edit-form-card').style.display = 'block';
+  document.getElementById('edit-placeholder').style.display = 'none';
+}
+
+function clearEditFields(){
+  document.getElementById('f-syllabus').value = '';
+  document.getElementById('f-chapters-remaining').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-expected-date').value = '';
+  completionInput.value = 0;
+  renderCompletionSeeker();
+  autoResizeAll('#panel-edit textarea');
+  document.getElementById('edit-last-modified').textContent = '';
+  document.getElementById('edit-existing-chip').style.display = 'none';
+  document.getElementById('btn-delete-syllabus').style.display = 'none';
+  state.editingExists = false;
+}
+
+function maybeLoadEditEntry(){
+  var cls = editClassSel.value, exam = editExamSel.value, subj = editSubjectSel.value;
+  if(!cls || !exam || !subj){ hideEditForm(); return; }
+  showEditForm();
+  clearEditFields();
+
+  supabaseClient
+    .from('exam_syllabus')
+    .select('*')
+    .eq('exam', exam).eq('class', cls).eq('subject', subj)
+    .maybeSingle()
+    .then(function(res){
+      if(res.error){ toast('Could not load existing entry.', true); return; }
+      if(res.data){
+        document.getElementById('f-syllabus').value = res.data.syllabus_content || '';
+        document.getElementById('f-chapters-remaining').value = res.data.chapters_remaining || '';
+        document.getElementById('f-notes').value = res.data.notes || '';
+        document.getElementById('f-expected-date').value = res.data.expected_completion_date || '';
+        completionInput.value = res.data.completion_percentage != null ? res.data.completion_percentage : 0;
+        renderCompletionSeeker();
+        autoResizeAll('#panel-edit textarea');
+        document.getElementById('edit-existing-chip').style.display = 'inline-block';
+        document.getElementById('btn-delete-syllabus').style.display = 'inline-flex';
+        document.getElementById('edit-last-modified').textContent = 'Last updated ' + new Date(res.data.last_modified).toLocaleString();
+        state.editingExists = true;
+      }
+    });
+}
+
+document.getElementById('btn-save-syllabus').addEventListener('click', function(){
+  var cls = editClassSel.value, exam = editExamSel.value, subj = editSubjectSel.value;
+  if(!cls || !exam || !subj){ toast('Please select class, exam and subject first.', true); return; }
+
+  var syllabusContent = document.getElementById('f-syllabus').value.trim();
+  if(!syllabusContent){ toast('Syllabus content is required.', true); return; }
+
+  var payload = {
+    exam: exam, class: cls, subject: subj,
+    syllabus_content: syllabusContent,
+    chapters_remaining: document.getElementById('f-chapters-remaining').value.trim(),
+    completion_percentage: parseInt(completionInput.value, 10) || 0,
+    expected_completion_date: document.getElementById('f-expected-date').value || null,
+    notes: document.getElementById('f-notes').value.trim(),
+    teacher_id: state.user.id
+  };
+
+  var btn = document.getElementById('btn-save-syllabus');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  supabaseClient
+    .from('exam_syllabus')
+    .upsert(payload, { onConflict: 'exam,class,subject' })
+    .select()
+    .then(function(res){
+      btn.disabled = false; btn.textContent = 'Save syllabus';
+      if(res.error){ toast('Save failed: ' + res.error.message, true); return; }
+      toast('Syllabus saved.');
+      maybeLoadEditEntry();
+    });
+});
+
+document.getElementById('btn-delete-syllabus').addEventListener('click', function(){
+  var cls = editClassSel.value, exam = editExamSel.value, subj = editSubjectSel.value;
+  askConfirm('Delete this syllabus entry?', 'This will remove the ' + subj + ' syllabus for ' + exam + ' • ' + cls + '. This cannot be undone.', function(){
+    supabaseClient
+      .from('exam_syllabus')
+      .delete()
+      .eq('exam', exam).eq('class', cls).eq('subject', subj)
+      .then(function(res){
+        if(res.error){ toast('Delete failed: ' + res.error.message, true); return; }
+        toast('Syllabus entry deleted.');
+        clearEditFields();
+      });
+  });
+});
+
+/* =========================================================
+   BROWSE PANEL
+========================================================= */
+var browseClassSel = document.getElementById('browse-class');
+var browseExamSel = document.getElementById('browse-exam');
+var lastBrowseResults = { exam: '', class: '', entries: [] };
+
+function populateBrowseClassDropdown(){
+  browseClassSel.innerHTML = '<option value="">Select class…</option>' +
+    state.allClasses.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+}
+browseClassSel.addEventListener('change', function(){
+  var exams = examsForClass(browseClassSel.value);
+  browseExamSel.innerHTML = '<option value="">Select exam…</option>' +
+    exams.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
+  browseExamSel.disabled = exams.length === 0;
+});
+
+document.getElementById('btn-load-exam').addEventListener('click', function(){
+  var cls = browseClassSel.value, exam = browseExamSel.value;
+  if(!cls || !exam){ toast('Select a class and exam first.', true); return; }
+
+  var btn = document.getElementById('btn-load-exam');
+  btn.disabled = true; btn.textContent = 'Loading…';
+
+  supabaseClient
+    .from('exam_syllabus')
+    .select('*')
+    .eq('class', cls).eq('exam', exam)
+    .order('subject', { ascending: true })
+    .then(function(res){
+      btn.disabled = false; btn.textContent = "View this exam's syllabus";
+      if(res.error){ toast('Could not load syllabus: ' + res.error.message, true); return; }
+      lastBrowseResults = { class: cls, exam: exam, entries: sortEntriesByDisplayOrder(res.data || []) };
+      renderBrowseResults();
+    });
+});
+
+function canEditCombo(cls, subj){
+  if(state.isAdmin) return true;
+  return state.myAssignments.some(function(a){ return a.class === cls && a.subject === subj; });
+}
+
+function renderBrowseResults(){
+  var wrap = document.getElementById('browse-results-wrap');
+  var placeholder = document.getElementById('browse-placeholder');
+  var container = document.getElementById('browse-results');
+  var title = document.getElementById('browse-results-title');
+
+  var entries = lastBrowseResults.entries;
+  title.textContent = lastBrowseResults.exam + ' • ' + lastBrowseResults.class;
+
+  if(entries.length === 0){
+    wrap.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.querySelector('p').textContent = 'No syllabus entries found for ' + lastBrowseResults.class + ' in ' + lastBrowseResults.exam + ' yet.';
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  wrap.style.display = 'block';
+  container.innerHTML = '';
+
+  entries.forEach(function(p, i){
+    var editable = canEditCombo(p.class, p.subject);
+    var card = document.createElement('div');
+    card.className = 'subject-card';
+    card.style.animationDelay = (i * 0.05) + 's';
+
+    var teacherName = p.teacher_name || 'Subject teacher';
+    var pct = p.completion_percentage != null ? p.completion_percentage : 0;
+    var lvl = completionLevel(pct);
+
+    function fieldHtml(label, value){
+      var v = value ? escapeHtml(value) : '';
+      return '<div class="plan-field"><div class="plan-field-label">'+label+'</div>' +
+        '<div class="plan-field-value' + (v ? '' : ' empty') + '">' + (v || 'Not specified') + '</div></div>';
+    }
+
+    var expectedDateText = p.expected_completion_date ? new Date(p.expected_completion_date + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+
+    card.innerHTML =
+      '<div class="subject-card-top">' +
+        '<div><p class="subject-name">' + escapeHtml(p.subject) + '</p>' +
+        '<p class="subject-meta">' + escapeHtml(teacherName) + ' • updated ' + new Date(p.last_modified).toLocaleDateString() + '</p></div>' +
+        '<div class="subject-actions">' +
+          '<span class="chip level-' + lvl.key + '">' + pct + '% • ' + lvl.label + '</span>' +
+          (editable ? '<button class="mini-btn" data-action="edit" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' +
+          '<button class="mini-btn danger" data-action="delete" title="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%; background:' + lvl.color + ';"></div></div>' +
+      fieldHtml('Syllabus content', p.syllabus_content) +
+      fieldHtml('Chapters remaining', p.chapters_remaining) +
+      fieldHtml('Expected completion', expectedDateText) +
+      fieldHtml('Notes', p.notes);
+
+    if(editable){
+      card.querySelector('[data-action="edit"]').addEventListener('click', function(){
+        jumpToEdit(p);
+      });
+      card.querySelector('[data-action="delete"]').addEventListener('click', function(){
+        askConfirm('Delete this syllabus entry?', 'This will remove the ' + p.subject + ' syllabus for ' + p.exam + ' • ' + p.class + '. This cannot be undone.', function(){
+          supabaseClient.from('exam_syllabus').delete()
+            .eq('exam', p.exam).eq('class', p.class).eq('subject', p.subject)
+            .then(function(res){
+              if(res.error){ toast('Delete failed: ' + res.error.message, true); return; }
+              toast('Syllabus entry deleted.');
+              lastBrowseResults.entries = lastBrowseResults.entries.filter(function(x){ return !(x.class===p.class && x.subject===p.subject); });
+              renderBrowseResults();
+            });
+        });
+      });
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function jumpToEdit(p){
+  setTab('edit');
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  if(classes.indexOf(p.class) === -1) classes.push(p.class);
+  editClassSel.value = p.class;
+  editClassSel.dispatchEvent(new Event('change'));
+  setTimeout(function(){
+    editExamSel.value = p.exam;
+    editSubjectSel.value = p.subject;
+    maybeLoadEditEntry();
+  }, 30);
+}
+
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+/* =========================================================
+   PDF GENERATION + SHARE
+   ---------------------------------------------------------
+   Approach: build a print-only version of the compiled syllabus
+   (hidden on screen, shown only to the print stylesheet) and let
+   the BROWSER render and paginate it natively via window.print().
+   This produces real, selectable text with embedded font subsets
+   (so Hindi/Devanagari renders correctly) instead of a rasterised
+   image, which keeps the resulting PDF file size small. On the
+   print destination picker, the user chooses "Save as PDF" (for
+   Download) or the OS share sheet (for Share), using the browser's
+   native, lightweight PDF generation rather than a client-side
+   library.
+========================================================= */
+function pdfExpectedDateText(p){
+  return p.expected_completion_date ? new Date(p.expected_completion_date + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+}
+
+function subjectFieldsList(p, selectedFields){
+  var all = [
+    ['syllabus_content',           'Syllabus Content',           p.syllabus_content],
+    ['chapters_remaining',         'Chapters Remaining',         p.chapters_remaining],
+    ['completion_percentage',      'Completion',                 (p.completion_percentage != null ? p.completion_percentage + '%' : '')],
+    ['expected_completion_date',   'Expected Completion',        pdfExpectedDateText(p)],
+    ['notes',                       'Notes',                      p.notes],
+    ['teacher_name',                 'Teacher',                    p.teacher_name]
+  ];
+  return all.filter(function(f){ return selectedFields.indexOf(f[0]) !== -1; }).map(function(f){ return [f[1], f[2]]; });
+}
+
+function pdfFileTitle(){
+  return 'Exam-Syllabus_' + lastBrowseResults.exam.replace(/[^a-z0-9]/gi,'') + '_Class_' + lastBrowseResults.class.replace(/[^a-z0-9]/gi,'');
+}
+
+// Builds the hidden print-only document that the browser's print
+// stylesheet (see @media print) turns into the actual PDF pages.
+function buildPrintSheet(selectedFields){
+  var r = lastBrowseResults;
+  var html =
+    '<div class="p-head"><div class="p-brand"><img src="' + LOGO_URL + '" alt="">' +
+    '<div><div class="p-school">Gopal Sharma Memorial School</div><div class="p-title">Exam Syllabus</div></div></div>' +
+    '<div class="p-right"><div>Class ' + escapeHtml(r.class) + '</div><div class="p-range">' + escapeHtml(r.exam) + '</div></div></div>';
+
+  r.entries.forEach(function(p){
+    var fields = subjectFieldsList(p, selectedFields);
+    var showBadge = selectedFields.indexOf('completion_percentage') !== -1 && p.completion_percentage != null;
+    var lvl = completionLevel(p.completion_percentage != null ? p.completion_percentage : 0);
+
+    html += '<div class="p-card"><div class="p-subject-row"><div class="p-subject">' + escapeHtml(p.subject) + '</div>';
+    if(showBadge){
+      html += '<div class="p-badge p-badge-' + lvl.key + '">' + p.completion_percentage + '% • ' + lvl.label + '</div>';
+    }
+    html += '</div>';
+
+    fields.forEach(function(f){
+      var v = f[1] && String(f[1]).trim();
+      html += '<div class="p-label">' + f[0] + '</div><div class="p-value' + (v ? '' : ' empty') + '">' + (v ? escapeHtml(f[1]) : 'Not specified') + '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  document.getElementById('print-sheet').innerHTML = html;
+}
+
+function triggerPrintFlow(){
+  if(!lastBrowseResults.entries || lastBrowseResults.entries.length === 0){
+    toast('Load an exam with at least one syllabus entry first.', true);
+    return;
+  }
+  askPdfFields(async function(selectedFields){
+    try{
+      buildPrintSheet(selectedFields);
+      // Wait for fonts (Noto Sans / Devanagari) and the logo so the PDF captures them.
+      if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
+      var img = document.querySelector('#print-sheet img');
+      if(img && !img.complete){
+        await new Promise(function(res){ img.onload = img.onerror = res; setTimeout(res, 3000); });
+      }
+      // The document title becomes the suggested PDF file name.
+      var oldTitle = document.title;
+      document.title = pdfFileTitle();
+      window.addEventListener('afterprint', function restore(){
+        document.title = oldTitle;
+        window.removeEventListener('afterprint', restore);
+      });
+      window.print();
+    }catch(e){
+      console.error(e);
+      toast('Could not open the print dialog.', true);
+    }
+  });
+}
+
+document.getElementById('btn-share-pdf').addEventListener('click', function(){ triggerPrintFlow(); });
+document.getElementById('btn-download-pdf').addEventListener('click', function(){ triggerPrintFlow(); });
+
+/* =========================================================
+   AUTH + DATA BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var userId = session.user.id;
+
+    var teacherResult = await supabaseClient
+      .from('teachers')
+      .select('id, name, email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    // Check admin status via RPC
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var badge = document.getElementById('role-badge');
+    if(state.isAdmin){
+      badge.textContent = 'Admin access — all classes';
+      badge.classList.add('admin-badge');
+    }else{
+      badge.textContent = state.teacherName.split(' ')[0] + ' • Track & Update';
+    }
+
+    // Load this teacher's own class-subject assignments
+    var myAssignRes = await supabaseClient
+      .from('class_subject_assignments')
+      .select('class, subject')
+      .eq('teacher_id', userId);
+    state.myAssignments = myAssignRes.data || [];
+
+    // Load full combo list (needed for admins to add/edit anything,
+    // and to build the full class list for browsing).
+    // Admins have access to every class/subject combination that
+    // exists, so pull from class_subjects (the canonical class ->
+    // subject mapping) instead of class_subject_assignments (which
+    // only reflects what's been assigned to a specific teacher).
+    var allCombosRes = state.isAdmin
+      ? await supabaseClient.from('class_subjects').select('class, subject')
+      : await supabaseClient.from('class_subject_assignments').select('class, subject');
+    state.allCombos = allCombosRes.data || [];
+
+    // Merge in classes from class_teachers too, so browsing covers
+    // classes that may not yet have a subject assignment
+    var classTeacherRes = await supabaseClient
+      .from('class_teachers')
+      .select('class');
+    var classSet = {};
+    state.allCombos.forEach(function(c){ classSet[c.class] = true; });
+    (classTeacherRes.data || []).forEach(function(c){ classSet[c.class] = true; });
+    state.allClasses = Object.keys(classSet).sort();
+
+    // Load exam ↔ class mapping so exam dropdowns can be filtered per class
+    var examClassesRes = await supabaseClient.from('exam_classes').select('exam, class');
+    state.examClasses = examClassesRes.data || [];
+
+    // Load subject display order for sorting compiled syllabus entries
+    var subjectsRes = await supabaseClient.from('subjects').select('name, display_order');
+    (subjectsRes.data || []).forEach(function(s){ state.subjectOrder[s.name] = s.display_order; });
+
+    populateEditClassDropdown();
+    populateBrowseClassDropdown();
+
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
