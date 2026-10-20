@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Manage Stock</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg: rgba(47,143,91,.1);
+    --warn:#b8750f; --warn-bg: rgba(226,148,26,.12);
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492; --success-bg: rgba(87,212,146,.12);
+    --warn:#ffc65c; --warn-bg: rgba(255,198,92,.14);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease); }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; }
+  .spinner.sm{ width:22px; height:22px; border-width:2.5px; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  #denied{ position:fixed; inset:0; z-index:190; display:none; align-items:center; justify-content:center; background:var(--cream); padding:24px; text-align:center; }
+  #denied.show{ display:flex; }
+  .denied-box{ max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .denied-box svg{ width:44px; height:44px; stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .denied-box h2{ font-family:'Fraunces',serif; font-size:1.2rem; margin:0; }
+  .denied-box p{ color:var(--ink-500); font-size:.9rem; margin:0; line-height:1.5; }
+
+  .app-header{
+    position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 0;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto; padding-bottom:14px; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease); }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{ font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0; }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn svg{ width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease); }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  /* Tab bar */
+  .tab-row{ display:flex; gap:4px; max-width:960px; margin:0 auto; overflow-x:auto; scrollbar-width:none; }
+  .tab-row::-webkit-scrollbar{ display:none; }
+  .tab-btn{
+    flex-shrink:0; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.84rem;
+    padding:10px 14px 12px; cursor:pointer; position:relative; white-space:nowrap;
+    border-bottom:2.5px solid transparent; transition:color .2s var(--ease), border-color .2s var(--ease);
+  }
+  .tab-btn.active{ color:var(--teal-700); border-color:var(--gold-500); }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--gold-400); }
+
+  main.dash{ flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 110px); }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .section-heading{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .section-heading h1{ font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0; }
+  .count-chip{ font-size:.72rem; font-weight:700; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+
+  .card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); transition:border-color .3s var(--ease), background-color .3s var(--ease); }
+  .placeholder-note{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500); }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* Dashboard stat grid */
+  .stat-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:18px; }
+  @media (min-width:560px){ .stat-grid{ grid-template-columns:repeat(4,1fr); } }
+  .stat-card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:14px; box-shadow:var(--shadow-card); }
+  .stat-num{ font-family:'Fraunces',serif; font-weight:700; font-size:1.5rem; color:var(--teal-700); line-height:1; }
+  .stat-num.warn{ color:var(--danger); }
+  .stat-label{ font-size:.74rem; color:var(--ink-500); margin-top:6px; font-weight:600; }
+
+  .low-stock-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid var(--border-card); }
+  .low-stock-row:last-child{ border-bottom:none; }
+  .low-stock-name{ font-weight:700; font-size:.88rem; }
+  .low-stock-sub{ font-size:.76rem; color:var(--ink-500); margin-top:2px; }
+  .low-stock-qty{ font-family:'Fraunces',serif; font-weight:700; font-size:1.1rem; color:var(--danger); flex-shrink:0; }
+
+  /* Search & filters (shared) */
+  .toolbar{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .search-box{ position:relative; }
+  .search-box svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); width:17px; height:17px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+  .search-box input{ padding-left:40px; }
+  .filter-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+  .filter-row::-webkit-scrollbar{ display:none; }
+  .filter-row select, .filter-row input{ width:auto; flex-shrink:0; min-width:118px; padding:9px 32px 9px 12px; font-size:.82rem; }
+  .filter-row input{ min-width:120px; padding:9px 12px; }
+
+  /* Item list */
+  #item-list{ display:flex; flex-direction:column; gap:10px; }
+  .item-card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:14px 16px; box-shadow:var(--shadow-card); cursor:pointer; opacity:0; animation:rise .4s var(--ease) forwards; transition:border-color .2s var(--ease), transform .2s var(--ease); }
+  .item-card:hover{ border-color:var(--border-card-hover); transform:translateY(-1px); }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .item-card-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .item-name{ font-family:'Fraunces',serif; font-weight:600; font-size:.98rem; color:var(--teal-700); margin:0; }
+  .item-cat-chip{ font-size:.68rem; font-weight:700; color:var(--ink-500); background:var(--cream); border:1px solid var(--border-card); padding:3px 9px; border-radius:999px; white-space:nowrap; }
+  .variant-chip-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .variant-chip{ font-size:.76rem; font-weight:600; padding:5px 10px; border-radius:999px; background:var(--bg-tint-teal); color:var(--teal-700); }
+  .variant-chip.low{ background:var(--danger-bg); color:var(--danger); }
+
+  .list-sentinel{ display:flex; justify-content:center; padding:20px 0; }
+  .list-sentinel.hidden{ display:none; }
+
+  .fab{ position:fixed; right:20px; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:60; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); box-shadow:0 16px 30px -12px rgba(226,148,26,.55); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .2s var(--ease); }
+  .fab:hover{ transform:translateY(-2px) scale(1.05); }
+  .fab:active{ transform:scale(.94); }
+  .fab svg{ width:24px; height:24px; stroke:var(--teal-900); fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; margin-top:10px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:480px){ .row2{ grid-template-columns:1fr; } }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .row3{ grid-template-columns:1fr 1fr; } }
+
+  input[type="text"], input[type="number"], input[type="tel"], input[type="date"], select, textarea{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500;
+    outline:none; transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="text"]{
+    padding-left: 36px;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+  textarea{ resize:vertical; min-height:56px; }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px;
+  }
+  .field-hint{ font-size:.74rem; color:var(--ink-500); margin-top:6px; }
+  .field-error{ font-size:.78rem; color:var(--danger); margin-top:12px; display:none; }
+  .field-error.show{ display:block; }
+
+  .btn{ padding:13px 18px; border-radius:14px; border:none; font-weight:700; font-size:.88rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-sm{ padding:8px 12px; font-size:.78rem; border-radius:10px; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+
+  /* Variant rows inside the item form */
+  .variant-editor-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .variant-editor-row input[type="text"]{ flex:1; }
+  .variant-editor-row input[type="number"]{ width:84px; flex-shrink:0; }
+  .variant-remove-btn{ width:36px; height:36px; flex-shrink:0; border-radius:10px; border:1.5px solid var(--border-card); background:var(--white); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .variant-remove-btn svg{ width:15px; height:15px; stroke:var(--danger); fill:none; stroke-width:2.2; }
+  .add-variant-link{ display:inline-flex; align-items:center; gap:6px; color:var(--teal-700); font-weight:700; font-size:.82rem; background:none; border:none; cursor:pointer; padding:6px 0; }
+  html[data-theme="dark"] .add-variant-link{ color:var(--gold-400); }
+
+  /* Replenish chip list inside edit sheet */
+  .replenish-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 0; border-bottom:1px solid var(--border-card); }
+  .replenish-row:last-child{ border-bottom:none; }
+  .replenish-label{ font-size:.86rem; font-weight:600; }
+  .replenish-qty{ font-size:.78rem; color:var(--ink-500); }
+  .replenish-actions{ display:flex; gap:6px; align-items:center; }
+  .stepper-input{ width:56px; padding:6px 4px; text-align:center; font-size:.82rem; }
+
+  /* Recipient search + cart (Issue Stock) */
+  .recipient-result{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 12px; border-radius:var(--r-sm); cursor:pointer; transition:background-color .15s var(--ease); }
+  .recipient-result:hover{ background:var(--bg-tint-teal); }
+  .recipient-name{ font-weight:700; font-size:.88rem; }
+  .recipient-role-chip{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--teal-700); background:var(--bg-tint-teal); padding:3px 9px; border-radius:999px; }
+  #recipient-results{ max-height:260px; overflow-y:auto; border:1.5px solid var(--border-card); border-radius:var(--r-sm); margin-top:6px; display:none; background:var(--white); }
+  #recipient-results.show{ display:block; }
+  .recipient-chosen{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-tint-teal); border-radius:var(--r-sm); padding:12px 14px; margin-top:6px; }
+
+  .cart-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid var(--border-card); }
+  .cart-row:last-child{ border-bottom:none; }
+  .cart-item-name{ font-weight:700; font-size:.86rem; }
+  .cart-item-sub{ font-size:.76rem; color:var(--ink-500); margin-top:2px; }
+  .qty-stepper{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .qty-stepper button{ width:28px; height:28px; border-radius:8px; border:1.5px solid var(--border-card); background:var(--white); cursor:pointer; font-weight:700; color:var(--teal-700); }
+  .qty-stepper span{ min-width:20px; text-align:center; font-weight:700; }
+
+  /* History list */
+  .history-row{ padding:12px 0; border-bottom:1px solid var(--border-card); }
+  .history-row:last-child{ border-bottom:none; }
+  .history-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .history-person{ font-weight:700; font-size:.88rem; }
+  .history-date{ font-size:.74rem; color:var(--ink-500); white-space:nowrap; }
+  .history-item{ font-size:.82rem; color:var(--ink-500); margin-top:4px; }
+  /* Added: reverted-issue badge + revert action row (admins only) */
+  .reversed-chip{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--warn); background:var(--warn-bg); padding:3px 9px; border-radius:999px; }
+  .history-row.is-reversed{ opacity:.6; }
+  .revert-issue-btn{ color:var(--danger); }
+
+  .sheet-backdrop{ position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease); overflow-y:auto; }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{ position:fixed; left:0; right:0; bottom:0; z-index:101; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); max-width:960px; margin:0 auto; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35); transform:translateY(100%); transition:transform .3s var(--ease); max-height:92svh; overflow-y:auto; }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p.sheet-desc{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+  .sheet-top-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .delete-icon-btn{ width:34px; height:34px; border-radius:10px; border:1.5px solid var(--border-card); background:var(--white); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .delete-icon-btn svg{ width:16px; height:16px; stroke:var(--danger); fill:none; stroke-width:2; }
+
+  #toast-wrap{ position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 90px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast{ background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw; }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="denied">
+  <div class="denied-box">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2>Storekeepers &amp; admins only</h2>
+    <p>This page is restricted to storekeepers and school administrators. If you believe this is a mistake, contact your school admin.</p>
+    <button class="btn btn-ghost" id="denied-back" type="button">Back to dashboard</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Manage Stock</p>
+          <p class="header-sub">Storekeeper &bull; Inventory</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="tab-row">
+      <button class="tab-btn active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="tab-btn" data-tab="items" type="button">Items</button>
+      <button class="tab-btn" data-tab="issue" type="button">Issue stock</button>
+      <button class="tab-btn" data-tab="history" type="button">History</button>
+    </nav>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ DASHBOARD ============ -->
+    <div class="view active" id="view-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num" id="stat-total-items">—</div><div class="stat-label">Active items</div></div>
+        <div class="stat-card"><div class="stat-num warn" id="stat-low-stock">—</div><div class="stat-label">Low on stock</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-issues-today">—</div><div class="stat-label">Issued today</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-issues-month">—</div><div class="stat-label">Issued this month</div></div>
+      </div>
+
+      <div class="section-heading"><h1>Nearing stock-out</h1></div>
+      <div class="card" id="low-stock-card">
+        <div class="placeholder-note" id="low-stock-loading"><div class="spinner sm"></div><p>Checking stock levels…</p></div>
+      </div>
+    </div>
+
+    <!-- ============ ITEMS ============ -->
+    <div class="view" id="view-items">
+      <div class="section-heading">
+        <h1>Stock items</h1>
+        <span class="count-chip" id="item-count">Loading…</span>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="item-search" placeholder="Search items…" autocomplete="off">
+        </div>
+        <div class="filter-row">
+          <select id="item-filter-category">
+            <option value="">Any category</option>
+          </select>
+        </div>
+      </div>
+      <div id="item-list"></div>
+      <div class="placeholder-note" id="item-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <p>No items match your search or filter.</p>
+      </div>
+      <div class="list-sentinel hidden" id="item-sentinel"><div class="spinner sm"></div></div>
+    </div>
+
+    <!-- ============ ISSUE STOCK ============ -->
+    <div class="view" id="view-issue">
+      <div class="section-heading"><h1>Issue stock</h1></div>
+      <div class="card">
+        <div class="field">
+          <label for="issue-recipient-search">Who is this for?</label>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="issue-recipient-search" placeholder="Type a name… (teacher, student, parent, staff)" autocomplete="off">
+          </div>
+          <div id="recipient-results"></div>
+          <div class="recipient-chosen" id="recipient-chosen" style="display:none;">
+            <div>
+              <div class="recipient-name" id="recipient-chosen-name"></div>
+              <div class="recipient-role-chip" id="recipient-chosen-role"></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="recipient-change-btn" type="button">Change</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="issue-item-search">Add items</label>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="issue-item-search" placeholder="Search item to add…" autocomplete="off">
+          </div>
+          <div id="issue-item-results" style="max-height:220px; overflow-y:auto; border:1.5px solid var(--border-card); border-radius:var(--r-sm); margin-top:6px; display:none; background:var(--white);"></div>
+        </div>
+
+        <div class="field" id="cart-wrap" style="display:none;">
+          <label>Items to issue</label>
+          <div id="cart-list"></div>
+        </div>
+
+        <div class="field">
+          <label for="issue-notes">Notes (optional)</label>
+          <textarea id="issue-notes" placeholder="e.g. replacement for lost ID card"></textarea>
+        </div>
+
+        <p class="field-error" id="issue-error"></p>
+
+        <button class="btn btn-primary btn-block" id="issue-submit-btn" type="button" style="margin-top:16px;">Issue stock</button>
+      </div>
+    </div>
+
+    <!-- ============ HISTORY ============ -->
+    <div class="view" id="view-history">
+      <div class="section-heading"><h1>Issue history</h1></div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="history-person-search" placeholder="Filter by person's name…" autocomplete="off">
+        </div>
+        <div class="filter-row">
+          <input type="date" id="history-from">
+          <input type="date" id="history-to">
+          <button class="filter-clear-btn btn btn-ghost btn-sm" id="history-clear" type="button">Clear</button>
+        </div>
+      </div>
+      <div class="card" id="history-list-card">
+        <div id="history-list"></div>
+        <div class="placeholder-note" id="history-placeholder" style="display:none;">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <p>No issues found for this filter.</p>
+        </div>
+      </div>
+      <div class="list-sentinel hidden" id="history-sentinel"><div class="spinner sm"></div></div>
+    </div>
+
+  </main>
+
+  <button class="fab" id="fab-add-item" type="button" aria-label="Add item" title="Add item">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+</div>
+
+<!-- Add / Edit item sheet -->
+<div class="sheet-backdrop" id="sheet-item">
+  <div class="sheet" role="dialog" aria-label="Item form">
+    <div class="sheet-handle"></div>
+    <div class="sheet-top-row">
+      <h3 id="item-sheet-title">Add item</h3>
+      <button class="delete-icon-btn" id="item-delete-btn" style="display:none;" title="Delete item" type="button">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+      </button>
+    </div>
+    <p class="sheet-desc">Give the item a name and category. Add a size/type/color row only if this item comes in more than one kind.</p>
+
+    <div class="field">
+      <label for="f-item-name">Item name <span style="color:var(--danger);">*</span></label>
+      <input type="text" id="f-item-name" placeholder="e.g. English Textbook, Ball Pen, White T-Shirt">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="f-item-category">Category <span style="color:var(--danger);">*</span></label>
+        <select id="f-item-category"></select>
+      </div>
+      <div class="field">
+        <label for="f-item-unit">Unit</label>
+        <input type="text" id="f-item-unit" placeholder="pcs, pair, set…" value="pcs">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-item-threshold">Alert when stock falls below</label>
+      <input type="number" id="f-item-threshold" min="0" step="1" value="5">
+      <p class="field-hint">You'll see this item on the dashboard's low-stock list once any of its variants drop to or below this number.</p>
+    </div>
+
+    <div class="field" id="variants-editor-field">
+      <label>Sizes / types <span id="variants-new-hint" style="text-transform:none; font-weight:500;">(leave as "Standard" if this item has no sub-types)</span></label>
+      <div id="variants-editor"></div>
+      <button class="add-variant-link" id="add-variant-btn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+        Add another size/type
+      </button>
+    </div>
+
+    <!-- Shown only when editing an existing item: quick replenish per variant -->
+    <div class="field" id="replenish-field" style="display:none;">
+      <label>Current stock &amp; replenish</label>
+      <div id="replenish-list"></div>
+    </div>
+
+    <p class="field-error" id="item-error"></p>
+
+    <div class="sheet-actions" style="margin-top:6px;">
+      <button class="btn btn-ghost" id="item-cancel">Cancel</button>
+      <button class="btn btn-primary" id="item-save">Save item</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete / archive confirmation -->
+<div class="sheet-backdrop" id="sheet-delete">
+  <div class="sheet" role="dialog" aria-label="Delete confirmation">
+    <div class="sheet-handle"></div>
+    <h3 id="delete-title">Delete this item?</h3>
+    <p class="sheet-desc" id="delete-message"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="delete-cancel">Cancel</button>
+      <button class="btn btn-danger" id="delete-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Revert issue confirmation (admins only — restores the relevant items' stock) -->
+<div class="sheet-backdrop" id="sheet-revert">
+  <div class="sheet" role="dialog" aria-label="Revert issue confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Revert this issue?</h3>
+    <p class="sheet-desc" id="revert-message"></p>
+    <p class="field-error" id="revert-error"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="revert-cancel">Cancel</button>
+      <button class="btn btn-danger" id="revert-confirm">Revert</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign-out confirmation -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p class="sheet-desc">You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP — same project as the rest of the portal
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var CATEGORIES = ['Stationery','Textbooks & Books','Uniform & Apparel','Sports Equipment','Lab & Science Supplies','Art & Craft Supplies','Cleaning & Maintenance','Other'];
+var PAGE_SIZE = 20;
+
+var state = {
+  itemPage: 0, items: [], itemTotal: null, itemLoading: false, itemExhausted: false,
+  itemSearch: '', itemCategory: '',
+  activeItem: null,            // full row (incl. variants) when editing, null when adding
+  variantRows: [],              // [{label, quantity, _existingId}] for the open form
+
+  recipientChosen: null,        // {auth_user_id, student_master_id, role, display_name}
+  cart: [],                      // [{variant_id, item_name, variant_label, quantity, available}]
+
+  historyPage: 0, historyLoading: false, historyExhausted: false,
+  historyPerson: '', historyFrom: '', historyTo: '',
+
+  isAdmin: false,                // admins (not storekeepers) can revert an issue
+
+  searchDebounce: null, itemSearchDebounce: null, recipientDebounce: null, historyDebounce: null
+};
+
+/* =========================================================
+   THEME / TOAST / NAV (shared patterns)
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('denied-back').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout) sheetSignout.classList.remove('show'); });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = (str === null || str === undefined) ? '' : str;
+  return div.innerHTML;
+}
+
+/* Tabs — each tab's data is loaded lazily, the first time it's opened, and
+   reloaded whenever it's been marked "dirty" by a change made elsewhere
+   (see tabDirty below), instead of reloading on every switch. */
+var loadedTabs = { dashboard:false, items:false, issue:true, history:false };
+var tabDirty = { dashboard:false, items:false, issue:false, history:false };
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('active', v.id === 'view-' + tab); });
+    document.getElementById('fab-add-item').style.display = (tab === 'items') ? 'flex' : 'none';
+    if(!loadedTabs[tab] || tabDirty[tab]){
+      loadedTabs[tab] = true;
+      tabDirty[tab] = false;
+      if(tab === 'dashboard') loadDashboard();
+      if(tab === 'items') { loadCategoryOptions(); resetAndLoadItems(); }
+      if(tab === 'history') resetAndLoadHistory();
+    }
+  });
+});
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function loadDashboard(){
+  supabaseClient.rpc('get_stock_dashboard_summary').then(function(res){
+    if(res.error){ toast('Could not load dashboard: ' + res.error.message, true); return; }
+    var d = res.data || {};
+    document.getElementById('stat-total-items').textContent = d.total_items ?? '—';
+    document.getElementById('stat-low-stock').textContent = d.low_stock_count ?? '—';
+    document.getElementById('stat-issues-today').textContent = d.issues_today ?? '—';
+    document.getElementById('stat-issues-month').textContent = d.issues_this_month ?? '—';
+  });
+
+  supabaseClient.from('v_low_stock').select('item_id,item_name,category,variant_label,quantity,low_stock_threshold,unit').limit(30).then(function(res){
+    var card = document.getElementById('low-stock-card');
+    if(res.error){ card.innerHTML = '<p class="field-error show">Could not load low-stock list.</p>'; return; }
+    var rows = res.data || [];
+    if(rows.length === 0){ card.innerHTML = '<div class="placeholder-note"><p>Nothing is running low right now. We will notify you when an item falls below its alert stock level.</p></div>'; return; }
+    card.innerHTML = rows.map(function(r){
+      return '<div class="low-stock-row">' +
+        '<div><div class="low-stock-name">' + escapeHtml(r.item_name) + (r.variant_label !== 'Standard' ? ' — ' + escapeHtml(r.variant_label) : '') + '</div>' +
+        '<div class="low-stock-sub">' + escapeHtml(r.category) + ' &bull; alert at ' + r.low_stock_threshold + ' ' + escapeHtml(r.unit) + '</div></div>' +
+        '<div class="low-stock-qty">' + r.quantity + '</div></div>';
+    }).join('');
+  });
+}
+
+/* =========================================================
+   ITEMS — list, search, filter, infinite scroll
+========================================================= */
+var itemListEl = document.getElementById('item-list');
+var itemPlaceholderEl = document.getElementById('item-placeholder');
+var itemCountChip = document.getElementById('item-count');
+var itemSentinelEl = document.getElementById('item-sentinel');
+var itemFilterCategory = document.getElementById('item-filter-category');
+var itemSearchInput = document.getElementById('item-search');
+
+function loadCategoryOptions(){
+  if(itemFilterCategory.options.length > 1) return;
+  CATEGORIES.forEach(function(c){
+    var opt = document.createElement('option'); opt.value = c; opt.textContent = c;
+    itemFilterCategory.appendChild(opt);
+  });
+}
+
+function variantChipsHtml(variants){
+  return variants.map(function(v){
+    var low = v.quantity <= (v._threshold || 999999);
+    return '<span class="variant-chip' + (low ? ' low' : '') + '">' + escapeHtml(v.variant_label) + ': ' + v.quantity + '</span>';
+  }).join('');
+}
+
+function appendItemCards(rows, startIndex){
+  rows.forEach(function(r, i){
+    var card = document.createElement('div');
+    card.className = 'item-card';
+    card.style.animationDelay = Math.min((startIndex + i) % PAGE_SIZE, PAGE_SIZE) * 0.03 + 's';
+    card.dataset.id = r.id;
+    card.innerHTML =
+      '<div class="item-card-top"><p class="item-name">' + escapeHtml(r.name) + '</p>' +
+      '<span class="item-cat-chip">' + escapeHtml(r.category) + '</span></div>' +
+      '<div class="variant-chip-row">' + variantChipsHtml(r.variants || []) + '</div>';
+    card.addEventListener('click', function(){ openEditItemSheet(r.id); });
+    itemListEl.appendChild(card);
+  });
+}
+
+function buildItemQuery(){
+  var q = supabaseClient
+    .from('stock_items')
+    .select('id,name,category,unit,low_stock_threshold,stock_item_variants(id,variant_label,quantity,is_active)', { count: 'exact' })
+    .eq('is_active', true)
+    .order('name', { ascending: true });
+  var term = state.itemSearch.trim();
+  if(term) q = q.ilike('name', '%' + term.replace(/[%,()]/g, '') + '%');
+  if(state.itemCategory) q = q.eq('category', state.itemCategory);
+  return q;
+}
+
+function loadNextItemPage(){
+  if(state.itemLoading || state.itemExhausted) return;
+  state.itemLoading = true;
+  itemSentinelEl.classList.remove('hidden');
+  var from = state.itemPage * PAGE_SIZE, to = from + PAGE_SIZE - 1;
+
+  buildItemQuery().range(from, to).then(function(res){
+    state.itemLoading = false;
+    itemSentinelEl.classList.add('hidden');
+    if(res.error){ toast('Could not load items: ' + res.error.message, true); return; }
+
+    var rows = (res.data || []).map(function(r){
+      r.variants = (r.stock_item_variants || []).filter(function(v){ return v.is_active; }).map(function(v){ v._threshold = r.low_stock_threshold; return v; });
+      return r;
+    });
+    if(typeof res.count === 'number') state.itemTotal = res.count;
+
+    var startIndex = state.items.length;
+    state.items = state.items.concat(rows);
+    appendItemCards(rows, startIndex);
+    state.itemPage += 1;
+    if(rows.length < PAGE_SIZE) state.itemExhausted = true;
+
+    itemPlaceholderEl.style.display = state.items.length === 0 ? 'flex' : 'none';
+    itemCountChip.textContent = (state.itemTotal === null ? state.items.length : state.itemTotal) + (state.itemTotal === 1 ? ' item' : ' items');
+  });
+}
+
+function resetAndLoadItems(){
+  state.itemPage = 0; state.items = []; state.itemTotal = null; state.itemExhausted = false;
+  itemListEl.innerHTML = ''; itemPlaceholderEl.style.display = 'none';
+  loadNextItemPage();
+}
+
+var itemIo = new IntersectionObserver(function(entries){ entries.forEach(function(e){ if(e.isIntersecting) loadNextItemPage(); }); }, { rootMargin: '200px' });
+itemIo.observe(itemSentinelEl);
+
+itemSearchInput.addEventListener('input', function(){
+  clearTimeout(state.itemSearchDebounce);
+  state.itemSearchDebounce = setTimeout(function(){ state.itemSearch = itemSearchInput.value; resetAndLoadItems(); }, 350);
+});
+itemFilterCategory.addEventListener('change', function(){ state.itemCategory = itemFilterCategory.value; resetAndLoadItems(); });
+
+/* =========================================================
+   ADD / EDIT ITEM SHEET
+========================================================= */
+var sheetItem = document.getElementById('sheet-item');
+var itemSheetTitle = document.getElementById('item-sheet-title');
+var itemDeleteBtn = document.getElementById('item-delete-btn');
+var itemError = document.getElementById('item-error');
+var fItemName = document.getElementById('f-item-name');
+var fItemCategory = document.getElementById('f-item-category');
+var fItemUnit = document.getElementById('f-item-unit');
+var fItemThreshold = document.getElementById('f-item-threshold');
+var variantsEditor = document.getElementById('variants-editor');
+var replenishField = document.getElementById('replenish-field');
+var replenishList = document.getElementById('replenish-list');
+
+if(fItemCategory.options.length === 0){
+  CATEGORIES.forEach(function(c){ var o = document.createElement('option'); o.value = c; o.textContent = c; fItemCategory.appendChild(o); });
+}
+
+function renderVariantEditor(){
+  variantsEditor.innerHTML = '';
+  state.variantRows.forEach(function(row, idx){
+    var el = document.createElement('div');
+    el.className = 'variant-editor-row';
+    el.innerHTML =
+      '<input type="text" placeholder="Label (e.g. Size 32 — Boys)" value="' + escapeHtml(row.label) + '" data-idx="' + idx + '" data-field="label">' +
+      '<input type="number" min="0" step="1" placeholder="Qty" value="' + row.quantity + '" data-idx="' + idx + '" data-field="quantity">' +
+      (state.variantRows.length > 1 ? '<button class="variant-remove-btn" type="button" data-idx="' + idx + '"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' : '<span style="width:36px;flex-shrink:0;"></span>');
+    variantsEditor.appendChild(el);
+  });
+  variantsEditor.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var idx = +inp.dataset.idx, field = inp.dataset.field;
+      state.variantRows[idx][field] = field === 'quantity' ? (parseInt(inp.value, 10) || 0) : inp.value;
+    });
+  });
+  variantsEditor.querySelectorAll('.variant-remove-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ state.variantRows.splice(+btn.dataset.idx, 1); renderVariantEditor(); });
+  });
+}
+document.getElementById('add-variant-btn').addEventListener('click', function(){
+  state.variantRows.push({ label: '', quantity: 0 });
+  renderVariantEditor();
+});
+
+function clearItemForm(){
+  fItemName.value = ''; fItemCategory.value = CATEGORIES[0]; fItemUnit.value = 'pcs'; fItemThreshold.value = 5;
+  state.variantRows = [{ label: 'Standard', quantity: 0 }];
+  renderVariantEditor();
+  itemError.classList.remove('show'); itemError.textContent = '';
+  replenishField.style.display = 'none';
+  document.getElementById('variants-editor-field').style.display = 'block';
+}
+
+document.getElementById('fab-add-item').addEventListener('click', function(){
+  state.activeItem = null;
+  itemSheetTitle.textContent = 'Add item';
+  itemDeleteBtn.style.display = 'none';
+  clearItemForm();
+  sheetItem.classList.add('show');
+});
+
+function openEditItemSheet(id){
+  itemSheetTitle.textContent = 'Loading…';
+  itemDeleteBtn.style.display = 'none';
+  clearItemForm();
+  sheetItem.classList.add('show');
+
+  supabaseClient
+    .from('stock_items')
+    .select('id,name,category,unit,low_stock_threshold,stock_item_variants(id,variant_label,quantity,is_active)')
+    .eq('id', id).single()
+    .then(function(res){
+      if(res.error || !res.data){ toast('Could not load item.', true); sheetItem.classList.remove('show'); return; }
+      var r = res.data;
+      state.activeItem = r;
+      itemSheetTitle.textContent = 'Edit item';
+      itemDeleteBtn.style.display = 'flex';
+      fItemName.value = r.name; fItemCategory.value = r.category; fItemUnit.value = r.unit; fItemThreshold.value = r.low_stock_threshold;
+
+      // Existing variants are edited via "Add another size/type" + the replenish
+      // panel below (which handles quantity changes safely); the inline editor
+      // here is only for renaming labels or adding brand-new variants.
+      var activeVariants = (r.stock_item_variants || []).filter(function(v){ return v.is_active; });
+      state.variantRows = activeVariants.map(function(v){ return { label: v.variant_label, quantity: v.quantity, _existingId: v.id }; });
+      if(state.variantRows.length === 0) state.variantRows = [{ label: 'Standard', quantity: 0 }];
+      renderVariantEditor();
+      document.getElementById('variants-new-hint').textContent = '(existing quantities are changed via Replenish below, not here)';
+
+      replenishField.style.display = 'block';
+      replenishList.innerHTML = activeVariants.map(function(v){
+        return '<div class="replenish-row" data-variant-id="' + v.id + '">' +
+          '<div><div class="replenish-label">' + escapeHtml(v.variant_label) + '</div><div class="replenish-qty">' + v.quantity + ' ' + escapeHtml(r.unit) + ' in stock</div></div>' +
+          '<div class="replenish-actions">' +
+            '<input type="number" class="stepper-input" placeholder="+/-" data-variant-id="' + v.id + '">' +
+            '<button class="btn btn-ghost btn-sm replenish-apply-btn" type="button" data-variant-id="' + v.id + '">Apply</button>' +
+          '</div></div>';
+      }).join('');
+      replenishList.querySelectorAll('.replenish-apply-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){ applyReplenish(+btn.dataset.variantId, btn); });
+      });
+    });
+}
+
+function applyReplenish(variantId, btn){
+  var input = replenishList.querySelector('input[data-variant-id="' + variantId + '"]');
+  var delta = parseInt(input.value, 10);
+  if(!delta){ toast('Enter a non-zero number first.', true); return; }
+  btn.disabled = true;
+  supabaseClient.auth.getUser().then(function(userRes){
+    var uid = userRes.data.user.id;
+    return supabaseClient.from('stock_adjustments').insert({
+      variant_id: variantId, change_qty: delta,
+      reason: delta > 0 ? 'Replenishment' : 'Correction',
+      adjusted_by: uid
+    });
+  }).then(function(res){
+    btn.disabled = false;
+    if(res.error){ toast(res.error.message, true); return; }
+    input.value = '';
+    toast(delta > 0 ? 'Stock replenished.' : 'Stock corrected.');
+    openEditItemSheet(state.activeItem.id); // cheap single-row refetch to show the new quantity
+    resetAndLoadItems();
+    tabDirty.dashboard = true; // dashboard's totals/low-stock list are now stale
+  });
+}
+
+document.getElementById('item-cancel').addEventListener('click', function(){ sheetItem.classList.remove('show'); state.activeItem = null; });
+sheetItem.addEventListener('click', function(e){ if(e.target === sheetItem){ sheetItem.classList.remove('show'); state.activeItem = null; } });
+
+document.getElementById('item-save').addEventListener('click', async function(){
+  var name = fItemName.value.trim();
+  if(!name){ itemError.textContent = 'Please enter an item name.'; itemError.classList.add('show'); return; }
+  var labels = state.variantRows.map(function(v){ return v.label.trim(); }).filter(Boolean);
+  if(labels.length === 0){ itemError.textContent = 'Please give at least one size/type (or leave it as "Standard").'; itemError.classList.add('show'); return; }
+
+  var btn = document.getElementById('item-save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  itemError.classList.remove('show');
+
+  try{
+    if(state.activeItem){
+      // Editing: update the item's own fields, then reconcile variants —
+      // existing labels get renamed in place, brand-new rows get inserted.
+      // (Quantity changes for existing variants go through Replenish, not here.)
+      var upd = await supabaseClient.from('stock_items').update({
+        name: name, category: fItemCategory.value, unit: fItemUnit.value.trim() || 'pcs',
+        low_stock_threshold: parseInt(fItemThreshold.value, 10) || 0
+      }).eq('id', state.activeItem.id);
+      if(upd.error) throw new Error(upd.error.message);
+
+      for(var i = 0; i < state.variantRows.length; i++){
+        var row = state.variantRows[i];
+        if(!row.label.trim()) continue;
+        if(row._existingId){
+          var r1 = await supabaseClient.from('stock_item_variants').update({ variant_label: row.label.trim() }).eq('id', row._existingId);
+          if(r1.error) throw new Error(r1.error.message);
+        }else{
+          var r2 = await supabaseClient.from('stock_item_variants').insert({ item_id: state.activeItem.id, variant_label: row.label.trim(), quantity: row.quantity || 0 });
+          if(r2.error) throw new Error(r2.error.message);
+        }
+      }
+      toast('Item updated.');
+    }else{
+      var payload = {
+        p_name: name, p_category: fItemCategory.value, p_unit: fItemUnit.value.trim() || 'pcs',
+        p_threshold: parseInt(fItemThreshold.value, 10) || 0,
+        p_variants: state.variantRows.filter(function(v){ return v.label.trim(); }).map(function(v){ return { label: v.label.trim(), quantity: v.quantity || 0 }; })
+      };
+      var res = await supabaseClient.rpc('create_stock_item', payload);
+      if(res.error) throw new Error(res.error.message);
+      toast('Item added.');
+    }
+    sheetItem.classList.remove('show');
+    state.activeItem = null;
+    resetAndLoadItems();
+    tabDirty.dashboard = true; // item count / low-stock list may have changed
+  }catch(err){
+    itemError.textContent = err.message || 'Something went wrong.';
+    itemError.classList.add('show');
+  }
+  btn.disabled = false; btn.textContent = 'Save item';
+});
+
+/* Delete (archive) item */
+var sheetDelete = document.getElementById('sheet-delete');
+itemDeleteBtn.addEventListener('click', function(){
+  if(!state.activeItem) return;
+  document.getElementById('delete-title').textContent = 'Remove this item?';
+  document.getElementById('delete-message').textContent =
+    'If "' + state.activeItem.name + '" has never been issued, it will be deleted completely. If it has issue history, it will be archived (hidden from lists, kept for records) instead.';
+  sheetDelete.classList.add('show');
+});
+document.getElementById('delete-cancel').addEventListener('click', function(){ sheetDelete.classList.remove('show'); });
+sheetDelete.addEventListener('click', function(e){ if(e.target === sheetDelete) sheetDelete.classList.remove('show'); });
+
+document.getElementById('delete-confirm').addEventListener('click', async function(){
+  var item = state.activeItem;
+  if(!item) return;
+  var btn = document.getElementById('delete-confirm');
+  btn.disabled = true; btn.textContent = 'Removing…';
+
+  var del = await supabaseClient.from('stock_items').delete().eq('id', item.id);
+  if(del.error){
+    // Most likely blocked by issue history (FK restrict) — archive instead.
+    var arch = await supabaseClient.from('stock_items').update({ is_active: false }).eq('id', item.id);
+    if(arch.error){ toast(arch.error.message, true); btn.disabled = false; btn.textContent = 'Delete'; return; }
+    toast('Item archived (it has issue history, so it\u2019s kept for records).');
+  }else{
+    toast('Item deleted.');
+  }
+  btn.disabled = false; btn.textContent = 'Delete';
+  sheetDelete.classList.remove('show');
+  sheetItem.classList.remove('show');
+  state.activeItem = null;
+  resetAndLoadItems();
+  tabDirty.dashboard = true; // item count / low-stock list may have changed
+});
+
+/* =========================================================
+   ISSUE STOCK — recipient search, item search, cart, submit
+========================================================= */
+var recipientSearchInput = document.getElementById('issue-recipient-search');
+var recipientResultsEl = document.getElementById('recipient-results');
+var recipientChosenEl = document.getElementById('recipient-chosen');
+
+function roleLabel(role){
+  return { teacher:'Teacher', student:'Student', guardian:'Parent/Guardian', admin:'Admin', storekeeper:'Storekeeper', other:'Not registered' }[role] || role;
+}
+
+recipientSearchInput.addEventListener('input', function(){
+  clearTimeout(state.recipientDebounce);
+  var term = recipientSearchInput.value.trim();
+  state.recipientDebounce = setTimeout(function(){
+    if(term.length < 2){ recipientResultsEl.classList.remove('show'); recipientResultsEl.innerHTML = ''; return; }
+    supabaseClient.rpc('search_recipients', { q: term, max_rows: 8 }).then(function(res){
+      if(res.error) return;
+      var rows = res.data || [];
+      var html = rows.map(function(r){
+        return '<div class="recipient-result" data-auth="' + (r.auth_user_id || '') + '" data-master="' + (r.student_master_id || '') + '" data-role="' + r.role + '" data-name="' + escapeHtml(r.display_name) + '">' +
+          '<span class="recipient-name">' + escapeHtml(r.display_name) + '</span><span class="recipient-role-chip">' + roleLabel(r.role) + '</span></div>';
+      }).join('');
+      html += '<div class="recipient-result" id="recipient-freehand" data-role="other" data-name="' + escapeHtml(term) + '">' +
+        '<span class="recipient-name">Use "' + escapeHtml(term) + '" (not in the system)</span><span class="recipient-role-chip">New</span></div>';
+      recipientResultsEl.innerHTML = html;
+      recipientResultsEl.classList.add('show');
+      recipientResultsEl.querySelectorAll('.recipient-result').forEach(function(el){
+        el.addEventListener('click', function(){
+          state.recipientChosen = { auth_user_id: el.dataset.auth || null, student_master_id: el.dataset.master ? +el.dataset.master : null, role: el.dataset.role, display_name: el.dataset.name };
+          document.getElementById('recipient-chosen-name').textContent = el.dataset.name;
+          document.getElementById('recipient-chosen-role').textContent = roleLabel(el.dataset.role);
+          recipientChosenEl.style.display = 'flex';
+          recipientResultsEl.classList.remove('show');
+          recipientSearchInput.style.display = 'none';
+        });
+      });
+    });
+  }, 300);
+});
+document.getElementById('recipient-change-btn').addEventListener('click', function(){
+  state.recipientChosen = null;
+  recipientChosenEl.style.display = 'none';
+  recipientSearchInput.style.display = 'block';
+  recipientSearchInput.value = '';
+  recipientSearchInput.focus();
+});
+
+var issueItemSearchInput = document.getElementById('issue-item-search');
+var issueItemResultsEl = document.getElementById('issue-item-results');
+
+issueItemSearchInput.addEventListener('input', function(){
+  clearTimeout(state.searchDebounce);
+  var term = issueItemSearchInput.value.trim();
+  state.searchDebounce = setTimeout(function(){
+    if(term.length < 1){ issueItemResultsEl.style.display = 'none'; issueItemResultsEl.innerHTML = ''; return; }
+    supabaseClient.from('stock_items')
+      .select('id,name,unit,stock_item_variants(id,variant_label,quantity,is_active)')
+      .eq('is_active', true).ilike('name', '%' + term.replace(/[%,()]/g, '') + '%').limit(10)
+      .then(function(res){
+        if(res.error) return;
+        var html = '';
+        (res.data || []).forEach(function(item){
+          (item.stock_item_variants || []).filter(function(v){ return v.is_active; }).forEach(function(v){
+            html += '<div class="recipient-result" data-variant-id="' + v.id + '" data-item-name="' + escapeHtml(item.name) + '" data-variant-label="' + escapeHtml(v.variant_label) + '" data-qty="' + v.quantity + '">' +
+              '<span class="recipient-name">' + escapeHtml(item.name) + (v.variant_label !== 'Standard' ? ' — ' + escapeHtml(v.variant_label) : '') + '</span>' +
+              '<span class="recipient-role-chip">' + v.quantity + ' ' + escapeHtml(item.unit) + '</span></div>';
+          });
+        });
+        issueItemResultsEl.innerHTML = html || '<div class="placeholder-note"><p>No items found.</p></div>';
+        issueItemResultsEl.style.display = 'block';
+        issueItemResultsEl.querySelectorAll('.recipient-result').forEach(function(el){
+          el.addEventListener('click', function(){ addToCart(el); });
+        });
+      });
+  }, 300);
+});
+
+function addToCart(el){
+  var variantId = +el.dataset.variantId;
+  var existing = state.cart.find(function(c){ return c.variant_id === variantId; });
+  if(existing){ existing.quantity += 1; }
+  else{
+    state.cart.push({ variant_id: variantId, item_name: el.dataset.itemName, variant_label: el.dataset.variantLabel, quantity: 1, available: +el.dataset.qty });
+  }
+  renderCart();
+  issueItemResultsEl.style.display = 'none';
+  issueItemSearchInput.value = '';
+}
+
+function renderCart(){
+  var wrap = document.getElementById('cart-wrap');
+  var listEl = document.getElementById('cart-list');
+  if(state.cart.length === 0){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  listEl.innerHTML = state.cart.map(function(c, idx){
+    return '<div class="cart-row">' +
+      '<div><div class="cart-item-name">' + escapeHtml(c.item_name) + (c.variant_label !== 'Standard' ? ' — ' + escapeHtml(c.variant_label) : '') + '</div>' +
+      '<div class="cart-item-sub">' + c.available + ' available</div></div>' +
+      '<div class="qty-stepper"><button type="button" data-idx="' + idx + '" data-dir="-1">&minus;</button><span>' + c.quantity + '</span><button type="button" data-idx="' + idx + '" data-dir="1">+</button></div></div>';
+  }).join('');
+  listEl.querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var idx = +btn.dataset.idx, dir = +btn.dataset.dir;
+      state.cart[idx].quantity = Math.max(1, Math.min(state.cart[idx].available, state.cart[idx].quantity + dir));
+      renderCart();
+    });
+  });
+}
+
+document.getElementById('issue-submit-btn').addEventListener('click', async function(){
+  var errEl = document.getElementById('issue-error');
+  errEl.classList.remove('show');
+  if(!state.recipientChosen){ errEl.textContent = 'Please choose who this is for.'; errEl.classList.add('show'); return; }
+  if(state.cart.length === 0){ errEl.textContent = 'Please add at least one item.'; errEl.classList.add('show'); return; }
+
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Issuing…';
+
+  var payload = {
+    p_auth_user_id: state.recipientChosen.auth_user_id || null,
+    p_student_master_id: state.recipientChosen.student_master_id || null,
+    p_role: state.recipientChosen.role,
+    p_display_name: state.recipientChosen.display_name,
+    p_notes: document.getElementById('issue-notes').value.trim() || null,
+    p_items: state.cart.map(function(c){ return { variant_id: c.variant_id, quantity: c.quantity }; })
+  };
+
+  var res = await supabaseClient.rpc('create_stock_issue', payload);
+  btn.disabled = false; btn.textContent = 'Issue stock';
+
+  if(res.error){ errEl.textContent = res.error.message; errEl.classList.add('show'); return; }
+
+  toast('Stock issued to ' + state.recipientChosen.display_name + '.');
+  state.cart = []; renderCart();
+  state.recipientChosen = null; recipientChosenEl.style.display = 'none';
+  recipientSearchInput.style.display = 'block'; recipientSearchInput.value = '';
+  document.getElementById('issue-notes').value = '';
+  // Items' quantities, the dashboard's stats/low-stock list, and history
+  // all just went stale — refresh the dashboard now if it's visible/loaded,
+  // and mark the rest to refresh next time they're opened.
+  if(loadedTabs.dashboard){ loadDashboard(); } else { tabDirty.dashboard = true; }
+  tabDirty.items = true;
+  tabDirty.history = true;
+});
+
+/* =========================================================
+   HISTORY
+========================================================= */
+var historyListEl = document.getElementById('history-list');
+var historyPlaceholderEl = document.getElementById('history-placeholder');
+var historySentinelEl = document.getElementById('history-sentinel');
+
+function buildHistoryQuery(){
+  var q = supabaseClient.from('v_issue_history')
+    .select('issue_id,issued_at,recipient_name_snapshot,recipient_role_snapshot,item_name_snapshot,variant_label_snapshot,quantity_issued,notes,reversed_at');
+  var term = state.historyPerson.trim();
+  if(term) q = q.ilike('recipient_name_snapshot', '%' + term.replace(/[%,()]/g, '') + '%');
+  if(state.historyFrom) q = q.gte('issued_at', state.historyFrom + 'T00:00:00');
+  if(state.historyTo) q = q.lte('issued_at', state.historyTo + 'T23:59:59');
+  return q;
+}
+
+function loadNextHistoryPage(){
+  if(state.historyLoading || state.historyExhausted) return;
+  state.historyLoading = true;
+  historySentinelEl.classList.remove('hidden');
+  var from = state.historyPage * PAGE_SIZE, to = from + PAGE_SIZE - 1;
+
+  buildHistoryQuery().range(from, to).then(function(res){
+    state.historyLoading = false;
+    historySentinelEl.classList.add('hidden');
+    if(res.error){ toast('Could not load history: ' + res.error.message, true); return; }
+    var rows = res.data || [];
+    rows.forEach(function(r){
+      var row = document.createElement('div');
+      var reversed = !!r.reversed_at;
+      row.className = 'history-row' + (reversed ? ' is-reversed' : '');
+      var d = new Date(r.issued_at);
+      var actionHtml = '';
+      if(reversed){
+        actionHtml = '<span class="reversed-chip">Reverted</span>';
+      }else if(state.isAdmin){
+        // Admins only (not storekeepers) can revert a wrong issue; reverting
+        // restores stock for every line item in this transaction.
+        actionHtml = '<button class="btn btn-ghost btn-sm revert-issue-btn" type="button" data-issue-id="' + r.issue_id + '" data-recipient="' + escapeHtml(r.recipient_name_snapshot) + '">Revert</button>';
+      }
+      row.innerHTML = '<div class="history-top"><span class="history-person">' + escapeHtml(r.recipient_name_snapshot) + ' <span class="recipient-role-chip">' + roleLabel(r.recipient_role_snapshot) + '</span></span>' +
+        '<span class="history-date">' + d.toLocaleDateString() + '</span></div>' +
+        '<div class="history-item">' + escapeHtml(r.item_name_snapshot) + (r.variant_label_snapshot !== 'Standard' ? ' — ' + escapeHtml(r.variant_label_snapshot) : '') + ' &times; ' + r.quantity_issued + '</div>' +
+        (actionHtml ? '<div style="margin-top:8px;">' + actionHtml + '</div>' : '');
+      historyListEl.appendChild(row);
+    });
+    historyListEl.querySelectorAll('.revert-issue-btn:not([data-bound])').forEach(function(btn){
+      btn.setAttribute('data-bound', '1');
+      btn.addEventListener('click', function(){ openRevertSheet(+btn.dataset.issueId, btn.dataset.recipient); });
+    });
+    state.historyPage += 1;
+    if(rows.length < PAGE_SIZE) state.historyExhausted = true;
+    historyPlaceholderEl.style.display = (state.historyPage === 1 && rows.length === 0) ? 'flex' : 'none';
+  });
+}
+
+function resetAndLoadHistory(){
+  state.historyPage = 0; state.historyExhausted = false;
+  historyListEl.innerHTML = ''; historyPlaceholderEl.style.display = 'none';
+  loadNextHistoryPage();
+}
+
+var historyIo = new IntersectionObserver(function(entries){ entries.forEach(function(e){ if(e.isIntersecting) loadNextHistoryPage(); }); }, { rootMargin: '200px' });
+historyIo.observe(historySentinelEl);
+
+document.getElementById('history-person-search').addEventListener('input', function(e){
+  clearTimeout(state.historyDebounce);
+  state.historyDebounce = setTimeout(function(){ state.historyPerson = e.target.value; resetAndLoadHistory(); }, 350);
+});
+document.getElementById('history-from').addEventListener('change', function(e){ state.historyFrom = e.target.value; resetAndLoadHistory(); });
+document.getElementById('history-to').addEventListener('change', function(e){ state.historyTo = e.target.value; resetAndLoadHistory(); });
+document.getElementById('history-clear').addEventListener('click', function(){
+  document.getElementById('history-person-search').value = '';
+  document.getElementById('history-from').value = '';
+  document.getElementById('history-to').value = '';
+  state.historyPerson = ''; state.historyFrom = ''; state.historyTo = '';
+  resetAndLoadHistory();
+});
+
+/* Revert issue (admins only) — restores stock for every item in the
+   transaction (skipping any whose item/variant no longer exists) and
+   marks the issue as reverted. */
+var sheetRevert = document.getElementById('sheet-revert');
+var revertMessageEl = document.getElementById('revert-message');
+var revertErrorEl = document.getElementById('revert-error');
+var pendingRevertIssueId = null;
+
+function openRevertSheet(issueId, recipientName){
+  pendingRevertIssueId = issueId;
+  revertErrorEl.classList.remove('show'); revertErrorEl.textContent = '';
+  revertMessageEl.textContent = 'This restores the stock issued to ' + recipientName + ' in this transaction and marks it as reverted. This can\u2019t be undone.';
+  sheetRevert.classList.add('show');
+}
+document.getElementById('revert-cancel').addEventListener('click', function(){ sheetRevert.classList.remove('show'); pendingRevertIssueId = null; });
+sheetRevert.addEventListener('click', function(e){ if(e.target === sheetRevert){ sheetRevert.classList.remove('show'); pendingRevertIssueId = null; } });
+
+document.getElementById('revert-confirm').addEventListener('click', async function(){
+  if(!pendingRevertIssueId) return;
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Reverting…';
+
+  var res = await supabaseClient.rpc('reverse_stock_issue_transaction', { p_issue_id: pendingRevertIssueId });
+
+  btn.disabled = false; btn.textContent = 'Revert';
+  if(res.error){ revertErrorEl.textContent = res.error.message; revertErrorEl.classList.add('show'); return; }
+
+  sheetRevert.classList.remove('show');
+  pendingRevertIssueId = null;
+  toast('Issue reverted and stock restored.');
+  resetAndLoadHistory();             // this tab is visible right now — refresh it directly
+  tabDirty.dashboard = true;         // totals/low-stock list are now stale
+  tabDirty.items = true;             // item quantities are now stale
+});
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('app').classList.add('ready'); }
+function showDenied(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('denied').classList.add('show'); }
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var roleResult = await supabaseClient.rpc('is_storekeeper_or_admin');
+    var allowed = !!(roleResult && roleResult.data === true);
+    if(!allowed){ showDenied(); return; }
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    showApp();
+    loadDashboard();           // dashboard is the landing tab, load it immediately
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
