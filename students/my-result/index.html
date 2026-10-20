@@ -216,6 +216,41 @@
     .card{padding:16px;}
     .exam-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
   }
+
+  /* ---------- Track Progress additions (purely additive) ---------- */
+  .group-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 10px;}
+  .group-header:first-of-type{margin-top:2px;}
+  .group-header .group-title{margin:0;}
+  .track-btn{
+    font-family:var(--font-body);font-weight:800;font-size:12px;letter-spacing:.01em;
+    border:1px solid var(--border-card);background:var(--white);color:var(--teal-700);
+    border-radius:999px;padding:7px 14px;cursor:pointer;white-space:nowrap;flex:0 0 auto;
+    box-shadow:0 3px 0 var(--edge-shadow-soft);transition:transform .14s ease;
+  }
+  html[data-theme="dark"] .track-btn{color:var(--teal-800);}
+  .track-btn:hover{transform:translateY(-1px);}
+  .track-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .track-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+
+  .progress-controls{display:flex;align-items:center;gap:10px;margin:4px 0 18px;flex-wrap:wrap;}
+  .progress-controls label{font-size:13px;color:var(--ink-500);font-weight:700;}
+  .subject-filter{
+    font-family:var(--font-body);font-weight:700;font-size:13.5px;color:var(--ink-900);
+    background:var(--input-bg);border:1px solid var(--input-border);border-radius:var(--r-sm);
+    padding:9px 12px;cursor:pointer;min-width:170px;
+  }
+  .subject-filter:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+
+  .chart-wrap{position:relative;width:100%;height:300px;}
+  .chart-wrap canvas{width:100% !important;height:100% !important;}
+  .chart-empty-msg{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:12px;font-weight:700;color:var(--ink-500);font-size:14px;
+  }
+
+  @media (max-width:420px){
+    .chart-wrap{height:260px;}
+  }
 </style>
 </head>
 <body>
@@ -245,9 +280,32 @@
     </div>
   </div>
 
+  <!-- Screen 3 (new, additive): progress trend across exams in a category -->
+  <div class="card hidden" id="examProgressScreen">
+    <div class="detail-header">
+      <button class="icon-btn" id="progBackBtn" aria-label="Back to exam list">‹</button>
+      <div class="detail-titles">
+        <h2 class="section-title" id="progTitle">Progress</h2>
+        <p class="section-sub">Your percentage trend over time</p>
+      </div>
+    </div>
+    <div class="progress-controls hidden" id="progControls">
+      <label for="progSubjectFilter">Subject</label>
+      <select class="subject-filter" id="progSubjectFilter">
+        <option value="__all__">All subjects (overall)</option>
+      </select>
+    </div>
+    <div class="chart-wrap hidden" id="progChartWrap">
+      <canvas id="progChartCanvas"></canvas>
+      <div class="chart-empty-msg hidden" id="progChartEmptyMsg"></div>
+    </div>
+    <div class="state-msg" id="progState"><div class="spinner"></div>Loading your progress…</div>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -357,7 +415,11 @@
     studentClass: null,
     tiles: [],               // merged list of common + custom exam tiles
     subjectOrder: null,      // subject name -> display_order (best-effort)
-    examCache: {}            // examKey -> marks rows
+    examCache: {},           // examKey -> marks rows
+    progressCache: {},               // category -> progress rows (additive)
+    currentProgressCategory: null,   // additive
+    currentProgressRows: null,       // additive
+    currentProgressSelectedSubject: null // additive
   };
 
   /* ============================================================
@@ -422,11 +484,11 @@
       var cls = state.studentClass;
 
       var commonReq = supabase.from('exam_classes')
-        .select('exam, exams(name, mm, components)')
+        .select('exam, exams(name, mm, components, added_at)')
         .eq('class', cls);
 
       var customReq = supabase.from('custom_exams')
-        .select('id, name, subject, mm, components')
+        .select('id, name, subject, mm, components, created_at')
         .eq('class', cls)
         .order('created_at', {ascending:false});
 
@@ -445,7 +507,8 @@
           examName: row.exams.name,
           name: row.exams.name,
           mm: row.exams.mm,
-          components: row.exams.components
+          components: row.exams.components,
+          sortAt: row.exams.added_at // additive — used only by the progress-tracking feature
         });
       });
 
@@ -457,7 +520,8 @@
           name: row.name,
           subject: row.subject,
           mm: row.mm,
-          components: row.components
+          components: row.components,
+          sortAt: row.created_at // additive — used only by the progress-tracking feature
         });
       });
 
@@ -496,11 +560,13 @@
 
     var html = '';
     if(common.length){
-      html += '<h3 class="group-title">School-wide exams</h3>'
+      html += '<div class="group-header"><h3 class="group-title">School-wide exams</h3>'
+        + '<button type="button" class="track-btn" data-category="common">Track Progress</button></div>'
         + '<div class="exam-grid">' + common.map(tileHtml).join('') + '</div>';
     }
     if(custom.length){
-      html += '<h3 class="group-title">Class tests &amp; quizzes</h3>'
+      html += '<div class="group-header"><h3 class="group-title">Class tests &amp; quizzes</h3>'
+        + '<button type="button" class="track-btn" data-category="custom">Track Progress</button></div>'
         + '<div class="exam-grid">' + custom.map(tileHtml).join('') + '</div>';
     }
 
@@ -510,6 +576,13 @@
       btn.addEventListener('click', function(){
         var tile = state.tiles.filter(function(t){ return t.key === btn.getAttribute('data-key'); })[0];
         if(tile) openExam(tile);
+      });
+    });
+
+    // additive — wires up the new "Track Progress" buttons
+    Array.prototype.forEach.call(document.querySelectorAll('.track-btn'), function(btn){
+      btn.addEventListener('click', function(){
+        openProgress(btn.getAttribute('data-category'));
       });
     });
   }
@@ -646,6 +719,285 @@
     document.getElementById('examDetailScreen').classList.add('hidden');
     document.getElementById('examListScreen').classList.remove('hidden');
   });
+
+  /* ============================================================
+     ADDITIVE — Screen 3: Track Progress (line chart of % across exams)
+     Everything below is new and does not alter anything above.
+  ============================================================ */
+  var ALL_SUBJECTS = '__all__';
+  var progressChart = null;
+
+  // Primary path: a single, lean RPC call (security invoker — honours
+  // existing RLS) that returns only the columns needed to plot the
+  // trend, already filtered to Present/scored rows and sorted oldest
+  // → newest. See the accompanying SQL for get_student_exam_progress.
+  // Fallback path: if the RPC hasn't been created yet, we derive the
+  // same shape from a single lightweight 'marks' query plus the
+  // exam metadata already sitting in state.tiles (no extra round trip).
+  async function fetchProgressRows(category){
+    if(state.progressCache[category]) return state.progressCache[category];
+
+    var rows;
+    try{
+      var res = await supabase.rpc('get_student_exam_progress', {
+        p_student_id: state.masterId,
+        p_category: category
+      });
+      if(res.error) throw res.error;
+      rows = res.data || [];
+    } catch(e){
+      rows = await fetchProgressRowsFallback(category);
+    }
+
+    state.progressCache[category] = rows;
+    return rows;
+  }
+
+  async function fetchProgressRowsFallback(category){
+    var prefix = category === 'common' ? 'E:' : 'C:';
+    var res = await supabase.from('marks')
+      .select('exam_key, subject, marks_obtained')
+      .eq('student_id', state.masterId)
+      .eq('status', 'P')
+      .like('exam_key', prefix + '%');
+
+    if(res.error) throw res.error;
+
+    var tileByKey = {};
+    state.tiles.forEach(function(t){ tileByKey[t.key] = t; });
+
+    var rows = (res.data || []).map(function(r){
+      var t = tileByKey[r.exam_key];
+      if(!t || !t.mm || !t.sortAt || r.marks_obtained == null) return null;
+      return {
+        exam_key: r.exam_key,
+        exam_name: t.name,
+        subject: r.subject,
+        marks_obtained: r.marks_obtained,
+        mm: t.mm,
+        sort_at: t.sortAt
+      };
+    }).filter(function(r){ return r && r.mm > 0; });
+
+    rows.sort(function(a,b){ return new Date(a.sort_at) - new Date(b.sort_at); });
+    return rows;
+  }
+
+  async function openProgress(category){
+    document.getElementById('examListScreen').classList.add('hidden');
+    document.getElementById('examProgressScreen').classList.remove('hidden');
+    document.getElementById('progTitle').textContent =
+      category === 'common' ? 'Progress · School-wide exams' : 'Progress · Class tests & quizzes';
+
+    state.currentProgressCategory = category;
+    showProgressState('<div class="spinner"></div>Loading your progress…');
+
+    try{
+      var rows = await fetchProgressRows(category);
+      state.currentProgressRows = rows;
+
+      if(!rows || rows.length === 0){
+        showProgressState('No scored exams available yet to plot progress.');
+        return;
+      }
+
+      var subjects = [];
+      var seen = {};
+      rows.forEach(function(r){
+        if(!seen[r.subject]){ seen[r.subject] = true; subjects.push(r.subject); }
+      });
+      subjects.sort(function(a,b){
+        var order = state.subjectOrder;
+        var oa = order && order[a] != null ? order[a] : 9999;
+        var ob = order && order[b] != null ? order[b] : 9999;
+        if(oa !== ob) return oa - ob;
+        return a.localeCompare(b);
+      });
+      populateSubjectFilter(subjects);
+
+      state.currentProgressSelectedSubject = ALL_SUBJECTS;
+      hideProgressState();
+      renderProgressChart(rows, ALL_SUBJECTS);
+    } catch(e){
+      showProgressError('Could not load your progress.');
+    }
+  }
+
+  function populateSubjectFilter(subjects){
+    var sel = document.getElementById('progSubjectFilter');
+    var html = '<option value="'+ALL_SUBJECTS+'">All subjects (overall)</option>';
+    subjects.forEach(function(s){
+      html += '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>';
+    });
+    sel.innerHTML = html;
+    sel.value = ALL_SUBJECTS;
+  }
+
+  function renderProgressChart(rows, selectedSubject){
+    var examOrder = [];   // [{key, name}] in chronological order
+    var seenExam = {};
+    var examSubjMap = {}; // exam_key -> {subject: pct}
+
+    rows.forEach(function(r){
+      if(!seenExam[r.exam_key]){
+        seenExam[r.exam_key] = true;
+        examOrder.push({key: r.exam_key, name: r.exam_name});
+        examSubjMap[r.exam_key] = {};
+      }
+      examSubjMap[r.exam_key][r.subject] = (r.marks_obtained / r.mm) * 100;
+    });
+
+    var labels = [];
+    var values = [];
+
+    if(selectedSubject === ALL_SUBJECTS){
+      examOrder.forEach(function(e){
+        var subjPcts = examSubjMap[e.key];
+        var keys = Object.keys(subjPcts);
+        if(keys.length === 0) return;
+        var sum = 0;
+        keys.forEach(function(s){ sum += subjPcts[s]; });
+        labels.push(e.name);
+        values.push(sum / keys.length);
+      });
+    } else {
+      examOrder.forEach(function(e){
+        var subjPcts = examSubjMap[e.key];
+        if(subjPcts[selectedSubject] == null) return;
+        labels.push(e.name);
+        values.push(subjPcts[selectedSubject]);
+      });
+    }
+
+    var emptyMsg = document.getElementById('progChartEmptyMsg');
+    var canvas = document.getElementById('progChartCanvas');
+
+    if(labels.length === 0){
+      emptyMsg.textContent = 'No scored results for this subject yet.';
+      emptyMsg.classList.remove('hidden');
+      canvas.classList.add('hidden');
+      if(progressChart){ progressChart.destroy(); progressChart = null; }
+      return;
+    }
+
+    emptyMsg.classList.add('hidden');
+    canvas.classList.remove('hidden');
+    drawChart(labels, values);
+  }
+
+  function tierColorForPct(pct){
+    var css = getComputedStyle(document.documentElement);
+    if(pct >= 90) return css.getPropertyValue('--status-present-dark').trim();
+    if(pct >= 75) return css.getPropertyValue('--teal-700').trim();
+    if(pct >= 50) return css.getPropertyValue('--status-leave-dark').trim();
+    return css.getPropertyValue('--status-absent-dark').trim();
+  }
+
+  function drawChart(labels, values){
+    var canvas = document.getElementById('progChartCanvas');
+    var css = getComputedStyle(document.documentElement);
+    var textColor = css.getPropertyValue('--ink-500').trim();
+    var gridColor = css.getPropertyValue('--track').trim();
+    var lineColor = css.getPropertyValue('--teal-600').trim();
+    var fillColor = css.getPropertyValue('--bg-tint-teal').trim();
+    var pointColors = values.map(tierColorForPct);
+
+    if(progressChart){ progressChart.destroy(); progressChart = null; }
+
+    progressChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          fill: true,
+          tension: 0.35,
+          borderWidth: 3,
+          borderColor: lineColor,
+          backgroundColor: fillColor,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: pointColors,
+          pointBorderColor: css.getPropertyValue('--white').trim(),
+          pointBorderWidth: 2,
+          segment: {
+            borderColor: function(ctx){
+              var avg = (ctx.p0.parsed.y + ctx.p1.parsed.y) / 2;
+              return tierColorForPct(avg);
+            }
+          }
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 450 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){ return Math.round(ctx.parsed.y) + '%'; }
+            }
+          }
+        },
+        scales: {
+          y: {
+            min: 0, max: 100,
+            ticks: { color: textColor, stepSize: 20, callback: function(v){ return v + '%'; } },
+            grid: { color: gridColor }
+          },
+          x: {
+            ticks: { color: textColor, autoSkip: true, maxRotation: 40, minRotation: 0 },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function showProgressState(html){
+    document.getElementById('progControls').classList.add('hidden');
+    document.getElementById('progChartWrap').classList.add('hidden');
+    var s = document.getElementById('progState');
+    s.className = 'state-msg';
+    s.innerHTML = html;
+  }
+
+  function showProgressError(msg){
+    showProgressState(escapeHtml(msg) + '<br><button class="retry-btn" id="progRetryBtn">Try again</button>');
+    document.getElementById('progState').classList.add('err');
+    var btn = document.getElementById('progRetryBtn');
+    if(btn) btn.addEventListener('click', function(){ openProgress(state.currentProgressCategory); });
+  }
+
+  function hideProgressState(){
+    document.getElementById('progState').innerHTML = '';
+    document.getElementById('progState').className = 'state-msg hidden';
+    document.getElementById('progControls').classList.remove('hidden');
+    document.getElementById('progChartWrap').classList.remove('hidden');
+  }
+
+  document.getElementById('progBackBtn').addEventListener('click', function(){
+    document.getElementById('examProgressScreen').classList.add('hidden');
+    document.getElementById('examListScreen').classList.remove('hidden');
+  });
+
+  document.getElementById('progSubjectFilter').addEventListener('change', function(){
+    state.currentProgressSelectedSubject = this.value;
+    if(state.currentProgressRows){
+      renderProgressChart(state.currentProgressRows, this.value);
+    }
+  });
+
+  // Keep the chart's colours in sync if the parent page flips the
+  // theme while the progress screen is open — redraw is free (no
+  // network call), it just reuses the already-fetched rows.
+  var progressThemeObserver = new MutationObserver(function(){
+    if(progressChart && state.currentProgressRows){
+      renderProgressChart(state.currentProgressRows, state.currentProgressSelectedSubject || ALL_SUBJECTS);
+    }
+  });
+  progressThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
   init();
 })();
