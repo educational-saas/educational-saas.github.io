@@ -1,0 +1,2842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+
+  /* Strategy 1: Pre-Paint Language Preference Loading */
+  var LANG = 'en';
+  (function(){
+    try {
+      var savedLang = localStorage.getItem('gsms-lang');
+      if (savedLang === 'hi' || savedLang === 'en') {
+        LANG = savedLang;
+      }
+    } catch(e) {}
+    document.documentElement.setAttribute('data-lang', LANG);
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Exam Blueprint</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Devanagari-capable fonts: the browser embeds only the glyphs used, so the PDF stays small and text stays real text. -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://educational-saas.github.io/commons/ai-help.js"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --header-bg: rgba(250,248,243,.85);
+    --header-border: rgba(13,56,65,.08);
+
+    --danger:#c9432f;
+    --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b;
+    --success-bg: rgba(47,143,91,.1);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --header-bg: rgba(9,34,39,.85);
+    --header-border: rgba(255,255,255,.08);
+
+    --danger:#ff6b57;
+    --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492;
+    --success-bg: rgba(87,212,146,.12);
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  /* Strategy 1: Scoped Devanagari Font Typography */
+  html[data-lang="hi"] body,
+  html[data-lang="hi"] button,
+  html[data-lang="hi"] input,
+  html[data-lang="hi"] select,
+  html[data-lang="hi"] textarea {
+    font-family: 'Noto Sans Devanagari', 'Manrope', system-ui, -apple-system, sans-serif;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ---------- Loading gate ---------- */
+  #gate{
+    position:fixed; inset:0; z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--cream);
+    transition:opacity .35s var(--ease), visibility .35s var(--ease);
+  }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid var(--border-card);
+    border-top-color:var(--gold-500);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  /* ---------- App header ---------- */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:960px;
+    margin:0 auto 14px;
+  }
+  .header-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.02rem;
+    color:var(--ink-900);
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .3s var(--ease);
+  }
+  .header-sub{
+    margin:1px 0 0;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--gold-600);
+  }
+  .header-sub.admin-badge{ color:var(--teal-700); }
+
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    width:40px; height:40px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{
+    width:19px; height:19px;
+    fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute;
+    transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  /* ---------- Tabs ---------- */
+  .tabs{
+    max-width:960px;
+    margin:0 auto;
+    display:flex;
+    gap:6px;
+    background:var(--white);
+    border:1.5px solid var(--border-card);
+    border-radius:999px;
+    padding:5px;
+  }
+  .tab-btn{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--ink-500);
+    font-weight:700;
+    font-size:.86rem;
+    padding:10px 8px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background-color .25s var(--ease), color .25s var(--ease);
+  }
+  .tab-btn.active{
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900));
+    color:var(--white);
+    box-shadow:0 10px 22px -12px rgba(13,56,65,.5);
+  }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--teal-900); }
+
+  /* ---------- Main ---------- */
+  main.dash{
+    flex:1;
+    width:100%;
+    max-width:960px;
+    margin:0 auto;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);
+  }
+
+  .panel{ display:none; flex-direction:column; gap:16px; }
+  .panel.active{ display:flex; }
+
+  .edit-form-wrap{ flex-direction:column; gap:16px; }
+  @media (max-width:480px){
+    .edit-form-wrap{ gap:14px; }
+  }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:18px;
+    box-shadow:var(--shadow-card);
+    transition:border-color .3s var(--ease), background-color .3s var(--ease);
+  }
+  .card-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1rem;
+    margin:0 0 14px;
+    color:var(--ink-900);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    row-gap:8px;
+    gap:10px;
+  }
+  .chip{
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.02em;
+    color:var(--teal-700);
+    background:var(--bg-tint-teal);
+    padding:5px 11px;
+    border-radius:999px;
+    white-space:nowrap;
+    max-width:100%;
+  }
+  .chip.level-low{ color:var(--danger); background:var(--danger-bg); }
+  .chip.level-mid{ color:var(--gold-600); background:var(--bg-tint-gold); }
+  .chip.level-high{ color:var(--teal-700); background:var(--bg-tint-teal); }
+  .chip.level-done{ color:var(--success); background:var(--success-bg); }
+  @media (max-width:480px){
+    .card-title .chip{ white-space:normal; line-height:1.35; }
+  }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{
+    display:block;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--ink-500);
+    margin-bottom:7px;
+  }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  @media (max-width:480px){ .row2{ grid-template-columns:1fr; } .row3{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:360px){ .row3{ grid-template-columns:1fr; } }
+
+  input[type="date"], input[type="number"], input[type="text"], select, textarea{
+    width:100%;
+    padding:12px 14px;
+    border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card);
+    background:var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',sans-serif;
+    font-size:.92rem;
+    font-weight:500;
+    outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="date"]:focus, input[type="number"]:focus, input[type="text"]:focus, select:focus, textarea:focus{
+    border-color:var(--border-card-hover);
+    box-shadow:0 0 0 4px var(--bg-tint-gold);
+  }
+  textarea{ resize:vertical; min-height:64px; line-height:1.5; }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;
+    padding-right:36px;
+  }
+  select:disabled, input:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .btn{
+    padding:13px 18px;
+    border-radius:14px;
+    border:none;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:.88rem;
+    cursor:pointer;
+    transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-teal{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); }
+  html[data-theme="dark"] .btn-teal{ color:var(--teal-900); }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+  .btn-sm{ padding:8px 14px; font-size:.78rem; border-radius:10px; }
+  @media (max-width:360px){
+    .btn-row{ flex-direction:column-reverse; }
+  }
+
+  .ai-gen-row{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-ai{ padding:8px 14px; font-size:.78rem; border-radius:10px; }
+  .btn-ai:disabled{ opacity:.6; }
+
+  .last-modified{ font-size:.76rem; color:var(--ink-500); margin-top:12px; text-align:right; }
+
+  .placeholder-note{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+    padding:36px 16px; color:var(--ink-500);
+  }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Marks summary bar ----------
+     Intentionally a solid, always-dark teal panel (not the old teal-700→teal-900
+     gradient, and not theme-inverted): --teal-900 stays a dark navy-teal in both
+     light and dark mode, so the light-gold labels and white values on top of it
+     stay readable either way, and the inputs get a solid white field for real
+     contrast instead of a translucent overlay. */
+  .marks-bar{
+    display:flex; align-items:flex-end; justify-content:flex-start; gap:16px 22px;
+    flex-wrap:wrap;
+    background:var(--teal-900);
+    color:#ffffff;
+    border-radius:var(--r-sm);
+    padding:16px 18px;
+    position:sticky; top:calc(env(safe-area-inset-top) + 118px); z-index:10;
+    box-shadow:0 14px 30px -16px rgba(13,56,65,.55);
+    border:1.5px solid var(--gold-500);
+  }
+  .marks-bar-item{ display:flex; flex-direction:column; gap:6px; flex:1 1 100px; min-width:100px; }
+  .marks-bar-item.is-hidden{ display:none; }
+  .marks-bar-label{ font-size:.68rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--gold-400); }
+  .marks-bar-value{ font-family:'Fraunces',serif; font-weight:700; font-size:1.2rem; color:#ffffff; }
+  .marks-bar input{
+    width:100%; max-width:110px; text-align:center; padding:9px 6px; background:#ffffff;
+    border:1.5px solid var(--gold-400); color:var(--teal-900); font-weight:800;
+  }
+  .marks-bar input:focus{ border-color:var(--gold-600); box-shadow:0 0 0 4px rgba(245,166,35,.4); }
+  .marks-bar-reset{ font-size:.72rem; text-decoration:underline; cursor:pointer; background:none; border:none; color:var(--gold-400); padding:0; font-weight:800; }
+  .marks-bar-reset:hover{ color:var(--gold-100); }
+  @media (max-width:480px){
+    .marks-bar{ padding:14px 16px; gap:14px 18px; position:static; }
+    .marks-bar-item{ flex:1 1 42%; min-width:0; }
+    .marks-bar input{ max-width:none; }
+  }
+  @media (max-width:360px){
+    .marks-bar-item{ flex:1 1 100%; }
+  }
+
+  /* ---------- Blueprint mode switch (builder vs. freehand text) ---------- */
+  .mode-toggle{
+    display:flex; gap:8px;
+    background:var(--cream);
+    border:1.5px solid var(--border-card);
+    border-radius:16px;
+    padding:6px;
+  }
+  .mode-toggle-btn{
+    flex:1; text-align:left;
+    display:flex; flex-direction:column; gap:3px;
+    padding:12px 14px;
+    border-radius:12px; border:1.5px solid transparent;
+    background:transparent; cursor:pointer;
+    transition:background-color .2s var(--ease), border-color .2s var(--ease);
+  }
+  .mode-toggle-btn strong{ font-size:.86rem; font-weight:800; color:var(--ink-900); }
+  .mode-toggle-btn span{ display:block; font-size:.72rem; font-weight:600; color:var(--ink-500); margin-top:1px; line-height:1.4; }
+  .mode-toggle-btn.active{ background:var(--white); border-color:var(--border-card-hover); box-shadow:0 8px 18px -10px rgba(13,56,65,.35); }
+  .mode-toggle-btn.active strong{ color:var(--teal-700); }
+  html[data-theme="dark"] .mode-toggle-btn.active strong{ color:var(--gold-400); }
+  @media (max-width:520px){
+    .mode-toggle{ flex-direction:column; }
+  }
+  .mode-note{
+    display:flex; gap:9px; align-items:flex-start;
+    font-size:.78rem; color:var(--ink-900); line-height:1.5;
+    background:var(--bg-tint-teal);
+    border-radius:var(--r-sm);
+    padding:11px 13px;
+    margin-top:12px;
+  }
+  .mode-note.mode-note-freehand{ background:var(--bg-tint-gold); }
+  .mode-note svg{ width:16px; height:16px; flex-shrink:0; margin-top:1px; stroke:var(--teal-700); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .mode-note.mode-note-freehand svg{ stroke:var(--gold-600); }
+  .freehand-wrap textarea{ min-height:220px; line-height:1.65; }
+  .sync-row{ display:flex; justify-content:flex-end; margin-top:6px; }
+  .sync-btn{ font-size:.76rem; font-weight:700; color:var(--teal-700); background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; }
+  html[data-theme="dark"] .sync-btn{ color:var(--gold-400); }
+  .preview-freehand{
+    white-space:pre-wrap; font-size:.86rem; line-height:1.6; color:var(--ink-900);
+    background:var(--cream); border:1px dashed var(--border-card); border-radius:var(--r-sm);
+    padding:12px 14px;
+  }
+
+  /* ---------- Section & question-group builder ---------- */
+  .section-block{
+    border:1.5px dashed var(--border-card-hover);
+    border-radius:var(--r-md);
+    padding:16px;
+    margin-bottom:14px;
+    background:var(--bg-tint-gold);
+  }
+  .section-block-head{ display:flex; gap:10px; align-items:flex-end; margin-bottom:12px; flex-wrap:wrap; }
+  .section-block-head .field{ flex:1 1 200px; margin-bottom:0; min-width:0; }
+  .section-remove-btn{ flex-shrink:0; }
+
+  .group-block{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-sm);
+    padding:14px;
+    margin-bottom:10px;
+    position:relative;
+  }
+  .group-block:last-of-type{ margin-bottom:0; }
+  .group-block-top{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 10px; margin-bottom:10px; }
+  .group-block-title{ font-weight:700; font-size:.82rem; color:var(--teal-700); }
+  .group-marks-pill{
+    font-size:.72rem; font-weight:700; color:var(--gold-600); background:var(--bg-tint-gold);
+    padding:4px 10px; border-radius:999px; white-space:nowrap;
+  }
+  .remove-x{
+    width:26px; height:26px; border-radius:50%; border:1.5px solid var(--border-card);
+    background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  }
+  .remove-x svg{ width:12px; height:12px; stroke:var(--danger); fill:none; stroke-width:2.4; stroke-linecap:round; }
+
+  .parts-wrap{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-card); }
+  .part-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; }
+  .part-row:last-child{ margin-bottom:0; }
+  .part-row input[type="text"]{ flex:0 0 60px; text-align:center; }
+  .part-row input[type="number"]{ flex:0 0 84px; }
+  .part-row .part-label-tag{ flex:1 1 auto; min-width:110px; font-size:.8rem; color:var(--ink-500); }
+  .part-row .remove-x{ margin-left:auto; }
+
+  .toggle-row{ display:flex; align-items:center; gap:9px; margin:10px 0; }
+  .toggle-row input[type="checkbox"]{ width:18px; height:18px; accent-color:var(--teal-700); flex-shrink:0; }
+  .toggle-row label{ margin:0; font-size:.82rem; font-weight:600; text-transform:none; letter-spacing:0; color:var(--ink-900); cursor:pointer; }
+
+  .add-dashed-btn{
+    width:100%; padding:12px; border-radius:var(--r-sm); border:1.5px dashed var(--border-card-hover);
+    background:transparent; color:var(--teal-700); font-weight:700; font-size:.84rem; cursor:pointer;
+    transition:background-color .2s var(--ease);
+  }
+  html[data-theme="dark"] .add-dashed-btn{ color:var(--gold-400); }
+  .add-dashed-btn:hover{ background:var(--bg-tint-teal); }
+
+  .helper-text{ font-size:.74rem; color:var(--ink-500); margin:-6px 0 10px; line-height:1.5; }
+
+  @media (max-width:600px){
+    main.dash{ padding-left:14px; padding-right:14px; }
+    .card{ padding:15px; }
+    .section-block{ padding:13px; }
+    .group-block{ padding:12px; }
+  }
+  @media (max-width:420px){
+    .part-row .part-label-tag{ order:3; flex-basis:100%; margin-top:2px; }
+  }
+
+  /* ---------- Browse results / blueprint preview ---------- */
+  .results-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px; flex-wrap:wrap; }
+  .subject-card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:16px;
+    box-shadow:var(--shadow-card);
+    opacity:0; animation:rise .5s var(--ease) forwards;
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .subject-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .subject-name{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; color:var(--teal-700); margin:0; }
+  .subject-meta{ font-size:.74rem; color:var(--ink-500); margin-top:3px; }
+  .subject-actions{ display:flex; gap:6px; flex-shrink:0; align-items:center; }
+  .mini-btn{
+    width:32px; height:32px; border-radius:10px; border:1.5px solid var(--border-card);
+    background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:transform .2s var(--ease), border-color .2s var(--ease);
+  }
+  .mini-btn:hover{ transform:translateY(-1px); border-color:var(--border-card-hover); }
+  .mini-btn svg{ width:15px; height:15px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .mini-btn.danger svg{ stroke:var(--danger); }
+
+  .preview-section{ margin-top:12px; }
+  .preview-section:first-of-type{ margin-top:6px; }
+  .preview-section-name{ font-weight:700; font-size:.82rem; color:var(--gold-600); text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
+  .preview-section-instr{ font-size:.78rem; color:var(--ink-500); font-style:italic; margin-bottom:8px; }
+  .preview-group{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border-card); font-size:.86rem; }
+  .preview-group:last-child{ border-bottom:none; }
+  .preview-group-desc{ color:var(--ink-900); }
+  .preview-group-desc .parts-note{ display:block; font-size:.74rem; color:var(--ink-500); margin-top:2px; }
+  .preview-group-marks{ font-weight:700; color:var(--teal-700); white-space:nowrap; }
+  .preview-totals{ display:flex; justify-content:space-between; margin-top:12px; padding-top:10px; border-top:1.5px solid var(--border-card); font-size:.86rem; font-weight:700; }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:100;
+    background:rgba(9,34,39,.4);
+    opacity:0; visibility:hidden;
+    transition:opacity .25s var(--ease), visibility .25s var(--ease);
+  }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:101;
+    background:var(--cream);
+    border-radius:22px 22px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);
+    max-width:960px; margin:0 auto;
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);
+    transform:translateY(100%);
+    transition:transform .3s var(--ease);
+    max-height:86svh; overflow-y:auto;
+  }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  .pdf-field-option{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px; border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card);
+    background:var(--white);
+    margin-bottom:10px; cursor:pointer;
+    transition:border-color .2s var(--ease);
+  }
+  .pdf-field-option:hover{ border-color:var(--border-card-hover); }
+  .pdf-field-option input[type="checkbox"]{ width:19px; height:19px; accent-color:var(--teal-700); flex-shrink:0; }
+  .pdf-field-option span{ font-size:.88rem; font-weight:600; color:var(--ink-900); }
+
+  /* ---------- Toast ---------- */
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px);
+    z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900);
+    color:var(--white);
+    font-size:.84rem;
+    font-weight:600;
+    padding:12px 18px;
+    border-radius:999px;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px);
+    transition:opacity .3s var(--ease), transform .3s var(--ease);
+    max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+  textarea.auto-resize{ overflow:hidden; resize:none; }
+
+/* ---- Root cause of the "squashed" look ----------------------------------
+   The JS sets display:flex on these two cards, which lays their children
+   (title, helper text, sections, buttons) out side by side in a ROW.
+   Stack them vertically instead. */
+#structured-builder-card,
+#freehand-card{ flex-direction:column; }
+
+/* ---------- Page rhythm ---------- */
+main.dash{
+  padding:clamp(18px,3vw,32px) clamp(12px,4vw,28px) calc(env(safe-area-inset-bottom) + 64px);
+}
+.app-header{
+  padding-left:clamp(12px,4vw,28px);
+  padding-right:clamp(12px,4vw,28px);
+}
+.panel{ gap:22px; }
+.edit-form-wrap{ gap:22px; }
+.tab-btn{ padding:12px 10px; font-size:.9rem; }
+
+/* ---------- Cards ---------- */
+.card{
+  padding:clamp(18px,3.4vw,30px);
+  border-radius:22px;
+}
+.card-title{
+  font-size:1.12rem;
+  line-height:1.3;
+  margin-bottom:clamp(16px,2.6vw,22px);
+}
+.chip{ font-size:.76rem; padding:6px 12px; }
+
+/* ---------- Fields & inputs ---------- */
+.field{ margin-bottom:20px; }
+.field label{ font-size:.78rem; line-height:1.35; margin-bottom:9px; }
+.row2{ gap:18px; }
+.row2 > .field,
+.row3 > .field{ margin-bottom:0 !important; }
+
+input[type="date"],
+input[type="number"],
+input[type="text"],
+select,
+textarea{
+  min-height:50px;
+  padding:13px 16px;
+  font-size:1rem;            /* 16px: stops iOS zooming in on focus */
+  line-height:1.4;
+  border-radius:14px;
+}
+textarea{ min-height:96px; padding:14px 16px; line-height:1.6; }
+textarea[rows="1"]{ min-height:56px; }
+select{ background-position:right 16px center; padding-right:44px; }
+
+/* ---------- Buttons ---------- */
+.btn{ min-height:50px; padding:14px 22px; font-size:.94rem; border-radius:14px; }
+.btn-sm{ min-height:40px; padding:9px 16px; font-size:.82rem; border-radius:12px; }
+.btn-ai{ min-height:40px; padding:9px 16px; font-size:.82rem; border-radius:12px; }
+.ai-gen-row{ margin-top:12px; }
+
+.helper-text{
+  font-size:.84rem;
+  line-height:1.65;
+  margin:0 0 20px;
+  max-width:70ch;
+}
+
+/* ---------- Marks / duration bar ---------- */
+.marks-bar{
+  position:static;
+  align-items:flex-start;
+  gap:18px 26px;
+  padding:clamp(16px,3vw,22px) clamp(16px,3.4vw,26px);
+  border-radius:20px;
+}
+.marks-bar-item{ flex:1 1 170px; min-width:0; gap:8px; }
+.marks-bar-label{ font-size:.72rem; }
+.marks-bar-value{
+  display:flex; align-items:center;
+  min-height:50px;
+  font-size:1.55rem; line-height:1;
+}
+.marks-bar input{
+  max-width:none;
+  min-height:50px;
+  padding:10px 12px;
+  font-size:1.1rem;
+}
+.marks-bar-reset{ align-self:flex-start; font-size:.78rem; padding:4px 0; }
+@media (min-width:720px){
+  .marks-bar{ position:sticky; top:calc(env(safe-area-inset-top) + 144px); }
+}
+@media (max-width:520px){
+  .marks-bar-item{ flex:1 1 calc(50% - 10px); }
+}
+
+/* ---------- Mode switch: two roomy option cards ---------- */
+.mode-toggle{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  background:transparent;
+  border:0;
+  padding:0;
+}
+.mode-toggle-btn{
+  position:relative;
+  gap:6px;
+  padding:18px 18px 18px 56px;
+  border:1.5px solid var(--border-card);
+  border-radius:16px;
+  background:var(--cream);
+}
+.mode-toggle-btn::before{
+  content:"";
+  position:absolute; left:20px; top:20px;
+  width:20px; height:20px;
+  border-radius:50%;
+  border:2px solid var(--ink-500);
+  background:var(--white);
+  transition:border-color .2s var(--ease), background .2s var(--ease);
+}
+.mode-toggle-btn:hover{ border-color:var(--border-card-hover); }
+.mode-toggle-btn strong{ font-size:1rem; line-height:1.3; }
+.mode-toggle-btn span{ font-size:.82rem; line-height:1.55; margin-top:0; }
+.mode-toggle-btn.active{
+  background:var(--bg-tint-gold);
+  border-color:var(--gold-500);
+  box-shadow:0 12px 24px -16px rgba(226,148,26,.6);
+}
+.mode-toggle-btn.active::before{
+  border-color:var(--teal-700);
+  background:radial-gradient(circle, var(--teal-700) 0 4.5px, transparent 5.5px), var(--white);
+}
+@media (max-width:560px){
+  .mode-toggle{ grid-template-columns:1fr; }
+}
+.mode-note{
+  gap:12px;
+  margin-top:18px;
+  padding:14px 16px;
+  font-size:.86rem;
+  line-height:1.6;
+  border-radius:14px;
+}
+.mode-note svg{ width:18px; height:18px; margin-top:2px; }
+
+/* ---------- Builder: sections ---------- */
+.section-block{
+  counter-reset:grp;
+  padding:clamp(14px,3vw,24px);
+  margin-bottom:20px;
+  border-radius:22px;
+}
+.section-block-head{
+  flex-wrap:nowrap;          /* keep the remove button beside the name field */
+  align-items:flex-end;
+  gap:14px;
+  margin-bottom:18px;
+}
+.section-block-head .field{ flex:1 1 0; min-width:0; }
+.section-remove-btn{ width:46px; height:46px; margin-bottom:2px; }
+
+/* ---------- Builder: question groups ---------- */
+.group-block{
+  counter-increment:grp;
+  padding:clamp(14px,3vw,22px);
+  margin-bottom:16px;
+  border-radius:18px;
+  box-shadow:0 10px 24px -18px rgba(13,56,65,.35);
+}
+.group-block-top{
+  padding-bottom:14px;
+  margin-bottom:18px;
+  border-bottom:1px solid var(--border-card);
+}
+.group-block-title{ font-size:.95rem; font-weight:800; }
+.group-block-title::after{ content:" " counter(grp); }
+.group-marks-pill{ font-size:.78rem; padding:6px 12px; }
+
+.group-block .row2{
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap:16px;
+  margin-bottom:18px;
+}
+.group-block .row2 > div:empty{ display:none; }
+.group-block .row3{
+  grid-template-columns:repeat(3, minmax(0,1fr));
+  gap:16px;
+}
+.group-block .row3 > .field{
+  display:flex; flex-direction:column; justify-content:flex-end;
+}
+.group-block .field label{ font-size:.72rem; letter-spacing:.03em; }
+.group-block input[type="number"]{ text-align:center; font-weight:700; }
+.group-block > .field:last-child{ margin-top:22px !important; }
+.group-block .helper-text{ margin:12px 0 0; }
+@media (max-width:520px){
+  .group-block .row3{ grid-template-columns:1fr 1fr; }
+  .group-block .row3 > .field:nth-child(3){ grid-column:1 / -1; }
+}
+
+/* Tappable option rows for the checkboxes */
+.toggle-row{
+  gap:12px;
+  margin:14px 0;
+  padding:12px 14px;
+  border:1.5px solid var(--border-card);
+  border-radius:12px;
+  background:var(--cream);
+  transition:border-color .2s var(--ease), background-color .2s var(--ease);
+}
+.toggle-row:has(input:checked){
+  border-color:var(--border-card-hover);
+  background:var(--bg-tint-gold);
+}
+.toggle-row input[type="checkbox"]{ width:20px; height:20px; }
+.toggle-row label{ flex:1; font-size:.86rem; line-height:1.45; padding:2px 0; }
+
+/* Parts (a), (b), (c) */
+.parts-wrap{
+  margin-top:22px;
+  padding-top:22px;
+  border-top:1px dashed var(--border-card-hover);
+}
+.part-row{
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr) auto 38px;
+  gap:10px 12px;
+  align-items:center;
+  margin-bottom:12px;
+}
+.part-row input[type="text"],
+.part-row input[type="number"]{ width:100%; }
+.part-row .part-label-tag{ order:0; min-width:0; font-size:0; }
+.part-row .part-label-tag::before{ content:attr(data-label-text); font-size:.84rem; color:var(--ink-500); }
+.part-row .remove-x{ margin-left:0; }
+
+.remove-x{ width:36px; height:36px; transition:background-color .2s var(--ease); }
+.remove-x:hover{ background:var(--danger-bg); }
+.remove-x svg{ width:14px; height:14px; }
+
+.add-dashed-btn{ min-height:48px; padding:13px 16px; font-size:.9rem; border-radius:14px; }
+
+/* ---------- Freehand mode ---------- */
+.freehand-wrap textarea{
+  min-height:clamp(240px, 42vh, 420px);
+  padding:18px 20px;
+  font-size:1rem;
+  line-height:1.75;
+}
+.sync-row{ justify-content:flex-end; margin-top:16px; }
+.sync-btn{
+  min-height:42px;
+  padding:9px 18px;
+  font-size:.82rem;
+  border:1.5px dashed var(--border-card-hover);
+  border-radius:999px;
+  text-decoration:none;
+  transition:background-color .2s var(--ease);
+}
+.sync-btn:hover{ background:var(--bg-tint-teal); }
+@media (max-width:520px){
+  .sync-btn{ width:100%; }
+}
+
+/* ---------- Save / delete bar (stays within reach on long forms) ---------- */
+.last-modified{ margin:0; font-size:.8rem; }
+.btn-row{
+  flex-direction:row;        /* cancels the old ≤360px column-reverse */
+  gap:12px;
+  margin-top:0;
+  padding:12px;
+  position:sticky;
+  bottom:calc(env(safe-area-inset-bottom) + 12px);
+  z-index:20;
+  background:var(--header-bg);
+  border:1px solid var(--header-border);
+  border-radius:20px;
+  box-shadow:var(--shadow-card);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+}
+.btn-row .btn{ min-height:52px; }
+.btn-row .btn-danger{ flex:0 0 auto; padding-inline:24px; }
+
+/* ---------- Compact nesting on phones (card › section › group) ---------- */
+@media (max-width:600px){
+  .card{ padding:18px 16px; border-radius:20px; }
+  #structured-builder-card{ padding-left:12px; padding-right:12px; }
+  #structured-builder-card > .card-title,
+  #structured-builder-card > .helper-text{ padding-left:4px; padding-right:4px; }
+  .section-block{ padding:12px; border-radius:18px; }
+  .group-block{ padding:14px; }
+  .btn-row{ padding:10px; gap:10px; border-radius:18px; }
+}
+
+/* ---------- Keyboard focus ---------- */
+.mode-toggle-btn:focus-visible,
+.add-dashed-btn:focus-visible,
+.sync-btn:focus-visible,
+.remove-x:focus-visible{
+  outline:3px solid var(--gold-500);
+  outline-offset:3px;
+}
+
+/* ---------- Print sheet: hidden on screen, the ONLY thing printed ---------- */
+#print-sheet{display:none;}
+
+@page{
+  size:A4; margin:14mm 14mm 16mm;
+  @bottom-center{ content:"Gopal Sharma Memorial School — Exam Blueprint  |  Page " counter(page) " of " counter(pages); font:8pt Helvetica,Arial,sans-serif; color:#5f6f70; }
+}
+@media print{
+  html{ color-scheme: light !important; }
+  html,body{background:#fff !important; color:#1c2626 !important;}
+  #gate,#app,.sheet-backdrop,#toast-wrap{display:none !important;}
+  #print-sheet{display:block; font-family:'Noto Sans','Noto Sans Devanagari',Helvetica,Arial,sans-serif; color:#1c2626;}
+  * {-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  .p-head{display:flex; align-items:center; justify-content:space-between; gap:12px; background:#0d3841; color:#fff; padding:12px 16px; border-radius:6px; margin-bottom:14px;}
+  .p-brand{display:flex; align-items:center; gap:12px;}
+  .p-brand img{width:42px; height:42px; object-fit:contain;}
+  .p-school{font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:15pt;}
+  .p-title{font-size:9.5pt; color:#ffd685; margin-top:2px;}
+  .p-right{text-align:right; font-size:9.5pt;}
+  .p-right .p-range{color:#ffd685; font-size:8.6pt; margin-top:2px;}
+  .p-card{border-left:3px solid #e2941a; padding:6px 0 8px 14px; margin-bottom:12px; break-inside:avoid; page-break-inside:avoid;}
+  .p-subject-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:5px; border-bottom:1.4px solid #e2941a;}
+  .p-subject{font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:13pt; color:#124f59;}
+  .p-badge{font-family:Helvetica,Arial,sans-serif; font-weight:700; font-size:9pt; padding:4px 10px; border-radius:999px; color:#fff; background:#227d8b; white-space:nowrap;}
+  .p-teacher{font-size:8pt; color:#5f6f70; margin-top:5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#b26a12;}
+  .p-general{font-size:9.4pt; font-style:italic; color:#5f6f70; margin-top:6px;}
+  .p-freehand{font-size:9.8pt; color:#1c2626; white-space:pre-wrap; line-height:1.55; margin-top:8px;}
+  .p-section{margin-top:10px;}
+  .p-section-name{font-family:Helvetica,Arial,sans-serif; font-size:9.5pt; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#124f59;}
+  .p-section-instr{font-size:9pt; font-style:italic; color:#5f6f70; margin-bottom:4px;}
+  .p-group-row{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:0.75px dashed #d8ccb0;}
+  .p-group-desc{font-size:10pt; color:#1c2626;}
+  .p-group-note{font-size:8.4pt; color:#5f6f70; margin-top:2px;}
+  .p-group-marks{font-family:Helvetica,Arial,sans-serif; font-size:10pt; font-weight:700; color:#1b6b78; white-space:nowrap;}
+  .p-totals{display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1.5px solid #d8ccb0; font-size:10pt; font-weight:700; color:#124f59;}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading / auth gate -->
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard" data-i18n-title="back_btn_title" data-i18n-aria="back_btn_title">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting" data-i18n="header_greeting">Exam Blueprint</p>
+          <p class="header-sub" id="role-badge" data-i18n="header_sub">Design &bull; Update &bull; Share</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode" data-i18n-title="theme_toggle_title" data-i18n-aria="theme_toggle_title">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out" data-i18n-title="signout_btn_title" data-i18n-aria="signout_btn_title">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;">
+            <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-edit-btn" type="button" data-i18n="tab_my_blueprint">My Blueprint</button>
+      <button class="tab-btn" id="tab-browse-btn" type="button" data-i18n="tab_browse_share">Browse &amp; Share</button>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ PANEL: MY BLUEPRINT (add / edit) ============ -->
+    <section class="panel active" id="panel-edit">
+
+      <div class="card">
+        <p class="card-title" data-i18n="select_exam_class_subject">Select exam, class &amp; subject</p>
+
+        <div class="field">
+          <label for="edit-class" data-i18n="label_class">Class</label>
+          <select id="edit-class"><option value="" data-i18n="opt_select_class">Select class…</option></select>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="edit-exam" data-i18n="label_exam">Exam</label>
+            <select id="edit-exam" disabled><option value="" data-i18n="opt_select_class_first">Select class first…</option></select>
+          </div>
+          <div class="field">
+            <label for="edit-subject" data-i18n="label_subject">Subject</label>
+            <select id="edit-subject" disabled><option value="" data-i18n="opt_select_class_first">Select class first…</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="edit-form-wrap" id="edit-form-wrap" style="display:none;">
+
+        <div class="marks-bar">
+          <div class="marks-bar-item" id="calc-marks-item">
+            <span class="marks-bar-label" data-i18n="calculated">Calculated</span>
+            <span class="marks-bar-value" id="calc-marks-display">0 marks</span>
+          </div>
+          <div class="marks-bar-item">
+            <span class="marks-bar-label" data-i18n="duration">Duration</span>
+            <input type="number" id="f-duration" min="0" placeholder="mins" data-i18n-placeholder="ph_mins">
+          </div>
+          <div class="marks-bar-item">
+            <span class="marks-bar-label" data-i18n="paper_total">Paper total</span>
+            <input type="number" id="f-total-marks" min="0">
+            <button class="marks-bar-reset" id="btn-reset-total" type="button" data-i18n="use_calculated">use calculated</button>
+          </div>
+        </div>
+
+        <div class="card" id="edit-form-card">
+          <p class="card-title"><span data-i18n="blueprint_details">Blueprint details</span> <span class="chip" id="edit-existing-chip" style="display:none;" data-i18n="existing_entry">Existing entry</span></p>
+
+          <div class="field">
+            <label for="f-general-instructions" data-i18n="label_general_instructions">General instructions (shown at the top of the paper)</label>
+            <textarea id="f-general-instructions" rows="2" placeholder="e.g. All questions are compulsory. Marks are indicated against each question." data-i18n-placeholder="ph_general_instructions"></textarea>
+            <div class="ai-gen-row">
+              <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-general-instructions" data-i18n="btn_auto_correct">🩹 Auto-correct</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="mode-select-card">
+          <p class="card-title" data-i18n="how_to_write">How do you want to write this blueprint?</p>
+          <div class="mode-toggle">
+            <button class="mode-toggle-btn active" id="mode-btn-structured" type="button" data-mode="structured">
+              <strong data-i18n="mode_structured_title">🧩 Use the builder</strong>
+              <span data-i18n="mode_structured_desc">Fill in simple fields — questions, marks, choices — and we lay it out for you.</span>
+            </button>
+            <button class="mode-toggle-btn" id="mode-btn-freehand" type="button" data-mode="freehand">
+              <strong data-i18n="mode_freehand_title">✍️ Write it myself</strong>
+              <span data-i18n="mode_freehand_desc">Type out the whole blueprint in your own words, exactly as you want it.</span>
+            </button>
+          </div>
+          <div class="mode-note" id="mode-note-structured">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+            <span data-i18n="note_structured">The builder adds up marks for you automatically as you fill in each question group below.</span>
+          </div>
+          <div class="mode-note mode-note-freehand" id="mode-note-freehand" style="display:none;">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+            <span><strong data-i18n="heads_up">Heads up:</strong> <span data-i18n="note_freehand">here you type the entire blueprint yourself, including any marks and instructions — we won't calculate or check anything. Saving in this mode will replace the builder version below with your plain text.</span></span>
+          </div>
+        </div>
+
+        <div class="card" id="structured-builder-card">
+          <p class="card-title">
+            <span data-i18n="paper_pattern">Paper pattern</span>
+            <span class="chip" data-i18n="chip_add_sections">Add sections only if your paper uses them</span>
+          </p>
+          <p class="helper-text" data-i18n="helper_question_group">Each "question group" describes a batch of similar questions — e.g. "5 MCQs of 1 mark each" or "3 long-answer questions, attempt any 2". Add parts (a), (b), (c) inside a group if a question is split, and mark a group as a choice if not every question in it is compulsory.</p>
+
+          <div id="sections-container"></div>
+
+          <button class="add-dashed-btn" id="btn-add-section" type="button" style="margin-top:6px;" data-i18n="btn_add_section">+ Add another section (e.g. Section B)</button>
+        </div>
+
+        <div class="card" id="freehand-card" style="display:none;">
+          <p class="card-title" data-i18n="write_your_blueprint">Write your blueprint</p>
+          <p class="helper-text" data-i18n="helper_freehand">Type it exactly how you'd like it to appear on the paper, one line per question type — for example:<br>"MCQs: 10 x 1 = 10 marks"<br>"Short Answer (attempt any 2 out of 3): 3 marks each"<br>We save this exactly as you type it, with no calculations of our own.</p>
+          <div class="field freehand-wrap" style="margin-bottom:0;">
+            <label for="f-freehand-text" data-i18n="blueprint_text">Blueprint text</label>
+            <textarea id="f-freehand-text" rows="10" placeholder="e.g.&#10;Section A – MCQs: 10 x 1 = 10 marks&#10;Section B – Short Answer (attempt any 2 out of 3): 3 marks each&#10;Section C – Long Answer: 2 x 5 = 10 marks" data-i18n-placeholder="ph_freehand_text"></textarea>
+            <div class="ai-gen-row">
+              <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-freehand-text" data-i18n="btn_auto_correct">🩹 Auto-correct</button>
+            </div>
+          </div>
+          <div class="sync-row">
+            <button class="sync-btn" id="btn-sync-from-builder" type="button" data-i18n="btn_sync_builder">↻ Refill this text from the builder</button>
+          </div>
+        </div>
+
+        <p class="last-modified" id="edit-last-modified"></p>
+
+        <div class="btn-row">
+          <button class="btn btn-danger" id="btn-delete-blueprint" type="button" style="display:none;" data-i18n="btn_delete">Delete</button>
+          <button class="btn btn-primary" id="btn-save-blueprint" type="button" data-i18n="btn_save_blueprint">Save blueprint</button>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="edit-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3.5 9h17"/><rect x="3" y="4.5" width="18" height="17" rx="3"/></svg>
+        <p data-i18n="placeholder_edit">Choose a class, exam and subject above to design or update the blueprint.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ PANEL: BROWSE & SHARE ============ -->
+    <section class="panel" id="panel-browse">
+
+      <div class="card">
+        <p class="card-title" data-i18n="find_blueprint">Find an exam's blueprint</p>
+        <div class="field">
+          <label for="browse-class" data-i18n="label_class">Class</label>
+          <select id="browse-class"><option value="" data-i18n="opt_select_class">Select class…</option></select>
+        </div>
+        <div class="field">
+          <label for="browse-exam" data-i18n="label_exam">Exam</label>
+          <select id="browse-exam" disabled><option value="" data-i18n="opt_select_class_first">Select class first…</option></select>
+        </div>
+        <button class="btn btn-teal btn-block" id="btn-load-exam" type="button" style="margin-top:6px;" data-i18n="btn_view_blueprints">View this exam's blueprints</button>
+      </div>
+
+      <div id="browse-results-wrap" style="display:none;">
+        <div class="results-header">
+          <p class="card-title" style="margin:0;" id="browse-results-title" data-i18n="results">Results</p>
+          <button class="btn btn-primary" id="btn-share-pdf" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+            <span data-i18n="btn_share_pdf">Share PDF</span>
+          </button>
+          <button class="btn btn-ghost" id="btn-download-pdf" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span data-i18n="btn_download_pdf">Download PDF</span>
+          </button>
+        </div>
+        <p class="hint" style="margin:8px 0 0; font-size:.78rem; color:var(--ink-500);" data-i18n="print_hint">In the print dialog, choose Save as PDF as the destination. On phones, use Share / Save to Files.</p>
+        <div id="browse-results" style="display:flex;flex-direction:column;gap:12px;margin-top:12px;"></div>
+      </div>
+
+      <div class="placeholder-note" id="browse-placeholder">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <p data-i18n="placeholder_browse">Pick a class and an exam to view every subject's blueprint.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<!-- Print-only compiled document -->
+<div id="print-sheet" aria-hidden="true"></div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation" data-i18n-aria="signout_dialog_aria">
+    <div class="sheet-handle"></div>
+    <h3 data-i18n="signout_title">Sign out?</h3>
+    <p data-i18n="signout_desc">You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout" data-i18n="btn_cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout" data-i18n="signout_btn_title">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm sheet (delete) -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm action" data-i18n-aria="confirm_dialog_aria">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title" data-i18n="are_you_sure">Are you sure?</h3>
+    <p id="confirm-message" data-i18n="action_cannot_undone">This action cannot be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-cancel" data-i18n="btn_cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok" data-i18n="btn_delete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF field-selection sheet -->
+<div class="sheet-backdrop" id="sheet-pdf-fields">
+  <div class="sheet" role="dialog" aria-label="Choose PDF fields" data-i18n-aria="pdf_fields_dialog_aria">
+    <div class="sheet-handle"></div>
+    <h3 data-i18n="pdf_fields_title">What should the PDF include?</h3>
+    <p data-i18n="pdf_fields_desc">Pick the fields you want on the exported blueprint.</p>
+    <div id="pdf-field-options"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="pdf-fields-cancel" data-i18n="btn_cancel">Cancel</button>
+      <button class="btn btn-primary" id="pdf-fields-continue" data-i18n="btn_generate_pdf">Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   Strategy 2: CENTRALIZED I18N DICTIONARY & HELPER
+========================================================= */
+var I18N = {
+  en: {
+    back_btn_title: "Back to dashboard",
+    theme_toggle_title: "Toggle dark mode",
+    signout_btn_title: "Sign out",
+    header_greeting: "Exam Blueprint",
+    header_sub: "Design • Update • Share",
+    admin_access_all: "Admin access — all classes",
+    tab_my_blueprint: "My Blueprint",
+    tab_browse_share: "Browse & Share",
+    select_exam_class_subject: "Select exam, class & subject",
+    label_class: "Class",
+    label_exam: "Exam",
+    label_subject: "Subject",
+    opt_select_class: "Select class…",
+    opt_select_class_first: "Select class first…",
+    opt_select_exam: "Select exam…",
+    opt_select_subject: "Select subject…",
+    calculated: "Calculated",
+    duration: "Duration",
+    paper_total: "Paper total",
+    use_calculated: "use calculated",
+    blueprint_details: "Blueprint details",
+    existing_entry: "Existing entry",
+    label_general_instructions: "General instructions (shown at the top of the paper)",
+    ph_general_instructions: "e.g. All questions are compulsory. Marks are indicated against each question.",
+    btn_auto_correct: "🩹 Auto-correct",
+    how_to_write: "How do you want to write this blueprint?",
+    mode_structured_title: "🧩 Use the builder",
+    mode_structured_desc: "Fill in simple fields — questions, marks, choices — and we lay it out for you.",
+    mode_freehand_title: "✍️ Write it myself",
+    mode_freehand_desc: "Type out the whole blueprint in your own words, exactly as you want it.",
+    note_structured: "The builder adds up marks for you automatically as you fill in each question group below.",
+    heads_up: "Heads up:",
+    note_freehand: "here you type the entire blueprint yourself, including any marks and instructions — we won't calculate or check anything. Saving in this mode will replace the builder version below with your plain text.",
+    paper_pattern: "Paper pattern",
+    chip_add_sections: "Add sections only if your paper uses them",
+    helper_question_group: "Each \"question group\" describes a batch of similar questions — e.g. \"5 MCQs of 1 mark each\" or \"3 long-answer questions, attempt any 2\". Add parts (a), (b), (c) inside a group if a question is split, and mark a group as a choice if not every question in it is compulsory.",
+    btn_add_section: "+ Add another section (e.g. Section B)",
+    write_your_blueprint: "Write your blueprint",
+    helper_freehand: "Type it exactly how you'd like it to appear on the paper, one line per question type — for example:\n\"MCQs: 10 x 1 = 10 marks\"\n\"Short Answer (attempt any 2 out of 3): 3 marks each\"\nWe save this exactly as you type it, with no calculations of our own.",
+    blueprint_text: "Blueprint text",
+    ph_freehand_text: "e.g.\nSection A – MCQs: 10 x 1 = 10 marks\nSection B – Short Answer (attempt any 2 out of 3): 3 marks each\nSection C – Long Answer: 2 x 5 = 10 marks",
+    btn_sync_builder: "↻ Refill this text from the builder",
+    btn_delete: "Delete",
+    btn_save_blueprint: "Save blueprint",
+    placeholder_edit: "Choose a class, exam and subject above to design or update the blueprint.",
+    find_blueprint: "Find an exam's blueprint",
+    btn_view_blueprints: "View this exam's blueprints",
+    results: "Results",
+    btn_share_pdf: "Share PDF",
+    btn_download_pdf: "Download PDF",
+    print_hint: "In the print dialog, choose Save as PDF as the destination. On phones, use Share / Save to Files.",
+    placeholder_browse: "Pick a class and an exam to view every subject's blueprint.",
+    signout_dialog_aria: "Sign out confirmation",
+    signout_title: "Sign out?",
+    signout_desc: "You'll need to sign in again to access your dashboard.",
+    btn_cancel: "Cancel",
+    confirm_dialog_aria: "Confirm action",
+    are_you_sure: "Are you sure?",
+    action_cannot_undone: "This action cannot be undone.",
+    pdf_fields_dialog_aria: "Choose PDF fields",
+    pdf_fields_title: "What should the PDF include?",
+    pdf_fields_desc: "Pick the fields you want on the exported blueprint.",
+    btn_generate_pdf: "Generate PDF",
+
+    /* Dynamic UI & Presets */
+    section_name_label: "Section name (leave blank if the paper has no sections)",
+    ph_section_name: "e.g. Section A",
+    section_instr_label: "Section instructions (optional)",
+    ph_section_instr: "e.g. Attempt any 4 out of 5 questions",
+    btn_add_question_group: "+ Add question group",
+    question_group_title: "Question group",
+    question_type_label: "Question type",
+    custom_type_name_label: "Custom type name",
+    ph_custom_type: "e.g. Map-based",
+    no_of_questions: "No. of questions",
+    attempt_how_many: "Attempt how many",
+    marks_per_question: "Marks / question",
+    attempt_any_x_of_y: "Will show as \"Attempt any {attempt} out of {count}.\"",
+    has_or_alternative: "Has an internal \"OR\" alternative (e.g. Q5 OR Q5*)",
+    split_into_parts: "This question is split into parts — (a), (b), (c)…",
+    marks_for_part: "marks for part",
+    btn_add_part: "+ Add part",
+    only_some_parts_attempted: "Only some parts need to be attempted",
+    attempt_how_many_parts: "Attempt how many parts",
+    sum_of_parts: "Sum of parts: {sum} marks.",
+    use_as_marks_per_question: "Use this as marks/question →",
+    note_optional: "Note (optional)",
+    ph_note: "e.g. Based on the unseen passage",
+    remove_section: "Remove section",
+    remove_group: "Remove group",
+    remove_part: "Remove part",
+
+    /* Toast messages & Dynamic Labels */
+    nothing_to_correct: "Nothing to correct — this field is empty.",
+    correcting: "Correcting…",
+    text_corrected: "Text corrected.",
+    ai_no_content: "AI did not return any content. Please try again.",
+    ai_failed: "Auto-correct failed. Please try again.",
+    pick_at_least_one_field: "Pick at least one field to include.",
+    no_assignments_found: "No class-subject assignments found yet.",
+    no_assignments_contact_admin: "You have no class-subject assignments yet. Contact an admin.",
+    no_exams_mapped: "No exams have been mapped to this class yet.",
+    marks_unit: "{marks} marks",
+    refilled_from_builder: "Refilled from the builder.",
+    one_section_required: "At least one section is required.",
+    could_not_load_existing: "Could not load existing entry.",
+    last_updated: "Last updated {date}",
+    select_class_exam_subj_first: "Please select class, exam and subject first.",
+    type_blueprint_before_saving: "Please type out the blueprint before saving.",
+    add_at_least_one_group: "Add at least one question group before saving.",
+    saving: "Saving…",
+    save_failed: "Save failed: {message}",
+    blueprint_saved: "Blueprint saved.",
+    delete_blueprint_confirm_title: "Delete this blueprint?",
+    delete_blueprint_confirm_msg: "This will remove the {subject} blueprint for {exam} • {class}. This cannot be undone.",
+    delete_failed: "Delete failed: {message}",
+    blueprint_deleted: "Blueprint deleted.",
+    select_class_exam_first: "Select a class and exam first.",
+    loading: "Loading…",
+    could_not_load_blueprints: "Could not load blueprints: {message}",
+    no_blueprint_entries_found: "No blueprint entries found for {class} in {exam} yet.",
+    subject_teacher: "Subject teacher",
+    updated_date: "updated {date}",
+    total: "Total",
+    as_written_above: "As written above",
+    mins_unit: "{mins} mins",
+    attempt_any_x_of_y_text: "Attempt any {attempt} out of {count}",
+    question_singular: "question",
+    questions_plural: "questions",
+    with_internal_choice: "with internal choice",
+    parts_label: "Parts: {partsStr}",
+    attempt_any_parts: " — attempt any {count}",
+    preparing: "Preparing…",
+    could_not_open_print: "Could not open the print dialog.",
+    load_exam_with_one_entry: "Load an exam with at least one blueprint entry first.",
+
+    /* Preset Question Types */
+    qtype_MCQ: "MCQ",
+    qtype_Very_Short_Answer: "Very Short Answer",
+    qtype_Short_Answer: "Short Answer",
+    qtype_Long_Answer: "Long Answer",
+    qtype_Fill_in_the_Blanks: "Fill in the Blanks",
+    qtype_True_False: "True / False",
+    qtype_Match_the_Following: "Match the Following",
+    qtype_Case_Based_Passage: "Case-Based / Passage",
+    qtype_Diagram_Map_Labelling: "Diagram / Map / Labelling",
+    qtype_Numerical_Problem: "Numerical / Problem",
+    qtype_Custom: "Custom…",
+
+    /* PDF Options */
+    pdf_opt_general_instructions: "General instructions",
+    pdf_opt_section_instructions: "Section-wise instructions",
+    pdf_opt_question_notes: "Per-question notes",
+    pdf_opt_duration: "Duration",
+    pdf_opt_teacher_name: "Teacher name",
+    ph_mins: "mins"
+  },
+  hi: {
+    back_btn_title: "डैशबोर्ड पर वापस जाएं",
+    theme_toggle_title: "डार्क मोड बदलें",
+    signout_btn_title: "साइन आउट",
+    header_greeting: "परीक्षा ब्लूप्रिंट",
+    header_sub: "डिजाइन • अपडेट • शेयर",
+    admin_access_all: "एडमिन एक्सेस — सभी कक्षाएं",
+    tab_my_blueprint: "मेरा ब्लूप्रिंट",
+    tab_browse_share: "ब्राउज़ और शेयर",
+    select_exam_class_subject: "परीक्षा, कक्षा और विषय चुनें",
+    label_class: "कक्षा",
+    label_exam: "परीक्षा",
+    label_subject: "विषय",
+    opt_select_class: "कक्षा चुनें…",
+    opt_select_class_first: "पहले कक्षा चुनें…",
+    opt_select_exam: "परीक्षा चुनें…",
+    opt_select_subject: "विषय चुनें…",
+    calculated: "गणना की गई",
+    duration: "समयावधि",
+    paper_total: "कुल अंक",
+    use_calculated: "गणना का उपयोग करें",
+    blueprint_details: "ब्लूप्रिंट विवरण",
+    existing_entry: "मौजूदा प्रविष्टि",
+    label_general_instructions: "सामान्य निर्देश (प्रश्न पत्र के शीर्ष पर दिखाई देंगे)",
+    ph_general_instructions: "जैसे: सभी प्रश्न अनिवार्य हैं। प्रश्नों के अंक सामने अंकित हैं।",
+    btn_auto_correct: "🩹 ऑटो-करेक्ट",
+    how_to_write: "आप यह ब्लूप्रिंट कैसे लिखना चाहते हैं?",
+    mode_structured_title: "🧩 बिल्डर का उपयोग करें",
+    mode_structured_desc: "सरल फ़ील्ड भरें — प्रश्न, अंक, विकल्प — और हम इसे आपके लिए व्यवस्थित कर देंगे।",
+    mode_freehand_title: "✍️ स्वयं लिखें",
+    mode_freehand_desc: "पूरा ब्लूप्रिंट अपने शब्दों में लिखें, ठीक वैसा ही जैसा आप चाहते हैं।",
+    note_structured: "जैसे-जैसे आप नीचे प्रश्न समूह भरेंगे, बिल्डर आपके लिए स्वतः अंक जोड़ देगा।",
+    heads_up: "ध्यान दें:",
+    note_freehand: "यहाँ आप अंकों और निर्देशों सहित पूरा ब्लूप्रिंट स्वयं टाइप करते हैं — हम कोई गणना या जाँच नहीं करेंगे। इस मोड में सहेजने पर नीचे दिया गया बिल्डर वर्ज़न आपके सामान्य टेक्स्ट से बदल जाएगा।",
+    paper_pattern: "प्रश्न पत्र पैटर्न",
+    chip_add_sections: "अनुभाग (Sections) केवल तभी जोड़ें जब आपका प्रश्न पत्र उनका उपयोग करता हो",
+    helper_question_group: "प्रत्येक \"प्रश्न समूह\" समान प्रकार के प्रश्नों के समूह का वर्णन करता है — जैसे \"1 अंक के 5 MCQs\" या \"3 दीर्घ उत्तरीय प्रश्न, कोई 2 हल करें\"। यदि प्रश्न विभाजित है तो समूह में भाग (a), (b), (c) जोड़ें।",
+    btn_add_section: "+ एक और अनुभाग जोड़ें (जैसे अनुभाग B)",
+    write_your_blueprint: "अपना ब्लूप्रिंट लिखें",
+    helper_freehand: "इसे ठीक वैसे ही टाइप करें जैसा आप प्रश्न पत्र पर दिखाना चाहते हैं, प्रति प्रश्न प्रकार एक पंक्ति — उदाहरण के लिए:\n\"MCQs: 10 x 1 = 10 अंक\"\n\"लघु उत्तरीय (3 में से कोई 2 हल करें): 3 अंक प्रत्येक\"\nहम इसे बिना किसी गणना के बिल्कुल आपके टाइप किए अनुसार सहेजते हैं।",
+    blueprint_text: "ब्लूप्रिंट टेक्स्ट",
+    ph_freehand_text: "उदाहरण:\nअनुभाग A – MCQs: 10 x 1 = 10 अंक\nअनुभाग B – लघु उत्तरीय (3 में से कोई 2 हल करें): 3 अंक प्रत्येक\nअनुभाग C – दीर्घ उत्तरीय: 2 x 5 = 10 अंक",
+    btn_sync_builder: "↻ बिल्डर से इस टेक्स्ट को पुनः भरें",
+    btn_delete: "हटाएं",
+    btn_save_blueprint: "ब्लूप्रिंट सहेजें",
+    placeholder_edit: "ब्लूप्रिंट डिज़ाइन या अपडेट करने के लिए ऊपर कक्षा, परीक्षा और विषय चुनें।",
+    find_blueprint: "किसी परीक्षा का ब्लूप्रिंट खोजें",
+    btn_view_blueprints: "इस परीक्षा के ब्लूप्रिंट देखें",
+    results: "परिणाम",
+    btn_share_pdf: "PDF शेयर करें",
+    btn_download_pdf: "PDF डाउनलोड करें",
+    print_hint: "प्रिंट संवाद में, गंतव्य के रूप में PDF के रूप में सहेजें (Save as PDF) चुनें। फोन पर, शेयर / फ़ाइलों में सहेजें का उपयोग करें।",
+    placeholder_browse: "प्रत्येक विषय का ब्लूप्रिंट देखने के लिए कक्षा और परीक्षा चुनें।",
+    signout_dialog_aria: "साइन आउट पुष्टि",
+    signout_title: "साइन आउट करें?",
+    signout_desc: "अपने डैशबोर्ड तक पहुँचने के लिए आपको फिर से साइन इन करना होगा।",
+    btn_cancel: "रद्द करें",
+    confirm_dialog_aria: "कार्रवाई की पुष्टि करें",
+    are_you_sure: "क्या आप निश्चित हैं?",
+    action_cannot_undone: "यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+    pdf_fields_dialog_aria: "PDF फ़ील्ड चुनें",
+    pdf_fields_title: "PDF में क्या शामिल होना चाहिए?",
+    pdf_fields_desc: "निर्यात किए गए ब्लूप्रिंट पर वे फ़ील्ड चुनें जिन्हें आप चाहते हैं।",
+    btn_generate_pdf: "PDF जनरेट करें",
+
+    /* Dynamic UI & Presets */
+    section_name_label: "अनुभाग का नाम (यदि प्रश्न पत्र में अनुभाग नहीं हैं तो खाली छोड़ दें)",
+    ph_section_name: "जैसे अनुभाग A",
+    section_instr_label: "अनुभाग निर्देश (वैकल्पिक)",
+    ph_section_instr: "जैसे 5 में से कोई 4 प्रश्न हल करें",
+    btn_add_question_group: "+ प्रश्न समूह जोड़ें",
+    question_group_title: "प्रश्न समूह",
+    question_type_label: "प्रश्न का प्रकार",
+    custom_type_name_label: "कस्टम प्रकार का नाम",
+    ph_custom_type: "जैसे मानचित्र आधारित",
+    no_of_questions: "प्रश्नों की संख्या",
+    attempt_how_many: "कितने प्रश्न हल करने हैं",
+    marks_per_question: "अंक / प्रश्न",
+    attempt_any_x_of_y: "\"{count} में से कोई {attempt} हल करें\" के रूप में दिखाई देगा।",
+    has_or_alternative: "आंतरिक \"अथवा\" (OR) विकल्प उपलब्ध है (जैसे Q5 अथवा Q5*)",
+    split_into_parts: "यह प्रश्न भागों में विभाजित है — (a), (b), (c)…",
+    marks_for_part: "भाग के लिए अंक",
+    btn_add_part: "+ भाग जोड़ें",
+    only_some_parts_attempted: "केवल कुछ भाग हल करने की आवश्यकता है",
+    attempt_how_many_parts: "कितने भाग हल करने हैं",
+    sum_of_parts: "भागों का योग: {sum} अंक।",
+    use_as_marks_per_question: "इसे अंक/प्रश्न के रूप में उपयोग करें →",
+    note_optional: "टिप्पणी (वैकल्पिक)",
+    ph_note: "जैसे अपठित गद्यांश पर आधारित",
+    remove_section: "अनुभाग हटाएं",
+    remove_group: "समूह हटाएं",
+    remove_part: "भाग हटाएं",
+
+    /* Toast messages & Dynamic Labels */
+    nothing_to_correct: "सुधारने के लिए कुछ नहीं है — यह फ़ील्ड खाली है।",
+    correcting: "सुधारा जा रहा है…",
+    text_corrected: "पाठ सुधारा गया।",
+    ai_no_content: "AI ने कोई सामग्री नहीं लौटाई। कृपया पुनः प्रयास करें।",
+    ai_failed: "ऑटो-करेक्ट विफल रहा। कृपया पुनः प्रयास करें।",
+    pick_at_least_one_field: "शामिल करने के लिए कम से कम एक फ़ील्ड चुनें।",
+    no_assignments_found: "अभी तक कोई कक्षा-विषय असाइनमेंट नहीं मिला।",
+    no_assignments_contact_admin: "आपके पास अभी तक कोई कक्षा-विषय असाइनमेंट नहीं है। एडमिन से संपर्क करें।",
+    no_exams_mapped: "इस कक्षा के लिए अभी तक कोई परीक्षा मैप नहीं की गई है।",
+    marks_unit: "{marks} अंक",
+    refilled_from_builder: "बिल्डर से पुनः भरा गया।",
+    one_section_required: "कम से कम एक अनुभाग आवश्यक है।",
+    could_not_load_existing: "मौजूदा प्रविष्टि लोड नहीं की जा सकी।",
+    last_updated: "अंतिम बार अपडेट किया गया {date}",
+    select_class_exam_subj_first: "कृपया पहले कक्षा, परीक्षा और विषय चुनें।",
+    type_blueprint_before_saving: "सहेजने से पहले कृपया ब्लूप्रिंट टाइप करें।",
+    add_at_least_one_group: "सहेजने से पहले कम से कम एक प्रश्न समूह जोड़ें।",
+    saving: "सहेजा जा रहा है…",
+    save_failed: "सहेजना विफल रहा: {message}",
+    blueprint_saved: "ब्लूप्रिंट सहेजा गया।",
+    delete_blueprint_confirm_title: "क्या यह ब्लूप्रिंट हटाना चाहते हैं?",
+    delete_blueprint_confirm_msg: "यह {exam} • {class} के लिए {subject} का ब्लूप्रिंट हटा देगा। इसे पूर्ववत नहीं किया जा सकता।",
+    delete_failed: "हटाना विफल रहा: {message}",
+    blueprint_deleted: "ब्लूप्रिंट हटा दिया गया।",
+    select_class_exam_first: "पहले कक्षा और परीक्षा चुनें।",
+    loading: "लोड हो रहा है…",
+    could_not_load_blueprints: "ब्लूप्रिंट लोड नहीं किए जा सके: {message}",
+    no_blueprint_entries_found: "{exam} में {class} के लिए अभी तक कोई ब्लूप्रिंट प्रविष्टि नहीं मिली।",
+    subject_teacher: "विषय शिक्षक",
+    updated_date: "अपडेट किया गया {date}",
+    total: "कुल",
+    as_written_above: "जैसा ऊपर लिखा गया है",
+    mins_unit: "{mins} मिनट",
+    attempt_any_x_of_y_text: "{count} में से कोई {attempt} हल करें",
+    question_singular: "प्रश्न",
+    questions_plural: "प्रश्न",
+    with_internal_choice: "आंतरिक विकल्प के साथ",
+    parts_label: "भाग: {partsStr}",
+    attempt_any_parts: " — कोई {count} हल करें",
+    preparing: "तैयारी की जा रही है…",
+    could_not_open_print: "प्रिंट संवाद नहीं खोला जा सका।",
+    load_exam_with_one_entry: "पहले कम से कम एक ब्लूप्रिंट प्रविष्टि वाली परीक्षा लोड करें।",
+
+    /* Preset Question Types */
+    qtype_MCQ: "बहुविकल्पीय प्रश्न (MCQ)",
+    qtype_Very_Short_Answer: "अति लघु उत्तरीय प्रश्न",
+    qtype_Short_Answer: "लघु उत्तरीय प्रश्न",
+    qtype_Long_Answer: "दीर्घ उत्तरीय प्रश्न",
+    qtype_Fill_in_the_Blanks: "रिक्त स्थान भरें",
+    qtype_True_False: "सत्य / असत्य",
+    qtype_Match_the_Following: "सही मिलान करें",
+    qtype_Case_Based_Passage: "केस-आधारित / गद्यांश",
+    qtype_Diagram_Map_Labelling: "चित्र / मानचित्र / अंकन",
+    qtype_Numerical_Problem: "आंकिक / समस्या प्रश्न",
+    qtype_Custom: "कस्टम…",
+
+    /* PDF Options */
+    pdf_opt_general_instructions: "सामान्य निर्देश",
+    pdf_opt_section_instructions: "अनुभाग-वार निर्देश",
+    pdf_opt_question_notes: "प्रति-प्रश्न टिप्पणियां",
+    pdf_opt_duration: "समयावधि",
+    pdf_opt_teacher_name: "शिक्षक का नाम",
+    ph_mins: "मिनट"
+  }
+};
+
+function t(key, vars) {
+  var langDict = I18N[LANG] || I18N['en'];
+  var str = langDict[key] || I18N['en'][key] || key;
+  if (vars && typeof vars === 'object') {
+    Object.keys(vars).forEach(function(k) {
+      str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+    });
+  }
+  return str;
+}
+
+function applyLanguage() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var k = el.getAttribute('data-i18n');
+    el.innerHTML = t(k);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+    var k = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('placeholder', t(k));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+    var k = el.getAttribute('data-i18n-title');
+    el.setAttribute('title', t(k));
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach(function(el) {
+    var k = el.getAttribute('data-i18n-aria');
+    el.setAttribute('aria-label', t(k));
+  });
+}
+
+/* Strategy 4: Progressive Transliteration Cache for People Names */
+var nameCache = {};
+async function transliterateName(name) {
+  if (!name || LANG !== 'hi') return name;
+  if (nameCache[name]) return nameCache[name];
+
+  try {
+    var url = 'https://inputtools.google.com/request?text=' + encodeURIComponent(name) + '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=jsapi';
+    var res = await fetch(url);
+    var data = await res.json();
+    if (data && data[0] === 'SUCCESS' && data[1] && data[1][0] && data[1][0][1] && data[1][0][1][0]) {
+      var converted = data[1][0][1][0];
+      nameCache[name] = converted;
+      return converted;
+    }
+  } catch(e) {
+    console.warn('Transliteration failed for', name, e);
+  }
+  return name;
+}
+
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var LOGO_URL = 'https://sourabhsuneja.github.io/gsms-logo.png';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = {
+  user: null,
+  teacherName: '',
+  isAdmin: false,
+  myAssignments: [],
+  allCombos: [],
+  allClasses: [],
+  examClasses: [],
+  editingExists: false,
+  subjectOrder: {}
+};
+
+var QUESTION_TYPE_PRESETS = [
+  'MCQ', 'Very Short Answer', 'Short Answer', 'Long Answer',
+  'Fill in the Blanks', 'True / False', 'Match the Following',
+  'Case-Based / Passage', 'Diagram / Map / Labelling', 'Numerical / Problem', 'Custom…'
+];
+
+/* Helper to map preset strings to translations */
+function getQuestionTypeTranslationKey(rawType) {
+  switch(rawType) {
+    case 'MCQ': return 'qtype_MCQ';
+    case 'Very Short Answer': return 'qtype_Very_Short_Answer';
+    case 'Short Answer': return 'qtype_Short_Answer';
+    case 'Long Answer': return 'qtype_Long_Answer';
+    case 'Fill in the Blanks': return 'qtype_Fill_in_the_Blanks';
+    case 'True / False': return 'qtype_True_False';
+    case 'Match the Following': return 'qtype_Match_the_Following';
+    case 'Case-Based / Passage': return 'qtype_Case_Based_Passage';
+    case 'Diagram / Map / Labelling': return 'qtype_Diagram_Map_Labelling';
+    case 'Numerical / Problem': return 'qtype_Numerical_Problem';
+    case 'Custom…': return 'qtype_Custom';
+    default: return null;
+  }
+}
+
+/* =========================================================
+   TEXTAREA AUTO-RESIZE
+========================================================= */
+function autoResizeTextarea(el){
+  el.classList.add('auto-resize');
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+function autoResizeAll(selector){
+  document.querySelectorAll(selector).forEach(autoResizeTextarea);
+}
+document.querySelectorAll('#panel-edit textarea').forEach(function(ta){
+  autoResizeTextarea(ta);
+  ta.addEventListener('input', function(){ autoResizeTextarea(ta); });
+});
+
+/* =========================================================
+   AI "AUTO-CORRECT" FEATURE (event delegation — works for
+   dynamically added fields inside the builder too)
+========================================================= */
+function extractAiText(data){
+  if(typeof data === 'string') return data;
+  if(data && typeof data === 'object'){
+    if(typeof data.text === 'string') return data.text;
+    if(typeof data.result === 'string') return data.result;
+    if(typeof data.response === 'string') return data.response;
+  }
+  return data == null ? '' : String(data);
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.btn-ai-correct');
+  if(!btn) return;
+
+  var fieldId = btn.getAttribute('data-correct-field');
+  var textarea = fieldId ? document.getElementById(fieldId) : btn.parentElement.previousElementSibling;
+  if(!textarea) return;
+  var currentText = textarea.value.trim();
+
+  if(!currentText){
+    toast(t('nothing_to_correct'), true);
+    return;
+  }
+
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t('correcting');
+
+  window.correct(currentText)
+    .then(function(data){
+      var corrected = extractAiText(data).trim();
+      if(!corrected){
+        toast(t('ai_no_content'), true);
+        return;
+      }
+      textarea.value = corrected;
+      autoResizeTextarea(textarea);
+      textarea.dispatchEvent(new Event('input', { bubbles:true }));
+      toast(t('text_corrected'));
+    })
+    .catch(function(err){
+      console.error('AI auto-correct failed:', err);
+      toast(t('ai_failed'), true);
+    })
+    .finally(function(){
+      btn.disabled = false;
+      btn.textContent = originalText;
+    });
+});
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 2800);
+}
+
+/* =========================================================
+   SHEETS (signout / confirm / pdf-fields)
+========================================================= */
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+var sheetConfirm = document.getElementById('sheet-confirm');
+var confirmCallback = null;
+function askConfirm(title, message, onConfirm){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  confirmCallback = onConfirm;
+  sheetConfirm.classList.add('show');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); confirmCallback = null; });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm){ sheetConfirm.classList.remove('show'); confirmCallback = null; } });
+document.getElementById('confirm-ok').addEventListener('click', function(){
+  var cb = confirmCallback;
+  sheetConfirm.classList.remove('show');
+  confirmCallback = null;
+  if(cb) cb();
+});
+
+var PDF_FIELD_DEFS = [
+  { key:'general_instructions', i18n_key:'pdf_opt_general_instructions' },
+  { key:'section_instructions', i18n_key:'pdf_opt_section_instructions' },
+  { key:'question_notes',        i18n_key:'pdf_opt_question_notes' },
+  { key:'duration',              i18n_key:'pdf_opt_duration' },
+  { key:'teacher_name',          i18n_key:'pdf_opt_teacher_name' }
+];
+var sheetPdfFields = document.getElementById('sheet-pdf-fields');
+var pdfFieldsOptionsEl = document.getElementById('pdf-field-options');
+var pdfFieldsContinueCb = null;
+
+function buildPdfFieldOptions(){
+  pdfFieldsOptionsEl.innerHTML = PDF_FIELD_DEFS.map(function(f){
+    return '<label class="pdf-field-option">' +
+      '<input type="checkbox" value="' + f.key + '" checked>' +
+      '<span>' + t(f.i18n_key) + '</span></label>';
+  }).join('');
+}
+buildPdfFieldOptions();
+
+function askPdfFields(onContinue){
+  buildPdfFieldOptions();
+  pdfFieldsOptionsEl.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked = true; });
+  pdfFieldsContinueCb = onContinue;
+  sheetPdfFields.classList.add('show');
+}
+document.getElementById('pdf-fields-cancel').addEventListener('click', function(){
+  sheetPdfFields.classList.remove('show');
+  pdfFieldsContinueCb = null;
+});
+sheetPdfFields.addEventListener('click', function(e){ if(e.target === sheetPdfFields){ sheetPdfFields.classList.remove('show'); pdfFieldsContinueCb = null; } });
+document.getElementById('pdf-fields-continue').addEventListener('click', function(){
+  var selected = Array.prototype.slice.call(pdfFieldsOptionsEl.querySelectorAll('input[type="checkbox"]:checked')).map(function(cb){ return cb.value; });
+  if(selected.length === 0){
+    toast(t('pick_at_least_one_field'), true);
+    return;
+  }
+  var cb = pdfFieldsContinueCb;
+  sheetPdfFields.classList.remove('show');
+  pdfFieldsContinueCb = null;
+  if(cb) cb(selected);
+});
+
+/* =========================================================
+   BACK BUTTON / TABS
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+
+var tabEditBtn = document.getElementById('tab-edit-btn');
+var tabBrowseBtn = document.getElementById('tab-browse-btn');
+var panelEdit = document.getElementById('panel-edit');
+var panelBrowse = document.getElementById('panel-browse');
+tabEditBtn.addEventListener('click', function(){ setTab('edit'); });
+tabBrowseBtn.addEventListener('click', function(){ setTab('browse'); });
+function setTab(which){
+  var isEdit = which === 'edit';
+  tabEditBtn.classList.toggle('active', isEdit);
+  tabBrowseBtn.classList.toggle('active', !isEdit);
+  panelEdit.classList.toggle('active', isEdit);
+  panelBrowse.classList.toggle('active', !isEdit);
+}
+
+/* =========================================================
+   EDIT PANEL — class / exam / subject population
+   (identical pattern to the syllabus page)
+========================================================= */
+var editClassSel = document.getElementById('edit-class');
+var editExamSel = document.getElementById('edit-exam');
+var editSubjectSel = document.getElementById('edit-subject');
+
+function uniqueClasses(combos){
+  var set = {};
+  combos.forEach(function(c){ set[c.class] = true; });
+  return Object.keys(set).sort();
+}
+function subjectsForClass(combos, cls){
+  var set = {};
+  combos.forEach(function(c){ if(c.class === cls) set[c.subject] = true; });
+  return Object.keys(set).sort();
+}
+function examsForClass(cls){
+  var set = {};
+  state.examClasses.forEach(function(ec){ if(ec.class === cls) set[ec.exam] = true; });
+  return Object.keys(set).sort();
+}
+function sortEntriesByDisplayOrder(entries){
+  return entries.slice().sort(function(a, b){
+    var oa = state.subjectOrder[a.subject] != null ? state.subjectOrder[a.subject] : 1;
+    var ob = state.subjectOrder[b.subject] != null ? state.subjectOrder[b.subject] : 1;
+    if(oa !== ob) return oa - ob;
+    return a.subject.localeCompare(b.subject);
+  });
+}
+
+function populateEditClassDropdown(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  editClassSel.innerHTML = '<option value="">' + t('opt_select_class') + '</option>' +
+    classes.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  editClassSel.disabled = classes.length === 0;
+  if(classes.length === 0){
+    toast(state.isAdmin ? t('no_assignments_found') : t('no_assignments_contact_admin'), true);
+  }
+}
+
+editClassSel.addEventListener('change', function(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var subs = subjectsForClass(combos, editClassSel.value);
+  editSubjectSel.innerHTML = '<option value="">' + t('opt_select_subject') + '</option>' +
+    subs.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+  editSubjectSel.disabled = subs.length === 0;
+
+  var exams = examsForClass(editClassSel.value);
+  editExamSel.innerHTML = '<option value="">' + t('opt_select_exam') + '</option>' +
+    exams.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
+  editExamSel.disabled = exams.length === 0;
+  if(editClassSel.value && exams.length === 0){
+    toast(t('no_exams_mapped'), true);
+  }
+
+  hideEditForm();
+});
+editExamSel.addEventListener('change', function(){ maybeLoadEditEntry(); });
+editSubjectSel.addEventListener('change', function(){ maybeLoadEditEntry(); });
+
+function hideEditForm(){
+  document.getElementById('edit-form-wrap').style.display = 'none';
+  document.getElementById('edit-placeholder').style.display = 'flex';
+}
+function showEditForm(){
+  document.getElementById('edit-form-wrap').style.display = 'flex';
+  document.getElementById('edit-placeholder').style.display = 'none';
+}
+
+/* =========================================================
+   BLUEPRINT BUILDER — data model
+========================================================= */
+var uidCounter = 0;
+function uid(){ uidCounter += 1; return 'id' + Date.now().toString(36) + uidCounter; }
+
+function newGroup(){
+  return { id: uid(), type: 'MCQ', customType: '', count: 5, attempt: 5, marks_each: 1, has_internal_choice: false, parts: [], parts_attempt: null, note: '' };
+}
+function newSection(withName){
+  return { id: uid(), name: withName || '', instructions: '', groups: [ newGroup() ] };
+}
+
+var builderData = null;      // { sections: [...] }
+var totalMarksOverride = false;
+
+function resetBuilder(fromJson, totalMarks, durationMinutes, generalInstructions){
+  builderData = (fromJson && fromJson.sections && fromJson.sections.length)
+    ? fromJson
+    : { sections: [ newSection('') ] };
+  // Normalise every group/part in case of older/partial rows
+  builderData.sections.forEach(function(s){
+    if(!s.id) s.id = uid();
+    if(!Array.isArray(s.groups)) s.groups = [];
+    s.groups.forEach(function(g){
+      if(!g.id) g.id = uid();
+      if(!Array.isArray(g.parts)) g.parts = [];
+      g.parts.forEach(function(p){ if(!p.id) p.id = uid(); });
+    });
+  });
+  totalMarksOverride = totalMarks != null;
+  document.getElementById('f-total-marks').value = totalMarks != null ? totalMarks : '';
+  document.getElementById('f-duration').value = durationMinutes != null ? durationMinutes : '';
+  document.getElementById('f-general-instructions').value = generalInstructions || '';
+  autoResizeTextarea(document.getElementById('f-general-instructions'));
+  renderSections();
+}
+
+function findGroup(sectionId, groupId){
+  var section = builderData.sections.find(function(s){ return s.id === sectionId; });
+  if(!section) return null;
+  var group = section.groups.find(function(g){ return g.id === groupId; });
+  return group ? { section: section, group: group } : null;
+}
+
+function groupMarks(group){
+  var attempt = parseInt(group.attempt, 10) || 0;
+  var each = parseFloat(group.marks_each) || 0;
+  return attempt * each;
+}
+function partsSum(group){
+  return (group.parts || []).reduce(function(sum, p){ return sum + (parseFloat(p.marks) || 0); }, 0);
+}
+function sectionMarks(section){
+  return section.groups.reduce(function(sum, g){ return sum + groupMarks(g); }, 0);
+}
+function calcTotalMarks(){
+  return builderData.sections.reduce(function(sum, s){ return sum + sectionMarks(s); }, 0);
+}
+
+function refreshMarksBar(){
+  var calc = calcTotalMarks();
+  document.getElementById('calc-marks-display').textContent = t('marks_unit', { marks: calc });
+  if(!totalMarksOverride){
+    document.getElementById('f-total-marks').value = calc;
+  }
+  document.querySelectorAll('.group-marks-pill').forEach(function(pill){
+    var sid = pill.getAttribute('data-section-id'), gid = pill.getAttribute('data-group-id');
+    var found = findGroup(sid, gid);
+    if(found) pill.textContent = t('marks_unit', { marks: groupMarks(found.group) });
+  });
+}
+
+document.getElementById('f-total-marks').addEventListener('input', function(){
+  totalMarksOverride = true;
+});
+document.getElementById('btn-reset-total').addEventListener('click', function(){
+  totalMarksOverride = false;
+  document.getElementById('f-total-marks').value = calcTotalMarks();
+});
+document.getElementById('f-duration').addEventListener('input', function(){});
+
+/* =========================================================
+   BLUEPRINT MODE — "use the builder" vs. "write it myself"
+   Both modes are stored in the SAME blueprint_json column; we just
+   tag the object with { mode: 'structured' | 'freehand' } so the
+   backend schema never has to change.
+========================================================= */
+var blueprintMode = 'structured';
+var freehandManuallyEdited = false;
+var freehandTextEl = document.getElementById('f-freehand-text');
+
+function generateFreehandFromBuilder(data){
+  var lines = [];
+  (data && data.sections ? data.sections : []).forEach(function(section){
+    if(section.name){ lines.push(section.name.toUpperCase()); }
+    if(section.instructions){ lines.push(section.instructions); }
+    (section.groups || []).forEach(function(group){
+      var d = groupDescription(group);
+      lines.push(d.desc + ' — ' + t('marks_unit', { marks: groupMarks(group) }));
+      if(d.note){ lines.push('  (' + d.note + ')'); }
+    });
+    lines.push('');
+  });
+  return lines.join('\n').trim();
+}
+
+function syncFreehandFromBuilder(){
+  freehandTextEl.value = generateFreehandFromBuilder(builderData);
+  autoResizeTextarea(freehandTextEl);
+}
+
+function setBlueprintMode(mode, opts){
+  opts = opts || {};
+  blueprintMode = mode;
+
+  document.getElementById('mode-btn-structured').classList.toggle('active', mode === 'structured');
+  document.getElementById('mode-btn-freehand').classList.toggle('active', mode === 'freehand');
+  document.getElementById('structured-builder-card').style.display = mode === 'structured' ? 'flex' : 'none';
+  document.getElementById('freehand-card').style.display = mode === 'freehand' ? 'flex' : 'none';
+  document.getElementById('mode-note-structured').style.display = mode === 'structured' ? 'flex' : 'none';
+  document.getElementById('mode-note-freehand').style.display = mode === 'freehand' ? 'flex' : 'none';
+
+  document.getElementById('calc-marks-item').classList.toggle('is-hidden', mode === 'freehand');
+  document.getElementById('btn-reset-total').style.display = mode === 'freehand' ? 'none' : 'inline';
+
+  if(mode === 'freehand' && !freehandManuallyEdited && !opts.skipSync){
+    syncFreehandFromBuilder();
+  }
+}
+
+document.getElementById('mode-btn-structured').addEventListener('click', function(){ setBlueprintMode('structured'); });
+document.getElementById('mode-btn-freehand').addEventListener('click', function(){ setBlueprintMode('freehand'); });
+
+freehandTextEl.addEventListener('input', function(){ freehandManuallyEdited = true; });
+
+document.getElementById('btn-sync-from-builder').addEventListener('click', function(){
+  syncFreehandFromBuilder();
+  freehandManuallyEdited = false;
+  toast(t('refilled_from_builder'));
+});
+
+/* ---------- Rendering ---------- */
+function typeSelectHtml(group){
+  var opts = QUESTION_TYPE_PRESETS.map(function(tKey){
+    var val = tKey === 'Custom…' ? '__custom__' : tKey;
+    var selected = (group.type === val) ? ' selected' : '';
+    var labelKey = getQuestionTypeTranslationKey(tKey);
+    var labelText = labelKey ? t(labelKey) : tKey;
+    return '<option value="'+val+'"'+selected+'>'+labelText+'</option>';
+  }).join('');
+  return opts;
+}
+
+function renderGroupHtml(section, group){
+  var marks = groupMarks(group);
+  var isCustomType = group.type === '__custom__';
+  var partsHtml = (group.parts || []).map(function(p){
+    return '<div class="part-row" data-part-id="'+p.id+'">' +
+      '<input type="text" data-field="part-label" value="'+escapeAttr(p.label)+'" placeholder="a">' +
+      '<input type="number" data-field="part-marks" min="0" step="0.5" value="'+p.marks+'" placeholder="'+t('marks_for_part')+'">' +
+      '<span class="part-label-tag" data-label-text="'+escapeAttr(t('marks_for_part'))+'">'+t('marks_for_part')+'</span>' +
+      '<button class="remove-x" type="button" data-action="remove-part" title="'+t('remove_part')+'"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+      '</div>';
+  }).join('');
+
+  return (
+    '<div class="group-block" data-section-id="'+section.id+'" data-group-id="'+group.id+'">' +
+      '<div class="group-block-top">' +
+        '<span class="group-block-title">'+t('question_group_title')+'</span>' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+          '<span class="group-marks-pill" data-section-id="'+section.id+'" data-group-id="'+group.id+'">'+t('marks_unit', { marks: marks })+'</span>' +
+          '<button class="remove-x" type="button" data-action="remove-group" title="'+t('remove_group')+'"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="row2">' +
+        '<div class="field" style="margin-bottom:10px;">' +
+          '<label>'+t('question_type_label')+'</label>' +
+          '<select data-field="type">'+typeSelectHtml(group)+'</select>' +
+        '</div>' +
+        (isCustomType ? '<div class="field" style="margin-bottom:10px;"><label>'+t('custom_type_name_label')+'</label><input type="text" data-field="customType" value="'+escapeAttr(group.customType||'')+'" placeholder="'+t('ph_custom_type')+'"></div>' : '<div></div>') +
+      '</div>' +
+
+      '<div class="row3">' +
+        '<div class="field" style="margin-bottom:10px;"><label>'+t('no_of_questions')+'</label><input type="number" min="1" data-field="count" value="'+group.count+'"></div>' +
+        '<div class="field" style="margin-bottom:10px;"><label>'+t('attempt_how_many')+'</label><input type="number" min="0" data-field="attempt" value="'+group.attempt+'"></div>' +
+        '<div class="field" style="margin-bottom:0;"><label>'+t('marks_per_question')+'</label><input type="number" min="0" step="0.5" data-field="marks_each" value="'+group.marks_each+'"></div>' +
+      '</div>' +
+      (parseInt(group.attempt,10) < parseInt(group.count,10) ? '<p class="helper-text" style="margin-top:8px;">'+t('attempt_any_x_of_y', { attempt: group.attempt, count: group.count })+'</p>' : '') +
+
+      '<div class="toggle-row">' +
+        '<input type="checkbox" data-field="has_internal_choice" id="choice-'+group.id+'" '+(group.has_internal_choice?'checked':'')+'>' +
+        '<label for="choice-'+group.id+'">'+t('has_or_alternative')+'</label>' +
+      '</div>' +
+
+      '<div class="parts-wrap">' +
+        '<div class="toggle-row" style="margin-top:0;">' +
+          '<input type="checkbox" data-field="has_parts" id="parts-'+group.id+'" '+((group.parts&&group.parts.length)?'checked':'')+'>' +
+          '<label for="parts-'+group.id+'">'+t('split_into_parts')+'</label>' +
+        '</div>' +
+        (group.parts && group.parts.length ? (
+          '<div class="parts-list">'+partsHtml+'</div>' +
+          '<button class="add-dashed-btn" type="button" data-action="add-part" style="margin-top:8px; padding:8px;">'+t('btn_add_part')+'</button>' +
+          '<div class="toggle-row">' +
+            '<input type="checkbox" data-field="parts_choice" id="partschoice-'+group.id+'" '+(group.parts_attempt!=null?'checked':'')+'>' +
+            '<label for="partschoice-'+group.id+'">'+t('only_some_parts_attempted')+'</label>' +
+          '</div>' +
+          (group.parts_attempt != null ? '<div class="field" style="max-width:180px;"><label>'+t('attempt_how_many_parts')+'</label><input type="number" min="1" max="'+group.parts.length+'" data-field="parts_attempt" value="'+group.parts_attempt+'"></div>' : '') +
+          '<p class="helper-text">'+t('sum_of_parts', { sum: partsSum(group) })+' <button type="button" data-action="use-parts-sum" style="border:none;background:none;color:var(--teal-700);font-weight:700;cursor:pointer;text-decoration:underline;padding:0;">'+t('use_as_marks_per_question')+'</button></p>'
+        ) : '') +
+      '</div>' +
+
+      '<div class="field" style="margin-top:10px; margin-bottom:0;">' +
+        '<label>'+t('note_optional')+'</label>' +
+        '<textarea rows="1" data-field="note" placeholder="'+t('ph_note')+'">'+escapeHtml(group.note||'')+'</textarea>' +
+        '<div class="ai-gen-row"><button class="btn btn-ghost btn-ai-correct btn-sm" type="button">'+t('btn_auto_correct')+'</button></div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function renderSectionHtml(section, showRemove){
+  var groupsHtml = section.groups.map(function(g){ return renderGroupHtml(section, g); }).join('');
+  return (
+    '<div class="section-block" data-section-id="'+section.id+'">' +
+      '<div class="section-block-head">' +
+        '<div class="field"><label>'+t('section_name_label')+'</label><input type="text" data-field="name" value="'+escapeAttr(section.name||'')+'" placeholder="'+t('ph_section_name')+'"></div>' +
+        (showRemove ? '<button class="remove-x section-remove-btn" type="button" data-action="remove-section" title="'+t('remove_section')+'"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '') +
+      '</div>' +
+      '<div class="field">' +
+        '<label>'+t('section_instr_label')+'</label>' +
+        '<textarea rows="1" data-field="instructions" placeholder="'+t('ph_section_instr')+'">'+escapeHtml(section.instructions||'')+'</textarea>' +
+        '<div class="ai-gen-row"><button class="btn btn-ghost btn-ai-correct btn-sm" type="button">'+t('btn_auto_correct')+'</button></div>' +
+      '</div>' +
+      groupsHtml +
+      '<button class="add-dashed-btn" type="button" data-action="add-group" style="margin-top:'+(section.groups.length?'10px':'0')+';">'+t('btn_add_question_group')+'</button>' +
+    '</div>'
+  );
+}
+
+function renderSections(){
+  var container = document.getElementById('sections-container');
+  var showRemove = builderData.sections.length > 1;
+  container.innerHTML = builderData.sections.map(function(s){ return renderSectionHtml(s, showRemove); }).join('');
+  autoResizeAll('#sections-container textarea');
+  refreshMarksBar();
+}
+
+/* ---------- Event delegation for the whole builder ---------- */
+var sectionsContainer = document.getElementById('sections-container');
+
+sectionsContainer.addEventListener('click', function(e){
+  var sectionEl = e.target.closest('.section-block');
+  var groupEl = e.target.closest('.group-block');
+  var sectionId = sectionEl ? sectionEl.getAttribute('data-section-id') : null;
+  var groupId = groupEl ? groupEl.getAttribute('data-group-id') : null;
+
+  var actionEl = e.target.closest('[data-action]');
+  if(!actionEl) return;
+  var action = actionEl.getAttribute('data-action');
+
+  if(action === 'remove-section'){
+    if(builderData.sections.length <= 1){ toast(t('one_section_required'), true); return; }
+    builderData.sections = builderData.sections.filter(function(s){ return s.id !== sectionId; });
+    renderSections();
+  } else if(action === 'add-group'){
+    var section = builderData.sections.find(function(s){ return s.id === sectionId; });
+    section.groups.push(newGroup());
+    renderSections();
+  } else if(action === 'remove-group'){
+    var found = findGroup(sectionId, groupId);
+    if(!found) return;
+    if(found.section.groups.length <= 1){
+      found.section.groups = [];
+    } else {
+      found.section.groups = found.section.groups.filter(function(g){ return g.id !== groupId; });
+    }
+    renderSections();
+  } else if(action === 'add-part'){
+    var found2 = findGroup(sectionId, groupId);
+    if(!found2) return;
+    var nextLabel = String.fromCharCode(97 + found2.group.parts.length); // a, b, c...
+    found2.group.parts.push({ id: uid(), label: nextLabel, marks: 1 });
+    renderSections();
+  } else if(action === 'remove-part'){
+    var partRow = e.target.closest('.part-row');
+    var partId = partRow.getAttribute('data-part-id');
+    var found3 = findGroup(sectionId, groupId);
+    if(!found3) return;
+    found3.group.parts = found3.group.parts.filter(function(p){ return p.id !== partId; });
+    if(found3.group.parts_attempt != null && found3.group.parts_attempt > found3.group.parts.length){
+      found3.group.parts_attempt = found3.group.parts.length || null;
+    }
+    renderSections();
+  } else if(action === 'use-parts-sum'){
+    var found4 = findGroup(sectionId, groupId);
+    if(!found4) return;
+    found4.group.marks_each = partsSum(found4.group);
+    renderSections();
+  }
+});
+
+sectionsContainer.addEventListener('change', function(e){
+  var sectionEl = e.target.closest('.section-block');
+  var groupEl = e.target.closest('.group-block');
+  var sectionId = sectionEl ? sectionEl.getAttribute('data-section-id') : null;
+  var groupId = groupEl ? groupEl.getAttribute('data-group-id') : null;
+  var field = e.target.getAttribute('data-field');
+  if(!field) return;
+
+  if(!groupId){
+    // section-level field
+    var section = builderData.sections.find(function(s){ return s.id === sectionId; });
+    if(!section) return;
+    if(field === 'name') section.name = e.target.value;
+    return; // instructions handled by 'input' below for live feel
+  }
+
+  var found = findGroup(sectionId, groupId);
+  if(!found) return;
+  var group = found.group;
+
+  if(field === 'type'){
+    group.type = e.target.value;
+    renderSections();
+  } else if(field === 'customType'){
+    group.customType = e.target.value;
+  } else if(field === 'count'){
+    group.count = parseInt(e.target.value, 10) || 0;
+    if(group.attempt > group.count) group.attempt = group.count;
+    renderSections();
+  } else if(field === 'attempt'){
+    var val = parseInt(e.target.value, 10) || 0;
+    group.attempt = Math.min(val, group.count);
+    renderSections();
+  } else if(field === 'marks_each'){
+    group.marks_each = parseFloat(e.target.value) || 0;
+    refreshMarksBar();
+  } else if(field === 'has_internal_choice'){
+    group.has_internal_choice = e.target.checked;
+  } else if(field === 'has_parts'){
+    if(e.target.checked){
+      if(!group.parts.length) group.parts.push({ id: uid(), label: 'a', marks: Math.round((group.marks_each||0)/2) || 1 }, { id: uid(), label: 'b', marks: Math.round((group.marks_each||0)/2) || 1 });
+    } else {
+      group.parts = [];
+      group.parts_attempt = null;
+    }
+    renderSections();
+  } else if(field === 'parts_choice'){
+    group.parts_attempt = e.target.checked ? Math.max(1, group.parts.length - 1) : null;
+    renderSections();
+  } else if(field === 'parts_attempt'){
+    group.parts_attempt = Math.min(Math.max(1, parseInt(e.target.value,10) || 1), group.parts.length);
+    refreshMarksBar();
+  } else if(field === 'part-label'){
+    var partRow = e.target.closest('.part-row');
+    var part = group.parts.find(function(p){ return p.id === partRow.getAttribute('data-part-id'); });
+    if(part) part.label = e.target.value;
+  } else if(field === 'part-marks'){
+    var partRow2 = e.target.closest('.part-row');
+    var part2 = group.parts.find(function(p){ return p.id === partRow2.getAttribute('data-part-id'); });
+    if(part2) part2.marks = parseFloat(e.target.value) || 0;
+    refreshMarksBar();
+  }
+});
+
+sectionsContainer.addEventListener('input', function(e){
+  var sectionEl = e.target.closest('.section-block');
+  var groupEl = e.target.closest('.group-block');
+  var sectionId = sectionEl ? sectionEl.getAttribute('data-section-id') : null;
+  var groupId = groupEl ? groupEl.getAttribute('data-group-id') : null;
+  var field = e.target.getAttribute('data-field');
+  if(!field) return;
+
+  if(!groupId){
+    var section = builderData.sections.find(function(s){ return s.id === sectionId; });
+    if(!section) return;
+    if(field === 'instructions') section.instructions = e.target.value;
+    if(field === 'name') section.name = e.target.value;
+    return;
+  }
+  var found = findGroup(sectionId, groupId);
+  if(!found) return;
+  if(field === 'note') found.group.note = e.target.value;
+  if(field === 'customType') found.group.customType = e.target.value;
+  if(field === 'marks_each'){ found.group.marks_each = parseFloat(e.target.value) || 0; refreshMarksBar(); }
+});
+
+document.getElementById('btn-add-section').addEventListener('click', function(){
+  var letter = String.fromCharCode(65 + builderData.sections.length); // A, B, C...
+  builderData.sections.forEach(function(s, i){ if(!s.name) s.name = 'Section ' + String.fromCharCode(65 + i); });
+  builderData.sections.push(newSection('Section ' + letter));
+  renderSections();
+});
+
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+function escapeAttr(str){
+  return escapeHtml(str).replace(/"/g,'&quot;');
+}
+
+/* =========================================================
+   LOAD / SAVE / DELETE
+========================================================= */
+function clearEditFields(){
+  document.getElementById('edit-last-modified').textContent = '';
+  document.getElementById('edit-existing-chip').style.display = 'none';
+  document.getElementById('btn-delete-blueprint').style.display = 'none';
+  state.editingExists = false;
+  resetBuilder(null, null, null, '');
+  freehandTextEl.value = '';
+  freehandManuallyEdited = false;
+  setBlueprintMode('structured', { skipSync: true });
+}
+
+function maybeLoadEditEntry(){
+  var cls = editClassSel.value, exam = editExamSel.value, subj = editSubjectSel.value;
+  if(!cls || !exam || !subj){ hideEditForm(); return; }
+  showEditForm();
+  clearEditFields();
+
+  supabaseClient
+    .from('exam_blueprint')
+    .select('*')
+    .eq('exam', exam).eq('class', cls).eq('subject', subj)
+    .maybeSingle()
+    .then(function(res){
+      if(res.error){ toast(t('could_not_load_existing'), true); return; }
+      if(res.data){
+        var bp = res.data.blueprint_json || {};
+        var savedMode = bp.mode === 'freehand' ? 'freehand' : 'structured';
+
+        resetBuilder({ sections: bp.sections }, res.data.total_marks, res.data.duration_minutes, res.data.general_instructions);
+
+        if(savedMode === 'freehand'){
+          freehandTextEl.value = bp.text || '';
+          autoResizeTextarea(freehandTextEl);
+          freehandManuallyEdited = true;
+        } else {
+          freehandTextEl.value = '';
+          freehandManuallyEdited = false;
+        }
+        setBlueprintMode(savedMode, { skipSync: true });
+
+        document.getElementById('edit-existing-chip').style.display = 'inline-block';
+        document.getElementById('btn-delete-blueprint').style.display = 'inline-flex';
+        document.getElementById('edit-last-modified').textContent = t('last_updated', { date: new Date(res.data.last_modified).toLocaleString() });
+        state.editingExists = true;
+      }
+    });
+}
+
+document.getElementById('btn-save-blueprint').addEventListener('click', function(){
+  var cls = editClassSel.value, exam = editExamSel.value, subj = editSubjectSel.value;
+  if(!cls || !exam || !subj){ toast(t('select_class_exam_subj_first'), true); return; }
+
+  var blueprintJson;
+  if(blueprintMode === 'freehand'){
+    var freehandVal = freehandTextEl.value.trim();
+    if(!freehandVal){ toast(t('type_blueprint_before_saving'), true); return; }
+    blueprintJson = { mode: 'freehand', text: freehandVal };
+  } else {
+    var hasAnyGroup = builderData.sections.some(function(s){ return s.groups.length > 0; });
+    if(!hasAnyGroup){ toast(t('add_at_least_one_group'), true); return; }
+    blueprintJson = { mode: 'structured', sections: builderData.sections };
+  }
+
+  var enteredTotal = parseInt(document.getElementById('f-total-marks').value, 10);
+  var payload = {
+    exam: exam, class: cls, subject: subj,
+    teacher_id: state.user.id,
+    duration_minutes: parseInt(document.getElementById('f-duration').value, 10) || null,
+    total_marks: !isNaN(enteredTotal) ? enteredTotal : (blueprintMode === 'freehand' ? null : calcTotalMarks()),
+    general_instructions: document.getElementById('f-general-instructions').value.trim(),
+    blueprint_json: blueprintJson
+  };
+
+  var btn = document.getElementById('btn-save-blueprint');
+  btn.disabled = true; btn.textContent = t('saving');
+
+  supabaseClient
+    .from('exam_blueprint')
+    .upsert(payload, { onConflict: 'exam,class,subject' })
+    .select()
+    .then(function(res){
+      btn.disabled = false; btn.textContent = t('btn_save_blueprint');
+      if(res.error){ toast(t('save_failed', { message: res.error.message }), true); return; }
+      toast(t('blueprint_saved'));
+      maybeLoadEditEntry();
+    });
+});
+
+document.getElementById('btn-delete-blueprint').addEventListener('click', function(){
+  var cls = editClassSel.value, exam = editExamSel.value, subj = editSubjectSel.value;
+  askConfirm(t('delete_blueprint_confirm_title'), t('delete_blueprint_confirm_msg', { subject: subj, exam: exam, class: cls }), function(){
+    supabaseClient
+      .from('exam_blueprint')
+      .delete()
+      .eq('exam', exam).eq('class', cls).eq('subject', subj)
+      .then(function(res){
+        if(res.error){ toast(t('delete_failed', { message: res.error.message }), true); return; }
+        toast(t('blueprint_deleted'));
+        clearEditFields();
+      });
+  });
+});
+
+/* =========================================================
+   BROWSE PANEL
+========================================================= */
+var browseClassSel = document.getElementById('browse-class');
+var browseExamSel = document.getElementById('browse-exam');
+var lastBrowseResults = { exam: '', class: '', entries: [] };
+
+function populateBrowseClassDropdown(){
+  browseClassSel.innerHTML = '<option value="">' + t('opt_select_class') + '</option>' +
+    state.allClasses.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+}
+browseClassSel.addEventListener('change', function(){
+  var exams = examsForClass(browseClassSel.value);
+  browseExamSel.innerHTML = '<option value="">' + t('opt_select_exam') + '</option>' +
+    exams.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
+  browseExamSel.disabled = exams.length === 0;
+});
+
+document.getElementById('btn-load-exam').addEventListener('click', function(){
+  var cls = browseClassSel.value, exam = browseExamSel.value;
+  if(!cls || !exam){ toast(t('select_class_exam_first'), true); return; }
+
+  var btn = document.getElementById('btn-load-exam');
+  btn.disabled = true; btn.textContent = t('loading');
+
+  supabaseClient
+    .from('exam_blueprint')
+    .select('*')
+    .eq('class', cls).eq('exam', exam)
+    .order('subject', { ascending: true })
+    .then(function(res){
+      btn.disabled = false; btn.textContent = t('btn_view_blueprints');
+      if(res.error){ toast(t('could_not_load_blueprints', { message: res.error.message }), true); return; }
+      lastBrowseResults = { class: cls, exam: exam, entries: sortEntriesByDisplayOrder(res.data || []) };
+      renderBrowseResults();
+    });
+});
+
+function canEditCombo(cls, subj){
+  if(state.isAdmin) return true;
+  return state.myAssignments.some(function(a){ return a.class === cls && a.subject === subj; });
+}
+
+function groupDescription(group){
+  var translationKey = getQuestionTypeTranslationKey(group.type);
+  var typeName = group.type === '__custom__' ? (group.customType || t('question_singular')) : (translationKey ? t(translationKey) : group.type);
+
+  var countPart = group.attempt < group.count
+    ? t('attempt_any_x_of_y_text', { attempt: group.attempt, count: group.count })
+    : (group.count + ' ' + (group.count === 1 ? t('question_singular') : t('questions_plural')));
+
+  var desc = countPart + ' — ' + typeName + (group.has_internal_choice ? ' (' + t('with_internal_choice') + ')' : '');
+  var partsNote = '';
+  if(group.parts && group.parts.length){
+    var partsStr = group.parts.map(function(p){ return '(' + p.label + ') ' + p.marks + 'm'; }).join(', ');
+    partsNote = t('parts_label', { partsStr: partsStr }) + (group.parts_attempt != null ? t('attempt_any_parts', { count: group.parts_attempt }) : '');
+  }
+  if(group.note){ partsNote = partsNote ? (partsNote + ' · ' + group.note) : group.note; }
+  return { desc: desc, note: partsNote };
+}
+
+function displayTotalMarksText(row){
+  var data = row.blueprint_json || {};
+  if(row.total_marks != null) return t('marks_unit', { marks: row.total_marks });
+  if(data.mode === 'freehand') return t('as_written_above');
+  return t('marks_unit', { marks: calcSectionsMarks(data) });
+}
+
+function renderBlueprintPreviewHtml(row){
+  var data = row.blueprint_json || { sections: [] };
+
+  if(data.mode === 'freehand'){
+    return '<div class="preview-freehand">' + escapeHtml(data.text || '') + '</div>' +
+      '<div class="preview-totals"><span>' + t('total') + '</span><span>' + displayTotalMarksText(row) + (row.duration_minutes ? ' · ' + t('mins_unit', { mins: row.duration_minutes }) : '') + '</span></div>';
+  }
+
+  var html = '';
+  (data.sections || []).forEach(function(section){
+    html += '<div class="preview-section">';
+    if(section.name){ html += '<div class="preview-section-name">' + escapeHtml(section.name) + '</div>'; }
+    if(section.instructions){ html += '<div class="preview-section-instr">' + escapeHtml(section.instructions) + '</div>'; }
+    section.groups.forEach(function(group){
+      var d = groupDescription(group);
+      html += '<div class="preview-group"><span class="preview-group-desc">' + escapeHtml(d.desc) + (d.note ? '<span class="parts-note">' + escapeHtml(d.note) + '</span>' : '') + '</span><span class="preview-group-marks">' + groupMarks(group) + '</span></div>';
+    });
+    html += '</div>';
+  });
+  html += '<div class="preview-totals"><span>' + t('total') + '</span><span>' + displayTotalMarksText(row) + (row.duration_minutes ? ' · ' + t('mins_unit', { mins: row.duration_minutes }) : '') + '</span></div>';
+  return html;
+}
+function calcSectionsMarks(data){
+  return (data.sections||[]).reduce(function(sum, s){ return sum + s.groups.reduce(function(s2,g){ return s2 + groupMarks(g); }, 0); }, 0);
+}
+
+async function renderBrowseResults(){
+  var wrap = document.getElementById('browse-results-wrap');
+  var placeholder = document.getElementById('browse-placeholder');
+  var container = document.getElementById('browse-results');
+  var title = document.getElementById('browse-results-title');
+
+  var entries = lastBrowseResults.entries;
+  title.textContent = lastBrowseResults.exam + ' • ' + lastBrowseResults.class;
+
+  if(entries.length === 0){
+    wrap.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.querySelector('p').textContent = t('no_blueprint_entries_found', { class: lastBrowseResults.class, exam: lastBrowseResults.exam });
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  wrap.style.display = 'block';
+  container.innerHTML = '';
+
+  for (var i = 0; i < entries.length; i++) {
+    var p = entries[i];
+    var editable = canEditCombo(p.class, p.subject);
+    var card = document.createElement('div');
+    card.className = 'subject-card';
+    card.style.animationDelay = (i * 0.05) + 's';
+
+    var rawTeacherName = p.teacher_name || t('subject_teacher');
+    var teacherName = await transliterateName(rawTeacherName);
+
+    card.innerHTML =
+      '<div class="subject-card-top">' +
+        '<div><p class="subject-name">' + escapeHtml(p.subject) + '</p>' +
+        '<p class="subject-meta">' + escapeHtml(teacherName) + ' • ' + t('updated_date', { date: new Date(p.last_modified).toLocaleDateString() }) + '</p></div>' +
+        '<div class="subject-actions">' +
+          (editable ? '<button class="mini-btn" data-action="edit" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' +
+          '<button class="mini-btn danger" data-action="delete" title="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' : '') +
+        '</div>' +
+      '</div>' +
+      (p.general_instructions ? '<div class="plan-field-value" style="font-style:italic; color:var(--ink-500); margin-bottom:6px;">' + escapeHtml(p.general_instructions) + '</div>' : '') +
+      renderBlueprintPreviewHtml(p);
+
+    if(editable){
+      (function(entry){
+        card.querySelector('[data-action="edit"]').addEventListener('click', function(){ jumpToEdit(entry); });
+        card.querySelector('[data-action="delete"]').addEventListener('click', function(){
+          askConfirm(t('delete_blueprint_confirm_title'), t('delete_blueprint_confirm_msg', { subject: entry.subject, exam: entry.exam, class: entry.class }), function(){
+            supabaseClient.from('exam_blueprint').delete()
+              .eq('exam', entry.exam).eq('class', entry.class).eq('subject', entry.subject)
+              .then(function(res){
+                if(res.error){ toast(t('delete_failed', { message: res.error.message }), true); return; }
+                toast(t('blueprint_deleted'));
+                lastBrowseResults.entries = lastBrowseResults.entries.filter(function(x){ return !(x.class===entry.class && x.subject===entry.subject); });
+                renderBrowseResults();
+              });
+          });
+        });
+      })(p);
+    }
+
+    container.appendChild(card);
+  }
+}
+
+function jumpToEdit(p){
+  setTab('edit');
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  if(classes.indexOf(p.class) === -1) classes.push(p.class);
+  editClassSel.value = p.class;
+  editClassSel.dispatchEvent(new Event('change'));
+  setTimeout(function(){
+    editExamSel.value = p.exam;
+    editSubjectSel.value = p.subject;
+    maybeLoadEditEntry();
+  }, 30);
+}
+
+/* =========================================================
+   LIGHTWEIGHT PDF: build a print-only document and let the browser
+   render it (real text + embedded font subsets, so Hindi works and
+   the file stays tiny), then save it via the native "Save as PDF"
+   print destination — same approach as the weekly lesson plan page.
+========================================================= */
+function buildPrintSheetHtml(selectedFields){
+  var r = lastBrowseResults;
+  var html =
+    '<div class="p-head"><div class="p-brand"><img src="' + LOGO_URL + '" alt="">' +
+    '<div><div class="p-school">Gopal Sharma Memorial School</div><div class="p-title">Exam Blueprint</div></div></div>' +
+    '<div class="p-right"><div>Class ' + escapeHtml(r.class) + '</div><div class="p-range">' + escapeHtml(r.exam) + '</div></div></div>';
+
+  r.entries.forEach(function(p){
+    html += '<div class="p-card">';
+    html += '<div class="p-subject-row"><div class="p-subject">' + escapeHtml(p.subject) + '</div>' +
+      '<div class="p-badge">' + escapeHtml(displayTotalMarksText(p)) + (selectedFields.indexOf('duration') !== -1 && p.duration_minutes ? ' • ' + p.duration_minutes + ' mins' : '') + '</div></div>';
+
+    if(selectedFields.indexOf('teacher_name') !== -1 && p.teacher_name){
+      html += '<div class="p-teacher">Teacher: ' + escapeHtml(p.teacher_name) + '</div>';
+    }
+    if(selectedFields.indexOf('general_instructions') !== -1 && p.general_instructions){
+      html += '<div class="p-general">' + escapeHtml(p.general_instructions) + '</div>';
+    }
+
+    var data = p.blueprint_json || { sections: [] };
+
+    if(data.mode === 'freehand'){
+      html += '<div class="p-freehand">' + escapeHtml(data.text || '') + '</div>';
+    } else {
+      (data.sections || []).forEach(function(section){
+        html += '<div class="p-section">';
+        if(section.name){ html += '<div class="p-section-name">' + escapeHtml(section.name) + '</div>'; }
+        if(selectedFields.indexOf('section_instructions') !== -1 && section.instructions){
+          html += '<div class="p-section-instr">' + escapeHtml(section.instructions) + '</div>';
+        }
+        (section.groups || []).forEach(function(group){
+          var d = groupDescription(group);
+          html += '<div class="p-group-row"><div class="p-group-desc">' + escapeHtml(d.desc) +
+            (d.note && selectedFields.indexOf('question_notes') !== -1 ? '<div class="p-group-note">' + escapeHtml(d.note) + '</div>' : '') +
+            '</div><div class="p-group-marks">' + groupMarks(group) + ' m</div></div>';
+        });
+        html += '</div>';
+      });
+      html += '<div class="p-totals"><span>Total</span><span>' + escapeHtml(displayTotalMarksText(p)) + '</span></div>';
+    }
+
+    html += '</div>';
+  });
+  return html;
+}
+
+function buildPrintSheet(selectedFields){
+  document.getElementById('print-sheet').innerHTML = buildPrintSheetHtml(selectedFields);
+}
+
+function pdfFileTitle(){
+  var r = lastBrowseResults;
+  return 'Exam-Blueprint_' + r.exam.replace(/[^a-z0-9]/gi,'') + '_Class_' + r.class.replace(/[^a-z0-9]/gi,'');
+}
+
+async function openPrintDialog(selectedFields, btn){
+  var originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = t('preparing');
+  try{
+    buildPrintSheet(selectedFields);
+    // Wait for fonts (Noto Sans / Devanagari) and the logo so the PDF captures them.
+    if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
+    var img = document.querySelector('#print-sheet img');
+    if(img && !img.complete){
+      await new Promise(function(res){ img.onload = img.onerror = res; setTimeout(res, 3000); });
+    }
+    // The document title becomes the suggested PDF file name.
+    var oldTitle = document.title;
+    document.title = pdfFileTitle();
+    window.addEventListener('afterprint', function restore(){
+      document.title = oldTitle;
+      window.removeEventListener('afterprint', restore);
+    });
+    window.print();
+  }catch(e){
+    console.error(e);
+    toast(t('could_not_open_print'), true);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+function generatePdfFlow(btn){
+  if(!lastBrowseResults.entries || lastBrowseResults.entries.length === 0){
+    toast(t('load_exam_with_one_entry'), true);
+    return;
+  }
+  askPdfFields(function(selectedFields){
+    openPrintDialog(selectedFields, btn);
+  });
+}
+
+document.getElementById('btn-share-pdf').addEventListener('click', function(){
+  generatePdfFlow(this);
+});
+
+document.getElementById('btn-download-pdf').addEventListener('click', function(){
+  generatePdfFlow(this);
+});
+
+/* =========================================================
+   AUTH + DATA BOOTSTRAP
+========================================================= */
+function showApp(){
+  applyLanguage();
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var userId = session.user.id;
+
+    var teacherResult = await supabaseClient
+      .from('teachers')
+      .select('id, name, email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var badge = document.getElementById('role-badge');
+    if(state.isAdmin){
+      badge.textContent = t('admin_access_all');
+      badge.classList.add('admin-badge');
+    }else{
+      var rawFirstName = state.teacherName.split(' ')[0];
+      var firstName = await transliterateName(rawFirstName);
+      badge.textContent = firstName + ' • ' + t('header_sub');
+    }
+
+    var myAssignRes = await supabaseClient
+      .from('class_subject_assignments')
+      .select('class, subject')
+      .eq('teacher_id', userId);
+    state.myAssignments = myAssignRes.data || [];
+
+    var allCombosRes = state.isAdmin
+      ? await supabaseClient.from('class_subjects').select('class, subject')
+      : await supabaseClient.from('class_subject_assignments').select('class, subject');
+    state.allCombos = allCombosRes.data || [];
+
+    var classTeacherRes = await supabaseClient
+      .from('class_teachers')
+      .select('class');
+    var classSet = {};
+    state.allCombos.forEach(function(c){ classSet[c.class] = true; });
+    (classTeacherRes.data || []).forEach(function(c){ classSet[c.class] = true; });
+    state.allClasses = Object.keys(classSet).sort();
+
+    var examClassesRes = await supabaseClient.from('exam_classes').select('exam, class');
+    state.examClasses = examClassesRes.data || [];
+
+    var subjectsRes = await supabaseClient.from('subjects').select('name, display_order');
+    (subjectsRes.data || []).forEach(function(s){ state.subjectOrder[s.name] = s.display_order; });
+
+    populateEditClassDropdown();
+    populateBrowseClassDropdown();
+
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
