@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>My Exam Syllabus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10); --border-card: rgba(13,56,65,.08);
+    --status-present:#4fc98a; --status-present-dark:#2f8f61;
+    --status-absent:#f2555a; --status-absent-dark:#c23b41;
+    --status-leave:#f5a623; --status-leave-dark:#b06f12;
+    --panel-tint: var(--bg-tint-teal);
+    --edge-shadow: rgba(13,56,65,.14); --edge-shadow-soft: rgba(13,56,65,.08);
+    --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
+    --r-lg:26px; --r-md:18px; --r-sm:12px; --ease:cubic-bezier(.22,1,.36,1);
+    --font-display:'Fraunces',Georgia,serif; --font-body:'Manrope',system-ui,sans-serif;
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12); --border-card: rgba(255,255,255,.10);
+    --status-present:#49d696; --status-present-dark:#8be9c4;
+    --status-absent:#ff6b70; --status-absent-dark:#ffb0b2;
+    --status-leave:#ffc65c; --status-leave-dark:#ffe2a8;
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+    --track: color-mix(in srgb, var(--white) 14%, transparent);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:var(--font-body); color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    transition:background .3s var(--ease), color .3s var(--ease); padding:14px 14px 28px;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--border-card);
+    background:var(--white);font-size:17px;cursor:pointer;box-shadow:0 3px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;color:var(--ink-900);flex:0 0 auto;
+  }
+  .icon-btn:hover{transform:translateY(-1px);}
+  .icon-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .icon-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .card{
+    background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border-card);
+    box-shadow:0 6px 0 var(--edge-shadow-soft);padding:20px;margin-bottom:16px;
+  }
+  .section-title{font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 2px;color:var(--ink-900);}
+  .section-sub{font-size:13px;color:var(--ink-500);margin:0 0 14px;font-weight:600;}
+  .exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
+  .exam-tile{
+    text-align:left;border:1px solid var(--border-card);background:var(--panel-tint);
+    border-radius:var(--r-md);padding:16px 16px 14px;cursor:pointer;font-family:var(--font-body);
+    box-shadow:0 4px 0 var(--edge-shadow-soft);transition:transform .14s ease;
+  }
+  .exam-tile:hover{transform:translateY(-2px);}
+  .exam-tile:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .exam-tile:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .exam-tile-name{font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--ink-900);line-height:1.3;}
+  .exam-tile-sub{font-size:11.5px;font-weight:700;color:var(--ink-500);margin-top:6px;}
+  .detail-header{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+  .detail-titles{min-width:0;}
+  .detail-titles .section-title{word-break:break-word;}
+  .subject-block{border-top:1px solid var(--border-card);padding:16px 0;}
+  .subject-block:first-of-type{border-top:none;padding-top:4px;}
+  .subject-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+  .subject-name{font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink-900);}
+  .progress-pill{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .progress-track{width:88px;height:8px;border-radius:999px;background:var(--track);overflow:hidden;}
+  .progress-fill{height:100%;border-radius:999px;transition:width .4s var(--ease);}
+  .progress-pct{font-weight:800;font-size:12.5px;white-space:nowrap;}
+  .syllabus-pre{
+    margin:0;font-family:var(--font-body);font-size:13.5px;line-height:1.6;color:var(--ink-900);
+    white-space:pre-wrap;word-break:break-word;background:var(--panel-tint);border-radius:var(--r-sm);
+    padding:12px 14px;
+  }
+  .state-msg{text-align:center;padding:30px 12px;font-weight:700;color:var(--ink-500);font-size:14.5px;}
+  .state-msg.err{color:var(--status-absent-dark);}
+  .retry-btn{
+    margin-top:10px;font-family:var(--font-body);font-weight:800;font-size:13.5px;border:none;
+    border-radius:999px;padding:9px 18px;cursor:pointer;background:var(--teal-700);color:#fff;
+  }
+  .spinner{
+    width:26px;height:26px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--teal-600);
+    margin:0 auto 10px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .hidden{display:none !important;}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+  @media (max-width:420px){.card{padding:16px;}.exam-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="card" id="examListScreen">
+    <h2 class="section-title">My exam syllabus</h2>
+    <p class="section-sub">Tap an exam to see what's covered</p>
+    <div id="examListBody">
+      <div class="state-msg" id="examListState"><div class="spinner"></div>Loading your exams…</div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="examDetailScreen">
+    <div class="detail-header">
+      <button class="icon-btn" id="backBtn" aria-label="Back to exam list">‹</button>
+      <div class="detail-titles">
+        <h2 class="section-title" id="detailExamName">—</h2>
+        <p class="section-sub">Syllabus by subject</p>
+      </div>
+    </div>
+    <div id="examDetailBody">
+      <div class="state-msg" id="examDetailState"><div class="spinner"></div>Loading the syllabus…</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* Multi-tenant credentials — provided as-is, do not modify. */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/';
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function escapeHtml(s){
+    return String(s==null ? '' : s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  function tierColor(pct){
+    if(pct >= 90) return 'var(--status-present-dark)';
+    if(pct >= 75) return 'var(--teal-700)';
+    if(pct >= 50) return 'var(--status-leave-dark)';
+    return 'var(--status-absent-dark)';
+  }
+
+  function progressHTML(pct){
+    if(typeof pct !== 'number' || !isFinite(pct) || pct <= 0) return '';
+    var clamped = Math.max(0, Math.min(100, pct));
+    var color = tierColor(clamped);
+    return '<div class="progress-pill">'
+      + '<div class="progress-track"><div class="progress-fill" style="width:'+clamped+'%;background:'+color+'"></div></div>'
+      + '<span class="progress-pct" style="color:'+color+'">'+Math.round(clamped)+'% done</span>'
+      + '</div>';
+  }
+
+  var state = { studentClass: null, exams: [], subjectOrder: null, syllabusCache: {} };
+
+  async function init(){
+    try{
+      var sessionRes = await supabase.auth.getSession();
+      var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+      if(!session){ window.location.href = AUTH_REDIRECT; return; }
+
+      var uid = session.user.id;
+      var studentRes = await supabase.from('students').select('name, class').eq('id', uid).maybeSingle();
+      if(studentRes.error || !studentRes.data || !studentRes.data.class){
+        window.location.href = AUTH_REDIRECT; return;
+      }
+      state.studentClass = studentRes.data.class;
+
+      loadSubjectOrder();
+      await loadExamList();
+    } catch(e){
+      showExamListError('Something went wrong loading your exams.');
+    }
+  }
+
+  async function loadSubjectOrder(){
+    try{
+      var res = await supabase.from('subjects').select('name, display_order');
+      if(res.error || !res.data) return;
+      var map = {};
+      res.data.forEach(function(s){ map[s.name] = s.display_order; });
+      state.subjectOrder = map;
+    } catch(e){ /* alphabetical fallback is fine */ }
+  }
+
+  async function loadExamList(){
+    document.getElementById('examListBody').innerHTML =
+      '<div class="state-msg" id="examListState"><div class="spinner"></div>Loading your exams…</div>';
+    try{
+      var res = await supabase.from('exam_classes')
+        .select('exam, exams(name)')
+        .eq('class', state.studentClass);
+      if(res.error) throw res.error;
+
+      var exams = (res.data || [])
+        .filter(function(r){ return r.exams; })
+        .map(function(r){ return r.exams.name; });
+
+      exams = exams.filter(function(n, i){ return exams.indexOf(n) === i; });
+      exams.sort(function(a,b){ return a.localeCompare(b); });
+      state.exams = exams;
+      renderExamList();
+    } catch(e){
+      showExamListError('Could not load your exams.');
+    }
+  }
+
+  function renderExamList(){
+    if(state.exams.length === 0){
+      document.getElementById('examListBody').innerHTML =
+        '<div class="state-msg">No exams have been set up for your class yet.</div>';
+      return;
+    }
+    var html = '<div class="exam-grid">' + state.exams.map(function(name){
+      return '<button type="button" class="exam-tile" data-exam="'+escapeHtml(name)+'">'
+        + '<div class="exam-tile-name">'+escapeHtml(name)+'</div>'
+        + '<div class="exam-tile-sub">View syllabus</div>'
+        + '</button>';
+    }).join('') + '</div>';
+    document.getElementById('examListBody').innerHTML = html;
+
+    Array.prototype.forEach.call(document.querySelectorAll('.exam-tile'), function(btn){
+      btn.addEventListener('click', function(){ openExam(btn.getAttribute('data-exam')); });
+    });
+  }
+
+  function showExamListError(msg){
+    document.getElementById('examListBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryExamList">Try again</button></div>';
+    var btn = document.getElementById('retryExamList');
+    if(btn) btn.addEventListener('click', loadExamList);
+  }
+
+  function openExam(examName){
+    document.getElementById('examListScreen').classList.add('hidden');
+    document.getElementById('examDetailScreen').classList.remove('hidden');
+    document.getElementById('detailExamName').textContent = examName;
+
+    if(state.syllabusCache[examName]){
+      renderSyllabus(state.syllabusCache[examName]);
+      return;
+    }
+    loadSyllabus(examName);
+  }
+
+  async function loadSyllabus(examName){
+    document.getElementById('examDetailBody').innerHTML =
+      '<div class="state-msg" id="examDetailState"><div class="spinner"></div>Loading the syllabus…</div>';
+    try{
+      var res = await supabase.from('exam_syllabus')
+        .select('subject, syllabus_content, completion_percentage')
+        .eq('exam', examName);
+      if(res.error) throw res.error;
+
+      state.syllabusCache[examName] = res.data || [];
+      renderSyllabus(state.syllabusCache[examName]);
+    } catch(e){
+      showExamDetailError(examName, 'Could not load the syllabus for this exam.');
+    }
+  }
+
+  function renderSyllabus(rows){
+    if(!rows || rows.length === 0){
+      document.getElementById('examDetailBody').innerHTML =
+        '<div class="state-msg">No syllabus has been added for this exam yet.</div>';
+      return;
+    }
+    var order = state.subjectOrder;
+    var sorted = rows.slice().sort(function(a,b){
+      var oa = order && order[a.subject] != null ? order[a.subject] : 9999;
+      var ob = order && order[b.subject] != null ? order[b.subject] : 9999;
+      if(oa !== ob) return oa - ob;
+      return a.subject.localeCompare(b.subject);
+    });
+
+    var html = sorted.map(function(row){
+      var pct = typeof row.completion_percentage === 'number' ? row.completion_percentage : null;
+      return '<div class="subject-block">'
+        + '<div class="subject-head"><span class="subject-name">'+escapeHtml(row.subject)+'</span>'
+        + progressHTML(pct) + '</div>'
+        + '<pre class="syllabus-pre">'+escapeHtml(row.syllabus_content)+'</pre>'
+        + '</div>';
+    }).join('');
+
+    document.getElementById('examDetailBody').innerHTML = html;
+  }
+
+  function showExamDetailError(examName, msg){
+    document.getElementById('examDetailBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryExamDetail">Try again</button></div>';
+    var btn = document.getElementById('retryExamDetail');
+    if(btn) btn.addEventListener('click', function(){ loadSyllabus(examName); });
+  }
+
+  document.getElementById('backBtn').addEventListener('click', function(){
+    document.getElementById('examDetailScreen').classList.add('hidden');
+    document.getElementById('examListScreen').classList.remove('hidden');
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
