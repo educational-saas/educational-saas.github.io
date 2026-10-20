@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>My Exam Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10); --border-card: rgba(13,56,65,.08);
+    --status-present:#4fc98a; --status-present-dark:#2f8f61;
+    --status-absent:#f2555a; --status-absent-dark:#c23b41;
+    --status-leave:#f5a623; --status-leave-dark:#b06f12;
+    --panel-tint: var(--bg-tint-teal);
+    --edge-shadow: rgba(13,56,65,.14); --edge-shadow-soft: rgba(13,56,65,.08);
+    --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
+    --r-lg:26px; --r-md:18px; --r-sm:12px; --ease:cubic-bezier(.22,1,.36,1);
+    --font-display:'Fraunces',Georgia,serif; --font-body:'Manrope',system-ui,sans-serif;
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12); --border-card: rgba(255,255,255,.10);
+    --status-present:#49d696; --status-present-dark:#8be9c4;
+    --status-absent:#ff6b70; --status-absent-dark:#ffb0b2;
+    --status-leave:#ffc65c; --status-leave-dark:#ffe2a8;
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+    --track: color-mix(in srgb, var(--white) 14%, transparent);
+  }
+  @media (prefers-color-scheme: dark){
+    html:not([data-theme="light"]){
+      color-scheme: dark;
+      --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+      --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+      --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+      --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12); --border-card: rgba(255,255,255,.10);
+      --status-present:#49d696; --status-present-dark:#8be9c4;
+      --status-absent:#ff6b70; --status-absent-dark:#ffb0b2;
+      --status-leave:#ffc65c; --status-leave-dark:#ffe2a8;
+      --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+      --track: color-mix(in srgb, var(--white) 14%, transparent);
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:var(--font-body); color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    transition:background .3s var(--ease), color .3s var(--ease); padding:14px 14px 28px;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+  .topbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:10px;}
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--border-card);
+    background:var(--white);font-size:17px;cursor:pointer;box-shadow:0 3px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;color:var(--ink-900);flex:0 0 auto;
+  }
+  .icon-btn:hover{transform:translateY(-1px);}
+  .icon-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .icon-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .card{
+    background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border-card);
+    box-shadow:0 6px 0 var(--edge-shadow-soft);padding:20px;margin-bottom:16px;
+  }
+  .section-title{font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 2px;color:var(--ink-900);}
+  .section-sub{font-size:13px;color:var(--ink-500);margin:0 0 14px;font-weight:600;}
+  .exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
+  .exam-tile{
+    text-align:left;border:1px solid var(--border-card);background:var(--panel-tint);
+    border-radius:var(--r-md);padding:16px 16px 14px;cursor:pointer;font-family:var(--font-body);
+    box-shadow:0 4px 0 var(--edge-shadow-soft);transition:transform .14s ease;
+  }
+  .exam-tile:hover{transform:translateY(-2px);}
+  .exam-tile:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .exam-tile:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .exam-tile-name{font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--ink-900);line-height:1.3;}
+  .exam-tile-sub{font-size:11.5px;font-weight:700;color:var(--ink-500);margin-top:6px;}
+  .detail-header{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+  .detail-titles{min-width:0;}
+  .detail-titles .section-title{word-break:break-word;}
+
+  .subject-block{border-top:1px solid var(--border-card);padding:18px 0;}
+  .subject-block:first-of-type{border-top:none;padding-top:4px;}
+  .subject-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+  .subject-name{font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--ink-900);}
+  .total-pill{
+    display:inline-flex;align-items:center;gap:6px;background:var(--gold-100);color:var(--gold-600);
+    font-weight:800;font-size:12.5px;padding:5px 12px;border-radius:999px;flex:0 0 auto;
+    border:1px solid rgba(226,148,26,.18);
+  }
+  html[data-theme="dark"] .total-pill{color:var(--gold-500);}
+  @media (prefers-color-scheme: dark){ html:not([data-theme="light"]) .total-pill{color:var(--gold-500);} }
+
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:12px;}
+  .meta-chip{font-size:12px;font-weight:700;color:var(--ink-500);display:flex;align-items:center;gap:5px;}
+  .meta-chip .dot{width:5px;height:5px;border-radius:50%;background:var(--teal-600);display:inline-block;flex:0 0 auto;}
+
+  .instructions-box{
+    font-size:13px;line-height:1.55;color:var(--ink-900);background:var(--bg-tint-gold);
+    border:1px solid rgba(226,148,26,.16);border-radius:var(--r-sm);padding:10px 13px;margin-bottom:12px;font-weight:600;
+  }
+
+  .bp-section{
+    background:var(--panel-tint);border-radius:var(--r-md);padding:14px 15px;margin-bottom:10px;
+  }
+  .bp-section:last-child{margin-bottom:0;}
+  .bp-section-name{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--teal-700);margin:0 0 8px;}
+  html[data-theme="dark"] .bp-section-name{color:var(--teal-600);}
+  @media (prefers-color-scheme: dark){ html:not([data-theme="light"]) .bp-section-name{color:var(--teal-600);} }
+  .bp-section-instr{font-size:12.5px;color:var(--ink-500);font-weight:600;margin:0 0 10px;}
+  .bp-group{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:8px 0;border-top:1px dashed var(--border-card);}
+  .bp-group:first-of-type{border-top:none;padding-top:0;}
+  .bp-group-text{font-size:13.5px;line-height:1.5;color:var(--ink-900);}
+  .bp-group-note{font-size:12px;color:var(--ink-500);font-weight:600;margin-top:2px;}
+  .bp-group-marks{
+    flex:0 0 auto;font-weight:800;font-size:12.5px;color:var(--teal-700);background:var(--white);
+    border:1px solid var(--border-card);border-radius:999px;padding:4px 11px;white-space:nowrap;
+  }
+  html[data-theme="dark"] .bp-group-marks{color:var(--teal-600);}
+  @media (prefers-color-scheme: dark){ html:not([data-theme="light"]) .bp-group-marks{color:var(--teal-600);} }
+
+  .freehand-pre{
+    margin:0;font-family:var(--font-body);font-size:13.5px;line-height:1.65;color:var(--ink-900);
+    white-space:pre-wrap;word-break:break-word;background:var(--panel-tint);border-radius:var(--r-sm);
+    padding:14px 15px;
+  }
+
+  .state-msg{text-align:center;padding:30px 12px;font-weight:700;color:var(--ink-500);font-size:14.5px;}
+  .state-msg.err{color:var(--status-absent-dark);}
+  .retry-btn{
+    margin-top:10px;font-family:var(--font-body);font-weight:800;font-size:13.5px;border:none;
+    border-radius:999px;padding:9px 18px;cursor:pointer;background:var(--teal-700);color:#fff;
+  }
+  .spinner{
+    width:26px;height:26px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--teal-600);
+    margin:0 auto 10px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .hidden{display:none !important;}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+  @media (max-width:420px){.card{padding:16px;}.exam-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">🌓</button>
+  </div>
+
+  <div class="card" id="examListScreen">
+    <h2 class="section-title">My exam blueprint</h2>
+    <p class="section-sub">Tap an exam to see how it's structured</p>
+    <div id="examListBody">
+      <div class="state-msg" id="examListState"><div class="spinner"></div>Loading your exams…</div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="examDetailScreen">
+    <div class="detail-header">
+      <button class="icon-btn" id="backBtn" aria-label="Back to exam list">‹</button>
+      <div class="detail-titles">
+        <h2 class="section-title" id="detailExamName">—</h2>
+        <p class="section-sub">Blueprint by subject</p>
+      </div>
+    </div>
+    <div id="examDetailBody">
+      <div class="state-msg" id="examDetailState"><div class="spinner"></div>Loading the blueprint…</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* Multi-tenant credentials — provided as-is, do not modify. */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/';
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ---------- theme toggle (manual override on top of system preference) ---------- */
+  (function(){
+    var saved = null;
+    try { saved = localStorage.getItem('cp_theme_override'); } catch(e) {}
+    if(saved === 'light' || saved === 'dark'){
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+    var btn = document.getElementById('themeToggle');
+    btn.addEventListener('click', function(){
+      var current = document.documentElement.getAttribute('data-theme');
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var effectiveDark = current ? current === 'dark' : prefersDark;
+      var next = effectiveDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('cp_theme_override', next); } catch(e) {}
+    });
+  })();
+
+  function escapeHtml(s){
+    return String(s==null ? '' : s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  /* ---------- structured blueprint -> readable HTML (mirrors teacher app's generateFreehandFromBuilder) ---------- */
+  function groupDescription(group){
+    var typeName = group.type === '__custom__' ? (group.customType || 'Question') : group.type;
+    var count = parseInt(group.count, 10) || 0;
+    var attempt = group.attempt != null ? parseInt(group.attempt, 10) : count;
+    var countPart = (attempt && attempt < count)
+      ? ('Attempt any ' + attempt + ' out of ' + count)
+      : (count + (count === 1 ? ' question' : ' questions'));
+    var desc = countPart + ' — ' + typeName + (group.has_internal_choice ? ' (with internal choice)' : '');
+    var partsNote = '';
+    if(group.parts && group.parts.length){
+      var partsStr = group.parts.map(function(p){ return '(' + p.label + ') ' + p.marks + 'm'; }).join(', ');
+      partsNote = 'Parts: ' + partsStr + (group.parts_attempt != null ? (' — attempt any ' + group.parts_attempt) : '');
+    }
+    if(group.note){ partsNote = partsNote ? (partsNote + ' · ' + group.note) : group.note; }
+    return { desc: desc, note: partsNote };
+  }
+
+  function groupMarks(group){
+    var attempt = parseInt(group.attempt, 10);
+    var count = parseInt(group.count, 10) || 0;
+    var n = (attempt != null && !isNaN(attempt)) ? attempt : count;
+    var each = parseFloat(group.marks_each) || 0;
+    var total = n * each;
+    return Math.round(total * 100) / 100;
+  }
+
+  function renderStructuredBlueprint(blueprintJson){
+    var sections = (blueprintJson && blueprintJson.sections) ? blueprintJson.sections : [];
+    if(!sections.length){
+      return '<div class="state-msg">No blueprint sections have been added for this subject yet.</div>';
+    }
+    return sections.map(function(section){
+      var groupsHtml = (section.groups || []).map(function(group){
+        var d = groupDescription(group);
+        return '<div class="bp-group">'
+          + '<div class="bp-group-text">' + escapeHtml(d.desc)
+          + (d.note ? '<div class="bp-group-note">' + escapeHtml(d.note) + '</div>' : '')
+          + '</div>'
+          + '<div class="bp-group-marks">' + groupMarks(group) + ' marks</div>'
+          + '</div>';
+      }).join('');
+      return '<div class="bp-section">'
+        + (section.name ? '<p class="bp-section-name">' + escapeHtml(section.name) + '</p>' : '')
+        + (section.instructions ? '<p class="bp-section-instr">' + escapeHtml(section.instructions) + '</p>' : '')
+        + (groupsHtml || '<p class="bp-section-instr">No questions added in this section yet.</p>')
+        + '</div>';
+    }).join('');
+  }
+
+  function computeStructuredTotal(blueprintJson){
+    var sections = (blueprintJson && blueprintJson.sections) ? blueprintJson.sections : [];
+    var total = 0;
+    sections.forEach(function(section){
+      (section.groups || []).forEach(function(group){ total += groupMarks(group); });
+    });
+    return Math.round(total * 100) / 100;
+  }
+
+  function extractFreehandText(blueprintJson, row){
+    if(blueprintJson){
+      if(typeof blueprintJson.freehand_text === 'string') return blueprintJson.freehand_text;
+      if(typeof blueprintJson.text === 'string') return blueprintJson.text;
+      if(typeof blueprintJson.content === 'string') return blueprintJson.content;
+    }
+    return row.general_instructions || '';
+  }
+
+  function renderBlueprintBody(row){
+    var bj = row.blueprint_json;
+    var isStructured = bj && bj.mode === 'structured' && Array.isArray(bj.sections) && bj.sections.length > 0;
+    if(isStructured){
+      return renderStructuredBlueprint(bj);
+    }
+    var text = extractFreehandText(bj, row);
+    if(!text || !text.trim()){
+      return '<div class="state-msg">No blueprint has been added for this subject yet.</div>';
+    }
+    return '<pre class="freehand-pre">' + escapeHtml(text) + '</pre>';
+  }
+
+  function resolveTotalMarks(row){
+    if(typeof row.total_marks === 'number' && row.total_marks > 0) return row.total_marks;
+    var bj = row.blueprint_json;
+    if(bj && bj.mode === 'structured' && Array.isArray(bj.sections) && bj.sections.length){
+      var t = computeStructuredTotal(bj);
+      return t > 0 ? t : null;
+    }
+    return null;
+  }
+
+  var state = { studentClass: null, exams: [], subjectOrder: null, blueprintCache: {} };
+
+  async function init(){
+    try{
+      var sessionRes = await supabase.auth.getSession();
+      var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+      if(!session){ window.location.href = AUTH_REDIRECT; return; }
+
+      var uid = session.user.id;
+      var studentRes = await supabase.from('students').select('name, class').eq('id', uid).maybeSingle();
+      if(studentRes.error || !studentRes.data || !studentRes.data.class){
+        window.location.href = AUTH_REDIRECT; return;
+      }
+      state.studentClass = studentRes.data.class;
+
+      loadSubjectOrder();
+      await loadExamList();
+    } catch(e){
+      showExamListError('Something went wrong loading your exams.');
+    }
+  }
+
+  async function loadSubjectOrder(){
+    try{
+      var res = await supabase.from('subjects').select('name, display_order');
+      if(res.error || !res.data) return;
+      var map = {};
+      res.data.forEach(function(s){ map[s.name] = s.display_order; });
+      state.subjectOrder = map;
+    } catch(e){ /* alphabetical fallback is fine */ }
+  }
+
+  async function loadExamList(){
+    document.getElementById('examListBody').innerHTML =
+      '<div class="state-msg" id="examListState"><div class="spinner"></div>Loading your exams…</div>';
+    try{
+      var res = await supabase.from('exam_classes')
+        .select('exam, exams(name)')
+        .eq('class', state.studentClass);
+      if(res.error) throw res.error;
+
+      var exams = (res.data || [])
+        .filter(function(r){ return r.exams; })
+        .map(function(r){ return r.exams.name; });
+
+      exams = exams.filter(function(n, i){ return exams.indexOf(n) === i; });
+      exams.sort(function(a,b){ return a.localeCompare(b); });
+      state.exams = exams;
+      renderExamList();
+    } catch(e){
+      showExamListError('Could not load your exams.');
+    }
+  }
+
+  function renderExamList(){
+    if(state.exams.length === 0){
+      document.getElementById('examListBody').innerHTML =
+        '<div class="state-msg">No exams have been set up for your class yet.</div>';
+      return;
+    }
+    var html = '<div class="exam-grid">' + state.exams.map(function(name){
+      return '<button type="button" class="exam-tile" data-exam="'+escapeHtml(name)+'">'
+        + '<div class="exam-tile-name">'+escapeHtml(name)+'</div>'
+        + '<div class="exam-tile-sub">View blueprint</div>'
+        + '</button>';
+    }).join('') + '</div>';
+    document.getElementById('examListBody').innerHTML = html;
+
+    Array.prototype.forEach.call(document.querySelectorAll('.exam-tile'), function(btn){
+      btn.addEventListener('click', function(){ openExam(btn.getAttribute('data-exam')); });
+    });
+  }
+
+  function showExamListError(msg){
+    document.getElementById('examListBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryExamList">Try again</button></div>';
+    var btn = document.getElementById('retryExamList');
+    if(btn) btn.addEventListener('click', loadExamList);
+  }
+
+  function openExam(examName){
+    document.getElementById('examListScreen').classList.add('hidden');
+    document.getElementById('examDetailScreen').classList.remove('hidden');
+    document.getElementById('detailExamName').textContent = examName;
+
+    if(state.blueprintCache[examName]){
+      renderBlueprintList(state.blueprintCache[examName]);
+      return;
+    }
+    loadBlueprint(examName);
+  }
+
+  async function loadBlueprint(examName){
+    document.getElementById('examDetailBody').innerHTML =
+      '<div class="state-msg" id="examDetailState"><div class="spinner"></div>Loading the blueprint…</div>';
+    try{
+      var res = await supabase.from('exam_blueprint')
+        .select('subject, teacher_name, duration_minutes, total_marks, general_instructions, blueprint_json')
+        .eq('exam', examName)
+        .eq('class', state.studentClass);
+      if(res.error) throw res.error;
+
+      state.blueprintCache[examName] = res.data || [];
+      renderBlueprintList(state.blueprintCache[examName]);
+    } catch(e){
+      showExamDetailError(examName, 'Could not load the blueprint for this exam.');
+    }
+  }
+
+  function renderBlueprintList(rows){
+    if(!rows || rows.length === 0){
+      document.getElementById('examDetailBody').innerHTML =
+        '<div class="state-msg">No blueprint has been added for this exam yet.</div>';
+      return;
+    }
+    var order = state.subjectOrder;
+    var sorted = rows.slice().sort(function(a,b){
+      var oa = order && order[a.subject] != null ? order[a.subject] : 9999;
+      var ob = order && order[b.subject] != null ? order[b.subject] : 9999;
+      if(oa !== ob) return oa - ob;
+      return a.subject.localeCompare(b.subject);
+    });
+
+    var html = sorted.map(function(row){
+      var totalMarks = resolveTotalMarks(row);
+      var metaChips = [];
+      if(row.teacher_name){ metaChips.push('<span class="meta-chip"><span class="dot"></span>'+escapeHtml(row.teacher_name)+'</span>'); }
+      if(typeof row.duration_minutes === 'number' && row.duration_minutes > 0){
+        metaChips.push('<span class="meta-chip"><span class="dot"></span>'+row.duration_minutes+' min</span>');
+      }
+
+      var bj = row.blueprint_json;
+      var isStructured = bj && bj.mode === 'structured' && Array.isArray(bj.sections) && bj.sections.length > 0;
+      var showGeneralInstructions = isStructured && row.general_instructions && row.general_instructions.trim();
+
+      return '<div class="subject-block">'
+        + '<div class="subject-head"><span class="subject-name">'+escapeHtml(row.subject)+'</span>'
+        + (totalMarks != null ? '<span class="total-pill">Total: '+totalMarks+' marks</span>' : '')
+        + '</div>'
+        + (metaChips.length ? '<div class="meta-row">'+metaChips.join('')+'</div>' : '')
+        + (showGeneralInstructions ? '<div class="instructions-box">'+escapeHtml(row.general_instructions)+'</div>' : '')
+        + renderBlueprintBody(row)
+        + '</div>';
+    }).join('');
+
+    document.getElementById('examDetailBody').innerHTML = html;
+  }
+
+  function showExamDetailError(examName, msg){
+    document.getElementById('examDetailBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryExamDetail">Try again</button></div>';
+    var btn = document.getElementById('retryExamDetail');
+    if(btn) btn.addEventListener('click', function(){ loadBlueprint(examName); });
+  }
+
+  document.getElementById('backBtn').addEventListener('click', function(){
+    document.getElementById('examDetailScreen').classList.add('hidden');
+    document.getElementById('examListScreen').classList.remove('hidden');
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
