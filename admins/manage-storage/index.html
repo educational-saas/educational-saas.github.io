@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Storage</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --header-bg: rgba(250,248,243,.85);
+    --header-border: rgba(13,56,65,.08);
+
+    --danger:#c9432f;
+    --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b;
+    --success-bg: rgba(47,143,91,.1);
+
+    /* ---------- Category accents (light) ---------- */
+    --cat-quick:#227d8b;
+    --cat-quick-bg: rgba(34,125,139,.1);
+    --cat-approvals:#e2941a;
+    --cat-approvals-bg: rgba(226,148,26,.1);
+    --cat-vault:#8456b8;
+    --cat-vault-bg: rgba(132,86,184,.1);
+    --cat-profile:#c6577a;
+    --cat-profile-bg: rgba(198,87,122,.1);
+    --track:#e7e2d6;
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --header-bg: rgba(9,34,39,.85);
+    --header-border: rgba(255,255,255,.08);
+
+    --danger:#ff6b57;
+    --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492;
+    --success-bg: rgba(87,212,146,.12);
+
+    --cat-quick:#7fdbe6;
+    --cat-quick-bg: rgba(127,219,230,.12);
+    --cat-approvals:#ffc65c;
+    --cat-approvals-bg: rgba(255,198,92,.12);
+    --cat-vault:#c3a4e8;
+    --cat-vault-bg: rgba(195,164,232,.14);
+    --cat-profile:#ef9bb3;
+    --cat-profile-bg: rgba(239,155,179,.14);
+    --track:#20302f;
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+
+  /* ---------- Loading gate ---------- */
+  #gate{
+    position:fixed; inset:0; z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--cream);
+    transition:opacity .35s var(--ease), visibility .35s var(--ease);
+  }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid var(--border-card);
+    border-top-color:var(--gold-500);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  /* ---------- Access denied / error ---------- */
+  #denied{
+    position:fixed; inset:0; z-index:190;
+    display:none;
+    align-items:center; justify-content:center;
+    background:var(--cream);
+    padding:24px;
+    text-align:center;
+  }
+  #denied.show{ display:flex; }
+  .denied-box{ max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .denied-box svg{ width:44px; height:44px; stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .denied-box h2{ font-family:'Fraunces',serif; font-size:1.2rem; margin:0; }
+  .denied-box p{ color:var(--ink-500); font-size:.9rem; margin:0; line-height:1.5; }
+
+  /* ---------- App header ---------- */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:980px;
+    margin:0 auto;
+  }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease);
+  }
+  .header-sub{
+    margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--teal-700);
+  }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative; flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .icon-btn svg{
+    width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-btn svg.static{ position:static; opacity:1; }
+  .icon-btn.spinning svg{ animation:spin .9s linear infinite; }
+
+  /* ---------- Main ---------- */
+  main.dash{
+    flex:1; width:100%; max-width:980px; margin:0 auto;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);
+  }
+
+  .section-heading{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .section-heading h1{ font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0; }
+  .count-chip{
+    font-size:.72rem; font-weight:700; color:var(--teal-700);
+    background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap;
+  }
+  .count-chip.warn{ color:var(--gold-600); background:var(--bg-tint-gold); }
+  html[data-theme="dark"] .count-chip.warn{ color:var(--gold-500); }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:18px;
+    box-shadow:var(--shadow-card);
+    transition:border-color .3s var(--ease), background-color .3s var(--ease);
+  }
+
+  /* ---------- Overview ---------- */
+  .overview-card{ display:flex; gap:22px; align-items:center; flex-wrap:wrap; margin-bottom:22px; }
+  .overview-ring-wrap{ position:relative; width:148px; height:148px; flex-shrink:0; margin:0 auto; }
+  .overview-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .overview-ring-wrap circle{ fill:none; stroke-linecap:round; transition:stroke-dasharray .6s var(--ease); }
+  .overview-ring-center{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  }
+  .overview-ring-pct{ font-family:'Fraunces',serif; font-weight:600; font-size:1.5rem; line-height:1; }
+  .overview-ring-label{ font-size:.66rem; color:var(--ink-500); margin-top:3px; font-weight:700; letter-spacing:.03em; }
+  .overview-stats{ flex:1; min-width:220px; }
+  .overview-stats h2{ font-family:'Fraunces',serif; font-weight:600; font-size:1.05rem; margin:0 0 4px; }
+  .overview-stats .sub{ color:var(--ink-500); font-size:.84rem; margin:0 0 14px; }
+  .legend{ display:flex; flex-direction:column; gap:9px; }
+  .legend-item{ display:flex; align-items:center; gap:9px; font-size:.84rem; }
+  .legend-dot{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .legend-item .legend-label{ color:var(--ink-500); flex:1; }
+  .legend-item .legend-val{ font-weight:700; color:var(--ink-900); }
+
+  /* ---------- Category grid ---------- */
+  .category-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; margin-bottom:22px;
+  }
+  .category-card{
+    background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md);
+    padding:16px; box-shadow:var(--shadow-card); display:flex; flex-direction:column; gap:12px;
+    opacity:0; animation:rise .45s var(--ease) forwards;
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .category-top{ display:flex; align-items:center; gap:12px; }
+  .category-ring-wrap{ position:relative; width:52px; height:52px; flex-shrink:0; }
+  .category-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .category-ring-wrap circle{ fill:none; stroke-linecap:round; }
+  .category-ring-icon{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .category-ring-icon svg.catsvg{ width:20px; height:20px; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transform:none; }
+  .category-name{ font-family:'Fraunces',serif; font-weight:600; font-size:.96rem; margin:0; }
+  .category-bytes{ font-size:.78rem; color:var(--ink-500); margin:1px 0 0; }
+  .category-counts{ display:flex; gap:8px; flex-wrap:wrap; }
+  .mini-badge{
+    font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap;
+  }
+  .mini-badge.grace{ color:var(--teal-700); background:var(--bg-tint-teal); }
+  html[data-theme="dark"] .mini-badge.grace{ color:var(--teal-600); }
+  .mini-badge.stale{ color:var(--danger); background:var(--danger-bg); }
+  .category-card .btn{ margin-top:auto; }
+
+  .placeholder-note{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+    padding:36px 16px; color:var(--ink-500);
+  }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--success); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+  .placeholder-note.loading svg{ stroke:var(--ink-500); }
+
+  /* ---------- Sweep banner ---------- */
+  .sweep-banner{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    background:var(--danger-bg); border:1px solid transparent; border-radius:var(--r-md);
+    padding:14px 16px; margin-bottom:22px;
+  }
+  .sweep-banner svg{ width:22px; height:22px; stroke:var(--danger); fill:none; stroke-width:1.8; flex-shrink:0; }
+  .sweep-text{ flex:1; min-width:180px; }
+  .sweep-text strong{ display:block; font-size:.92rem; margin-bottom:2px; }
+  .sweep-text span{ font-size:.78rem; color:var(--ink-500); }
+
+  /* ---------- Search / filters ---------- */
+  .search-wrap{ position:relative; margin-bottom:12px; }
+  .search-wrap svg{
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:17px; height:17px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    pointer-events:none;
+  }
+  .search-wrap input{ padding-left:40px; }
+
+  .filter-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; scrollbar-width:none; }
+  .filter-row::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex-shrink:0; display:inline-flex; align-items:center; gap:6px;
+    padding:8px 14px; border-radius:999px; border:1.5px solid var(--border-card);
+    background:var(--white); font-size:.8rem; font-weight:700; color:var(--ink-500);
+    cursor:pointer; transition:all .2s var(--ease); white-space:nowrap;
+  }
+  .chip .dot{ width:7px; height:7px; border-radius:50%; }
+  .chip.active{ border-color:var(--border-card-hover); background:var(--bg-tint-gold); color:var(--ink-900); }
+
+  input[type="text"], select{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card); background:var(--cream); color:var(--ink-900);
+    font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  .search-wrap input{ padding-left:40px; }
+  input[type="text"]:focus, select:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+
+  .btn{
+    padding:13px 18px; border-radius:14px; border:none; font-family:'Manrope',sans-serif;
+    font-weight:700; font-size:.88rem; cursor:pointer;
+    transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-block{ width:100%; }
+  .btn-sm{ padding:8px 14px; font-size:.78rem; border-radius:10px; }
+  .btn svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* ---------- Reservation list ---------- */
+  #reservation-list{ display:flex; flex-direction:column; gap:9px; margin-bottom:12px; }
+  .res-row{
+    background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-sm);
+    padding:12px 13px; display:flex; align-items:center; gap:11px;
+    opacity:0; animation:rise .4s var(--ease) forwards;
+    transition:border-color .2s var(--ease);
+  }
+  .res-check{
+    width:19px; height:19px; flex-shrink:0; border-radius:6px; border:1.6px solid var(--border-card);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; background:var(--cream);
+    transition:all .15s var(--ease);
+  }
+  .res-check svg{ width:12px; height:12px; stroke:var(--white); fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; opacity:0; transition:opacity .15s var(--ease); }
+  .res-check.checked{ background:var(--teal-700); border-color:var(--teal-700); }
+  .res-check.checked svg{ opacity:1; }
+  .res-check.disabled{ opacity:.35; cursor:not-allowed; }
+  .res-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .res-info{ min-width:0; flex:1; }
+  .res-key{
+    font-size:.84rem; font-weight:600; color:var(--ink-900); margin:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; direction:rtl; text-align:left;
+  }
+  .res-meta{ font-size:.74rem; color:var(--ink-500); margin:2px 0 0; display:flex; gap:8px; flex-wrap:wrap; }
+  .res-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .status-badge{ font-size:.68rem; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .status-badge.stale{ color:var(--danger); background:var(--danger-bg); }
+  .status-badge.grace{ color:var(--teal-700); background:var(--bg-tint-teal); }
+  html[data-theme="dark"] .status-badge.grace{ color:var(--teal-600); }
+  .res-del{
+    width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:var(--danger-bg); border:none; cursor:pointer; transition:transform .15s var(--ease);
+  }
+  .res-del svg{ width:14px; height:14px; stroke:var(--danger); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .res-del:hover{ transform:scale(1.08); }
+  .res-del:disabled{ opacity:.3; cursor:not-allowed; transform:none; }
+
+  /* ---------- Bulk bar ---------- */
+  .bulk-bar{
+    position:sticky; bottom:calc(env(safe-area-inset-bottom) + 14px); z-index:30;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--teal-900); color:var(--white); border-radius:999px;
+    padding:10px 10px 10px 18px; box-shadow:0 18px 40px -14px rgba(0,0,0,.45);
+    transform:translateY(130%); opacity:0; transition:transform .3s var(--ease), opacity .3s var(--ease);
+    max-width:520px; margin:14px auto 0;
+  }
+  .bulk-bar.show{ transform:translateY(0); opacity:1; }
+  .bulk-bar span{ font-size:.84rem; font-weight:700; }
+  html[data-theme="dark"] .bulk-bar{ background:var(--gold-400); color:var(--teal-900); }
+
+  .sub-divider{ height:1px; background:var(--border-card); margin:20px 0; }
+  .section-label{ font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin:0 0 10px; }
+
+  /* ---------- Skeleton ---------- */
+  .skeleton-block{
+    border-radius:var(--r-sm); background:linear-gradient(100deg, var(--border-card) 30%, var(--bg-tint-gold) 50%, var(--border-card) 70%);
+    background-size:200% 100%; animation:shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes shimmer{ to{ background-position:-200% 0; } }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4);
+    opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease);
+    overflow-y:auto;
+  }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:101;
+    background:var(--cream); border-radius:22px 22px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);
+    max-width:980px; margin:0 auto; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);
+    transform:translateY(100%); transition:transform .3s var(--ease);
+    max-height:92svh; overflow-y:auto;
+  }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 16px; color:var(--ink-500); font-size:.88rem; line-height:1.5; }
+  .sheet-note{
+    display:flex; gap:10px; background:var(--bg-tint-gold); border-radius:var(--r-sm);
+    padding:12px 13px; margin-bottom:18px; font-size:.8rem; color:var(--ink-900); line-height:1.5;
+  }
+  .sheet-note svg{ width:16px; height:16px; stroke:var(--gold-600); fill:none; stroke-width:2; flex-shrink:0; margin-top:1px; }
+  html[data-theme="dark"] .sheet-note svg{ stroke:var(--gold-400); }
+  .sheet-keylist{
+    max-height:26svh; overflow-y:auto; border:1px solid var(--border-card); border-radius:var(--r-sm);
+    padding:10px 12px; margin-bottom:18px; font-size:.78rem; color:var(--ink-500);
+  }
+  .sheet-keylist div{ padding:3px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; direction:rtl; text-align:left; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+  .sheet-result{ margin-top:14px; font-size:.84rem; line-height:1.6; }
+  .sheet-result .ok{ color:var(--success); font-weight:700; }
+  .sheet-result .warn{ color:var(--danger); font-weight:700; }
+
+  /* ---------- Toast ---------- */
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px);
+    z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600;
+    padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease);
+    max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+</style>
+</head>
+<body>
+
+<!-- Loading / auth gate -->
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<!-- Access denied / error -->
+<div id="denied">
+  <div class="denied-box">
+    <svg id="denied-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2 id="denied-title">Admins only</h2>
+    <p id="denied-message">This page is restricted to school administrators. If you believe this is a mistake, contact your school admin.</p>
+    <button class="btn btn-ghost" id="denied-back" type="button">Back to dashboard</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Storage</p>
+          <p class="header-sub">Admin &bull; Storage Usage & Cleanup</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="refresh-btn" type="button" aria-label="Refresh" title="Refresh">
+          <svg class="static" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg class="static" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- Overview -->
+    <div class="card overview-card" id="overview-card">
+      <div class="overview-ring-wrap" id="overview-ring-wrap">
+        <svg viewBox="0 0 148 148">
+          <circle cx="74" cy="74" r="62" stroke="var(--track)" stroke-width="14"></circle>
+          <g id="overview-ring-segments"></g>
+        </svg>
+        <div class="overview-ring-center">
+          <div class="overview-ring-pct" id="overview-pct">—</div>
+          <div class="overview-ring-label">of quota</div>
+        </div>
+      </div>
+      <div class="overview-stats">
+        <h2 id="overview-headline">Loading usage&hellip;</h2>
+        <p class="sub" id="overview-sub">Fetching the latest figures from storage-admin.</p>
+        <div class="legend" id="overview-legend"></div>
+      </div>
+    </div>
+
+    <!-- Sweep banner (shown only when stale reservations exist) -->
+    <div class="sweep-banner" id="sweep-banner" style="display:none;">
+      <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      <div class="sweep-text">
+        <strong id="sweep-headline">Stale reservations are holding space</strong>
+        <span id="sweep-sub">Their upload window has passed — safe to check and clear.</span>
+      </div>
+      <button class="btn btn-danger btn-sm" id="sweep-all-btn" type="button">Clean up all stale</button>
+    </div>
+
+    <!-- Category breakdown -->
+    <div class="section-heading">
+      <h1>Unconfirmed, by feature</h1>
+      <span class="count-chip" id="category-count-chip">—</span>
+    </div>
+    <div class="category-grid" id="category-grid"></div>
+
+    <!-- Reservation browser -->
+    <div class="section-heading" style="margin-top:6px;">
+      <h1>Unconfirmed reservations</h1>
+      <span class="count-chip" id="res-count-chip">0</span>
+    </div>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="res-search" placeholder="Search by object key&hellip;" autocomplete="off">
+    </div>
+
+    <div class="filter-row" id="filter-row">
+      <button class="chip active" data-filter-type="category" data-filter-value="all" type="button">All features</button>
+      <button class="chip" data-filter-type="category" data-filter-value="quick" type="button"><span class="dot" style="background:var(--cat-quick)"></span>Quick Shares</button>
+      <button class="chip" data-filter-type="category" data-filter-value="approvals" type="button"><span class="dot" style="background:var(--cat-approvals)"></span>File Approvals</button>
+      <button class="chip" data-filter-type="category" data-filter-value="vault" type="button"><span class="dot" style="background:var(--cat-vault)"></span>File Vault</button>
+      <button class="chip" data-filter-type="category" data-filter-value="profile" type="button"><span class="dot" style="background:var(--cat-profile)"></span>Profile Pictures</button>
+    </div>
+    <div class="filter-row" id="status-filter-row">
+      <button class="chip active" data-filter-type="status" data-filter-value="all" type="button">All statuses</button>
+      <button class="chip" data-filter-type="status" data-filter-value="stale" type="button">Stale only</button>
+      <button class="chip" data-filter-type="status" data-filter-value="grace" type="button">In grace period</button>
+    </div>
+
+    <div id="reservation-list"></div>
+
+    <div class="placeholder-note loading" id="res-loading" style="display:none;">
+      <div class="spinner" style="width:28px;height:28px;"></div>
+      <p>Loading reservations&hellip;</p>
+    </div>
+
+    <div class="placeholder-note" id="res-empty" style="display:none;">
+      <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
+      <p id="res-empty-text">Nothing unconfirmed right now. Everything's tidy.</p>
+    </div>
+
+    <div class="bulk-bar" id="bulk-bar">
+      <span id="bulk-count">0 selected</span>
+      <button class="btn btn-sm" id="bulk-clear-btn" type="button" style="background:transparent; color:inherit; box-shadow:none;">Clear</button>
+      <button class="btn btn-sm" id="bulk-delete-btn" type="button" style="background:var(--danger); color:#fff;">Delete selected</button>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Cleanup confirmation sheet (used for single / category / bulk / all-stale) -->
+<div class="sheet-backdrop" id="sheet-cleanup">
+  <div class="sheet" role="dialog" aria-label="Confirm cleanup">
+    <div class="sheet-handle"></div>
+    <h3 id="cleanup-title">Clean up stale reservations?</h3>
+    <p id="cleanup-desc">This checks Cloudflare R2 for each object and deletes it if it ever landed, then releases its quota reservation. Confirmed uploads are never touched.</p>
+    <div class="sheet-note">
+      <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      <span id="cleanup-impact">—</span>
+    </div>
+    <div class="sheet-keylist" id="cleanup-keylist"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cleanup-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="cleanup-confirm" type="button">Clean up</button>
+    </div>
+    <div class="sheet-result" id="cleanup-result" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE + EDGE FUNCTION SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var STORAGE_ADMIN_URL = SUPABASE_URL + '/functions/v1/storage-admin';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* Feature definitions — order controls render order of the category grid. */
+var CATEGORIES = [
+  { id:'quick',     label:'Quick Shares',     prefix:'quick-shares/',   color:'var(--cat-quick)',     bg:'var(--cat-quick-bg)',
+    icon:'<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/>' },
+  { id:'approvals', label:'File Approvals',   prefix:'file-approvals/', color:'var(--cat-approvals)', bg:'var(--cat-approvals-bg)',
+    icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>' },
+  { id:'vault',     label:'File Vault',       prefix:'vault/',          color:'var(--cat-vault)',     bg:'var(--cat-vault-bg)',
+    icon:'<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' },
+  { id:'profile',   label:'Profile Pictures', prefix:'profile-pics/',   color:'var(--cat-profile)',   bg:'var(--cat-profile-bg)',
+    icon:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/>' }
+];
+var OTHER_CATEGORY = { id:'other', label:'Other', prefix:'', color:'var(--ink-500)', bg:'var(--border-card)',
+  icon:'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>' };
+
+function categoryFor(key){
+  for(var i=0;i<CATEGORIES.length;i++){
+    if(key.indexOf(CATEGORIES[i].prefix) === 0) return CATEGORIES[i];
+  }
+  return OTHER_CATEGORY;
+}
+
+var state = {
+  usage: null,
+  reservations: [],       // normalized: {key,bytes,reservedAt,expiresAt,isStale,metadata,category}
+  activeCategoryFilter: 'all',
+  activeStatusFilter: 'all',
+  searchTerm: '',
+  selected: {},            // key -> true (only stale keys ever get selected)
+  pendingCleanup: null,    // {keys: [...] | null (null = "all stale"), label, bytes}
+  lastLoaded: null
+};
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+  renderAll(); // re-render so inline SVG var(--...) colors that were snapshotted stay correct
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 3400);
+}
+
+/* =========================================================
+   NAV / SIGN OUT
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('denied-back').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('refresh-btn').addEventListener('click', function(){ loadOverview(true); });
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+function formatBytes(bytes){
+  if(bytes === 0) return '0 B';
+  if(!bytes && bytes !== 0) return '—';
+  var units = ['B','KB','MB','GB','TB'];
+  var i = Math.floor(Math.log(bytes) / Math.log(1024));
+  i = Math.min(i, units.length - 1);
+  var val = bytes / Math.pow(1024, i);
+  return (i === 0 ? val : val.toFixed(val >= 10 ? 0 : 1)) + ' ' + units[i];
+}
+function formatRelative(iso){
+  if(!iso) return '—';
+  var then = new Date(iso).getTime();
+  var diff = Date.now() - then;
+  var abs = Math.abs(diff);
+  var mins = Math.round(abs / 60000);
+  var out;
+  if(mins < 1) out = 'just now';
+  else if(mins < 60) out = mins + 'm';
+  else if(mins < 1440) out = Math.round(mins/60) + 'h';
+  else out = Math.round(mins/1440) + 'd';
+  return diff >= 0 ? out + ' ago' : 'in ' + out;
+}
+function pctOf(part, whole){
+  if(!whole) return 0;
+  return Math.max(0, Math.min(100, (part / whole) * 100));
+}
+/* Builds a <circle> stroke-dasharray/offset pair for an arc of `pct`% starting at `startPct`%. */
+function arcCircle(radius, pct, color){
+  var c = 2 * Math.PI * radius;
+  var len = (pct/100) * c;
+  return '<circle cx="74" cy="74" r="'+radius+'" stroke="'+color+'" stroke-width="14" ' +
+         'stroke-dasharray="'+len.toFixed(2)+' '+(c-len).toFixed(2)+'"></circle>';
+}
+
+/* =========================================================
+   EDGE FUNCTION CALL
+========================================================= */
+async function callStorageAdmin(action, extra){
+  var sessionResult = await supabaseClient.auth.getSession();
+  var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+  if(!session || !session.access_token){
+    var authErr = new Error('No active session.');
+    authErr.status = 401;
+    throw authErr;
+  }
+  var res = await fetch(STORAGE_ADMIN_URL, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ action: action }, extra || {}))
+  });
+  var data = {};
+  try{ data = await res.json(); }catch(e){ /* non-JSON error body, fall through */ }
+  if(!res.ok){
+    var err = new Error(data.error || ('Request failed (' + res.status + ')'));
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+/* =========================================================
+   DATA LOAD + NORMALIZE
+========================================================= */
+function normalizeReservations(list){
+  return (list || []).map(function(r){
+    var cat = categoryFor(r.object_key);
+    return {
+      key: r.object_key,
+      bytes: Number(r.bytes) || 0,
+      reservedAt: r.reserved_at,
+      expiresAt: r.expires_at,
+      isStale: !!r.is_stale,
+      metadata: r.metadata || null,
+      category: cat
+    };
+  });
+}
+
+function loadOverview(isRefresh){
+  var refreshBtn = document.getElementById('refresh-btn');
+  refreshBtn.classList.add('spinning');
+  refreshBtn.disabled = true;
+  document.getElementById('res-loading').style.display = state.reservations.length ? 'none' : 'flex';
+
+  return callStorageAdmin('overview')
+    .then(function(data){
+      state.usage = data.usage;
+      state.reservations = normalizeReservations(data.unconfirmed);
+      state.lastLoaded = new Date();
+      // Drop any selections for keys that no longer exist or are no longer stale.
+      var stillValid = {};
+      state.reservations.forEach(function(r){ if(r.isStale && state.selected[r.key]) stillValid[r.key] = true; });
+      state.selected = stillValid;
+      renderAll();
+      if(isRefresh) toast('Storage usage refreshed.');
+    })
+    .catch(function(err){
+      if(err.status === 401){ redirectToAuth(); return; }
+      if(err.status === 403){ showDenied('denied'); return; }
+      console.error('storage-admin overview failed:', err);
+      toast(err.message || 'Could not load storage usage.', true);
+      if(!state.usage) showDenied('error', err.message);
+    })
+    .finally(function(){
+      refreshBtn.classList.remove('spinning');
+      refreshBtn.disabled = false;
+      document.getElementById('res-loading').style.display = 'none';
+    });
+}
+
+/* =========================================================
+   RENDER: OVERVIEW RING
+========================================================= */
+function renderOverview(){
+  var u = state.usage;
+  var headline = document.getElementById('overview-headline');
+  var sub = document.getElementById('overview-sub');
+  var pctEl = document.getElementById('overview-pct');
+  var legend = document.getElementById('overview-legend');
+  var seg = document.getElementById('overview-ring-segments');
+
+  if(!u){ return; }
+
+  var usedPct = pctOf(u.usedBytes, u.limitBytes);
+  var confirmedPct = pctOf(u.confirmedBytes, u.limitBytes);
+  var pendingPct = pctOf(u.pendingBytes, u.limitBytes);
+
+  pctEl.textContent = Math.round(usedPct) + '%';
+  headline.textContent = formatBytes(u.usedBytes) + ' of ' + formatBytes(u.limitBytes) + ' used';
+  sub.textContent = formatBytes(u.remainingBytes) + ' remaining across the organization' +
+    (state.lastLoaded ? ' · updated ' + formatRelative(state.lastLoaded.toISOString()) : '');
+
+  // Draw confirmed first, then pending stacked after it, via dasharray offsets.
+  var radius = 62, c = 2*Math.PI*radius;
+  var confirmedLen = (confirmedPct/100) * c;
+  var pendingLen = (pendingPct/100) * c;
+  seg.innerHTML =
+    '<circle cx="74" cy="74" r="'+radius+'" stroke="var(--teal-700)" stroke-width="14" ' +
+      'stroke-dasharray="'+confirmedLen.toFixed(2)+' '+(c-confirmedLen).toFixed(2)+'" stroke-dashoffset="0"></circle>' +
+    '<circle cx="74" cy="74" r="'+radius+'" stroke="var(--gold-500)" stroke-width="14" ' +
+      'stroke-dasharray="'+pendingLen.toFixed(2)+' '+(c-pendingLen).toFixed(2)+'" stroke-dashoffset="-'+confirmedLen.toFixed(2)+'"></circle>';
+
+  legend.innerHTML =
+    '<div class="legend-item"><span class="legend-dot" style="background:var(--teal-700)"></span>' +
+      '<span class="legend-label">Confirmed</span><span class="legend-val">' + formatBytes(u.confirmedBytes) + '</span></div>' +
+    '<div class="legend-item"><span class="legend-dot" style="background:var(--gold-500)"></span>' +
+      '<span class="legend-label">Pending (' + u.pendingCount + ')</span><span class="legend-val">' + formatBytes(u.pendingBytes) + '</span></div>' +
+    '<div class="legend-item"><span class="legend-dot" style="background:var(--track)"></span>' +
+      '<span class="legend-label">Free</span><span class="legend-val">' + formatBytes(u.remainingBytes) + '</span></div>';
+}
+
+/* =========================================================
+   RENDER: CATEGORY GRID
+========================================================= */
+function categoryStats(){
+  var byId = {};
+  CATEGORIES.concat([OTHER_CATEGORY]).forEach(function(c){
+    byId[c.id] = { def:c, count:0, bytes:0, staleCount:0, staleBytes:0, graceCount:0, graceBytes:0, staleKeys:[] };
+  });
+  state.reservations.forEach(function(r){
+    var s = byId[r.category.id];
+    s.count++; s.bytes += r.bytes;
+    if(r.isStale){ s.staleCount++; s.staleBytes += r.bytes; s.staleKeys.push(r.key); }
+    else{ s.graceCount++; s.graceBytes += r.bytes; }
+  });
+  return byId;
+}
+
+function renderCategoryGrid(){
+  var grid = document.getElementById('category-grid');
+  var u = state.usage;
+  if(!u){ grid.innerHTML = ''; return; }
+  var stats = categoryStats();
+  var limitBytes = u.limitBytes;
+
+  var order = CATEGORIES.slice();
+  // Only show "Other" if it actually has reservations.
+  if(stats.other.count > 0) order.push(OTHER_CATEGORY);
+
+  grid.innerHTML = order.map(function(def, i){
+    var s = stats[def.id];
+    var ringPct = pctOf(s.bytes, limitBytes);
+    var radius = 20, c2 = 2*Math.PI*radius;
+    var len = (ringPct/100) * c2;
+    var ringSvg =
+      '<svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="'+radius+'" fill="none" stroke="var(--track)" stroke-width="6"></circle>' +
+      '<circle cx="26" cy="26" r="'+radius+'" fill="none" stroke="'+def.color+'" stroke-width="6" stroke-linecap="round" ' +
+      'stroke-dasharray="'+len.toFixed(2)+' '+(c2-len).toFixed(2)+'" transform="rotate(-90 26 26)"></circle></svg>';
+
+    var badges = '';
+    if(s.staleCount > 0) badges += '<span class="mini-badge stale">' + s.staleCount + ' stale</span>';
+    if(s.graceCount > 0) badges += '<span class="mini-badge grace">' + s.graceCount + ' in grace</span>';
+    if(s.count === 0) badges = '<span class="mini-badge grace" style="opacity:.6;">none pending</span>';
+
+    return (
+      '<div class="category-card" style="animation-delay:'+(i*0.04)+'s;" data-category="'+def.id+'">' +
+        '<div class="category-top">' +
+          '<div class="category-ring-wrap">' + ringSvg +
+            '<div class="category-ring-icon"><svg class="catsvg" viewBox="0 0 24 24" style="stroke:'+def.color+';">' + def.icon + '</svg></div>' +
+          '</div>' +
+          '<div>' +
+            '<p class="category-name">' + def.label + '</p>' +
+            '<p class="category-bytes">' + formatBytes(s.bytes) + ' pending</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="category-counts">' + badges + '</div>' +
+        '<button class="btn btn-ghost btn-sm" type="button" data-cleanup-category="'+def.id+'" ' + (s.staleCount === 0 ? 'disabled' : '') + '>' +
+          (s.staleCount > 0 ? 'Clean up ' + s.staleCount + ' stale' : 'Nothing stale yet') +
+        '</button>' +
+      '</div>'
+    );
+  }).join('');
+
+  grid.querySelectorAll('[data-cleanup-category]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var catId = btn.getAttribute('data-cleanup-category');
+      var s = stats[catId];
+      var def = (CATEGORIES.concat([OTHER_CATEGORY])).find(function(c){ return c.id === catId; });
+      openCleanupSheet({
+        keys: s.staleKeys,
+        label: 'stale ' + def.label.toLowerCase() + ' reservation' + (s.staleKeys.length === 1 ? '' : 's'),
+        bytes: s.staleBytes
+      });
+    });
+  });
+
+  var totalCount = state.reservations.length;
+  document.getElementById('category-count-chip').textContent =
+    totalCount + ' unconfirmed · ' + formatBytes(u.pendingBytes);
+}
+
+/* =========================================================
+   RENDER: SWEEP BANNER
+========================================================= */
+function renderSweepBanner(){
+  var banner = document.getElementById('sweep-banner');
+  var staleCount = state.reservations.filter(function(r){ return r.isStale; }).length;
+  var staleBytes = state.reservations.filter(function(r){ return r.isStale; }).reduce(function(a,r){ return a+r.bytes; }, 0);
+  if(staleCount === 0){ banner.style.display = 'none'; return; }
+  banner.style.display = 'flex';
+  document.getElementById('sweep-headline').textContent =
+    staleCount + ' stale reservation' + (staleCount === 1 ? '' : 's') + ' holding ' + formatBytes(staleBytes);
+  document.getElementById('sweep-sub').textContent = 'Their upload window has passed — safe to check against R2 and clear.';
+}
+document.getElementById('sweep-all-btn').addEventListener('click', function(){
+  var stale = state.reservations.filter(function(r){ return r.isStale; });
+  var bytes = stale.reduce(function(a,r){ return a+r.bytes; }, 0);
+  openCleanupSheet({ keys: null, label: 'every stale reservation across the organization', bytes: bytes, allStale: true });
+});
+
+/* =========================================================
+   RENDER: RESERVATION LIST
+========================================================= */
+function filteredReservations(){
+  var term = state.searchTerm.trim().toLowerCase();
+  return state.reservations.filter(function(r){
+    if(state.activeCategoryFilter !== 'all' && r.category.id !== state.activeCategoryFilter) return false;
+    if(state.activeStatusFilter === 'stale' && !r.isStale) return false;
+    if(state.activeStatusFilter === 'grace' && r.isStale) return false;
+    if(term && r.key.toLowerCase().indexOf(term) === -1) return false;
+    return true;
+  }).sort(function(a,b){
+    // Stale first, then oldest reserved first.
+    if(a.isStale !== b.isStale) return a.isStale ? -1 : 1;
+    return new Date(a.reservedAt) - new Date(b.reservedAt);
+  });
+}
+
+function renderReservationList(){
+  var list = document.getElementById('reservation-list');
+  var empty = document.getElementById('res-empty');
+  var emptyText = document.getElementById('res-empty-text');
+  var chip = document.getElementById('res-count-chip');
+  var items = filteredReservations();
+
+  chip.textContent = items.length + (items.length === state.reservations.length ? '' : ' of ' + state.reservations.length);
+
+  if(items.length === 0){
+    list.innerHTML = '';
+    list.style.display = 'none';
+    empty.style.display = 'flex';
+    emptyText.textContent = state.reservations.length === 0
+      ? "Nothing unconfirmed right now. Everything's tidy."
+      : 'No reservations match these filters.';
+    return;
+  }
+  empty.style.display = 'none';
+  list.style.display = 'flex';
+
+  list.innerHTML = items.map(function(r, i){
+    var checked = !!state.selected[r.key];
+    var checkHtml = r.isStale
+      ? '<div class="res-check' + (checked ? ' checked' : '') + '" data-check-key="' + escapeHtml(r.key) + '" role="checkbox" aria-checked="' + checked + '" tabindex="0">' +
+          '<svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></div>'
+      : '<div class="res-check disabled" title="Still within its upload grace period"></div>';
+
+    var statusHtml = r.isStale
+      ? '<span class="status-badge stale">Stale</span>'
+      : '<span class="status-badge grace">Grace · ' + formatRelative(r.expiresAt) + '</span>';
+
+    var metaBits = [formatBytes(r.bytes), 'reserved ' + formatRelative(r.reservedAt)];
+    if(r.metadata && r.metadata.name) metaBits.push(String(r.metadata.name));
+
+    return (
+      '<div class="res-row" style="animation-delay:' + (Math.min(i,14)*0.02) + 's;">' +
+        checkHtml +
+        '<span class="res-dot" style="background:' + r.category.color + '" title="' + r.category.label + '"></span>' +
+        '<div class="res-info">' +
+          '<p class="res-key" title="' + escapeHtml(r.key) + '">' + escapeHtml(r.key) + '</p>' +
+          '<p class="res-meta">' + metaBits.map(escapeHtml).join(' · ') + '</p>' +
+        '</div>' +
+        '<div class="res-right">' +
+          statusHtml +
+          '<button class="res-del" type="button" data-delete-key="' + escapeHtml(r.key) + '" ' + (r.isStale ? '' : 'disabled title="Still within grace period"') + '>' +
+            '<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>' +
+          '</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  list.querySelectorAll('[data-check-key]').forEach(function(el){
+    var toggle = function(){
+      var key = el.getAttribute('data-check-key');
+      if(state.selected[key]) delete state.selected[key];
+      else state.selected[key] = true;
+      renderReservationList();
+      renderBulkBar();
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
+  });
+
+  list.querySelectorAll('[data-delete-key]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var key = btn.getAttribute('data-delete-key');
+      var r = state.reservations.find(function(x){ return x.key === key; });
+      if(!r) return;
+      openCleanupSheet({ keys: [key], label: 'this reservation', bytes: r.bytes, singleKey: key });
+    });
+  });
+}
+
+function renderBulkBar(){
+  var bar = document.getElementById('bulk-bar');
+  var keys = Object.keys(state.selected);
+  if(keys.length === 0){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  var bytes = keys.reduce(function(sum, k){
+    var r = state.reservations.find(function(x){ return x.key === k; });
+    return sum + (r ? r.bytes : 0);
+  }, 0);
+  document.getElementById('bulk-count').textContent = keys.length + ' selected · ' + formatBytes(bytes);
+}
+document.getElementById('bulk-clear-btn').addEventListener('click', function(){
+  state.selected = {};
+  renderReservationList();
+  renderBulkBar();
+});
+document.getElementById('bulk-delete-btn').addEventListener('click', function(){
+  var keys = Object.keys(state.selected);
+  if(keys.length === 0) return;
+  var bytes = keys.reduce(function(sum, k){
+    var r = state.reservations.find(function(x){ return x.key === k; });
+    return sum + (r ? r.bytes : 0);
+  }, 0);
+  openCleanupSheet({ keys: keys, label: keys.length + ' selected reservation' + (keys.length === 1 ? '' : 's'), bytes: bytes });
+});
+
+/* =========================================================
+   FILTER CHIPS
+========================================================= */
+document.getElementById('filter-row').addEventListener('click', function(e){
+  var chip = e.target.closest('.chip');
+  if(!chip) return;
+  document.querySelectorAll('#filter-row .chip').forEach(function(c){ c.classList.remove('active'); });
+  chip.classList.add('active');
+  state.activeCategoryFilter = chip.getAttribute('data-filter-value');
+  renderReservationList();
+});
+document.getElementById('status-filter-row').addEventListener('click', function(e){
+  var chip = e.target.closest('.chip');
+  if(!chip) return;
+  document.querySelectorAll('#status-filter-row .chip').forEach(function(c){ c.classList.remove('active'); });
+  chip.classList.add('active');
+  state.activeStatusFilter = chip.getAttribute('data-filter-value');
+  renderReservationList();
+});
+document.getElementById('res-search').addEventListener('input', function(e){
+  state.searchTerm = e.target.value;
+  renderReservationList();
+});
+
+/* =========================================================
+   CLEANUP SHEET
+========================================================= */
+var sheetCleanup = document.getElementById('sheet-cleanup');
+
+function openCleanupSheet(opts){
+  state.pendingCleanup = opts;
+  document.getElementById('cleanup-title').textContent =
+    opts.allStale ? 'Clean up all stale reservations?' : 'Clean up ' + opts.label + '?';
+  document.getElementById('cleanup-impact').textContent =
+    (opts.keys ? opts.keys.length : '—') + ' object' + (opts.keys && opts.keys.length === 1 ? '' : 's') +
+    ', up to ' + formatBytes(opts.bytes) + ' freed. Each object is checked in R2 first — if it was actually uploaded, it is deleted; either way the reservation is released.';
+  var keylist = document.getElementById('cleanup-keylist');
+  if(opts.keys && opts.keys.length <= 50){
+    keylist.style.display = 'block';
+    keylist.innerHTML = opts.keys.map(function(k){ return '<div title="'+escapeHtml(k)+'">' + escapeHtml(k) + '</div>'; }).join('');
+  } else {
+    keylist.style.display = 'none';
+  }
+  document.getElementById('cleanup-result').style.display = 'none';
+  document.getElementById('cleanup-confirm').style.display = 'inline-flex';
+  document.getElementById('cleanup-confirm').disabled = false;
+  document.getElementById('cleanup-confirm').textContent = 'Clean up';
+  document.getElementById('cleanup-cancel').textContent = 'Cancel';
+  sheetCleanup.classList.add('show');
+}
+document.getElementById('cleanup-cancel').addEventListener('click', function(){ sheetCleanup.classList.remove('show'); });
+sheetCleanup.addEventListener('click', function(e){ if(e.target === sheetCleanup){ sheetCleanup.classList.remove('show'); } });
+
+document.getElementById('cleanup-confirm').addEventListener('click', function(){
+  var opts = state.pendingCleanup;
+  if(!opts) return;
+  var btn = document.getElementById('cleanup-confirm');
+  btn.disabled = true; btn.textContent = 'Cleaning up…';
+  document.getElementById('cleanup-cancel').disabled = true;
+
+  var extra = (opts.keys && !opts.allStale) ? { object_keys: opts.keys } : {};
+
+  callStorageAdmin('cleanup', extra)
+    .then(function(res){
+      var resultEl = document.getElementById('cleanup-result');
+      resultEl.style.display = 'block';
+      var lines = [];
+      lines.push('<span class="ok">Freed ' + formatBytes(res.bytes_freed) + '</span> across ' + res.cleaned.length + ' reservation' + (res.cleaned.length === 1 ? '' : 's') + '.');
+      if(res.skipped && res.skipped.length){
+        lines.push(res.skipped.length + ' skipped (not yet stale, or already gone).');
+      }
+      if(res.errors && res.errors.length){
+        lines.push('<span class="warn">' + res.errors.length + ' could not be verified in R2</span> — left untouched, safe to retry.');
+      }
+      resultEl.innerHTML = lines.join('<br>');
+      document.getElementById('cleanup-confirm').style.display = 'none';
+      document.getElementById('cleanup-cancel').disabled = false;
+      document.getElementById('cleanup-cancel').textContent = 'Done';
+
+      state.selected = {};
+      toast('Cleaned up ' + res.cleaned.length + ' reservation' + (res.cleaned.length === 1 ? '' : 's') + ' · freed ' + formatBytes(res.bytes_freed) + '.');
+      loadOverview(false);
+    })
+    .catch(function(err){
+      if(err.status === 401){ redirectToAuth(); return; }
+      if(err.status === 403){ sheetCleanup.classList.remove('show'); showDenied('denied'); return; }
+      console.error('storage-admin cleanup failed:', err);
+      toast(err.message || 'Cleanup failed.', true);
+      btn.disabled = false; btn.textContent = 'Clean up';
+      document.getElementById('cleanup-cancel').disabled = false;
+    });
+});
+
+/* =========================================================
+   RENDER ALL
+========================================================= */
+function renderAll(){
+  renderOverview();
+  renderCategoryGrid();
+  renderSweepBanner();
+  renderReservationList();
+  renderBulkBar();
+}
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function showDenied(kind, message){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.remove('ready');
+  var icon = document.getElementById('denied-icon');
+  var title = document.getElementById('denied-title');
+  var msg = document.getElementById('denied-message');
+  if(kind === 'error'){
+    title.textContent = 'Something went wrong';
+    msg.textContent = message || "Couldn't load storage usage. Please try again in a moment.";
+  } else {
+    title.textContent = 'Admins only';
+    msg.textContent = 'This page is restricted to school administrators. If you believe this is a mistake, contact your school admin.';
+  }
+  document.getElementById('denied').classList.add('show');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    // storage-admin itself is the source of truth on admin status (verified
+    // session + admins-table lookup) — a successful "overview" call IS the
+    // admin check, a 403 means not an admin, a 401 means the session is bad.
+    await loadOverview(false);
+    if(state.usage){ showApp(); }
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
