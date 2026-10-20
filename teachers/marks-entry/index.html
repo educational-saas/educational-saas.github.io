@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Marks Entry</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1); --success:#2f8f5b; --success-bg: rgba(47,143,91,.1);
+    --warn:#b26a12; --warn-bg: rgba(226,148,26,.12);
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12); --success:#57d492; --success-bg: rgba(87,212,146,.12);
+    --warn:#ffc65c; --warn-bg: rgba(255,198,92,.12);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease); }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  .app-header{ position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); padding:calc(env(safe-area-inset-top) + 14px) 18px 14px; transition:background-color .35s var(--ease), border-color .35s var(--ease); }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1040px; margin:0 auto 14px; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease); }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{ font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease); }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600); }
+  .header-sub.admin-badge{ color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0; }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{ width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease); }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  .tabs{ max-width:1040px; margin:0 auto; display:flex; gap:6px; background:var(--white); border:1.5px solid var(--border-card); border-radius:999px; padding:5px; }
+  .tab-btn{ flex:1; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.86rem; padding:10px 8px; border-radius:999px; cursor:pointer; transition:background-color .25s var(--ease), color .25s var(--ease); }
+  .tab-btn.active{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); box-shadow:0 10px 22px -12px rgba(13,56,65,.5); }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--teal-900); }
+
+  main.dash{ flex:1; width:100%; max-width:1040px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px); }
+  .panel{ display:none; flex-direction:column; gap:16px; }
+  .panel.active{ display:flex; }
+
+  .card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); transition:border-color .3s var(--ease), background-color .3s var(--ease); }
+  .card-title{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; margin:0 0 14px; color:var(--ink-900); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .chip{ font-size:.72rem; font-weight:700; letter-spacing:.02em; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+  .chip.gold{ color:var(--warn); background:var(--warn-bg); }
+
+  .field{ margin-bottom:14px; } .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .row2, .row3{ grid-template-columns:1fr; } }
+
+  input[type="date"], input[type="text"], input[type="number"], select, textarea{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500;
+    outline:none; transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px;
+  }
+  select:disabled, input:disabled{ opacity:.55; cursor:not-allowed; }
+  input[type="number"]::-webkit-inner-spin-button{ opacity:1; }
+
+  .btn{ padding:13px 18px; border-radius:14px; border:none; font-family:'Manrope',sans-serif; font-weight:700; font-size:.88rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active{ transform:scale(.97); } .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-teal{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); }
+  html[data-theme="dark"] .btn-teal{ color:var(--teal-900); }
+  .btn-sm{ padding:9px 14px; font-size:.78rem; border-radius:11px; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .btn-row .btn{ flex:1; min-width:140px; }
+
+  /* ---------- Segmented control (exam type) ---------- */
+  .seg{ display:flex; gap:6px; background:var(--cream); border:1.5px solid var(--border-card); border-radius:14px; padding:4px; }
+  .seg-btn{ flex:1; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.82rem; padding:10px 8px; border-radius:10px; cursor:pointer; transition:background-color .2s var(--ease), color .2s var(--ease); }
+  .seg-btn.active{ background:var(--white); color:var(--teal-700); box-shadow:0 6px 16px -10px rgba(13,56,65,.4); }
+  html[data-theme="dark"] .seg-btn.active{ color:var(--gold-400); }
+
+  .inline-add-row{ display:flex; gap:8px; margin-top:10px; }
+  .inline-add-row select{ flex:1; }
+
+  .meta-chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+
+  .placeholder-note{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500); }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Marks grid ---------- */
+  .marks-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .marks-count{ font-size:.78rem; color:var(--ink-500); font-weight:600; }
+  .marks-grid{ display:flex; flex-direction:column; gap:8px; }
+  .marks-row{
+    display:grid; grid-template-columns:34px minmax(0,1fr) auto auto 30px; align-items:center; gap:8px 10px;
+    background:var(--cream); border:1.5px solid var(--border-card); border-radius:var(--r-sm); padding:10px 12px;
+    transition:border-color .2s var(--ease);
+  }
+  .marks-row:focus-within{ border-color:var(--border-card-hover); }
+  .mr-roll{ font-size:.82rem; font-weight:800; color:var(--ink-500); text-align:center; }
+  .mr-identity{ min-width:0; display:flex; flex-direction:column; gap:4px; }
+  .mr-name{ font-size:.9rem; font-weight:700; color:var(--ink-900); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mr-remark{ font-size:.72rem; font-weight:700; line-height:1.35; white-space:normal; overflow-wrap:anywhere; }
+  .mr-inputs{ display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; min-width:0; }
+  .mr-input-wrap{ display:flex; flex-direction:column; gap:2px; }
+  .mr-input-label{ font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-500); text-align:center; }
+  .mr-mark-input{ width:62px; padding:8px 6px; text-align:center; font-weight:700; font-size:.92rem; border-radius:10px; border:1.5px solid var(--border-card); background:var(--white); color:var(--ink-900); }
+  .mr-mark-input:focus{ outline:none; border-color:var(--border-card-hover); box-shadow:0 0 0 3px var(--bg-tint-gold); }
+  .mr-total{ font-size:.76rem; color:var(--ink-500); font-weight:700; min-width:48px; text-align:center; }
+  .mr-status{ display:flex; gap:4px; }
+  .status-pill{ border:1.5px solid var(--border-card); background:var(--white); color:var(--ink-500); font-size:.68rem; font-weight:800; letter-spacing:.02em; padding:6px 8px; border-radius:8px; cursor:pointer; transition:all .15s var(--ease); }
+  .status-pill.active[data-status="P"]{ background:var(--success-bg); border-color:var(--success); color:var(--success); }
+  .status-pill.active[data-status="AB"]{ background:var(--danger-bg); border-color:var(--danger); color:var(--danger); }
+  .status-pill.active[data-status="L"]{ background:var(--warn-bg); border-color:var(--warn); color:var(--warn); }
+  .status-pill.active[data-status="ML"]{ background:var(--bg-tint-teal); border-color:var(--teal-700); color:var(--teal-700); }
+  .remark-outstanding{ color:var(--success); }
+  .remark-verygood{ color:var(--teal-700); }
+  .remark-good{ color:var(--warn); }
+  .remark-hardwork{ color:var(--danger); }
+  .remark-na{ color:var(--ink-500); font-style:italic; }
+  .mr-clear{ width:30px; height:30px; border-radius:9px; border:1.5px solid var(--border-card); background:var(--white); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .mr-clear svg{ width:14px; height:14px; stroke:var(--danger); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  /* ---------- Mobile & tablet: name + remark above, inputs below ---------- */
+@media (max-width:900px){
+  .marks-row{
+    grid-template-columns:minmax(0,1fr) 30px;
+    grid-template-areas:
+      "identity clear"
+      "inputs   inputs"
+      "status   status";
+    gap:10px;
+  }
+  .mr-roll{ display:none; }
+
+  .mr-identity{
+    grid-area:identity;
+    min-width:0;
+    width:100%;
+  }
+  .mr-name{
+    white-space:normal;
+    overflow-wrap:anywhere;
+    font-size:.95rem;
+  }
+  .mr-name::before{
+    content:attr(data-roll) ' • ';
+    color:var(--ink-500);
+    font-weight:600;
+  }
+  .mr-remark{
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .mr-inputs{
+    grid-area:inputs;
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(min(96px, 100%), 1fr));
+    gap:8px;
+    width:100%;
+    min-width:0;
+  }
+  .mr-input-wrap{ min-width:0; }
+  .mr-mark-input{ width:100%; }
+  .mr-total{ align-self:end; min-width:0; padding-bottom:8px; }
+
+  .mr-status{ grid-area:status; }
+  .mr-clear{ grid-area:clear; align-self:start; }
+}
+
+  /* ---------- Stats row (view panel) ---------- */
+  .stats-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .stat-box{ flex:1; min-width:110px; background:var(--cream); border:1.5px solid var(--border-card); border-radius:var(--r-sm); padding:12px 14px; }
+  .stat-box .label{ font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-500); }
+  .stat-box .value{ font-family:'Fraunces',serif; font-size:1.25rem; font-weight:600; color:var(--teal-700); margin-top:2px; }
+
+  .results-table{ width:100%; border-collapse:collapse; font-size:.86rem; }
+  .results-table th{ text-align:left; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-500); padding:8px 10px; border-bottom:1.5px solid var(--border-card); }
+  .results-table td{ padding:9px 10px; border-bottom:1px solid var(--border-card); color:var(--ink-900); }
+  .results-table tbody tr:hover{ background:var(--bg-tint-gold); }
+  .results-actions{ display:flex; gap:6px; }
+  .mini-btn{ width:30px; height:30px; border-radius:9px; border:1.5px solid var(--border-card); background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .2s var(--ease), border-color .2s var(--ease); }
+  .mini-btn:hover{ transform:translateY(-1px); border-color:var(--border-card-hover); }
+  .mini-btn svg{ width:14px; height:14px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .mini-btn.danger svg{ stroke:var(--danger); }
+  .table-scroll{ overflow-x:auto; }
+
+  .results-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{ position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease); overflow-y:auto; }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{ position:relative; left:0; right:0; margin:0 auto; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); max-width:600px; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35); transform:translateY(40px); transition:transform .3s var(--ease); margin-top:auto; }
+  .sheet-backdrop{ display:flex; align-items:flex-end; }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p.sheet-desc{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  /* ---------- Components editor (inside sheet) ---------- */
+  .comp-row{ display:grid; grid-template-columns:1fr 90px 34px; gap:8px; margin-bottom:8px; align-items:center; }
+  .comp-sum-note{ font-size:.78rem; font-weight:600; margin-top:4px; }
+  .comp-sum-note.ok{ color:var(--success); }
+  .comp-sum-note.bad{ color:var(--danger); }
+
+  #toast-wrap{ position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast{ background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw; }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+
+  /* ---------- Print sheet: hidden on screen, the ONLY thing printed ---------- */
+  #print-sheet{display:none;}
+
+  @page{
+    size:A4; margin:14mm 14mm 16mm;
+    @bottom-center{ content:"Gopal Sharma Memorial School — Marks Statement  |  Page " counter(page) " of " counter(pages); font:8pt Helvetica,Arial,sans-serif; color:#5f6f70; }
+  }
+  @media print{
+    html{ color-scheme: light !important; }
+    html,body{background:#fff !important; color:#1c2626 !important;}
+    #gate,#app,.sheet-backdrop,#toast-wrap{display:none !important;}
+    #print-sheet{display:block; font-family:'Noto Sans','Noto Sans Devanagari',Helvetica,Arial,sans-serif; color:#1c2626;}
+    * {-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .p-head{display:flex; align-items:center; justify-content:space-between; gap:12px; background:#0d3841; color:#fff; padding:12px 16px; border-radius:6px; margin-bottom:14px;}
+    .p-brand{display:flex; align-items:center; gap:12px;}
+    .p-brand img{width:42px; height:42px; object-fit:contain;}
+    .p-school{font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:15pt;}
+    .p-title{font-size:9.5pt; color:#ffd685; margin-top:2px;}
+    .p-right{text-align:right; font-size:9.5pt;}
+    .p-right .p-range{color:#ffd685; font-size:8.6pt; margin-top:2px;}
+    .p-stats{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+    .p-stat-box{flex:1; min-width:90px; border:1px solid #e3eef0; border-radius:8px; padding:8px 10px; break-inside:avoid; page-break-inside:avoid;}
+    .p-stat-box .p-stat-label{font-size:7.6pt; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#5f6f70;}
+    .p-stat-box .p-stat-value{font-family:Georgia,'Times New Roman',serif; font-size:12pt; font-weight:700; color:#1b6b78; margin-top:2px;}
+    .p-table{width:100%; border-collapse:collapse; font-size:9pt;}
+    .p-table thead{display:table-header-group;}
+    .p-table th{text-align:left; font-size:7.6pt; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#b26a12; padding:6px 8px; border-bottom:1.4px solid #e2941a;}
+    .p-table td{padding:6px 8px; border-bottom:1px solid #e3eef0; overflow-wrap:anywhere;}
+    .p-table tr{page-break-inside:avoid; break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Marks Entry</p>
+          <p class="header-sub" id="role-badge">Record &bull; Review &bull; Report</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-entry-btn" type="button">Enter Marks</button>
+      <button class="tab-btn" id="tab-view-btn" type="button">View &amp; Statement</button>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ PANEL: ENTER MARKS ============ -->
+    <section class="panel active" id="panel-entry">
+
+      <div class="card">
+        <p class="card-title">
+          Select exam
+          <button class="btn btn-ghost btn-sm" id="btn-new-common-exam" type="button" style="display:none;">+ New common exam</button>
+        </p>
+
+        <div class="seg">
+          <button class="seg-btn active" id="seg-common" type="button" data-type="common">Common exam</button>
+          <button class="seg-btn" id="seg-custom" type="button" data-type="custom">My custom exam</button>
+        </div>
+
+        <div class="field" style="margin-top:14px;" id="wrap-exam-common">
+          <label for="sel-exam-common">Exam</label>
+          <select id="sel-exam-common"><option value="">Select exam…</option></select>
+        </div>
+
+        <div id="wrap-exam-custom" style="display:none;">
+          <div class="field" style="margin-top:14px;">
+            <label for="sel-exam-custom">Custom exam</label>
+            <div class="inline-add-row">
+              <select id="sel-exam-custom"><option value="">Select custom exam…</option></select>
+              <button class="btn btn-ghost btn-sm" id="btn-edit-custom-exam" type="button" style="display:none;">Edit</button>
+              <button class="btn btn-teal btn-sm" id="btn-new-custom-exam" type="button">+ New</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="meta-chips" id="exam-meta-chips"></div>
+      </div>
+
+      <div class="card" id="card-class-subject" style="display:none;">
+        <p class="card-title">Class &amp; subject</p>
+        <div class="row2" id="wrap-common-class-subject">
+          <div class="field">
+            <label for="sel-entry-class">Class</label>
+            <select id="sel-entry-class"><option value="">Select class…</option></select>
+          </div>
+          <div class="field">
+            <label for="sel-entry-subject">Subject</label>
+            <select id="sel-entry-subject" disabled><option value="">Select class first…</option></select>
+          </div>
+        </div>
+        <div class="meta-chips" id="fixed-class-subject-chips" style="display:none;"></div>
+      </div>
+
+      <div class="card" id="card-marks-grid" style="display:none;">
+        <div class="marks-toolbar">
+          <p class="card-title" style="margin:0;">Enter marks</p>
+          <span class="marks-count" id="marks-loaded-count"></span>
+        </div>
+        <div class="marks-grid" id="marks-grid"></div>
+        <p class="last-modified" style="font-size:.76rem;color:var(--ink-500);margin-top:12px;text-align:right;" id="entry-last-saved"></p>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-block" id="btn-save-marks" type="button">Save all marks</button>
+          <button class="btn btn-danger btn-block" id="btn-delete-all-marks" type="button" style="display:none;">Delete all marks</button>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="entry-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <p>Choose an exam, then a class and subject, to load students and enter marks.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ PANEL: VIEW & STATEMENT ============ -->
+    <section class="panel" id="panel-view">
+
+      <div class="card">
+        <p class="card-title">Find a statement</p>
+        <div class="seg">
+          <button class="seg-btn active" id="vseg-common" type="button" data-type="common">Common exam</button>
+          <button class="seg-btn" id="vseg-custom" type="button" data-type="custom">Custom exam</button>
+        </div>
+        <div class="field" style="margin-top:14px;" id="vwrap-exam-common">
+          <label for="vsel-exam-common">Exam</label>
+          <select id="vsel-exam-common"><option value="">Select exam…</option></select>
+        </div>
+        <div class="field" style="margin-top:14px; display:none;" id="vwrap-exam-custom">
+          <label for="vsel-exam-custom">Custom exam</label>
+          <select id="vsel-exam-custom"><option value="">Select custom exam…</option></select>
+        </div>
+        <div class="row2" id="vwrap-class-subject" style="margin-top:14px;">
+          <div class="field">
+            <label for="vsel-class">Class</label>
+            <select id="vsel-class"><option value="">Select class…</option></select>
+          </div>
+          <div class="field">
+            <label for="vsel-subject">Subject</label>
+            <select id="vsel-subject" disabled><option value="">Select class first…</option></select>
+          </div>
+        </div>
+        <button class="btn btn-teal btn-block" id="btn-load-statement" type="button" style="margin-top:6px;">Load marks</button>
+      </div>
+
+      <div id="view-results-wrap" style="display:none;">
+        <div class="card">
+          <div class="results-header">
+            <p class="card-title" style="margin:0;" id="view-results-title">Results</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" id="btn-share-pdf" type="button">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+                Share PDF
+              </button>
+              <button class="btn btn-ghost btn-sm" id="btn-download-pdf" type="button">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+                Download PDF
+              </button>
+            </div>
+          </div>
+          <p class="hint" style="font-size:.78rem;color:var(--ink-500);margin:-4px 0 10px;">In the print dialog, choose <strong>Save as PDF</strong> as the destination. On phones, use Share / Save to Files.</p>
+          <div class="stats-row" id="stats-row"></div>
+          <div class="table-scroll">
+            <table class="results-table" id="results-table">
+              <thead><tr id="results-thead-row"></tr></thead>
+              <tbody id="results-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="view-placeholder">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <p>Pick an exam, class and subject to view the marks statement.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p class="sheet-desc">You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm sheet -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm action">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p class="sheet-desc" id="confirm-message">This action cannot be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- New / edit custom exam sheet -->
+<div class="sheet-backdrop" id="sheet-custom-exam">
+  <div class="sheet" role="dialog" aria-label="Custom exam">
+    <div class="sheet-handle"></div>
+    <h3 id="ce-title">New custom exam</h3>
+    <p class="sheet-desc" id="ce-desc">Specific to one class and subject — only you (and admins) can use it to enter marks.</p>
+
+    <div class="field">
+      <label for="ce-name">Exam name</label>
+      <input type="text" id="ce-name" placeholder="e.g. Class Test 1">
+    </div>
+    <div class="row2" id="ce-class-row">
+      <div class="field">
+        <label for="ce-class">Class</label>
+        <select id="ce-class"><option value="">Select class…</option></select>
+      </div>
+      <div class="field">
+        <label for="ce-subject">Subject</label>
+        <select id="ce-subject" disabled><option value="">Select class first…</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="ce-mm">Maximum marks</label>
+      <input type="number" id="ce-mm" min="1" step="1" placeholder="e.g. 20">
+    </div>
+
+    <div class="field" id="ce-comp-field">
+      <label>Split into components? (optional)</label>
+      <div id="ce-components"></div>
+      <button class="btn btn-ghost btn-sm" id="ce-add-component" type="button" style="margin-top:4px;">+ Add component</button>
+      <p class="comp-sum-note" id="ce-comp-sum-note"></p>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="ce-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ce-save">Create exam</button>
+    </div>
+  </div>
+</div>
+
+<!-- New common exam sheet (admin only) -->
+<div class="sheet-backdrop" id="sheet-common-exam">
+  <div class="sheet" role="dialog" aria-label="New common exam">
+    <div class="sheet-handle"></div>
+    <h3>New common exam</h3>
+    <p class="sheet-desc">School-level — visible and usable by every teacher, for the classes you pick below.</p>
+
+    <div class="field">
+      <label for="co-name">Exam name</label>
+      <input type="text" id="co-name" placeholder="e.g. Term 1 Examination">
+    </div>
+    <div class="field">
+      <label for="co-mm">Maximum marks</label>
+      <input type="number" id="co-mm" min="1" step="1" placeholder="e.g. 100">
+    </div>
+    <div class="field">
+      <label>Applicable classes</label>
+      <div id="co-classes" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+    </div>
+    <div class="field">
+      <label>Split into components? (optional)</label>
+      <div id="co-components"></div>
+      <button class="btn btn-ghost btn-sm" id="co-add-component" type="button" style="margin-top:4px;">+ Add component</button>
+      <p class="comp-sum-note" id="co-comp-sum-note"></p>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="co-cancel">Cancel</button>
+      <button class="btn btn-primary" id="co-save">Create exam</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<!-- Print-only compiled statement -->
+<div id="print-sheet" aria-hidden="true"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var LOGO_URL = 'https://sourabhsuneja.github.io/gsms-logo.png';
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var STATUS_LABELS = { P: 'Present', AB: 'Absent', L: 'On leave', ML: 'Medical leave' };
+var STATUS_ORDER = ['P', 'AB', 'L', 'ML'];
+var DEFAULT_STATUS = 'P';
+
+var state = {
+  user: null, teacherName: '', isAdmin: false,
+  myAssignments: [],      // [{class,subject}] assigned to this teacher
+  allCombos: [],          // [{class,subject}] every class-subject in the school
+  allClasses: [],
+  exams: [], examsByName: {},         // common exams: name -> {name,mm,components}
+  examClasses: {},                    // exam name -> [classes]
+  customExams: [], customExamsById: {},
+  entry: { type: 'common', examName: null, customExamId: null, cls: null, subject: null, students: [], marksByStudent: {} },
+  view:  { type: 'common', examName: null, customExamId: null, cls: null, subject: null, rows: [] }
+};
+
+/* =========================================================
+   GENERIC HELPERS
+========================================================= */
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+function uniqueClasses(combos){
+  var set = {}; combos.forEach(function(c){ set[c.class] = true; });
+  return Object.keys(set).sort();
+}
+function subjectsForClass(combos, cls){
+  var set = {}; combos.forEach(function(c){ if(c.class === cls) set[c.subject] = true; });
+  return Object.keys(set).sort();
+}
+function currentEntryCombos(){ return state.isAdmin ? state.allCombos : state.myAssignments; }
+function activeExamObj(){
+  return state.entry.type === 'common' ? state.examsByName[state.entry.examName] : state.customExamsById[state.entry.customExamId];
+}
+function canManageCustom(ce){ return !!ce && (state.isAdmin || ce.created_by === state.user.id); }
+function remarkFor(status, marksObtained, mm){
+  if(status !== 'P') return { label: STATUS_LABELS[status] || '—', cls: 'remark-na' };
+  if(marksObtained == null || !mm){ return { label: '—', cls: 'remark-na' }; }
+  var pct = (marksObtained / mm) * 100;
+  if(pct >= 90) return { label: 'Outstanding performance', cls: 'remark-outstanding', pct: pct };
+  if(pct >= 75) return { label: 'Very good performance', cls: 'remark-verygood', pct: pct };
+  if(pct >= 50) return { label: 'Good performance', cls: 'remark-good', pct: pct };
+  return { label: 'Needs hard work', cls: 'remark-hardwork', pct: pct };
+}
+
+/* =========================================================
+   THEME / TOAST / SHEETS / TABS / HEADER (same pattern as weekly-lesson-plan)
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+var sheetConfirm = document.getElementById('sheet-confirm');
+var confirmCallback = null;
+function askConfirm(title, message, onConfirm){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  confirmCallback = onConfirm;
+  sheetConfirm.classList.add('show');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); confirmCallback = null; });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm){ sheetConfirm.classList.remove('show'); confirmCallback = null; } });
+document.getElementById('confirm-ok').addEventListener('click', function(){
+  var cb = confirmCallback; sheetConfirm.classList.remove('show'); confirmCallback = null;
+  if(cb) cb();
+});
+
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+var tabEntryBtn = document.getElementById('tab-entry-btn');
+var tabViewBtn = document.getElementById('tab-view-btn');
+var panelEntry = document.getElementById('panel-entry');
+var panelView = document.getElementById('panel-view');
+tabEntryBtn.addEventListener('click', function(){ setTab('entry'); });
+tabViewBtn.addEventListener('click', function(){ setTab('view'); });
+function setTab(which){
+  var isEntry = which === 'entry';
+  tabEntryBtn.classList.toggle('active', isEntry);
+  tabViewBtn.classList.toggle('active', !isEntry);
+  panelEntry.classList.toggle('active', isEntry);
+  panelView.classList.toggle('active', !isEntry);
+}
+
+/* =========================================================
+   COMPONENT-ROW EDITOR (shared by "new custom exam" & "new common exam")
+========================================================= */
+function addComponentRow(container){
+  var row = document.createElement('div');
+  row.className = 'comp-row';
+  row.innerHTML =
+    '<input type="text" class="comp-name" placeholder="Component name (e.g. Subjective)">' +
+    '<input type="number" class="comp-mm" placeholder="Max" min="1" step="1">' +
+    '<button type="button" class="mr-clear comp-remove" aria-label="Remove component"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+  container.appendChild(row);
+  row.querySelector('.comp-remove').addEventListener('click', function(){
+    row.remove();
+    container.dispatchEvent(new Event('comp-changed'));
+  });
+  row.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(){ container.dispatchEvent(new Event('comp-changed')); });
+  });
+  return row;
+}
+function collectComponents(container){
+  var comps = [];
+  container.querySelectorAll('.comp-row').forEach(function(row){
+    var name = row.querySelector('.comp-name').value.trim();
+    var mm = parseFloat(row.querySelector('.comp-mm').value);
+    if(name && mm > 0) comps.push({ name: name, mm: mm });
+  });
+  return comps;
+}
+function wireComponentSumNote(container, mmInput, noteEl){
+  container.addEventListener('comp-changed', recompute);
+  mmInput.addEventListener('input', recompute);
+  function recompute(){
+    var comps = collectComponents(container);
+    if(comps.length === 0){ noteEl.textContent = ''; noteEl.className = 'comp-sum-note'; return; }
+    var sum = comps.reduce(function(s, c){ return s + c.mm; }, 0);
+    var mm = parseFloat(mmInput.value) || 0;
+    if(sum === mm){
+      noteEl.textContent = 'Components add up to ' + sum + ' — matches maximum marks.';
+      noteEl.className = 'comp-sum-note ok';
+    }else{
+      noteEl.textContent = 'Components add up to ' + sum + ', but maximum marks is ' + (mm || '0') + '.';
+      noteEl.className = 'comp-sum-note bad';
+    }
+  }
+}
+
+/* =========================================================
+   ENTRY PANEL — exam type toggle
+========================================================= */
+var segCommon = document.getElementById('seg-common');
+var segCustom = document.getElementById('seg-custom');
+segCommon.addEventListener('click', function(){ setEntryType('common'); });
+segCustom.addEventListener('click', function(){ setEntryType('custom'); });
+
+function setEntryType(type){
+  state.entry.type = type;
+  segCommon.classList.toggle('active', type === 'common');
+  segCustom.classList.toggle('active', type === 'custom');
+  document.getElementById('wrap-exam-common').style.display = type === 'common' ? 'block' : 'none';
+  document.getElementById('wrap-exam-custom').style.display = type === 'custom' ? 'block' : 'none';
+  resetEntryDownstream(true);
+}
+
+function resetEntryDownstream(hideExamMeta){
+  state.entry.examName = null; state.entry.customExamId = null;
+  state.entry.cls = null; state.entry.subject = null;
+  if(hideExamMeta) document.getElementById('exam-meta-chips').innerHTML = '';
+  document.getElementById('btn-edit-custom-exam').style.display = 'none';
+  document.getElementById('card-class-subject').style.display = 'none';
+  hideMarksGrid();
+}
+function hideMarksGrid(){
+  document.getElementById('card-marks-grid').style.display = 'none';
+  document.getElementById('entry-placeholder').style.display = 'flex';
+}
+
+function renderExamMetaChips(containerId, mm, components){
+  var el = document.getElementById(containerId);
+  var html = '<span class="chip gold">Max marks: ' + mm + '</span>';
+  if(components && components.length){
+    html += components.map(function(c){ return '<span class="chip">' + escapeHtml(c.name) + ' / ' + c.mm + '</span>'; }).join('');
+  }
+  el.innerHTML = html;
+}
+
+/* ---- Common exam select ---- */
+var selExamCommon = document.getElementById('sel-exam-common');
+var selEntryClass = document.getElementById('sel-entry-class');
+var selEntrySubject = document.getElementById('sel-entry-subject');
+
+function populateCommonExamDropdown(selectEl){
+  var names = state.exams.map(function(e){ return e.name; }).sort();
+  selectEl.innerHTML = '<option value="">Select exam…</option>' +
+    names.map(function(n){ return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>'; }).join('');
+}
+
+selExamCommon.addEventListener('change', function(){
+  resetEntryDownstream(false);
+  var name = selExamCommon.value;
+  if(!name){ document.getElementById('exam-meta-chips').innerHTML = ''; return; }
+  state.entry.examName = name;
+  var exam = state.examsByName[name];
+  renderExamMetaChips('exam-meta-chips', exam.mm, exam.components);
+
+  var combos = currentEntryCombos();
+  var allowedClasses = uniqueClasses(combos);
+  var examClasses = state.examClasses[name] || [];
+  var classes = allowedClasses.filter(function(c){ return examClasses.indexOf(c) !== -1; });
+
+  selEntryClass.disabled = false;
+  selEntrySubject.disabled = true;
+  selEntryClass.innerHTML = '<option value="">Select class…</option>' +
+    classes.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+  selEntrySubject.innerHTML = '<option value="">Select class first…</option>';
+  if(classes.length === 0) toast('This exam has no classes assigned to you yet.', true);
+  document.getElementById('card-class-subject').style.display = 'block';
+});
+
+selEntryClass.addEventListener('change', function(){
+  var cls = selEntryClass.value;
+  state.entry.cls = cls || null;
+  state.entry.subject = null;
+  hideMarksGrid();
+  var combos = currentEntryCombos();
+  var subs = subjectsForClass(combos, cls);
+  selEntrySubject.disabled = subs.length === 0;
+  selEntrySubject.innerHTML = '<option value="">Select subject…</option>' +
+    subs.map(function(s){ return '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>'; }).join('');
+});
+
+selEntrySubject.addEventListener('change', function(){
+  state.entry.subject = selEntrySubject.value || null;
+  if(state.entry.cls && state.entry.subject) loadStudentsAndMarksForEntry();
+  else hideMarksGrid();
+});
+
+/* ---- Custom exam select ---- */
+var selExamCustom = document.getElementById('sel-exam-custom');
+
+function populateCustomExamDropdown(){
+  var combos = state.isAdmin ? null : state.myAssignments;
+  var list = state.customExams.filter(function(ce){
+    if(state.isAdmin) return true;
+    return combos.some(function(a){ return a.class === ce.class && a.subject === ce.subject; });
+  }).sort(function(a, b){ return a.name.localeCompare(b.name); });
+
+  selExamCustom.innerHTML = '<option value="">Select custom exam…</option>' +
+    list.map(function(ce){
+      return '<option value="' + ce.id + '">' + escapeHtml(ce.name) + ' — ' + escapeHtml(ce.class) + ' / ' + escapeHtml(ce.subject) + '</option>';
+    }).join('');
+}
+
+/* Re-populate every custom-exam dropdown (Enter tab + View tab) from state */
+function refreshCustomUI(){
+  populateCustomExamDropdown();
+  populateViewCustomExamDropdown();
+}
+
+selExamCustom.addEventListener('change', function(){
+  resetEntryDownstream(false);
+  var id = selExamCustom.value;
+  if(!id){ document.getElementById('exam-meta-chips').innerHTML = ''; return; }
+  var ce = state.customExamsById[id];
+  state.entry.customExamId = ce.id;
+  state.entry.cls = ce.class;
+  state.entry.subject = ce.subject;
+  renderExamMetaChips('exam-meta-chips', ce.mm, ce.components);
+  document.getElementById('card-class-subject').style.display = 'block';
+  selEntryClass.innerHTML = '<option value="' + escapeHtml(ce.class) + '" selected>' + escapeHtml(ce.class) + '</option>';
+  selEntrySubject.innerHTML = '<option value="' + escapeHtml(ce.subject) + '" selected>' + escapeHtml(ce.subject) + '</option>';
+  selEntryClass.disabled = true; selEntrySubject.disabled = true;
+  if(canManageCustom(ce)) document.getElementById('btn-edit-custom-exam').style.display = 'inline-flex';
+  loadStudentsAndMarksForEntry();
+});
+
+/* =========================================================
+   NEW / EDIT CUSTOM EXAM SHEET
+========================================================= */
+var sheetCustomExam = document.getElementById('sheet-custom-exam');
+var ceClass = document.getElementById('ce-class');
+var ceSubject = document.getElementById('ce-subject');
+var ceComponents = document.getElementById('ce-components');
+var ceMm = document.getElementById('ce-mm');
+var editingCustomId = null;   // null = creating a new exam, otherwise id of the exam being edited
+
+document.getElementById('btn-new-custom-exam').addEventListener('click', function(){
+  editingCustomId = null;
+  document.getElementById('ce-title').textContent = 'New custom exam';
+  document.getElementById('ce-desc').textContent = 'Specific to one class and subject — only you (and admins) can use it to enter marks.';
+  document.getElementById('ce-class-row').style.display = '';
+  document.getElementById('ce-comp-field').style.display = '';
+  ceMm.disabled = false;
+  document.getElementById('ce-save').textContent = 'Create exam';
+
+  document.getElementById('ce-name').value = '';
+  ceMm.value = '';
+  ceComponents.innerHTML = '';
+  document.getElementById('ce-comp-sum-note').textContent = '';
+  var combos = currentEntryCombos();
+  var classes = uniqueClasses(combos);
+  ceClass.innerHTML = '<option value="">Select class…</option>' +
+    classes.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+  ceSubject.innerHTML = '<option value="">Select class first…</option>';
+  ceSubject.disabled = true;
+  sheetCustomExam.classList.add('show');
+});
+
+document.getElementById('btn-edit-custom-exam').addEventListener('click', function(){
+  var ce = state.customExamsById[state.entry.customExamId];
+  if(!ce) return;
+  if(!canManageCustom(ce)){ toast('Only the exam creator or an admin can edit this exam.', true); return; }
+  editingCustomId = ce.id;
+  var hasComp = !!(ce.components && ce.components.length);
+  document.getElementById('ce-title').textContent = 'Edit custom exam';
+  document.getElementById('ce-desc').textContent = hasComp
+    ? 'You can rename this exam. Maximum marks is fixed because the exam is split into components.'
+    : 'Change the exam name or maximum marks. Class and subject cannot be changed.';
+  document.getElementById('ce-name').value = ce.name;
+  ceMm.value = ce.mm;
+  ceMm.disabled = hasComp;
+  document.getElementById('ce-class-row').style.display = 'none';
+  document.getElementById('ce-comp-field').style.display = 'none';
+  document.getElementById('ce-save').textContent = 'Save changes';
+  sheetCustomExam.classList.add('show');
+});
+
+document.getElementById('ce-cancel').addEventListener('click', function(){ sheetCustomExam.classList.remove('show'); });
+sheetCustomExam.addEventListener('click', function(e){ if(e.target === sheetCustomExam) sheetCustomExam.classList.remove('show'); });
+
+ceClass.addEventListener('change', function(){
+  var combos = currentEntryCombos();
+  var subs = subjectsForClass(combos, ceClass.value);
+  ceSubject.disabled = subs.length === 0;
+  ceSubject.innerHTML = '<option value="">Select subject…</option>' +
+    subs.map(function(s){ return '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>'; }).join('');
+});
+
+document.getElementById('ce-add-component').addEventListener('click', function(){ addComponentRow(ceComponents); });
+wireComponentSumNote(ceComponents, ceMm, document.getElementById('ce-comp-sum-note'));
+
+document.getElementById('ce-save').addEventListener('click', function(){
+  /* ----- EDIT MODE ----- */
+  if(editingCustomId){
+    var ceEdit = state.customExamsById[editingCustomId];
+    var newName = document.getElementById('ce-name').value.trim();
+    var newMm = ceMm.disabled ? ceEdit.mm : parseFloat(ceMm.value);
+    if(!newName || !(newMm > 0)){ toast('Enter a valid name and maximum marks.', true); return; }
+    var editBtn = this; editBtn.disabled = true; editBtn.textContent = 'Saving…';
+    supabaseClient.from('custom_exams')
+      .update({ name: newName, mm: newMm })
+      .eq('id', ceEdit.id)
+      .select('id,name,class,subject,mm,components,created_by')
+      .then(function(res){
+        editBtn.disabled = false; editBtn.textContent = 'Save changes';
+        if(res.error){ toast('Could not update exam: ' + res.error.message, true); return; }
+        if(!res.data || !res.data.length){ toast('You are not allowed to edit this exam.', true); return; }
+        Object.assign(ceEdit, res.data[0]);
+        refreshCustomUI();
+        selExamCustom.value = ceEdit.id;
+        renderExamMetaChips('exam-meta-chips', ceEdit.mm, ceEdit.components);
+        if(state.view.customExamId === ceEdit.id){
+          document.getElementById('view-results-wrap').style.display = 'none';
+          document.getElementById('view-placeholder').style.display = 'flex';
+        }
+        sheetCustomExam.classList.remove('show');
+        loadStudentsAndMarksForEntry();
+        toast('Exam updated.');
+      });
+    return;
+  }
+
+  /* ----- CREATE MODE ----- */
+  var name = document.getElementById('ce-name').value.trim();
+  var cls = ceClass.value, subj = ceSubject.value;
+  var mm = parseFloat(ceMm.value);
+  if(!name || !cls || !subj || !(mm > 0)){ toast('Fill in exam name, class, subject and maximum marks.', true); return; }
+  var comps = collectComponents(ceComponents);
+  if(comps.length > 0){
+    var sum = comps.reduce(function(s, c){ return s + c.mm; }, 0);
+    if(sum !== mm){ toast('Component marks must add up to the maximum marks.', true); return; }
+  }
+  var btn = this; btn.disabled = true; btn.textContent = 'Creating…';
+  supabaseClient.from('custom_exams')
+    .insert({ name: name, class: cls, subject: subj, mm: mm, components: comps.length ? comps : null, created_by: state.user.id })
+    .select('id,name,class,subject,mm,components,created_by')
+    .then(function(res){
+      btn.disabled = false; btn.textContent = 'Create exam';
+      if(res.error){ toast('Could not create exam: ' + res.error.message, true); return; }
+      var ce = res.data[0];
+      state.customExams.push(ce);
+      state.customExamsById[ce.id] = ce;
+      refreshCustomUI();   // updates BOTH the Enter-tab and the View-tab custom exam lists
+      selExamCustom.value = ce.id;
+      selExamCustom.dispatchEvent(new Event('change'));
+      sheetCustomExam.classList.remove('show');
+      toast('Custom exam created.');
+    });
+});
+
+/* =========================================================
+   NEW COMMON EXAM SHEET (admin only)
+========================================================= */
+var sheetCommonExam = document.getElementById('sheet-common-exam');
+var coComponents = document.getElementById('co-components');
+var coMm = document.getElementById('co-mm');
+
+document.getElementById('btn-new-common-exam').addEventListener('click', function(){
+  document.getElementById('co-name').value = '';
+  coMm.value = '';
+  coComponents.innerHTML = '';
+  document.getElementById('co-comp-sum-note').textContent = '';
+  var box = document.getElementById('co-classes');
+  box.innerHTML = state.allClasses.map(function(c){
+    return '<label style="display:flex;align-items:center;gap:6px;font-size:.84rem;font-weight:600;background:var(--cream);border:1.5px solid var(--border-card);border-radius:10px;padding:7px 11px;cursor:pointer;">' +
+      '<input type="checkbox" value="' + escapeHtml(c) + '" style="width:auto;"> ' + escapeHtml(c) + '</label>';
+  }).join('');
+  sheetCommonExam.classList.add('show');
+});
+document.getElementById('co-cancel').addEventListener('click', function(){ sheetCommonExam.classList.remove('show'); });
+sheetCommonExam.addEventListener('click', function(e){ if(e.target === sheetCommonExam) sheetCommonExam.classList.remove('show'); });
+document.getElementById('co-add-component').addEventListener('click', function(){ addComponentRow(coComponents); });
+wireComponentSumNote(coComponents, coMm, document.getElementById('co-comp-sum-note'));
+
+document.getElementById('co-save').addEventListener('click', function(){
+  var name = document.getElementById('co-name').value.trim();
+  var mm = parseFloat(coMm.value);
+  var classes = Array.prototype.slice.call(document.querySelectorAll('#co-classes input:checked')).map(function(i){ return i.value; });
+  if(!name || !(mm > 0) || classes.length === 0){ toast('Fill in exam name, maximum marks and at least one class.', true); return; }
+  var comps = collectComponents(coComponents);
+  if(comps.length > 0){
+    var sum = comps.reduce(function(s, c){ return s + c.mm; }, 0);
+    if(sum !== mm){ toast('Component marks must add up to the maximum marks.', true); return; }
+  }
+  var btn = this; btn.disabled = true; btn.textContent = 'Creating…';
+  supabaseClient.from('exams')
+    .insert({ name: name, mm: mm, components: comps.length ? comps : null })
+    .select('name,mm,components')
+    .then(function(res){
+      if(res.error){ btn.disabled = false; btn.textContent = 'Create exam'; toast('Could not create exam: ' + res.error.message, true); return; }
+      var exam = res.data[0];
+      supabaseClient.from('exam_classes').insert(classes.map(function(c){ return { exam: exam.name, class: c }; })).then(function(res2){
+        btn.disabled = false; btn.textContent = 'Create exam';
+        if(res2.error){ toast('Exam created, but linking classes failed: ' + res2.error.message, true); }
+        state.exams.push(exam); state.examsByName[exam.name] = exam;
+        state.examClasses[exam.name] = classes;
+        populateCommonExamDropdown(selExamCommon);
+        populateCommonExamDropdown(document.getElementById('vsel-exam-common'));
+        selExamCommon.value = exam.name;
+        selExamCommon.dispatchEvent(new Event('change'));
+        sheetCommonExam.classList.remove('show');
+        toast('Common exam created.');
+      });
+    });
+});
+
+/* =========================================================
+   LOAD STUDENTS + EXISTING MARKS → RENDER GRID
+========================================================= */
+function loadStudentsAndMarksForEntry(){
+  var cls = state.entry.cls, subj = state.entry.subject;
+  if(!cls || !subj) return;
+  var examObj = activeExamObj();
+  if(!examObj) return;
+
+  document.getElementById('card-marks-grid').style.display = 'none';
+  document.getElementById('entry-placeholder').style.display = 'flex';
+  document.getElementById('entry-placeholder').querySelector('p').textContent = 'Loading students…';
+
+  var studentsPromise = supabaseClient.from('students_master').select('id,name,roll_no').eq('class', cls).order('roll_no', { ascending: true, nullsFirst: false });
+  var marksQuery = supabaseClient.from('marks').select('*').eq('class', cls).eq('subject', subj);
+  marksQuery = state.entry.type === 'common' ? marksQuery.eq('exam_name', state.entry.examName) : marksQuery.eq('custom_exam_id', state.entry.customExamId);
+
+  Promise.all([studentsPromise, marksQuery]).then(function(results){
+    var sRes = results[0], mRes = results[1];
+    if(sRes.error){ toast('Could not load students: ' + sRes.error.message, true); return; }
+    if(mRes.error){ toast('Could not load marks: ' + mRes.error.message, true); return; }
+
+    state.entry.students = sRes.data || [];
+    state.entry.marksByStudent = {};
+    (mRes.data || []).forEach(function(m){ state.entry.marksByStudent[m.student_id] = m; });
+
+    if(state.entry.students.length === 0){
+      document.getElementById('entry-placeholder').style.display = 'flex';
+      document.getElementById('entry-placeholder').querySelector('p').textContent = 'No students found in ' + cls + ' yet.';
+      return;
+    }
+
+    document.getElementById('entry-placeholder').style.display = 'none';
+    document.getElementById('card-marks-grid').style.display = 'block';
+    renderMarksGrid(examObj);
+  });
+}
+
+function renderMarksGrid(examObj){
+  var container = document.getElementById('marks-grid');
+  container.innerHTML = '';
+  document.getElementById('marks-loaded-count').textContent = state.entry.students.length + ' student' + (state.entry.students.length === 1 ? '' : 's');
+  document.getElementById('entry-last-saved').textContent = '';
+
+  var hasComponents = !!(examObj.components && examObj.components.length);
+
+  state.entry.students.forEach(function(student){
+    var existing = state.entry.marksByStudent[student.id];
+    var status = existing ? existing.status : DEFAULT_STATUS;
+
+    var row = document.createElement('div');
+    row.className = 'marks-row';
+    row.dataset.studentId = student.id;
+
+    var inputsHtml = '';
+    if(hasComponents){
+      inputsHtml = examObj.components.map(function(c){
+        var val = existing && existing.component_marks && existing.component_marks[c.name] != null ? existing.component_marks[c.name] : '';
+        return '<div class="mr-input-wrap"><span class="mr-input-label">' + escapeHtml(c.name) + '</span>' +
+          '<input type="number" class="mr-mark-input" data-component="' + escapeHtml(c.name) + '" min="0" max="' + c.mm + '" step="0.5" value="' + val + '" ' + (status !== 'P' ? 'disabled' : '') + '></div>';
+      }).join('') + '<div class="mr-total" data-role="total"></div>';
+    }else{
+      var val = existing && existing.marks_obtained != null ? existing.marks_obtained : '';
+      inputsHtml = '<input type="number" class="mr-mark-input" min="0" max="' + examObj.mm + '" step="0.5" value="' + val + '" ' + (status !== 'P' ? 'disabled' : '') + '>';
+    }
+
+    row.innerHTML =
+      '<div class="mr-roll">' + (student.roll_no != null ? student.roll_no : '—') + '</div>' +
+      '<div class="mr-identity">' +
+        '<div class="mr-name" data-roll="Roll ' + (student.roll_no != null ? student.roll_no : '—') + '">' + escapeHtml(student.name) + '</div>' +
+        '<span class="mr-remark"></span>' +
+      '</div>' +
+      '<div class="mr-inputs">' + inputsHtml + '</div>' +
+      '<div class="mr-status">' + STATUS_ORDER.map(function(s){
+        return '<button type="button" class="status-pill' + (s === status ? ' active' : '') + '" data-status="' + s + '">' + s + '</button>';
+      }).join('') + '</div>' +
+      '<button type="button" class="mr-clear" title="Clear this entry"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
+
+    container.appendChild(row);
+    wireMarksRow(row, examObj, hasComponents);
+    updateRowRemark(row, examObj, hasComponents);
+  });
+  refreshDeleteAllBtn();
+}
+
+function wireMarksRow(row, examObj, hasComponents){
+  row.querySelectorAll('.status-pill').forEach(function(pill){
+    pill.addEventListener('click', function(){
+      row.querySelectorAll('.status-pill').forEach(function(p){ p.classList.remove('active'); });
+      pill.classList.add('active');
+      var isPresent = pill.dataset.status === 'P';
+      row.querySelectorAll('.mr-mark-input').forEach(function(inp){
+        inp.disabled = !isPresent;
+        if(!isPresent) inp.value = '';
+      });
+      updateRowRemark(row, examObj, hasComponents);
+    });
+  });
+
+  row.querySelectorAll('.mr-mark-input').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      if(inp.value !== ''){
+        row.querySelectorAll('.status-pill').forEach(function(p){ p.classList.toggle('active', p.dataset.status === 'P'); });
+        row.querySelectorAll('.mr-mark-input').forEach(function(i){ i.disabled = false; });
+      }
+      updateRowRemark(row, examObj, hasComponents);
+    });
+    inp.addEventListener('keydown', function(e){
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      var allInputs = Array.prototype.slice.call(document.querySelectorAll('#marks-grid .mr-mark-input'));
+      var idx = allInputs.indexOf(inp);
+      if(idx !== -1 && idx < allInputs.length - 1) allInputs[idx + 1].focus();
+    });
+  });
+
+  row.querySelector('.mr-clear').addEventListener('click', function(){
+    var studentId = row.dataset.studentId;
+    var existing = state.entry.marksByStudent[studentId];
+    function resetRowUI(){
+      row.querySelectorAll('.mr-mark-input').forEach(function(inp){ inp.value = ''; inp.disabled = false; });
+      row.querySelectorAll('.status-pill').forEach(function(p){ p.classList.toggle('active', p.dataset.status === DEFAULT_STATUS); });
+      delete state.entry.marksByStudent[studentId];
+      updateRowRemark(row, examObj, hasComponents);
+      refreshDeleteAllBtn();
+    }
+    if(existing && existing.id){
+      askConfirm('Clear this entry?', 'This removes the saved mark for this student in this exam.', function(){
+        supabaseClient.from('marks').delete().eq('id', existing.id).then(function(res){
+          if(res.error){ toast('Could not clear entry: ' + res.error.message, true); return; }
+          resetRowUI();
+          toast('Entry cleared.');
+        });
+      });
+    }else{
+      resetRowUI();
+    }
+  });
+}
+
+function updateRowRemark(row, examObj, hasComponents){
+  var status = row.querySelector('.status-pill.active') ? row.querySelector('.status-pill.active').dataset.status : DEFAULT_STATUS;
+  var total = null;
+  if(status === 'P'){
+    if(hasComponents){
+      var sum = 0, any = false;
+      row.querySelectorAll('.mr-mark-input').forEach(function(inp){
+        if(inp.value !== ''){ sum += parseFloat(inp.value) || 0; any = true; }
+      });
+      total = any ? sum : null;
+      var totalEl = row.querySelector('[data-role="total"]');
+      if(totalEl) totalEl.textContent = any ? (sum + ' / ' + examObj.mm) : '';
+    }else{
+      var inp = row.querySelector('.mr-mark-input');
+      total = inp.value !== '' ? parseFloat(inp.value) : null;
+    }
+  }
+  var r = remarkFor(status, total, examObj.mm);
+  var remarkEl = row.querySelector('.mr-remark');
+  remarkEl.className = 'mr-remark ' + r.cls;
+  remarkEl.textContent = r.label + (r.pct != null ? ' (' + Math.round(r.pct) + '%)' : '');
+}
+
+/* =========================================================
+   SAVE ALL MARKS
+========================================================= */
+document.getElementById('btn-save-marks').addEventListener('click', function(){
+  var examObj = activeExamObj();
+  if(!examObj) return;
+  var hasComponents = !!(examObj.components && examObj.components.length);
+  var cls = state.entry.cls, subj = state.entry.subject;
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#marks-grid .marks-row'));
+
+  var payload = rows.map(function(row){
+    var studentId = parseInt(row.dataset.studentId, 10);
+    var status = row.querySelector('.status-pill.active') ? row.querySelector('.status-pill.active').dataset.status : DEFAULT_STATUS;
+    var rec = {
+      student_id: studentId, class: cls, subject: subj,
+      status: status, entered_by: state.user.id
+    };
+    if(state.entry.type === 'common') rec.exam_name = state.entry.examName;
+    else rec.custom_exam_id = state.entry.customExamId;
+
+    if(status === 'P'){
+      if(hasComponents){
+        var compMarks = {};
+        row.querySelectorAll('.mr-mark-input').forEach(function(inp){
+          if(inp.value !== '') compMarks[inp.dataset.component] = parseFloat(inp.value);
+        });
+        rec.component_marks = Object.keys(compMarks).length ? compMarks : null;
+      }else{
+        var inp = row.querySelector('.mr-mark-input');
+        rec.marks_obtained = inp.value !== '' ? parseFloat(inp.value) : null;
+      }
+    }
+    return rec;
+  });
+
+  var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+  supabaseClient.from('marks')
+    .upsert(payload, { onConflict: 'student_id,exam_key,class,subject' })
+    .select()
+    .then(function(res){
+      btn.disabled = false; btn.textContent = 'Save all marks';
+      if(res.error){ toast('Save failed: ' + res.error.message, true); return; }
+      toast('Marks saved.');
+      document.getElementById('entry-last-saved').textContent = 'Last saved ' + new Date().toLocaleString();
+      loadStudentsAndMarksForEntry();
+    });
+});
+
+/* =========================================================
+   DELETE ALL MARKS OF THE CHOSEN EXAM
+   - common exam: deletes saved marks for the selected class + subject
+   - custom exam: deletes all its marks AND the custom_exams entry
+========================================================= */
+function refreshDeleteAllBtn(){
+  var btn = document.getElementById('btn-delete-all-marks');
+  var has = Object.keys(state.entry.marksByStudent).length > 0;
+  btn.style.display = has ? 'inline-flex' : 'none';
+  btn.textContent = state.entry.type === 'custom' ? 'Delete all marks & this exam' : 'Delete all marks for this exam';
+}
+
+document.getElementById('btn-delete-all-marks').addEventListener('click', function(){
+  var examObj = activeExamObj();
+  if(!examObj) return;
+  var isCustom = state.entry.type === 'custom';
+  var ce = isCustom ? state.customExamsById[state.entry.customExamId] : null;
+  if(isCustom && !canManageCustom(ce)){ toast('Only the exam creator or an admin can remove this custom exam.', true); return; }
+  var cls = state.entry.cls, subj = state.entry.subject;
+  var msg = isCustom
+    ? 'This permanently deletes all saved marks for \u201c' + ce.name + '\u201d and removes the custom exam itself.'
+    : 'This permanently deletes all saved marks of ' + state.entry.examName + ' for ' + cls + ' \u2022 ' + subj + '.';
+
+  askConfirm('Delete all marks?', msg, function(){
+    var q = supabaseClient.from('marks').delete();
+    q = isCustom
+      ? q.eq('custom_exam_id', ce.id)
+      : q.eq('exam_name', state.entry.examName).eq('class', cls).eq('subject', subj);
+    q.select('id').then(function(res){
+      if(res.error){ toast('Delete failed: ' + res.error.message, true); return; }
+
+      if(!isCustom){
+        toast('All marks deleted.');
+        loadStudentsAndMarksForEntry();
+        return;
+      }
+
+      supabaseClient.from('custom_exams').delete().eq('id', ce.id).select('id').then(function(res2){
+        if(res2.error || !res2.data || !res2.data.length){
+          toast('Marks deleted, but the exam entry could not be removed.', true);
+          loadStudentsAndMarksForEntry();
+          return;
+        }
+        state.customExams = state.customExams.filter(function(x){ return x.id !== ce.id; });
+        delete state.customExamsById[ce.id];
+        if(state.view.customExamId === ce.id){
+          state.view.customExamId = null;
+          document.getElementById('view-results-wrap').style.display = 'none';
+          document.getElementById('view-placeholder').style.display = 'flex';
+        }
+        refreshCustomUI();
+        selExamCustom.value = '';
+        resetEntryDownstream(true);
+        toast('Marks and custom exam deleted.');
+      });
+    });
+  });
+});
+
+/* =========================================================
+   VIEW & STATEMENT PANEL
+========================================================= */
+var vsegCommon = document.getElementById('vseg-common');
+var vsegCustom = document.getElementById('vseg-custom');
+var vselExamCommon = document.getElementById('vsel-exam-common');
+var vselExamCustom = document.getElementById('vsel-exam-custom');
+var vselClass = document.getElementById('vsel-class');
+var vselSubject = document.getElementById('vsel-subject');
+
+vsegCommon.addEventListener('click', function(){ setViewType('common'); });
+vsegCustom.addEventListener('click', function(){ setViewType('custom'); });
+
+function setViewType(type){
+  state.view.type = type;
+  vsegCommon.classList.toggle('active', type === 'common');
+  vsegCustom.classList.toggle('active', type === 'custom');
+  document.getElementById('vwrap-exam-common').style.display = type === 'common' ? 'block' : 'none';
+  document.getElementById('vwrap-exam-custom').style.display = type === 'custom' ? 'block' : 'none';
+  vselClass.disabled = false; vselSubject.disabled = true;
+  vselClass.innerHTML = '<option value="">Select class…</option>' + state.allClasses.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+  vselSubject.innerHTML = '<option value="">Select class first…</option>';
+}
+
+vselExamCommon.addEventListener('change', function(){
+  state.view.examName = vselExamCommon.value || null;
+  if(!state.view.examName) return;
+  var examClasses = state.examClasses[state.view.examName] || [];
+  vselClass.innerHTML = '<option value="">Select class…</option>' + examClasses.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+  vselSubject.innerHTML = '<option value="">Select class first…</option>'; vselSubject.disabled = true;
+});
+
+/* Rebuilds the View-tab custom exam list from state, keeping the current selection if it still exists */
+function populateViewCustomExamDropdown(){
+  var prev = vselExamCustom.value;
+  var list = state.customExams.slice().sort(function(a, b){ return a.name.localeCompare(b.name); });
+  vselExamCustom.innerHTML = '<option value="">Select custom exam…</option>' +
+    list.map(function(ce){ return '<option value="' + ce.id + '">' + escapeHtml(ce.name) + ' — ' + escapeHtml(ce.class) + ' / ' + escapeHtml(ce.subject) + '</option>'; }).join('');
+  vselExamCustom.value = prev;
+}
+vselExamCustom.addEventListener('change', function(){
+  var id = vselExamCustom.value;
+  if(!id) return;
+  var ce = state.customExamsById[id];
+  state.view.customExamId = ce.id;
+  vselClass.innerHTML = '<option value="' + escapeHtml(ce.class) + '" selected>' + escapeHtml(ce.class) + '</option>';
+  vselSubject.innerHTML = '<option value="' + escapeHtml(ce.subject) + '" selected>' + escapeHtml(ce.subject) + '</option>';
+  vselClass.disabled = true; vselSubject.disabled = true;
+});
+
+vselClass.addEventListener('change', function(){
+  if(vselClass.disabled) return;
+  var subs = subjectsForClass(state.allCombos, vselClass.value);
+  vselSubject.disabled = subs.length === 0;
+  vselSubject.innerHTML = '<option value="">Select subject…</option>' + subs.map(function(s){ return '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>'; }).join('');
+});
+
+document.getElementById('btn-load-statement').addEventListener('click', function(){
+  var cls = vselClass.value, subj = vselSubject.value;
+  if(!cls || !subj){ toast('Select a class and subject first.', true); return; }
+  if(state.view.type === 'common' && !state.view.examName){ toast('Select an exam first.', true); return; }
+  if(state.view.type === 'custom' && !state.view.customExamId){ toast('Select a custom exam first.', true); return; }
+  state.view.cls = cls; state.view.subject = subj;
+
+  var btn = this; btn.disabled = true; btn.textContent = 'Loading…';
+  var examObj = state.view.type === 'common' ? state.examsByName[state.view.examName] : state.customExamsById[state.view.customExamId];
+
+  var studentsPromise = supabaseClient.from('students_master').select('id,name,roll_no').eq('class', cls).order('roll_no', { ascending: true, nullsFirst: false });
+  var marksQuery = supabaseClient.from('marks').select('*, teachers(name)').eq('class', cls).eq('subject', subj);
+  marksQuery = state.view.type === 'common' ? marksQuery.eq('exam_name', state.view.examName) : marksQuery.eq('custom_exam_id', state.view.customExamId);
+
+  Promise.all([studentsPromise, marksQuery]).then(function(results){
+    btn.disabled = false; btn.textContent = 'Load marks';
+    var sRes = results[0], mRes = results[1];
+    if(sRes.error || mRes.error){ toast('Could not load statement.', true); return; }
+    var marksByStudent = {};
+    (mRes.data || []).forEach(function(m){ marksByStudent[m.student_id] = m; });
+    state.view.rows = (sRes.data || []).map(function(s){
+      var m = marksByStudent[s.id];
+      return {
+        student: s, mark: m || null,
+        status: m ? m.status : 'AB',
+        marksObtained: m ? m.marks_obtained : null,
+        componentMarks: m ? m.component_marks : null,
+        enteredByName: m && m.teachers ? m.teachers.name : ''
+      };
+    });
+    state.view.examObj = examObj;
+    renderViewResults();
+  });
+});
+
+function renderViewResults(){
+  var examObj = state.view.examObj;
+  var hasComponents = !!(examObj.components && examObj.components.length);
+  var rows = state.view.rows;
+
+  document.getElementById('view-placeholder').style.display = rows.length ? 'none' : 'flex';
+  document.getElementById('view-results-wrap').style.display = rows.length ? 'block' : 'none';
+  if(!rows.length) return;
+
+  var examName = state.view.type === 'common' ? state.view.examName : examObj.name;
+  document.getElementById('view-results-title').textContent = examName + ' • ' + state.view.cls + ' • ' + state.view.subject;
+
+  // Stats
+  var present = rows.filter(function(r){ return r.status === 'P' && r.marksObtained != null; });
+  var scores = present.map(function(r){ return r.marksObtained; });
+  var avg = scores.length ? (scores.reduce(function(a, b){ return a + b; }, 0) / scores.length) : null;
+  var high = scores.length ? Math.max.apply(null, scores) : null;
+  var low = scores.length ? Math.min.apply(null, scores) : null;
+  document.getElementById('stats-row').innerHTML = [
+    ['Students', rows.length],
+    ['Appeared', present.length],
+    ['Class average', avg != null ? avg.toFixed(1) : '—'],
+    ['Highest', high != null ? high : '—'],
+    ['Lowest', low != null ? low : '—']
+  ].map(function(s){ return '<div class="stat-box"><div class="label">' + s[0] + '</div><div class="value">' + s[1] + '</div></div>'; }).join('');
+
+  // Table
+  var thead = document.getElementById('results-thead-row');
+  var headCols = ['Roll', 'Name'];
+  if(hasComponents) examObj.components.forEach(function(c){ headCols.push(c.name); });
+  headCols.push('Total', '%', 'Remark', 'Entered by', '');
+  thead.innerHTML = headCols.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join('');
+
+  var editable = state.isAdmin || state.myAssignments.some(function(a){ return a.class === state.view.cls && a.subject === state.view.subject; });
+
+  var tbody = document.getElementById('results-tbody');
+  tbody.innerHTML = '';
+  rows.forEach(function(r){
+    var r_ = remarkFor(r.status, r.marksObtained, examObj.mm);
+    var tr = document.createElement('tr');
+    var cells = [r.student.roll_no != null ? r.student.roll_no : '—', escapeHtml(r.student.name)];
+    if(hasComponents){
+      examObj.components.forEach(function(c){
+        var v = r.componentMarks && r.componentMarks[c.name] != null ? r.componentMarks[c.name] : (r.status === 'P' ? '—' : STATUS_LABELS[r.status]);
+        cells.push(v);
+      });
+      cells.push(r.status === 'P' ? (r.marksObtained != null ? r.marksObtained : '—') : STATUS_LABELS[r.status]);
+    }else{
+      cells.push(r.status === 'P' ? (r.marksObtained != null ? r.marksObtained : '—') : STATUS_LABELS[r.status]);
+    }
+    cells.push(r_.pct != null ? Math.round(r_.pct) + '%' : '—');
+    var remarkHtml = '<span class="' + r_.cls + '" style="font-weight:700;">' + escapeHtml(r_.label) + '</span>';
+    var entered = escapeHtml(r.enteredByName || '—');
+    var actionsHtml = editable ?
+      '<div class="results-actions">' +
+        '<button class="mini-btn" data-action="edit" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' +
+        (r.mark ? '<button class="mini-btn danger" data-action="delete" title="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' : '') +
+      '</div>' : '';
+
+    tr.innerHTML = cells.map(function(c){ return '<td>' + c + '</td>'; }).join('') +
+      '<td>' + remarkHtml + '</td><td>' + entered + '</td><td>' + actionsHtml + '</td>';
+
+    if(editable){
+      var editBtn = tr.querySelector('[data-action="edit"]');
+      if(editBtn) editBtn.addEventListener('click', function(){ jumpToEntryFromView(r); });
+      var delBtn = tr.querySelector('[data-action="delete"]');
+      if(delBtn) delBtn.addEventListener('click', function(){
+        askConfirm('Delete this mark?', 'This removes ' + r.student.name + '\u2019s entry for this exam.', function(){
+          supabaseClient.from('marks').delete().eq('id', r.mark.id).then(function(res){
+            if(res.error){ toast('Delete failed: ' + res.error.message, true); return; }
+            toast('Mark deleted.');
+            document.getElementById('btn-load-statement').click();
+          });
+        });
+      });
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+function jumpToEntryFromView(r){
+  setTab('entry');
+  if(state.view.type === 'common'){
+    setEntryType('common');
+    selExamCommon.value = state.view.examName;
+    selExamCommon.dispatchEvent(new Event('change'));
+    setTimeout(function(){
+      selEntryClass.value = state.view.cls;
+      selEntryClass.dispatchEvent(new Event('change'));
+      setTimeout(function(){
+        selEntrySubject.value = state.view.subject;
+        selEntrySubject.dispatchEvent(new Event('change'));
+      }, 30);
+    }, 30);
+  }else{
+    setEntryType('custom');
+    selExamCustom.value = state.view.customExamId;
+    selExamCustom.dispatchEvent(new Event('change'));
+  }
+}
+
+/* =========================================================
+   PDF GENERATION (marks statement) — same lightweight approach
+   as the weekly lesson plan page: build a print-only document
+   (real text, no canvas rasterization) and let the browser's
+   native print dialog ("Save as PDF") produce the file.
+========================================================= */
+function buildStatementPrintSheet(){
+  var examObj = state.view.examObj;
+  var hasComponents = !!(examObj.components && examObj.components.length);
+  var rows = state.view.rows;
+  var examName = state.view.type === 'common' ? state.view.examName : examObj.name;
+
+  var present = rows.filter(function(r){ return r.status === 'P' && r.marksObtained != null; });
+  var scores = present.map(function(r){ return r.marksObtained; });
+  var avg = scores.length ? (scores.reduce(function(a, b){ return a + b; }, 0) / scores.length) : null;
+  var high = scores.length ? Math.max.apply(null, scores) : null;
+  var low = scores.length ? Math.min.apply(null, scores) : null;
+
+  var html =
+    '<div class="p-head"><div class="p-brand"><img src="' + LOGO_URL + '" alt="">' +
+    '<div><div class="p-school">Gopal Sharma Memorial School</div><div class="p-title">Marks Statement — ' + escapeHtml(examName) + '</div></div></div>' +
+    '<div class="p-right"><div>' + escapeHtml(state.view.cls) + ' • ' + escapeHtml(state.view.subject) + '</div>' +
+    '<div class="p-range">Max marks: ' + examObj.mm + '</div></div></div>';
+
+  html += '<div class="p-stats">' + [
+    ['Students', rows.length],
+    ['Appeared', present.length],
+    ['Class average', avg != null ? avg.toFixed(1) : '—'],
+    ['Highest', high != null ? high : '—'],
+    ['Lowest', low != null ? low : '—']
+  ].map(function(s){ return '<div class="p-stat-box"><div class="p-stat-label">' + s[0] + '</div><div class="p-stat-value">' + s[1] + '</div></div>'; }).join('') + '</div>';
+
+  var headCols = ['Roll', 'Name'];
+  if(hasComponents) examObj.components.forEach(function(c){ headCols.push(c.name); });
+  headCols.push('Total', '%', 'Remark');
+
+  html += '<table class="p-table"><thead><tr>' + headCols.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join('') + '</tr></thead><tbody>';
+
+  rows.forEach(function(r){
+    var r_ = remarkFor(r.status, r.marksObtained, examObj.mm);
+    var cells = [r.student.roll_no != null ? r.student.roll_no : '—', escapeHtml(r.student.name)];
+    if(hasComponents){
+      examObj.components.forEach(function(c){
+        var v = r.componentMarks && r.componentMarks[c.name] != null ? r.componentMarks[c.name] : (r.status === 'P' ? '—' : STATUS_LABELS[r.status]);
+        cells.push(v);
+      });
+    }
+    cells.push(r.status === 'P' ? (r.marksObtained != null ? r.marksObtained : '—') : STATUS_LABELS[r.status]);
+    cells.push(r_.pct != null ? Math.round(r_.pct) + '%' : '—');
+    cells.push(escapeHtml(r_.label));
+    html += '<tr>' + cells.map(function(c){ return '<td>' + c + '</td>'; }).join('') + '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('print-sheet').innerHTML = html;
+}
+
+function statementPdfFileTitle(){
+  var examObj = state.view.examObj;
+  var examName = state.view.type === 'common' ? state.view.examName : examObj.name;
+  return 'Marks-Statement_' + examName.replace(/[^a-z0-9]/gi, '') + '_' + state.view.cls.replace(/[^a-z0-9]/gi, '') + '_' + state.view.subject.replace(/[^a-z0-9]/gi, '');
+}
+
+async function triggerStatementPrint(){
+  buildStatementPrintSheet();
+  // Wait for fonts and the logo so the print/PDF output captures them.
+  if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
+  var img = document.querySelector('#print-sheet img');
+  if(img && !img.complete){
+    await new Promise(function(res){ img.onload = img.onerror = res; setTimeout(res, 3000); });
+  }
+  // The document title becomes the suggested PDF file name.
+  var oldTitle = document.title;
+  document.title = statementPdfFileTitle();
+  window.addEventListener('afterprint', function restore(){
+    document.title = oldTitle;
+    window.removeEventListener('afterprint', restore);
+  });
+  window.print();
+}
+
+document.getElementById('btn-share-pdf').addEventListener('click', async function(){
+  if(!state.view.rows || !state.view.rows.length){ toast('Load a statement first.', true); return; }
+  var btn = this; btn.disabled = true; var original = btn.innerHTML; btn.textContent = 'Preparing…';
+  try{ await triggerStatementPrint(); }
+  catch(e){ console.error(e); toast('Could not open the print dialog.', true); }
+  finally{ btn.disabled = false; btn.innerHTML = original; }
+});
+document.getElementById('btn-download-pdf').addEventListener('click', async function(){
+  if(!state.view.rows || !state.view.rows.length){ toast('Load a statement first.', true); return; }
+  var btn = this; btn.disabled = true; var original = btn.innerHTML; btn.textContent = 'Preparing…';
+  try{ await triggerStatementPrint(); }
+  catch(e){ console.error(e); toast('Could not open the print dialog.', true); }
+  finally{ btn.disabled = false; btn.innerHTML = original; }
+});
+
+/* =========================================================
+   AUTH + DATA BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+    var userId = session.user.id;
+
+    var teacherResult = await supabaseClient.from('teachers').select('id, name, email').eq('id', userId).maybeSingle();
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var badge = document.getElementById('role-badge');
+    if(state.isAdmin){
+      badge.textContent = 'Admin access — all classes';
+      badge.classList.add('admin-badge');
+      document.getElementById('btn-new-common-exam').style.display = 'inline-flex';
+    }else{
+      badge.textContent = state.teacherName.split(' ')[0] + ' • Record & review';
+    }
+
+    var myAssignRes = await supabaseClient.from('class_subject_assignments').select('class, subject').eq('teacher_id', userId);
+    state.myAssignments = myAssignRes.data || [];
+
+    var allCombosRes = await supabaseClient.from('class_subjects').select('class, subject');
+    state.allCombos = allCombosRes.data || [];
+    state.allClasses = uniqueClasses(state.allCombos);
+
+    var examsRes = await supabaseClient.from('exams').select('name, mm, components');
+    state.exams = examsRes.data || [];
+    state.exams.forEach(function(e){ state.examsByName[e.name] = e; });
+
+    var examClassesRes = await supabaseClient.from('exam_classes').select('exam, class');
+    (examClassesRes.data || []).forEach(function(ec){
+      if(!state.examClasses[ec.exam]) state.examClasses[ec.exam] = [];
+      state.examClasses[ec.exam].push(ec.class);
+    });
+
+    var customExamsRes = await supabaseClient.from('custom_exams').select('id,name,class,subject,mm,components,created_by');
+    state.customExams = customExamsRes.data || [];
+    state.customExams.forEach(function(ce){ state.customExamsById[ce.id] = ce; });
+
+    populateCommonExamDropdown(selExamCommon);
+    populateCommonExamDropdown(vselExamCommon);
+    populateCustomExamDropdown();
+    populateViewCustomExamDropdown();
+    setViewType('common');
+
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
