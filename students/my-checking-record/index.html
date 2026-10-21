@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>My Checking Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- status semantics: C / S / L / I / N ---------- */
+    --status-checked:#4fc98a;
+    --status-checked-dark:#2f8f61;
+    --status-submitted:#4aa8e0;
+    --status-submitted-dark:#2878aa;
+    --status-late:#f5a623;
+    --status-late-dark:#b06f12;
+    --status-incomplete:#ff8a42;
+    --status-incomplete-dark:#c15a16;
+    --status-notsubmitted:#f2555a;
+    --status-notsubmitted-dark:#c23b41;
+    --status-blank:#e4e9ea;
+
+    --panel-tint: var(--bg-tint-teal);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+    --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:12px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.08);
+    --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10);
+
+    --status-checked:#49d696;
+    --status-checked-dark:#8be9c4;
+    --status-submitted:#63bdf2;
+    --status-submitted-dark:#b4e0fb;
+    --status-late:#ffc65c;
+    --status-late-dark:#ffe2a8;
+    --status-incomplete:#ff9d5c;
+    --status-incomplete-dark:#ffc79a;
+    --status-notsubmitted:#ff6b70;
+    --status-notsubmitted-dark:#ffb0b2;
+    --status-blank:#1f2a2c;
+
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5);
+    --edge-shadow-soft: rgba(0,0,0,.35);
+    --track: color-mix(in srgb, var(--white) 14%, transparent);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    transition:background .3s var(--ease), color .3s var(--ease);
+    padding:14px 14px 28px;
+  }
+
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .card{
+    background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border-card);
+    box-shadow:0 6px 0 var(--edge-shadow-soft);padding:20px;margin-bottom:16px;
+  }
+
+  .section-title{
+    font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 2px;color:var(--ink-900);
+  }
+  .section-sub{font-size:13px;color:var(--ink-500);margin:0 0 14px;font-weight:600;}
+
+  /* ---------- overview: ring + counts ---------- */
+  .overview{display:flex;flex-wrap:wrap;gap:20px;align-items:center;}
+  .ring-block{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;}
+  .ring-label{font-weight:700;font-size:13px;color:var(--ink-500);text-align:center;}
+  .ring-svg{display:block;}
+  .ring-pct{font-family:var(--font-display);font-weight:700;}
+
+  .counts-grid{
+    flex:1 1 220px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;min-width:220px;
+  }
+  .count-chip{
+    border-radius:var(--r-sm);padding:10px 12px;display:flex;align-items:center;gap:10px;
+    background:var(--panel-tint);border:1px solid var(--border-card);
+  }
+  .count-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;}
+  .count-text{display:flex;flex-direction:column;line-height:1.2;}
+  .count-num{font-family:var(--font-display);font-weight:700;font-size:20px;}
+  .count-name{font-size:11.5px;font-weight:700;color:var(--ink-500);}
+
+  /* ---------- subject chips ---------- */
+  .subject-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .subject-chip{
+    font-family:var(--font-body);font-weight:800;font-size:13.5px;border:1px solid var(--border-card);
+    border-radius:999px;padding:9px 16px;cursor:pointer;background:var(--panel-tint);color:var(--ink-900);
+    transition:transform .12s ease, background .2s ease;
+  }
+  .subject-chip:hover{transform:translateY(-1px);}
+  .subject-chip:active{transform:translateY(1px);}
+  .subject-chip:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .subject-chip.active{background:var(--teal-700);color:#fff;border-color:var(--teal-700);}
+
+  /* ---------- record list ---------- */
+  .records-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .mini-counts{display:flex;gap:8px;flex-wrap:wrap;}
+  .mini-chip{
+    display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;border-radius:999px;
+    padding:4px 10px;background:var(--panel-tint);color:var(--ink-500);border:1px solid var(--border-card);
+  }
+  .mini-chip .dot{width:8px;height:8px;border-radius:50%;}
+
+  .record-list{display:flex;flex-direction:column;gap:10px;}
+  .record-card{
+    border-radius:var(--r-md);border:1px solid var(--border-card);padding:14px 16px;
+    background:var(--white);position:relative;overflow:hidden;
+  }
+  .record-card:before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--status-blank);
+  }
+  .record-card.C:before{background:var(--status-checked);}
+  .record-card.S:before{background:var(--status-submitted);}
+  .record-card.L:before{background:var(--status-late);}
+  .record-card.I:before{background:var(--status-incomplete);}
+  .record-card.N:before{background:var(--status-notsubmitted);}
+
+  .record-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .status-badge{
+    display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:12.5px;border-radius:999px;
+    padding:5px 11px;
+  }
+  .status-badge.C{background:color-mix(in srgb, var(--status-checked) 24%, var(--white));color:var(--status-checked-dark);}
+  .status-badge.S{background:color-mix(in srgb, var(--status-submitted) 22%, var(--white));color:var(--status-submitted-dark);}
+  .status-badge.L{background:color-mix(in srgb, var(--status-late) 26%, var(--white));color:var(--status-late-dark);}
+  .status-badge.I{background:color-mix(in srgb, var(--status-incomplete) 24%, var(--white));color:var(--status-incomplete-dark);}
+  .status-badge.N{background:color-mix(in srgb, var(--status-notsubmitted) 22%, var(--white));color:var(--status-notsubmitted-dark);}
+
+  .record-date{font-size:12px;font-weight:700;color:var(--ink-500);white-space:nowrap;}
+  .record-title{font-family:var(--font-display);font-weight:600;font-size:16px;color:var(--ink-900);margin-bottom:4px;}
+  .record-meta{font-size:12.5px;font-weight:600;color:var(--ink-500);}
+  .record-note{
+    margin-top:8px;font-size:12.5px;font-weight:600;color:var(--ink-900);background:var(--panel-tint);
+    border-radius:var(--r-sm);padding:8px 10px;
+  }
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-500);}
+  .legend-dot{width:10px;height:10px;border-radius:3px;}
+
+  /* ---------- status / loading ---------- */
+  .state-msg{text-align:center;padding:30px 12px;font-weight:700;color:var(--ink-500);font-size:14.5px;}
+  .state-msg.err{color:var(--status-notsubmitted-dark);}
+  .retry-btn{
+    margin-top:10px;font-family:var(--font-body);font-weight:800;font-size:13.5px;border:none;
+    border-radius:999px;padding:9px 18px;cursor:pointer;background:var(--teal-700);color:#fff;
+  }
+  .spinner{
+    width:26px;height:26px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--teal-600);
+    margin:0 auto 10px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+
+  @media (max-width:420px){
+    .card{padding:16px;}
+    .record-title{font-size:15px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Overview: overall checking summary across every subject -->
+  <div class="card" id="overviewCard">
+    <h2 class="section-title">My checking summary</h2>
+    <p class="section-sub">Since your records began</p>
+    <div id="overviewBody">
+      <div class="state-msg" id="overviewState"><div class="spinner"></div>Loading your records…</div>
+    </div>
+  </div>
+
+  <!-- Subject picker -->
+  <div class="card" id="subjectCard">
+    <h2 class="section-title">Choose a subject</h2>
+    <p class="section-sub">See your checking records for that subject</p>
+    <div id="subjectBody">
+      <div class="state-msg" id="subjectState"><div class="spinner"></div>Loading subjects…</div>
+    </div>
+  </div>
+
+  <!-- Records for the selected subject -->
+  <div class="card" id="recordsCard" style="display:none;">
+    <div class="records-head">
+      <div>
+        <h2 class="section-title" id="recordsSubjectLabel">—</h2>
+        <p class="section-sub" style="margin-bottom:0;">Your checking records</p>
+      </div>
+      <div class="mini-counts" id="miniCounts"></div>
+    </div>
+    <div id="recordsBody">
+      <div class="state-msg" id="recordsState"><div class="spinner"></div>Loading records…</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     Multi-tenant credentials — provided as-is, do not modify.
+  ============================================================ */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  var AUTH_REDIRECT = 'https://educational-saas.github.io/'; // If user not already logged in or does not have a "student" role
+
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Theme is controlled entirely by the parent page, which sets
+  // data-theme="light" | "dark" on <html>. This page's CSS already
+  // keys off html[data-theme="dark"], so nothing else is needed here.
+
+  /* ============================================================
+     Helpers
+  ============================================================ */
+  var STATUS_META = {
+    C: {label:'Checked',      emoji:'✅', color:'var(--status-checked)',      colorDark:'var(--status-checked-dark)'},
+    S: {label:'Submitted',    emoji:'📩', color:'var(--status-submitted)',    colorDark:'var(--status-submitted-dark)'},
+    L: {label:'Late',         emoji:'🕒', color:'var(--status-late)',         colorDark:'var(--status-late-dark)'},
+    I: {label:'Incomplete',   emoji:'⏳', color:'var(--status-incomplete)',   colorDark:'var(--status-incomplete-dark)'},
+    N: {label:'Not Submitted',emoji:'❌', color:'var(--status-notsubmitted)', colorDark:'var(--status-notsubmitted-dark)'}
+  };
+  var STATUS_ORDER = ['C','S','L','I','N'];
+  var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Indian date-writing style: day before month, e.g. "21 Oct 2026"
+  function formatIndianDate(isoTimestamp){
+    if(!isoTimestamp) return '—';
+    var d = new Date(isoTimestamp);
+    if(isNaN(d.getTime())) return '—';
+    var day = d.getDate();
+    var month = MONTH_SHORT[d.getMonth()];
+    var year = d.getFullYear();
+    var hh = d.getHours();
+    var mm = d.getMinutes();
+    var ampm = hh >= 12 ? 'PM' : 'AM';
+    var hh12 = hh % 12; if(hh12 === 0) hh12 = 12;
+    var mmStr = mm < 10 ? '0'+mm : ''+mm;
+    return day + ' ' + month + ' ' + year + ', ' + hh12 + ':' + mmStr + ' ' + ampm;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function colorTierFor(pct){
+    if(pct === null) return {fg:'var(--ink-500)'};
+    if(pct < 60) return {fg:'var(--status-notsubmitted-dark)'};
+    if(pct < 85) return {fg:'var(--status-late-dark)'};
+    return {fg:'var(--status-checked-dark)'};
+  }
+
+  function ringSVG(pct, label, size){
+    size = size || 118;
+    var stroke = 11;
+    var r = (size - stroke) / 2;
+    var c = 2 * Math.PI * r;
+    var tier = colorTierFor(pct);
+    var dash = pct === null ? 0 : (pct/100) * c;
+    var displayPct = pct === null ? '—' : Math.round(pct) + '%';
+    return ''
+      + '<div class="ring-block">'
+      + '<svg class="ring-svg" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'
+      + '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="var(--track)" stroke-width="'+stroke+'"/>'
+      + '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+tier.fg+'" stroke-width="'+stroke+'" '
+      +   'stroke-linecap="round" stroke-dasharray="'+dash.toFixed(1)+' '+c.toFixed(1)+'" '
+      +   'transform="rotate(-90 '+size/2+' '+size/2+')"/>'
+      + '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" class="ring-pct" '
+      +   'font-size="'+Math.round(size*0.22)+'" fill="'+tier.fg+'">'+displayPct+'</text>'
+      + '</svg>'
+      + '<span class="ring-label">'+label+'</span>'
+      + '</div>';
+  }
+
+  function countChip(key, count){
+    var meta = STATUS_META[key];
+    return ''
+      + '<div class="count-chip">'
+      + '<span class="count-dot" style="background:'+meta.color+'"></span>'
+      + '<span class="count-text"><span class="count-num">'+count+'</span>'
+      + '<span class="count-name">'+meta.emoji+' '+meta.label+'</span></span>'
+      + '</div>';
+  }
+
+  function miniChip(key, count){
+    var meta = STATUS_META[key];
+    return '<span class="mini-chip"><span class="dot" style="background:'+meta.color+'"></span>'+count+' '+meta.label+'</span>';
+  }
+
+  function pctChecked(counts){
+    var total = (counts.C||0) + (counts.S||0) + (counts.L||0) + (counts.I||0) + (counts.N||0);
+    if(total === 0) return null;
+    return (counts.C / total) * 100;
+  }
+
+  /* ============================================================
+     App state
+  ============================================================ */
+  var state = {
+    masterId: null,
+    class: null,
+    subjects: [],          // [{name, display_order}]
+    selectedSubject: null,
+    overallCounts: null,
+    recordsCache: {}        // subject -> array of records (sorted newest first)
+  };
+
+  /* ============================================================
+     Auth + identity resolution
+  ============================================================ */
+  async function init(){
+    try{
+      var sessionRes = await supabase.auth.getSession();
+      var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+      if(!session){ window.location.href = AUTH_REDIRECT; return; }
+
+      var uid = session.user.id;
+
+      // Confirm this user is a student, and get the link to their master record.
+      var studentRes = await supabase.from('students')
+        .select('name, master_token')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if(studentRes.error || !studentRes.data || !studentRes.data.master_token){
+        window.location.href = AUTH_REDIRECT; return;
+      }
+
+      // Resolve the official master record (id + class) behind this account.
+      var masterRes = await supabase.from('students_master')
+        .select('id, class')
+        .eq('token', studentRes.data.master_token)
+        .maybeSingle();
+
+      if(masterRes.error || !masterRes.data){
+        showOverviewError('We could not find your student record.');
+        showSubjectError('We could not find your student record.');
+        return;
+      }
+
+      state.masterId = masterRes.data.id;
+      state.class = masterRes.data.class;
+
+      await Promise.all([loadOverallCounts(), loadSubjects()]);
+    } catch(e){
+      showOverviewError('Something went wrong loading your checking records.');
+      showSubjectError('Something went wrong loading your subjects.');
+    }
+  }
+
+  /* ============================================================
+     Overall counts — count-only queries, no row data transferred.
+  ============================================================ */
+  async function loadOverallCounts(){
+    try{
+      var results = await Promise.all(STATUS_ORDER.map(function(s){
+        return supabase.from('checking_status')
+          .select('*', {count:'exact', head:true})
+          .eq('student_id', state.masterId)
+          .eq('status', s);
+      }));
+
+      var counts = {};
+      for(var i=0;i<STATUS_ORDER.length;i++){
+        if(results[i].error) throw results[i].error;
+        counts[STATUS_ORDER[i]] = results[i].count || 0;
+      }
+      state.overallCounts = counts;
+      renderOverview();
+    } catch(e){
+      showOverviewError('Could not load your overall checking summary.');
+    }
+  }
+
+  function renderOverview(){
+    var pct = pctChecked(state.overallCounts);
+    var html = '<div class="overview">'
+      + ringSVG(pct, 'Checked rate')
+      + '<div class="counts-grid">'
+      + STATUS_ORDER.map(function(k){ return countChip(k, state.overallCounts[k]); }).join('')
+      + '</div></div>';
+    document.getElementById('overviewBody').innerHTML = html;
+  }
+
+  function showOverviewError(msg){
+    document.getElementById('overviewBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryOverview">Try again</button></div>';
+    var btn = document.getElementById('retryOverview');
+    if(btn) btn.addEventListener('click', loadOverallCounts);
+  }
+
+  /* ============================================================
+     Subjects for this student's class
+  ============================================================ */
+  async function loadSubjects(){
+    try{
+      var res = await supabase.from('class_subjects')
+        .select('subject, subjects(display_order)')
+        .eq('class', state.class);
+
+      if(res.error) throw res.error;
+
+      var subjects = (res.data || []).map(function(row){
+        return {
+          name: row.subject,
+          order: (row.subjects && typeof row.subjects.display_order === 'number') ? row.subjects.display_order : 1
+        };
+      });
+      subjects.sort(function(a,b){
+        if(a.order !== b.order) return a.order - b.order;
+        return a.name.localeCompare(b.name);
+      });
+
+      state.subjects = subjects;
+      renderSubjects();
+
+      if(subjects.length){
+        selectSubject(subjects[0].name);
+      } else {
+        document.getElementById('recordsCard').style.display = 'none';
+      }
+    } catch(e){
+      showSubjectError('Could not load your subjects.');
+    }
+  }
+
+  function renderSubjects(){
+    if(!state.subjects.length){
+      document.getElementById('subjectBody').innerHTML =
+        '<div class="state-msg">No subjects are set up for your class yet.</div>';
+      return;
+    }
+    var html = '<div class="subject-row">' + state.subjects.map(function(s){
+      var activeCls = (s.name === state.selectedSubject) ? ' active' : '';
+      return '<button class="subject-chip'+activeCls+'" data-subject="'+escapeHtml(s.name)+'">'+escapeHtml(s.name)+'</button>';
+    }).join('') + '</div>';
+    document.getElementById('subjectBody').innerHTML = html;
+
+    var chips = document.getElementById('subjectBody').querySelectorAll('.subject-chip');
+    chips.forEach(function(chip){
+      chip.addEventListener('click', function(){
+        selectSubject(chip.getAttribute('data-subject'));
+      });
+    });
+  }
+
+  function showSubjectError(msg){
+    document.getElementById('subjectBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retrySubjects">Try again</button></div>';
+    var btn = document.getElementById('retrySubjects');
+    if(btn) btn.addEventListener('click', loadSubjects);
+  }
+
+  /* ============================================================
+     Records for the selected subject
+  ============================================================ */
+  function selectSubject(subjectName){
+    state.selectedSubject = subjectName;
+    renderSubjects();
+    document.getElementById('recordsCard').style.display = '';
+    document.getElementById('recordsSubjectLabel').textContent = subjectName;
+    loadRecords(subjectName);
+  }
+
+  async function loadRecords(subjectName){
+    document.getElementById('miniCounts').innerHTML = '';
+    document.getElementById('recordsBody').innerHTML =
+      '<div class="state-msg" id="recordsState"><div class="spinner"></div>Loading records…</div>';
+
+    if(state.recordsCache[subjectName]){
+      renderRecords(subjectName, state.recordsCache[subjectName]);
+      return;
+    }
+
+    try{
+      var statusRes = await supabase.from('checking_status')
+        .select('assignment_id, status, note, marked_by_name, marked_at')
+        .eq('student_id', state.masterId)
+        .eq('class', state.class)
+        .eq('subject', subjectName)
+        .order('marked_at', {ascending:false});
+
+      if(statusRes.error) throw statusRes.error;
+
+      var rows = statusRes.data || [];
+      var titleById = {};
+      var ids = Array.from(new Set(rows.map(function(r){ return r.assignment_id; })));
+
+      if(ids.length){
+        var assignRes = await supabase.from('checking_assignments')
+          .select('id, title')
+          .in('id', ids);
+        if(assignRes.error) throw assignRes.error;
+        (assignRes.data || []).forEach(function(a){ titleById[a.id] = a.title; });
+      }
+
+      var records = rows.map(function(r){
+        return {
+          title: titleById[r.assignment_id] || 'Checking assignment',
+          status: r.status,
+          note: r.note,
+          teacher: r.marked_by_name || 'Your teacher',
+          markedAt: r.marked_at
+        };
+      });
+
+      state.recordsCache[subjectName] = records;
+      renderRecords(subjectName, records);
+    } catch(e){
+      showRecordsError('Could not load records for this subject.');
+    }
+  }
+
+  function renderRecords(subjectName, records){
+    var counts = {C:0,S:0,L:0,I:0,N:0};
+    records.forEach(function(r){ if(counts.hasOwnProperty(r.status)) counts[r.status]++; });
+    document.getElementById('miniCounts').innerHTML = STATUS_ORDER
+      .filter(function(k){ return counts[k] > 0; })
+      .map(function(k){ return miniChip(k, counts[k]); })
+      .join('');
+
+    if(!records.length){
+      document.getElementById('recordsBody').innerHTML =
+        '<div class="state-msg">No checking records yet for '+escapeHtml(subjectName)+'. Check back after your next notebook check!</div>';
+      return;
+    }
+
+    var html = '<div class="record-list">' + records.map(function(r){
+      var meta = STATUS_META[r.status] || {label:r.status, emoji:'', };
+      var noteHtml = r.note ? '<div class="record-note">📝 '+escapeHtml(r.note)+'</div>' : '';
+      return ''
+        + '<div class="record-card '+r.status+'">'
+        + '<div class="record-top">'
+        +   '<span class="status-badge '+r.status+'">'+meta.emoji+' '+meta.label+'</span>'
+        +   '<span class="record-date">'+formatIndianDate(r.markedAt)+'</span>'
+        + '</div>'
+        + '<div class="record-title">'+escapeHtml(r.title)+'</div>'
+        + '<div class="record-meta">👩‍🏫 Marked by '+escapeHtml(r.teacher)+'</div>'
+        + noteHtml
+        + '</div>';
+    }).join('') + '</div>';
+
+    html += '<div class="legend">' + STATUS_ORDER.map(function(k){
+      var m = STATUS_META[k];
+      return '<span class="legend-item"><span class="legend-dot" style="background:'+m.color+'"></span>'+m.emoji+' '+m.label+'</span>';
+    }).join('') + '</div>';
+
+    document.getElementById('recordsBody').innerHTML = html;
+  }
+
+  function showRecordsError(msg){
+    document.getElementById('recordsBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryRecords">Try again</button></div>';
+    var btn = document.getElementById('retryRecords');
+    if(btn) btn.addEventListener('click', function(){ loadRecords(state.selectedSubject); });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
