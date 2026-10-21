@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>File Vault</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold:rgba(245,166,35,.10); --bg-tint-teal:rgba(27,107,120,.10);
+    --border:rgba(13,56,65,.08); --border-hover:rgba(245,166,35,.45);
+    --toggle-bg:rgba(255,255,255,.75); --toggle-border:rgba(13,56,65,.14);
+    --header-bg:rgba(250,248,243,.85);
+    --danger:#c9432f; --danger-bg:rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg:rgba(47,143,91,.1);
+    --medical:#0e7fb0; --holiday:#7c5ce0;
+    --shadow:0 18px 40px -22px rgba(13,56,65,.35);
+    --ease:cubic-bezier(.22,1,.36,1);
+    --r-md:18px; --r-sm:14px;
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-700:#5fd0de; --teal-600:#7fdbe6;
+    --gold-600:#ffb648; --gold-400:#ffd685;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold:rgba(255,182,72,.07); --bg-tint-teal:rgba(95,208,222,.10);
+    --border:rgba(255,255,255,.08); --border-hover:rgba(255,198,92,.4);
+    --toggle-bg:rgba(24,36,37,.85); --toggle-border:rgba(255,255,255,.14);
+    --header-bg:rgba(9,34,39,.85);
+    --danger:#ff6b57; --danger-bg:rgba(255,107,87,.12);
+    --success:#57d492; --success-bg:rgba(87,212,146,.12);
+    --medical:#5cc8f0; --holiday:#a994ff;
+    --shadow:0 18px 40px -22px rgba(0,0,0,.55);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100svh; overflow-x:hidden;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,sans-serif;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color:transparent;
+  }
+  button,input,select{font-family:inherit;}
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+
+  #gate{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s;}
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{width:36px; height:36px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--gold-500); animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{display:none; min-height:100svh; flex-direction:column;}
+  #app.ready{display:flex;}
+
+  .app-header{
+    position:sticky; top:0; z-index:40; background:var(--header-bg);
+    border-bottom:1px solid var(--border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+  }
+  .hdr-top{display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto;}
+  .hdr-brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .hdr-title{font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; margin:0; color:var(--ink-900);}
+  .hdr-sub{margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600);}
+  .hdr-actions{display:flex; gap:8px;}
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; flex-shrink:0; position:relative;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    background:var(--toggle-bg); border:1.5px solid var(--toggle-border);
+    box-shadow:0 10px 24px -12px rgba(13,56,65,.4);
+    transition:transform .2s var(--ease);
+  }
+  .icon-btn:hover{transform:translateY(-2px);}
+  .icon-btn:active{transform:scale(.96);}
+  .icon-btn:focus-visible{outline:3px solid var(--gold-500); outline-offset:3px;}
+  .icon-btn svg{width:19px; height:19px; fill:none; stroke:var(--teal-700); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s, transform .4s var(--ease);}
+  .icon-sun{opacity:1; transform:rotate(0) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0) scale(1);}
+  html[data-theme="dark"] .icon-btn svg{stroke:var(--gold-400);}
+  .icon-btn.danger svg{stroke:var(--danger);}
+
+  main{flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 110px); display:flex; flex-direction:column; gap:14px;}
+  .card{background:var(--white); border:1px solid var(--border); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow);}
+
+  /* Breadcrumb */
+  .crumbs{display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-size:.86rem; font-weight:600; color:var(--ink-500);}
+  .crumbs button{background:none; border:none; cursor:pointer; color:var(--ink-500); font-weight:600; font-size:.86rem; padding:4px 2px; font-family:inherit;}
+  .crumbs button:hover{color:var(--gold-600);}
+  .crumbs .current{color:var(--ink-900); font-weight:800;}
+  .crumbs .sep{color:var(--border-hover); opacity:.7;}
+
+  /* Folder grid */
+  .folder-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px;}
+  .folder-card{
+    display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:16px;
+    background:var(--white); border:1px solid var(--border); border-radius:var(--r-sm); cursor:pointer;
+    box-shadow:var(--shadow); transition:transform .15s var(--ease), border-color .2s;
+    text-align:left;
+  }
+  .folder-card:hover{border-color:var(--border-hover); transform:translateY(-2px);}
+  .folder-card:active{transform:scale(.98);}
+  .folder-ic{width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; background:var(--bg-tint-gold); flex-shrink:0;}
+  .folder-ic svg{width:20px; height:20px; fill:none; stroke:var(--gold-600); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .folder-ic.teal{background:var(--bg-tint-teal);}
+  .folder-ic.teal svg{stroke:var(--teal-700);}
+  .folder-name{font-weight:700; font-size:.9rem; line-height:1.25; word-break:break-word;}
+  .folder-sub{font-size:.72rem; color:var(--ink-500); font-weight:600;}
+
+  .placeholder{display:flex; flex-direction:column; align-items:center; text-align:center; padding:36px 16px; color:var(--ink-500); font-size:.9rem;}
+  .placeholder p{margin:0;}
+
+  /* File list */
+  .flist{display:flex; flex-direction:column; gap:8px;}
+  .frow{display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--white); border:1px solid var(--border); border-radius:var(--r-sm); box-shadow:var(--shadow);}
+  .fic{width:38px; height:38px; border-radius:10px; background:var(--bg-tint-teal); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.62rem; font-weight:800; color:var(--teal-700); letter-spacing:.02em; text-transform:uppercase;}
+  .fwho{flex:1; min-width:0;}
+  .fname{font-weight:700; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .fmeta{font-size:.74rem; color:var(--ink-500); margin-top:2px;}
+  .fbtns{display:flex; gap:6px; flex-shrink:0;}
+  .ic{width:34px; height:34px; border-radius:10px; border:1.5px solid var(--border); background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+  .ic:active{transform:scale(.94);}
+  .ic svg{width:16px; height:16px; fill:none; stroke:var(--ink-500); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .ic.danger svg{stroke:var(--danger);}
+  .loader{display:flex; justify-content:center; padding:40px 0;}
+
+  /* Classwork/Homework attachment badge (read-only files shown inside subject folders) */
+  .frow.frow-cw{border-left:3px solid var(--teal-600);}
+  .cw-badge{display:inline-flex; align-items:center; margin-top:5px; font-size:.68rem; font-weight:700; letter-spacing:.02em; padding:3px 9px; border-radius:999px; background:var(--bg-tint-teal); color:var(--teal-700);}
+  html[data-theme="dark"] .cw-badge{color:var(--teal-600);}
+
+  /* Floating upload button */
+  .fab{
+    position:fixed; right:calc(env(safe-area-inset-right) + 20px); bottom:calc(env(safe-area-inset-bottom) + 24px);
+    width:58px; height:58px; border-radius:50%; border:none; cursor:pointer; z-index:50;
+    background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900);
+    box-shadow:0 18px 34px -14px rgba(226,148,26,.6); display:none; align-items:center; justify-content:center;
+    transition:transform .2s var(--ease), opacity .2s;
+  }
+  .fab.show{display:flex;}
+  .fab:active{transform:scale(.93);}
+  .fab svg{width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;}
+
+  /* Buttons */
+  .btn{padding:13px 18px; border-radius:14px; border:none; font-weight:700; font-size:.88rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:transform .2s var(--ease), opacity .2s;}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .btn-primary{background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55);}
+  .btn-ghost{background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border);}
+  .btn-danger{background:var(--danger-bg); color:var(--danger);}
+
+  .field label{display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px;}
+  .field + .field{margin-top:14px;}
+  select,input[type="text"]{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border);
+    background:var(--cream); color:var(--ink-900); font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease);
+  }
+  select{appearance:none; -webkit-appearance:none; padding-right:36px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;}
+  select:focus,input:focus{border-color:var(--border-hover); box-shadow:0 0 0 4px var(--bg-tint-gold);}
+  select:disabled{opacity:.55; cursor:not-allowed;}
+  .combo-row{display:flex; gap:8px; align-items:center;}
+  .combo-row select{flex:1; min-width:0;}
+  .chip-list{display:flex; flex-direction:column; gap:8px; margin-top:12px;}
+  .chip{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-sm); background:var(--cream); border:1.5px solid var(--border); font-size:.86rem; font-weight:600;}
+  .chip span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .chip button{background:none; border:none; color:var(--danger); font-weight:800; cursor:pointer; font-size:1rem; line-height:1; padding:2px 4px;}
+
+  /* Upload queue */
+  .dropzone{border:2px dashed var(--border); border-radius:var(--r-sm); padding:22px; text-align:center; color:var(--ink-500); font-size:.86rem; font-weight:600; cursor:pointer; transition:border-color .2s, background .2s;}
+  .dropzone.drag{border-color:var(--gold-500); background:var(--bg-tint-gold);}
+  .qlist{display:flex; flex-direction:column; gap:10px; margin-top:14px; max-height:40vh; overflow-y:auto;}
+  .qrow{padding:10px 12px; border-radius:var(--r-sm); background:var(--cream); border:1.5px solid var(--border);}
+  .qrow-top{display:flex; align-items:center; gap:8px;}
+  .qrow-top input[type="text"]{flex:1; padding:8px 10px; font-size:.84rem;}
+  .qrow-top .ic{width:30px; height:30px;}
+  .qrow-meta{font-size:.7rem; color:var(--ink-500); margin-top:4px; font-weight:600;}
+  .qbar{height:5px; border-radius:99px; background:var(--border); margin-top:8px; overflow:hidden;}
+  .qbar-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--gold-500),var(--gold-600)); transition:width .2s var(--ease);}
+  .qrow.is-done .qbar-fill{background:var(--success);}
+  .qrow.is-error .qbar-fill{background:var(--danger);}
+  .qrow.is-error .qrow-meta{color:var(--danger);}
+
+  .sheet-backdrop{position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s;}
+  .sheet-backdrop.show{opacity:1; visibility:visible;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:101; max-width:960px; margin:0 auto; max-height:88svh; overflow-y:auto; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); transform:translateY(100%); transition:transform .3s var(--ease); box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);}
+  .sheet-backdrop.show .sheet{transform:translateY(0);}
+  .sheet-handle{width:38px; height:4px; border-radius:99px; background:var(--border); margin:0 auto 18px;}
+  .sheet h3{font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem;}
+  .sheet p{margin:0 0 16px; color:var(--ink-500); font-size:.88rem;}
+  .sheet .btn-row{display:flex; gap:10px;}
+  .sheet .btn-row .btn{flex:1;}
+  #toast-wrap{position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;}
+  .toast{background:var(--teal-900); color:#fff; font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s, transform .3s var(--ease); max-width:88vw;}
+  html[data-theme="dark"] .toast{background:var(--gold-400); color:var(--teal-900);}
+  .toast.error{background:var(--danger); color:#fff;}
+  .toast.show{opacity:1; transform:translateY(0);}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+  <header class="app-header">
+    <div class="hdr-top">
+      <div class="hdr-brand">
+        <button class="icon-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div>
+          <p class="hdr-title">File Vault</p>
+          <p class="hdr-sub" id="role-badge">Browse &bull; Manage</p>
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="crumbs" id="crumbs"></div>
+    </section>
+
+    <div id="folders" class="folder-grid" style="display:none"></div>
+
+    <div id="fileArea" style="display:none; flex-direction:column; gap:14px;">
+      <p class="lock-note" id="lock-note" style="display:none; margin:0; font-size:.84rem; font-weight:600; padding:10px 14px; border-radius:var(--r-sm); background:var(--bg-tint-gold); color:var(--gold-600);"></p>
+      <div class="flist" id="flist"></div>
+    </div>
+
+    <div class="placeholder card" id="empty-note" style="display:none"><p id="empty-note-text"></p></div>
+  </main>
+</div>
+
+<button class="fab" id="fab-upload" type="button" aria-label="Upload files" title="Upload files">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- Sign-out sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access the File Vault.</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="cancel-signout" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout" type="button">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm sheet -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-msg"></p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="confirm-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename sheet -->
+<div class="sheet-backdrop" id="sheet-rename">
+  <div class="sheet" role="dialog" aria-label="Rename file">
+    <div class="sheet-handle"></div>
+    <h3>Rename file</h3>
+    <p>Give this file a new name. The extension stays the same.</p>
+    <input type="text" id="rename-input" maxlength="255">
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-ghost" id="rename-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="rename-save" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Classwork/Homework entry view sheet (read-only) -->
+<div class="sheet-backdrop" id="sheet-cwhw-view">
+  <div class="sheet" role="dialog" aria-label="Classwork or homework entry">
+    <div class="sheet-handle"></div>
+    <h3 id="cwhw-view-title">Classwork</h3>
+    <p id="cwhw-view-meta" style="margin-bottom:12px;"></p>
+    <p id="cwhw-view-content" style="color:var(--ink-900); font-weight:500; font-size:.92rem; white-space:pre-wrap; margin-bottom:0;"></p>
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn btn-ghost" id="cwhw-view-close" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload sheet -->
+<div class="sheet-backdrop" id="sheet-upload">
+  <div class="sheet" role="dialog" aria-label="Upload files">
+    <div class="sheet-handle"></div>
+    <h3 id="upload-title">Upload files</h3>
+    <p id="upload-sub"></p>
+
+    <div id="upload-targets-wrap" style="display:none">
+      <div class="field">
+        <label for="up-class-select">Also map to</label>
+        <div class="combo-row">
+          <select id="up-class-select"><option value="">Select class…</option></select>
+          <select id="up-subject-select" disabled><option value="">Select subject…</option></select>
+          <button class="btn btn-ghost btn-sm" id="up-add-pair-btn" type="button" style="padding:9px 14px; font-size:.8rem; border-radius:11px;">Add</button>
+        </div>
+      </div>
+      <div class="chip-list" id="up-chip-list"></div>
+    </div>
+
+    <div class="dropzone" id="dropzone" style="margin-top:14px">
+      Tap to choose files, or drag and drop here<br><span style="font-weight:500">Multiple files allowed &bull; up to 100&nbsp;MB each</span>
+    </div>
+    <input type="file" id="file-input" multiple hidden>
+
+    <div class="qlist" id="qlist"></div>
+
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn btn-ghost" id="upload-close" type="button">Close</button>
+      <button class="btn btn-primary" id="upload-start" type="button" disabled>Upload</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var VAULT_FUNCTION_URL = SUPABASE_URL + '/functions/v1/vault';
+var MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+var MAX_CONCURRENT_UPLOADS = 4;
+
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var S = {
+  isAdmin: false, isTeacher: false, myName: '', myUid: '', accessToken: '',
+  classes: [], classOrder: {}, subjects: [], subjectOrder: {},
+  classSubjects: [],      // [{class, subject}] full curriculum map
+  myPairs: [],            // [{class, subject}] this teacher is assigned
+  myClassTeacherOf: {},   // class -> true (this teacher is the class_teacher)
+  // navigation
+  view: 'root',           // root | class | folder
+  curClass: '', curKind: '', curSubject: '',
+  files: []
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function $(id){ return document.getElementById(id); }
+function esc(s){ var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+function fmtSize(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  if(bytes < 1024*1024*1024) return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  return (bytes/(1024*1024*1024)).toFixed(2) + ' GB';
+}
+function fmtShort(iso){ return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short' }); }
+function fmtLong(iso){ return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }); }
+function toast(msg, isError){
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  $('toast-wrap').appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+function myClassesTeaching(){
+  var seen = {}, out = [];
+  S.myPairs.forEach(function(p){ if(!seen[p.class]){ seen[p.class]=true; out.push(p.class); } });
+  return out;
+}
+function subjectsForClass(cls, forAdmin){
+  var list = forAdmin
+    ? S.classSubjects.filter(function(p){ return p.class === cls; }).map(function(p){ return p.subject; })
+    : S.myPairs.filter(function(p){ return p.class === cls; }).map(function(p){ return p.subject; });
+  return list.sort(function(a,b){ return (S.subjectOrder[a]||0) - (S.subjectOrder[b]||0); });
+}
+
+async function vaultCall(action, payload){
+  var res = await fetch(VAULT_FUNCTION_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.accessToken },
+    body: JSON.stringify(Object.assign({ action: action }, payload))
+  });
+  var data = {};
+  try{ data = await res.json(); }catch(e){}
+  if(!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
+  return data;
+}
+
+/* =========================================================
+   SHEETS
+========================================================= */
+var confirmOk = null;
+function askConfirm(title, msg, onOk, okLabel){
+  $('confirm-title').textContent = title;
+  $('confirm-msg').textContent = msg;
+  $('confirm-ok').textContent = okLabel || 'Delete';
+  confirmOk = onOk;
+  $('sheet-confirm').classList.add('show');
+}
+$('confirm-cancel').addEventListener('click', function(){ $('sheet-confirm').classList.remove('show'); confirmOk = null; });
+$('confirm-ok').addEventListener('click', function(){ var f = confirmOk; $('sheet-confirm').classList.remove('show'); confirmOk = null; if(f) f(); });
+
+$('signout-btn').addEventListener('click', function(){ $('sheet-signout').classList.add('show'); });
+$('cancel-signout').addEventListener('click', function(){ $('sheet-signout').classList.remove('show'); });
+$('confirm-signout').addEventListener('click', function(){ sb.auth.signOut().then(async function(){ await wipeInstitutionData(); location.href = AUTH_REDIRECT; }); });
+
+$('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+$('back-btn').addEventListener('click', function(){
+  if(S.view === 'root'){ location.href = DASHBOARD_URL; } else { navigateUp(); }
+});
+
+$('cwhw-view-close').addEventListener('click', function(){ $('sheet-cwhw-view').classList.remove('show'); });
+
+/* =========================================================
+   NAVIGATION / FOLDER MODEL
+========================================================= */
+function navigateUp(){
+  if(S.view === 'folder'){
+    if(S.curKind === 'subject' || S.curKind === 'highlights'){ S.view = 'class'; }
+    else { S.view = 'root'; }
+  } else if(S.view === 'class'){
+    S.view = 'root';
+  }
+  render();
+}
+function goRoot(){ S.view = 'root'; render(); }
+function goClass(cls){ S.view = 'class'; S.curClass = cls; render(); }
+function goFolder(kind, cls, subject){
+  S.view = 'folder'; S.curKind = kind; S.curClass = cls || ''; S.curSubject = subject || '';
+  loadFiles();
+}
+
+function canManageCurrentFolder(){
+  if(S.curKind === 'private') return true; // always your own
+  if(S.curKind === 'showcase') return S.isAdmin;
+  if(S.curKind === 'highlights') return S.isAdmin || !!S.myClassTeacherOf[S.curClass];
+  if(S.curKind === 'subject') return S.isAdmin || S.myPairs.some(function(p){ return p.class === S.curClass && p.subject === S.curSubject; });
+  return false;
+}
+
+function renderCrumbs(){
+  var parts = [];
+  parts.push('<button type="button" data-go="root">Vault</button>');
+  if(S.view === 'class' || S.view === 'folder'){
+    parts.push('<span class="sep">/</span>');
+    if(S.view === 'class'){ parts.push('<span class="current">' + esc(S.curClass) + '</span>'); }
+    else { parts.push('<button type="button" data-go="class">' + esc(S.curClass || '') + '</button>'); }
+  }
+  if(S.view === 'folder'){
+    parts.push('<span class="sep">/</span>');
+    var label = S.curKind === 'private' ? 'Private'
+      : S.curKind === 'showcase' ? 'Showcase'
+      : S.curKind === 'highlights' ? 'Highlights'
+      : S.curSubject;
+    parts.push('<span class="current">' + esc(label) + '</span>');
+  }
+  $('crumbs').innerHTML = parts.join('');
+}
+$('crumbs').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-go]');
+  if(!btn) return;
+  if(btn.getAttribute('data-go') === 'root') goRoot(); else { S.view='class'; render(); }
+});
+
+function render(){
+  renderCrumbs();
+  $('folders').style.display = 'none';
+  $('fileArea').style.display = 'none';
+  $('empty-note').style.display = 'none';
+  $('fab-upload').classList.remove('show');
+
+  if(S.view === 'root'){
+    var cards = [];
+    cards.push(folderCard('private', '', '', 'Private', 'Only you', iconLock()));
+    cards.push(folderCard('showcase', '', '', 'Showcase', S.isAdmin ? 'Manage' : 'School-wide', iconStar(), true));
+    var classes = S.isAdmin ? S.classes : myClassesTeaching();
+    classes.forEach(function(c){ cards.push(classCard(c)); });
+    $('folders').innerHTML = cards.join('');
+    $('folders').style.display = 'grid';
+    if(!classes.length){
+      $('empty-note-text').textContent = 'No classes assigned to you yet.';
+      $('empty-note').style.display = classes.length ? 'none' : 'flex';
+    }
+  } else if(S.view === 'class'){
+    var subs = subjectsForClass(S.curClass, S.isAdmin);
+    var cards2 = subs.map(function(s){ return folderCard('subject', S.curClass, s, s, 'Subject', iconFolder()); });
+    var canSeeHighlights = S.isAdmin || S.myPairs.some(function(p){ return p.class === S.curClass; });
+    if(canSeeHighlights) cards2.unshift(folderCard('highlights', S.curClass, '', 'Highlights', 'Photos & more', iconStar(), true));
+    $('folders').innerHTML = cards2.join('');
+    $('folders').style.display = 'grid';
+    if(!cards2.length){ $('empty-note-text').textContent = 'Nothing available to you in this class yet.'; $('empty-note').style.display = 'flex'; }
+  } else if(S.view === 'folder'){
+    $('fileArea').style.display = 'flex';
+    var manage = canManageCurrentFolder();
+    $('lock-note').style.display = manage ? 'none' : 'block';
+    $('lock-note').textContent = 'View only — you can view and download, but not manage this folder.';
+    if(manage) $('fab-upload').classList.add('show');
+    renderFiles();
+  }
+}
+
+function folderCard(kind, cls, subject, label, sub, iconSvg, teal){
+  return '<button type="button" class="folder-card" data-kind="' + kind + '" data-class="' + esc(cls) + '" data-subject="' + esc(subject) + '">' +
+    '<span class="folder-ic' + (teal ? ' teal' : '') + '">' + iconSvg + '</span>' +
+    '<span class="folder-name">' + esc(label) + '</span>' +
+    '<span class="folder-sub">' + esc(sub) + '</span></button>';
+}
+function classCard(cls){
+  return '<button type="button" class="folder-card" data-goclass="' + esc(cls) + '">' +
+    '<span class="folder-ic teal">' + iconFolder() + '</span>' +
+    '<span class="folder-name">' + esc(cls) + '</span>' +
+    '<span class="folder-sub">Class</span></button>';
+}
+function iconFolder(){ return '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>'; }
+function iconLock(){ return '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'; }
+function iconStar(){ return '<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.7-4.9 4.6 1.3 6.6-5.9-3.3-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.7Z"/></svg>'; }
+
+$('folders').addEventListener('click', function(e){
+  var btn = e.target.closest('.folder-card');
+  if(!btn) return;
+  if(btn.dataset.goclass !== undefined){ goClass(btn.dataset.goclass); return; }
+  goFolder(btn.dataset.kind, btn.dataset.class, btn.dataset.subject);
+});
+
+/* =========================================================
+   FILE LIST
+========================================================= */
+async function loadFiles(){
+  render();
+  $('flist').innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+  try{
+    var rows = [];
+    if(S.curKind === 'private'){
+      var r = await sb.from('vault_files').select('*').eq('kind','private').eq('owner_id', S.myUid).eq('status','active').order('created_at', { ascending:false });
+      if(r.error) throw r.error; rows = r.data || [];
+    } else if(S.curKind === 'showcase'){
+      var r2 = await sb.from('vault_files').select('*').eq('kind','showcase').eq('status','active').order('created_at', { ascending:false });
+      if(r2.error) throw r2.error; rows = r2.data || [];
+    } else if(S.curKind === 'highlights'){
+      var r3 = await sb.from('vault_files').select('*').eq('kind','highlights').eq('highlight_class', S.curClass).eq('status','active').order('created_at', { ascending:false });
+      if(r3.error) throw r3.error; rows = r3.data || [];
+    } else if(S.curKind === 'subject'){
+      var r4 = await sb.from('vault_file_targets').select('vault_files(*)').eq('class', S.curClass).eq('subject', S.curSubject);
+      if(r4.error) throw r4.error;
+      rows = (r4.data || []).map(function(x){ return x.vault_files; }).filter(function(f){ return f && f.status === 'active'; });
+
+      // Classwork/Homework attachments mapped to this class+subject: shown
+      // alongside ordinary subject files, but read-only (see renderFiles).
+      // They live in the same vault_files table (kind='classwork_homework'),
+      // linked to a classwork_homework entry instead of vault_file_targets.
+      try{
+        var cwLinks = await sb.from('classwork_homework_classes').select('entry_id').eq('class', S.curClass);
+        if(cwLinks.error) throw cwLinks.error;
+        var cwEntryIdsAll = (cwLinks.data || []).map(function(x){ return x.entry_id; });
+        if(cwEntryIdsAll.length){
+          var cwEntriesRes = await sb.from('classwork_homework').select('id, entry_date, kind, content, subject').in('id', cwEntryIdsAll).eq('subject', S.curSubject);
+          if(cwEntriesRes.error) throw cwEntriesRes.error;
+          var cwEntryMap = {};
+          (cwEntriesRes.data || []).forEach(function(e){ cwEntryMap[e.id] = e; });
+          var cwEntryIds = Object.keys(cwEntryMap).map(Number);
+          if(cwEntryIds.length){
+            var cwFilesRes = await sb.from('vault_files').select('*').eq('kind','classwork_homework').eq('status','active').in('cwhw_entry_id', cwEntryIds);
+            if(cwFilesRes.error) throw cwFilesRes.error;
+            (cwFilesRes.data || []).forEach(function(f){
+              f._cwEntry = cwEntryMap[f.cwhw_entry_id];
+              rows.push(f);
+            });
+          }
+        }
+      }catch(cwErr){
+        // Non-fatal: if classwork/homework attachments fail to load for any
+        // reason, the ordinary subject files above still render normally.
+        console.error('Could not load classwork/homework attachments:', cwErr);
+      }
+
+      rows.sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
+    }
+    S.files = rows;
+    renderFiles();
+  }catch(e){
+    console.error(e);
+    toast('Could not load files: ' + e.message, true);
+    $('flist').innerHTML = '';
+  }
+}
+
+function renderFiles(){
+  var manage = canManageCurrentFolder();
+  if(!S.files.length){
+    $('flist').innerHTML = '<p class="placeholder" style="padding:20px">No files here yet.' + (manage ? ' Tap + to upload.' : '') + '</p>';
+    return;
+  }
+  $('flist').innerHTML = S.files.map(function(f){
+    var isCw = f.kind === 'classwork_homework';
+    var canManageThis = manage && !isCw; // classwork/homework attachments are always read-only here
+    var badge = '';
+    if(isCw){
+      var entry = f._cwEntry;
+      var cwLabel = entry && entry.kind === 'H' ? 'Homework attachment' : 'Classwork attachment';
+      var cwDate = entry ? fmtShort(entry.entry_date) : '';
+      badge = '<span class="cw-badge">' + esc(cwLabel) + (cwDate ? ' &middot; ' + esc(cwDate) : '') + '</span>';
+    }
+    return '<div class="frow' + (isCw ? ' frow-cw' : '') + '" data-id="' + f.id + '">' +
+      '<div class="fic">' + esc((f.file_ext||'').slice(0,4)) + '</div>' +
+      '<div class="fwho"><div class="fname">' + esc(f.display_name) + '.' + esc(f.file_ext) + '</div>' +
+      '<div class="fmeta">' + fmtSize(f.size_bytes) + ' &middot; ' + fmtShort(f.created_at) + '</div>' +
+      badge +
+      '</div>' +
+      '<div class="fbtns">' +
+      '<button class="ic" type="button" data-act="download" aria-label="Download"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></button>' +
+      (isCw ? '<button class="ic" type="button" data-act="view-entry" aria-label="View classwork/homework entry"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>' : '') +
+      (canManageThis ? '<button class="ic" type="button" data-act="rename" aria-label="Rename"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' +
+                '<button class="ic danger" type="button" data-act="delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+$('flist').addEventListener('click', async function(e){
+  var row = e.target.closest('.frow');
+  if(!row) return;
+  var id = Number(row.dataset.id);
+  var file = S.files.filter(function(f){ return f.id === id; })[0];
+  if(!file) return;
+  var act = e.target.closest('[data-act]');
+  if(!act) return;
+  var kind = act.dataset.act;
+
+  if(kind === 'download'){
+    act.disabled = true;
+    try{
+      var res = await vaultCall('presign-download', { fileId: id });
+      var a = document.createElement('a'); a.href = res.url; a.rel = 'noopener'; a.target = '_blank';
+      document.body.appendChild(a); a.click(); a.remove();
+    }catch(err){ toast(err.message, true); }
+    act.disabled = false;
+  }
+
+  if(kind === 'view-entry'){
+    var entry = file._cwEntry;
+    if(!entry){ toast('Entry details are unavailable.', true); return; }
+    $('cwhw-view-title').textContent = (entry.kind === 'H' ? 'Homework' : 'Classwork') + ' — ' + (entry.subject || S.curSubject);
+    $('cwhw-view-meta').textContent = S.curClass + ' • ' + fmtLong(entry.entry_date);
+    $('cwhw-view-content').textContent = entry.content || '';
+    $('sheet-cwhw-view').classList.add('show');
+  }
+
+  if(kind === 'rename'){
+    $('rename-input').value = file.display_name;
+    $('sheet-rename').classList.add('show');
+    $('rename-save').onclick = async function(){
+      var name = $('rename-input').value.trim();
+      if(!name){ toast('Enter a name.', true); return; }
+      $('rename-save').disabled = true;
+      try{
+        await vaultCall('rename', { fileId: id, displayName: name });
+        toast('Renamed.');
+        $('sheet-rename').classList.remove('show');
+        loadFiles();
+      }catch(err){ toast(err.message, true); }
+      $('rename-save').disabled = false;
+    };
+  }
+
+  if(kind === 'delete'){
+    askConfirm('Delete "' + file.display_name + '"?', 'This permanently removes the file from storage. This cannot be undone.', async function(){
+      try{
+        await vaultCall('delete', { fileId: id });
+        toast('File deleted.');
+        loadFiles();
+      }catch(err){ toast(err.message, true); }
+    }, 'Delete');
+  }
+});
+$('rename-cancel').addEventListener('click', function(){ $('sheet-rename').classList.remove('show'); });
+
+/* =========================================================
+   UPLOAD SHEET
+========================================================= */
+var queue = []; // {localId, file, name, status, progress, errorMsg}
+var uploadTargets = []; // for 'subject' kind, shared across the whole batch
+
+function openUploadSheet(){
+  queue = [];
+  renderQueue();
+  $('file-input').value = '';
+
+  var kind = S.curKind;
+  var label = kind === 'private' ? 'your Private folder'
+    : kind === 'showcase' ? 'Showcase'
+    : kind === 'highlights' ? (S.curClass + ' Highlights')
+    : (S.curClass + ' — ' + S.curSubject);
+  $('upload-title').textContent = 'Upload to ' + label;
+  $('upload-sub').textContent = 'Files are capped at 100 MB each. You can rename each file below before uploading.';
+
+  if(kind === 'subject'){
+    uploadTargets = [{ class: S.curClass, subject: S.curSubject }];
+    $('upload-targets-wrap').style.display = 'block';
+    populateUpClassSelect();
+  } else {
+    uploadTargets = [];
+    $('upload-targets-wrap').style.display = 'none';
+  }
+  renderUpChips();
+  $('sheet-upload').classList.add('show');
+}
+$('fab-upload').addEventListener('click', openUploadSheet);
+$('upload-close').addEventListener('click', function(){
+  var busy = queue.some(function(q){ return q.status === 'uploading'; });
+  if(busy){ toast('Uploads are still running.', true); return; }
+  $('sheet-upload').classList.remove('show');
+});
+
+function populateUpClassSelect(){
+  var opts = S.isAdmin ? S.classes : myClassesTeaching();
+  $('up-class-select').innerHTML = '<option value="">Select class…</option>' +
+    opts.map(function(c){ return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+  $('up-subject-select').innerHTML = '<option value="">Select subject…</option>';
+  $('up-subject-select').disabled = true;
+}
+$('up-class-select').addEventListener('change', function(){
+  var cls = this.value;
+  var subs = cls ? subjectsForClass(cls, S.isAdmin) : [];
+  $('up-subject-select').innerHTML = '<option value="">Select subject…</option>' + subs.map(function(s){ return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
+  $('up-subject-select').disabled = !cls || !subs.length;
+});
+$('up-add-pair-btn').addEventListener('click', function(){
+  var cls = $('up-class-select').value, subj = $('up-subject-select').value;
+  if(!cls || !subj){ toast('Pick a class and subject first.', true); return; }
+  if(uploadTargets.some(function(p){ return p.class===cls && p.subject===subj; })){ toast('Already added.'); return; }
+  uploadTargets.push({ class: cls, subject: subj });
+  renderUpChips();
+});
+function renderUpChips(){
+  $('up-chip-list').innerHTML = uploadTargets.map(function(p, idx){
+    return '<div class="chip"><span>' + esc(p.class) + ' — ' + esc(p.subject) + '</span>' +
+      (uploadTargets.length > 1 ? '<button type="button" data-idx="' + idx + '">✕</button>' : '') + '</div>';
+  }).join('');
+}
+$('up-chip-list').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-idx]');
+  if(!btn) return;
+  uploadTargets.splice(Number(btn.getAttribute('data-idx')), 1);
+  renderUpChips();
+});
+
+$('dropzone').addEventListener('click', function(){ $('file-input').click(); });
+$('dropzone').addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('drag'); });
+$('dropzone').addEventListener('dragleave', function(){ this.classList.remove('drag'); });
+$('dropzone').addEventListener('drop', function(e){
+  e.preventDefault(); this.classList.remove('drag');
+  addFilesToQueue(e.dataTransfer.files);
+});
+$('file-input').addEventListener('change', function(){ addFilesToQueue(this.files); this.value = ''; });
+
+function addFilesToQueue(fileList){
+  Array.prototype.forEach.call(fileList, function(f){
+    if(f.size > MAX_UPLOAD_BYTES){ toast(f.name + ' exceeds 100 MB and was skipped.', true); return; }
+    if(f.size <= 0){ return; }
+    var dot = f.name.lastIndexOf('.');
+    var base = dot > 0 ? f.name.slice(0, dot) : f.name;
+    queue.push({ localId: 'q' + Date.now() + Math.random().toString(36).slice(2), file: f, name: base, status: 'queued', progress: 0, errorMsg: '' });
+  });
+  renderQueue();
+}
+
+function renderQueue(){
+  $('qlist').innerHTML = queue.map(function(q){
+    var statusLabel = q.status === 'queued' ? fmtSize(q.file.size)
+      : q.status === 'uploading' ? 'Uploading… ' + q.progress + '%'
+      : q.status === 'done' ? 'Done'
+      : 'Failed — ' + q.errorMsg;
+    return '<div class="qrow is-' + q.status + '" data-id="' + q.localId + '">' +
+      '<div class="qrow-top">' +
+      '<input type="text" value="' + esc(q.name) + '" data-rename ' + (q.status !== 'queued' ? 'disabled' : '') + '>' +
+      (q.status === 'queued' ? '<button class="ic" type="button" data-remove aria-label="Remove"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' : '') +
+      '</div>' +
+      '<div class="qrow-meta">' + esc(statusLabel) + '</div>' +
+      '<div class="qbar"><div class="qbar-fill" style="width:' + q.progress + '%"></div></div>' +
+      '</div>';
+  }).join('');
+  $('upload-start').disabled = !queue.length || queue.some(function(q){ return q.status === 'uploading'; });
+}
+$('qlist').addEventListener('click', function(e){
+  var rm = e.target.closest('[data-remove]');
+  if(rm){ var row = rm.closest('.qrow'); queue = queue.filter(function(q){ return q.localId !== row.dataset.id; }); renderQueue(); }
+});
+$('qlist').addEventListener('change', function(e){
+  var inp = e.target.closest('[data-rename]');
+  if(!inp) return;
+  var row = inp.closest('.qrow');
+  var q = queue.filter(function(x){ return x.localId === row.dataset.id; })[0];
+  if(q) q.name = inp.value.trim() || q.name;
+});
+
+function uploadOneFile(q){
+  return new Promise(function(resolve){
+    (async function(){
+      q.status = 'uploading'; q.progress = 0; renderQueue();
+      try{
+        var kind = S.curKind;
+        var payload = {
+          kind: kind,
+          displayName: q.name,
+          originalName: q.file.name,
+          sizeBytes: q.file.size,
+          mimeType: q.file.type || 'application/octet-stream'
+        };
+        if(kind === 'subject') payload.targets = uploadTargets;
+        if(kind === 'highlights') payload.highlightClass = S.curClass;
+
+        var init = await vaultCall('init-upload', payload);
+
+        await new Promise(function(res, rej){
+          var xhr = new XMLHttpRequest();
+          xhr.open('PUT', init.uploadUrl, true);
+          var headers = init.uploadHeaders || {};
+          Object.keys(headers).forEach(function(k){ xhr.setRequestHeader(k, headers[k]); });
+          xhr.upload.onprogress = function(ev){
+            if(ev.lengthComputable){ q.progress = Math.round((ev.loaded / ev.total) * 95); renderQueue(); }
+          };
+          xhr.onload = function(){
+            if(xhr.status >= 200 && xhr.status < 300) res(); else rej(new Error('Upload failed (' + xhr.status + ')'));
+          };
+          xhr.onerror = function(){ rej(new Error('Network error during upload')); };
+          xhr.send(q.file); // raw bytes — browser sets Content-Length itself, which must match what was signed
+        });
+
+        await vaultCall('complete-upload', { objectKey: init.objectKey });
+        q.status = 'done'; q.progress = 100;
+      }catch(err){
+        q.status = 'error'; q.errorMsg = err.message || 'Upload failed';
+      }
+      renderQueue();
+      resolve();
+    })();
+  });
+}
+
+$('upload-start').addEventListener('click', async function(){
+  if(S.curKind === 'subject' && !uploadTargets.length){ toast('Add at least one class/subject.', true); return; }
+  var pending = queue.filter(function(q){ return q.status === 'queued' || q.status === 'error'; });
+  if(!pending.length){ toast('Nothing to upload.'); return; }
+
+  $('upload-start').disabled = true;
+  var running = [];
+  for(var i = 0; i < pending.length; i++){
+    var q = pending[i];
+    var p = uploadOneFile(q).then(function(){ running.splice(running.indexOf(p), 1); });
+    running.push(p);
+    if(running.length >= MAX_CONCURRENT_UPLOADS){ await Promise.race(running); }
+  }
+  await Promise.all(running);
+  renderQueue();
+
+  var anyDone = queue.some(function(q){ return q.status === 'done'; });
+  var anyError = queue.some(function(q){ return q.status === 'error'; });
+  if(anyDone) toast(anyError ? 'Some files uploaded; others failed.' : 'All files uploaded.', anyError);
+  if(anyDone && S.view === 'folder') loadFiles();
+});
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+(async function init(){
+  try{
+    var sess = await sb.auth.getSession();
+    var session = sess && sess.data ? sess.data.session : null;
+    if(!session){ location.href = AUTH_REDIRECT; return; }
+    S.myUid = session.user.id;
+    S.accessToken = session.access_token;
+
+    var t = await sb.from('teachers').select('name').eq('id', S.myUid).maybeSingle();
+    if(t.error || !t.data){ location.href = AUTH_REDIRECT; return; }
+    S.myName = t.data.name;
+    S.isTeacher = true;
+
+    var a = await sb.rpc('is_admin');
+    S.isAdmin = !!(a && a.data === true);
+
+    var cl = await sb.from('classes').select('name, created_at').order('created_at', { ascending: true });
+    if(cl.error) throw cl.error;
+    S.classes = (cl.data || []).map(function(c){ return c.name; });
+    S.classes.forEach(function(c, i){ S.classOrder[c] = i; });
+
+    var sj = await sb.from('subjects').select('name, display_order').order('display_order', { ascending: true });
+    if(sj.error) throw sj.error;
+    S.subjects = (sj.data || []).map(function(s){ return s.name; });
+    S.subjects.forEach(function(s, i){ S.subjectOrder[s] = i; });
+
+    var csRes = await sb.from('class_subjects').select('class, subject');
+    if(csRes.error) throw csRes.error;
+    S.classSubjects = csRes.data || [];
+
+    var ca = await sb.from('class_subject_assignments').select('class, subject').eq('teacher_id', S.myUid);
+    if(ca.error) throw ca.error;
+    S.myPairs = (ca.data || []).filter(function(p){ return p.class && p.subject; });
+
+    var ct = await sb.from('class_teachers').select('class').eq('teacher_id', S.myUid);
+    if(!ct.error){ (ct.data || []).forEach(function(r){ S.myClassTeacherOf[r.class] = true; }); }
+
+    $('role-badge').textContent = S.isAdmin ? 'Admin • all folders' : S.myName.split(' ')[0] + ' • Browse & manage';
+
+    render();
+    $('gate').classList.add('hidden');
+    $('app').classList.add('ready');
+  }catch(e){
+    console.error('Bootstrap failed:', e);
+    location.href = AUTH_REDIRECT;
+  }
+})();
+</script>
+</body>
+</html>
