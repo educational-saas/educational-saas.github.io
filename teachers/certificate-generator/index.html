@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Certificate Generator</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1); --success:#2f8f5b;
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35); --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12); --success:#57d492;
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55); --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease); }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  .app-header{ position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); padding:calc(env(safe-area-inset-top) + 14px) 18px 14px; transition:background-color .35s var(--ease), border-color .35s var(--ease); }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1080px; margin:0 auto; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease); }
+  .back-btn:hover{ transform:translateX(-2px); } .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{ font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease); }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600); }
+  .header-sub.admin-badge{ color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0; }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); } .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{ width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease); }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);} .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  main.dash{ flex:1; width:100%; max-width:1080px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px); display:flex; flex-direction:column; gap:16px; }
+
+  .card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); transition:border-color .3s var(--ease), background-color .3s var(--ease); }
+  .card-title{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; margin:0 0 14px; color:var(--ink-900); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .chip{ font-size:.72rem; font-weight:700; letter-spacing:.02em; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+
+  .field{ margin-bottom:14px; } .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  @media (max-width:560px){ .row2{ grid-template-columns:1fr; } .row3{ grid-template-columns:1fr; } }
+
+  input[type="date"], input[type="text"], select, textarea{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="date"]:focus, input[type="text"]:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+  textarea{ resize:vertical; min-height:64px; line-height:1.5; }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px;
+  }
+
+  .btn{ padding:13px 18px; border-radius:14px; border:none; font-family:'Manrope',sans-serif; font-weight:700; font-size:.88rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active{ transform:scale(.97); } .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-teal{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); }
+  html[data-theme="dark"] .btn-teal{ color:var(--teal-900); }
+  .btn-block{ width:100%; }
+  .btn-sm{ padding:8px 12px; font-size:.78rem; border-radius:10px; }
+
+  /* ---------- Template gallery ---------- */
+  .tpl-scroll{ display:flex; gap:12px; overflow-x:auto; padding:2px 2px 10px; margin:0 -2px; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+  .tpl-card{ flex:0 0 auto; width:150px; cursor:pointer; border-radius:16px; border:2px solid transparent; padding:6px; background:var(--cream); transition:border-color .2s var(--ease), transform .2s var(--ease); }
+  .tpl-card:active{ transform:scale(.97); }
+  .tpl-card.selected{ border-color:var(--gold-500); background:var(--bg-tint-gold); }
+  .tpl-card canvas{ width:100%; height:auto; display:block; border-radius:10px; box-shadow:0 8px 18px -10px rgba(13,56,65,.35); background:#fff; }
+  .tpl-card-name{ font-size:.74rem; font-weight:700; color:var(--ink-900); margin:8px 2px 1px; }
+  .tpl-card-cat{ font-size:.66rem; font-weight:600; letter-spacing:.03em; color:var(--ink-500); margin:0 2px; text-transform:uppercase; }
+
+  /* ---------- Signatories ---------- */
+  .sig-row{ display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center; margin-bottom:10px; }
+  @media (max-width:560px){ .sig-row{ grid-template-columns:1fr; } }
+  .sig-remove{ width:38px; height:38px; border-radius:10px; border:1.5px solid var(--border-card); background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .sig-remove svg{ width:16px; height:16px; stroke:var(--danger); fill:none; stroke-width:2; stroke-linecap:round; }
+
+  /* ---------- Pill toggle group ---------- */
+  .pill-group{ display:flex; gap:6px; background:var(--cream); border:1.5px solid var(--border-card); border-radius:14px; padding:4px; }
+  .pill-opt{ flex:1; text-align:center; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.82rem; padding:9px 8px; border-radius:14px; cursor:pointer; transition:background-color .25s var(--ease), color .25s var(--ease); }
+  .pill-opt.active{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); box-shadow:0 8px 18px -10px rgba(13,56,65,.5); }
+  html[data-theme="dark"] .pill-opt.active{ color:var(--teal-900); }
+
+  /* ---------- Color swatches ---------- */
+  .swatch-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .swatch{ width:38px; height:38px; border-radius:50%; cursor:pointer; border:3px solid transparent; box-shadow:0 4px 10px -4px rgba(0,0,0,.35); transition:transform .2s var(--ease), border-color .2s var(--ease); position:relative; }
+  .swatch:active{ transform:scale(.92); }
+  .swatch.selected{ border-color:var(--ink-900); }
+  html[data-theme="dark"] .swatch.selected{ border-color:var(--white); }
+
+  /* ---------- Logo control ---------- */
+  .logo-row{ display:flex; align-items:center; gap:12px; }
+  .logo-preview{ width:56px; height:56px; border-radius:14px; border:1.5px solid var(--border-card); background:var(--cream); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+  .logo-preview img{ width:100%; height:100%; object-fit:contain; }
+  .logo-btns{ display:flex; gap:8px; flex-wrap:wrap; }
+  .file-btn{ position:relative; overflow:hidden; }
+  .file-btn input[type="file"]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+  /* ---------- Preview ---------- */
+  .preview-wrap{ display:flex; justify-content:center; align-items:center; background:
+      repeating-conic-gradient(var(--bg-tint-teal) 0% 25%, transparent 0% 50%) 50% / 22px 22px;
+      border-radius:var(--r-sm); border:1.5px dashed var(--border-card); padding:14px; overflow:auto; }
+  #cert-canvas{ max-width:100%; height:auto; box-shadow:0 20px 50px -20px rgba(13,56,65,.5); border-radius:4px; background:#fff; }
+  .preview-note{ font-size:.76rem; color:var(--ink-500); text-align:center; margin-top:10px; }
+
+  .action-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .action-row .btn{ flex:1; min-width:140px; }
+
+  .helper-text{ font-size:.78rem; color:var(--ink-500); margin-top:6px; }
+
+  /* ---------- Recipient autosuggest + chips ---------- */
+  .suggest-dropdown{ position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:30; background:var(--white); border:1.5px solid var(--border-card); border-radius:var(--r-sm); box-shadow:var(--shadow-card-hover); max-height:260px; overflow-y:auto; padding:6px; }
+  .suggest-item{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer; font-size:.86rem; }
+  .suggest-item:hover, .suggest-item.active{ background:var(--bg-tint-gold); }
+  .suggest-item .s-name{ font-weight:700; color:var(--ink-900); }
+  .suggest-item .s-meta{ font-size:.72rem; color:var(--ink-500); white-space:nowrap; }
+  .suggest-empty{ padding:10px; font-size:.78rem; color:var(--ink-500); text-align:center; }
+  .suggest-loading{ padding:10px; font-size:.78rem; color:var(--ink-500); text-align:center; }
+
+  .chip-list{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip-item{ display:inline-flex; align-items:center; gap:7px; background:var(--bg-tint-teal); color:var(--teal-700); font-size:.82rem; font-weight:700; padding:7px 8px 7px 13px; border-radius:999px; }
+  html[data-theme="dark"] .chip-item{ color:var(--teal-700); }
+  .chip-item .chip-remove{ width:19px; height:19px; border-radius:50%; border:none; background:rgba(0,0,0,.08); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; color:inherit; font-size:.72rem; line-height:1; padding:0; }
+  .chip-item .chip-remove:hover{ background:rgba(0,0,0,.18); }
+  .chip-list-empty{ font-size:.82rem; color:var(--ink-500); font-style:italic; }
+
+  #toast-wrap{ position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast{ background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw; }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+
+  @media print{
+    body *{ visibility:hidden; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Certificate Generator</p>
+          <p class="header-sub" id="role-badge">Design &bull; Print &bull; Share</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <div class="card">
+      <p class="card-title">Choose a template <span class="chip" id="tpl-count-chip">8 designs</span></p>
+      <div class="tpl-scroll" id="tpl-scroll"></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Certificate details</p>
+
+      <div class="field">
+        <label for="f-title">Certificate title</label>
+        <input type="text" id="f-title" placeholder="e.g. Certificate of Achievement">
+      </div>
+      <div class="swatch-row" id="title-presets" style="margin:-6px 0 14px;"></div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="f-recipient-type">This certificate is for</label>
+          <select id="f-recipient-type">
+            <option value="student">Student</option>
+            <option value="staff">Staff member</option>
+          </select>
+        </div>
+        <div class="field" style="position:relative;">
+          <label for="f-recipient-name">Recipient name</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="f-recipient-name" placeholder="Type a name…" autocomplete="off" style="flex:1;">
+            <button class="btn btn-ghost btn-sm" id="btn-add-recipient" type="button" title="Queue this name" style="flex-shrink:0;">Add</button>
+          </div>
+          <div id="recipient-suggestions" class="suggest-dropdown" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Recipients queued <span class="chip" id="recipient-count-chip">0 added</span></label>
+        <div id="recipient-chips" class="chip-list"><span class="chip-list-empty">No recipients queued yet — the name above will be used for a single certificate.</span></div>
+        <p class="helper-text">Start typing to see matching students or staff, or type a name freehand. Press <strong>Add</strong> (or Enter) to queue it, then repeat for everyone who needs a certificate.</p>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-bulk-toggle" style="margin-top:8px;">+ Paste multiple names at once</button>
+        <div id="bulk-add-wrap" style="display:none; margin-top:10px;">
+          <textarea id="bulk-add-text" rows="4" placeholder="Paste names here — one per line or separated by commas"></textarea>
+          <button type="button" class="btn btn-teal btn-sm" id="btn-bulk-add" style="margin-top:8px;">Add all to queue</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-body">Awarded for</label>
+        <textarea id="f-body" rows="3" placeholder="e.g. outstanding performance and dedication in Mathematics throughout the academic year"></textarea>
+      </div>
+
+      <div class="row3">
+        <div class="field">
+          <label for="f-date">Date</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field">
+          <label for="f-certno">Certificate no. (optional)</label>
+          <input type="text" id="f-certno" placeholder="e.g. GSMS-2026-014">
+        </div>
+        <div class="field">
+          <label for="f-school">School name</label>
+          <input type="text" id="f-school" value="Gopal Sharma Memorial School">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>School logo</label>
+        <div class="logo-row">
+          <div class="logo-preview" id="logo-preview-box"><img id="logo-preview-img" alt="" style="display:none;"></div>
+          <div class="logo-btns">
+            <button class="btn btn-ghost btn-sm file-btn" type="button">Upload logo<input type="file" id="logo-upload" accept="image/*"></button>
+            <button class="btn btn-ghost btn-sm" id="logo-reset" type="button">Use default</button>
+            <button class="btn btn-ghost btn-sm" id="logo-remove" type="button">Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Signatories</p>
+      <div id="sig-list"></div>
+      <button class="btn btn-ghost btn-sm" id="btn-add-sig" type="button" style="margin-top:2px;">+ Add signatory</button>
+      <p class="helper-text">Up to 3 signatories will be shown side by side on the certificate.</p>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Layout &amp; appearance</p>
+      <div class="row2">
+        <div class="field">
+          <label>Orientation</label>
+          <div class="pill-group" id="orientation-group">
+            <button class="pill-opt active" data-value="landscape" type="button">Landscape</button>
+            <button class="pill-opt" data-value="portrait" type="button">Portrait</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Page size</label>
+          <div class="pill-group" id="pagesize-group">
+            <button class="pill-opt active" data-value="A4" type="button">A4</button>
+            <button class="pill-opt" data-value="A3" type="button">A3</button>
+          </div>
+        </div>
+      </div>
+      <div class="field" id="accent-field">
+        <label>Accent color</label>
+        <div class="swatch-row" id="accent-swatches"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Preview <span class="chip" id="preview-dims-chip"></span></p>
+      <div class="preview-wrap"><canvas id="cert-canvas"></canvas></div>
+      <p class="preview-note">This preview matches what will be printed or downloaded.</p>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Finish up <span class="chip">Single recipient (name above)</span></p>
+      <div class="action-row">
+        <button class="btn btn-teal" id="btn-print" type="button">Print certificate</button>
+        <button class="btn btn-primary" id="btn-download-pdf" type="button">Download as PDF</button>
+        <button class="btn btn-ghost" id="btn-download-png" type="button">Download as image</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Generate for everyone queued <span class="chip" id="batch-count-chip">0 recipients</span></p>
+      <div class="field">
+        <label>Output format</label>
+        <div class="pill-group" id="batch-format-group">
+          <button class="pill-opt active" data-value="pdf-single" type="button">One combined PDF</button>
+          <button class="pill-opt" data-value="pdf-multi" type="button">Separate PDFs</button>
+          <button class="pill-opt" data-value="img-multi" type="button">Separate images</button>
+        </div>
+        <p class="helper-text" id="batch-format-help">All certificates will be combined into a single multi-page PDF, one page per recipient.</p>
+      </div>
+      <button class="btn btn-primary btn-block" id="btn-batch-generate" type="button">Generate certificates</button>
+      <p class="helper-text">Separate PDFs or images for more than one recipient are bundled into a single .zip download for convenience.</p>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-wrap"></div>
+<div id="print-root" style="display:none;"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var DEFAULT_LOGO_URL = 'https://educational-saas.github.io/gsms-logo.png';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = { user: null, teacherName: '', isAdmin: false };
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+
+/* =========================================================
+   BACK / SIGN OUT
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('signout-btn').addEventListener('click', function(){
+  askConfirm(function(){ supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; }); });
+});
+function askConfirm(cb){
+  if(window.confirm('Sign out? You will need to sign in again.')) cb();
+}
+
+/* =========================================================
+   FONT PRELOAD
+========================================================= */
+function preloadFonts(){
+  var specs = [
+    '400 40px "Fraunces"', '500 40px "Fraunces"', '600 40px "Fraunces"', '700 40px "Fraunces"', 'italic 500 40px "Fraunces"',
+    '500 20px "Manrope"', '600 20px "Manrope"', '700 20px "Manrope"', '800 20px "Manrope"',
+    '500 40px "Playfair Display"', '600 40px "Playfair Display"', '700 40px "Playfair Display"', 'italic 500 40px "Playfair Display"',
+    '500 40px "Cormorant Garamond"', '600 40px "Cormorant Garamond"', '700 40px "Cormorant Garamond"',
+    '400 40px "Great Vibes"',
+    '500 40px "Baloo 2"', '600 40px "Baloo 2"', '700 40px "Baloo 2"', '800 40px "Baloo 2"'
+  ];
+  return Promise.all(specs.map(function(s){ return document.fonts.load(s).catch(function(){}); }));
+}
+
+/* =========================================================
+   SEEDED RANDOM (for consistent decorative scatter)
+========================================================= */
+function seededRand(seed){
+  var s = seed % 2147483647; if(s <= 0) s += 2147483646;
+  return function(){ s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+}
+
+/* =========================================================
+   GEOMETRY HELPERS
+========================================================= */
+function roundedRect(ctx,x,y,w,h,r){
+  if(typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+  ctx.beginPath();
+  ctx.moveTo(x+r.tl,y);
+  ctx.lineTo(x+w-r.tr,y); ctx.arcTo(x+w,y,x+w,y+r.tr,r.tr);
+  ctx.lineTo(x+w,y+h-r.br); ctx.arcTo(x+w,y+h,x+w-r.br,y+h,r.br);
+  ctx.lineTo(x+r.bl,y+h); ctx.arcTo(x,y+h,x,y+h-r.bl,r.bl);
+  ctx.lineTo(x,y+r.tl); ctx.arcTo(x,y,x+r.tl,y,r.tl);
+  ctx.closePath();
+}
+function starPath(ctx,cx,cy,outerR,innerR,points,rotation){
+  ctx.beginPath();
+  var step = Math.PI / points;
+  for(var i=0;i<points*2;i++){
+    var r = (i % 2 === 0) ? outerR : innerR;
+    var a = i*step + (rotation||0);
+    var px = cx + Math.cos(a)*r, py = cy + Math.sin(a)*r;
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.closePath();
+}
+function drawStar(ctx,cx,cy,outerR,innerR,points,rotation,fill){
+  starPath(ctx,cx,cy,outerR,innerR,points,rotation);
+  ctx.fillStyle = fill; ctx.fill();
+}
+function wrapText(ctx, text, maxWidth){
+  var words = (text||'').split(/\s+/).filter(Boolean);
+  var lines = []; var line = '';
+  for(var i=0;i<words.length;i++){
+    var test = line ? line+' '+words[i] : words[i];
+    if(ctx.measureText(test).width > maxWidth && line){ lines.push(line); line = words[i]; }
+    else { line = test; }
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+function drawWrappedCentered(ctx, text, cx, y, maxWidth, lineHeight){
+  var lines = wrapText(ctx, text, maxWidth);
+  lines.forEach(function(ln,i){ ctx.fillText(ln, cx, y + i*lineHeight); });
+  return y + lines.length*lineHeight;
+}
+function drawLaurelBranch(ctx, x, y, length, angle, mirror, color){
+  ctx.save();
+  ctx.translate(x,y); ctx.rotate(angle);
+  var dir = mirror ? -1 : 1;
+  ctx.strokeStyle = color; ctx.lineWidth = length*0.03; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(dir*length,0); ctx.stroke();
+  var leaves = 7;
+  for(var i=1;i<=leaves;i++){
+    var lx = dir*(length*(i/(leaves+1)));
+    var leafLen = length*0.16;
+    var leafAng = 0.9;
+    ctx.save();
+    ctx.translate(lx,0);
+    ctx.rotate(dir*leafAng);
+    ctx.beginPath();
+    ctx.ellipse(0,-leafLen*0.5,leafLen*0.32,leafLen*0.55,0,0,Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(lx,0);
+    ctx.rotate(-dir*leafAng);
+    ctx.beginPath();
+    ctx.ellipse(0,-leafLen*0.5,leafLen*0.32,leafLen*0.55,0,0,Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function drawLaurelPair(ctx, cx, cy, length, color){
+  drawLaurelBranch(ctx, cx - length*0.15, cy, length, Math.PI*0.92, false, color);
+  drawLaurelBranch(ctx, cx + length*0.15, cy, length, Math.PI*0.08, true, color);
+}
+function drawMedal(ctx, cx, cy, r, mainColor, ribbonColor){
+  ctx.fillStyle = ribbonColor;
+  ctx.save();
+  ctx.translate(cx, cy - r*0.15);
+  ctx.beginPath(); ctx.moveTo(-r*0.5,0); ctx.lineTo(-r*0.15, r*2.1); ctx.lineTo(-r*0.5, r*1.9); ctx.lineTo(-r*0.75,r*2.1); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(r*0.5,0); ctx.lineTo(r*0.15, r*2.1); ctx.lineTo(r*0.5, r*1.9); ctx.lineTo(r*0.75,r*2.1); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle = mainColor; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,r*0.78,0,Math.PI*2); ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=r*0.05; ctx.stroke();
+  drawStar(ctx,cx,cy,r*0.5,r*0.22,5,-Math.PI/2,'rgba(255,255,255,.9)');
+}
+function drawSeal(ctx, cx, cy, r, color){
+  ctx.save();
+  ctx.translate(cx,cy);
+  var points = 16;
+  ctx.beginPath();
+  for(var i=0;i<points;i++){
+    var a = (i/points)*Math.PI*2;
+    var rr = (i%2===0)? r : r*0.9;
+    var px = Math.cos(a)*rr, py = Math.sin(a)*rr;
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+  ctx.restore();
+}
+function drawBalloon(ctx,x,y,w,h,color){
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(x,y,w,h,0,0,Math.PI*2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x-w*0.18,y+h*0.85); ctx.lineTo(x,y+h*1.05); ctx.lineTo(x+w*0.18,y+h*0.85); ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = w*0.06; ctx.beginPath();
+  ctx.moveTo(x,y+h*1.05); ctx.quadraticCurveTo(x+w*0.4,y+h*1.9,x-w*0.1,y+h*2.6);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawConfettiField(ctx, W, H, seed, colors, count){
+  var rand = seededRand(seed);
+  for(var i=0;i<count;i++){
+    var x = rand()*W, y = rand()*H;
+    var s = 4 + rand()*8;
+    var c = colors[Math.floor(rand()*colors.length)];
+    ctx.save();
+    ctx.translate(x,y); ctx.rotate(rand()*Math.PI*2);
+    ctx.fillStyle = c;
+    if(rand() > 0.5){ ctx.fillRect(-s/2,-s/4,s,s/2); }
+    else { ctx.beginPath(); ctx.arc(0,0,s/2.4,0,Math.PI*2); ctx.fill(); }
+    ctx.restore();
+  }
+}
+function drawOwl(ctx, x, y, scale, bodyColor, bellyColor, accentColor){
+  ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale);
+  ctx.beginPath(); ctx.ellipse(0,10,34,40,0,0,Math.PI*2); ctx.fillStyle = bodyColor; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-30,-8); ctx.quadraticCurveTo(-38,-34,-16,-24); ctx.closePath(); ctx.fillStyle=bodyColor; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(30,-8); ctx.quadraticCurveTo(38,-34,16,-24); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0,16,20,26,0,0,Math.PI*2); ctx.fillStyle = bellyColor; ctx.fill();
+  ctx.beginPath(); ctx.arc(-13,-2,13,0,Math.PI*2); ctx.arc(13,-2,13,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(-13,-2,6,0,Math.PI*2); ctx.arc(13,-2,6,0,Math.PI*2); ctx.fillStyle='#2b2b2b'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(0,4); ctx.lineTo(-6,14); ctx.lineTo(6,14); ctx.closePath(); ctx.fillStyle = accentColor; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-22,42); ctx.lineTo(-14,52); ctx.lineTo(-8,42); ctx.closePath();
+  ctx.moveTo(22,42); ctx.lineTo(14,52); ctx.lineTo(8,42); ctx.closePath();
+  ctx.fillStyle = accentColor; ctx.fill();
+  ctx.restore();
+}
+function drawFlowerDoodle(ctx, x, y, scale, petalColor, centerColor){
+  ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale);
+  for(var i=0;i<6;i++){
+    var a = (i/6)*Math.PI*2;
+    ctx.save(); ctx.rotate(a);
+    ctx.beginPath(); ctx.ellipse(0,-14,7,14,0,0,Math.PI*2); ctx.fillStyle = petalColor; ctx.fill();
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fillStyle = centerColor; ctx.fill();
+  ctx.restore();
+}
+
+/* =========================================================
+   SIGNATURE BLOCK
+========================================================= */
+function drawSignatures(ctx, x, y, width, signatories, palette){
+  var list = (signatories && signatories.length) ? signatories : [{name:'', post:''}];
+  var n = Math.min(list.length, 3);
+  var colW = width / n;
+  ctx.textAlign = 'center';
+  for(var i=0;i<n;i++){
+    var cx = x + colW*i + colW/2;
+    var sig = list[i];
+    ctx.strokeStyle = palette.lineColor || palette.ink;
+    ctx.lineWidth = Math.max(1, width*0.0016);
+    ctx.beginPath();
+    ctx.moveTo(cx - colW*0.32, y);
+    ctx.lineTo(cx + colW*0.32, y);
+    ctx.stroke();
+    ctx.font = '600 ' + Math.round(width*0.021) + 'px "Manrope"';
+    ctx.fillStyle = palette.ink;
+    ctx.fillText(sig.name || ' ', cx, y + width*0.028);
+    ctx.font = '500 ' + Math.round(width*0.016) + 'px "Manrope"';
+    ctx.fillStyle = palette.inkLight || palette.ink;
+    ctx.fillText(sig.post || ' ', cx, y + width*0.05);
+  }
+}
+
+/* =========================================================
+   LOGO / MONOGRAM
+========================================================= */
+function drawMonogram(ctx, cx, cy, r, ringColor, fillColor, textColor, initials){
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle = fillColor; ctx.fill();
+  ctx.fillStyle = textColor;
+  ctx.font = '700 ' + Math.round(r*0.85) + 'px "Fraunces"';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(initials, cx, cy + r*0.05);
+  ctx.textBaseline = 'alphabetic';
+}
+function drawLogoOrMonogram(ctx, data, cx, cy, r, ringColor, fillColor, textColor){
+  if(data.logoImg && data.logoUsable){
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.closePath(); ctx.clip();
+    var img = data.logoImg;
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    var scale = Math.max((r*2)/iw, (r*2)/ih);
+    var dw = iw*scale, dh = ih*scale;
+    ctx.fillStyle = '#fff'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+    ctx.drawImage(img, cx - dw/2, cy - dh/2, dw, dh);
+    ctx.restore();
+  } else {
+    var initials = (data.school||'GSMS').split(/\s+/).map(function(w){return w[0];}).slice(0,3).join('').toUpperCase();
+    drawMonogram(ctx, cx, cy, r, ringColor, fillColor, textColor, initials || 'S');
+  }
+}
+
+/* =========================================================
+   TEMPLATE DRAW FUNCTIONS
+   Each: function(ctx, W, H, data)
+========================================================= */
+
+function tplClassic(ctx, W, H, data){
+  var accent = data.accentColor || '#e2941a';
+  var teal = '#0d3841';
+  ctx.fillStyle = '#faf8f3'; ctx.fillRect(0,0,W,H);
+  var m = W*0.028;
+  ctx.strokeStyle = teal; ctx.lineWidth = W*0.012;
+  ctx.strokeRect(m,m,W-2*m,H-2*m);
+  ctx.strokeStyle = accent; ctx.lineWidth = W*0.003;
+  ctx.strokeRect(m*2.1,m*2.1,W-4.2*m,H-4.2*m);
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.155, H*0.062, accent, '#fff', teal);
+
+  ctx.textAlign='center';
+  ctx.fillStyle = teal;
+  ctx.font = '700 ' + Math.round(H*0.042) + 'px "Manrope"';
+  drawWrappedCentered(ctx, data.school, cx, H*0.30, W*0.7, H*0.05);
+
+  ctx.fillStyle = accent;
+  ctx.font = '600 ' + Math.round(H*0.024) + 'px "Manrope"';
+  ctx.fillText('presents this', cx, H*0.325);
+
+  drawLaurelPair(ctx, cx, H*0.347, H*0.04, accent);
+  ctx.fillStyle = teal;
+  ctx.font = '700 ' + Math.round(H*0.075) + 'px "Fraunces"';
+  ctx.fillText(data.title || 'Certificate of Achievement', cx, H*0.415);
+
+  ctx.fillStyle = '#5f6f70';
+  ctx.font = '500 ' + Math.round(H*0.026) + 'px "Manrope"';
+  ctx.fillText('This certificate is proudly presented to', cx, H*0.475);
+
+  ctx.fillStyle = accent;
+  ctx.font = 'italic 600 ' + Math.round(H*0.07) + 'px "Fraunces"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.555);
+  ctx.strokeStyle = accent; ctx.lineWidth = H*0.004;
+  ctx.beginPath(); ctx.moveTo(cx-W*0.16,H*0.575); ctx.lineTo(cx+W*0.16,H*0.575); ctx.stroke();
+
+  ctx.fillStyle = '#1c2626';
+  ctx.font = '500 ' + Math.round(H*0.026) + 'px "Manrope"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.63, W*0.62, H*0.036);
+
+  ctx.textAlign='left';
+  ctx.font = '600 ' + Math.round(H*0.02) + 'px "Manrope"';
+  ctx.fillStyle = '#5f6f70';
+  ctx.fillText('Date: ' + (data.dateStr||''), W*0.08, H*0.86);
+  if(data.certNo){ ctx.fillText('Cert. No: ' + data.certNo, W*0.08, H*0.895); }
+
+  drawSignatures(ctx, W*0.14, H*0.845, W*0.72, data.signatories, {ink:'#1c2626', inkLight:'#5f6f70', lineColor:teal});
+}
+
+function tplMinimal(ctx, W, H, data){
+  var accent = data.accentColor || '#c9a15a';
+  ctx.fillStyle = '#fffdf8'; ctx.fillRect(0,0,W,H);
+  var m = W*0.05;
+  ctx.strokeStyle = accent; ctx.lineWidth = W*0.0018;
+  ctx.strokeRect(m,m,W-2*m,H-2*m);
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.14, H*0.045, accent, '#fff', '#2b2b2b');
+
+  ctx.textAlign='center';
+  ctx.fillStyle = '#8a8378';
+  ctx.font = '600 ' + Math.round(H*0.02) + 'px "Manrope"';
+  ctx.fillText((data.school||'').toUpperCase().split('').join(String.fromCharCode(8202)), cx, H*0.225);
+
+  ctx.fillStyle = '#2b2b2b';
+  ctx.font = '500 ' + Math.round(H*0.09) + 'px "Cormorant Garamond"';
+  ctx.fillText(data.title || 'Certificate of Achievement', cx, H*0.35);
+
+  ctx.strokeStyle = accent; ctx.lineWidth = H*0.0022;
+  ctx.beginPath(); ctx.moveTo(cx-W*0.07,H*0.385); ctx.lineTo(cx+W*0.07,H*0.385); ctx.stroke();
+
+  ctx.fillStyle = '#8a8378';
+  ctx.font = '500 ' + Math.round(H*0.022) + 'px "Manrope"';
+  ctx.fillText('This is to certify that', cx, H*0.46);
+
+  ctx.fillStyle = '#2b2b2b';
+  ctx.font = '600 ' + Math.round(H*0.065) + 'px "Cormorant Garamond"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.535);
+
+  ctx.fillStyle = '#3f3a33';
+  ctx.font = '500 ' + Math.round(H*0.024) + 'px "Manrope"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.6, W*0.5, H*0.032);
+
+  ctx.textAlign='left';
+  ctx.fillStyle = '#8a8378';
+  ctx.font = '500 ' + Math.round(H*0.018) + 'px "Manrope"';
+  ctx.fillText((data.dateStr||''), W*0.09, H*0.87);
+  if(data.certNo){ ctx.fillText(data.certNo, W*0.09, H*0.895); }
+
+  drawSignatures(ctx, W*0.16, H*0.855, W*0.68, data.signatories, {ink:'#2b2b2b', inkLight:'#8a8378', lineColor:'#c9a15a'});
+}
+
+function tplOrnate(ctx, W, H, data){
+  var gold = '#d4af37';
+  ctx.fillStyle = '#0d2136'; ctx.fillRect(0,0,W,H);
+  var flourishR = W*0.11;
+  [[1,1],[-1,1],[1,-1],[-1,-1]].forEach(function(dir){
+    ctx.save();
+    var fx = dir[0]===1 ? W*0.07 : W*0.93;
+    var fy = dir[1]===1 ? H*0.11 : H*0.89;
+    ctx.translate(fx,fy); ctx.scale(dir[0],dir[1]);
+    ctx.strokeStyle = gold; ctx.lineWidth = W*0.0028;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.bezierCurveTo(flourishR*0.6,-flourishR*0.1, flourishR*0.9,flourishR*0.5, flourishR,flourishR*1.1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.bezierCurveTo(-flourishR*0.1,flourishR*0.6, flourishR*0.5,flourishR*0.9, flourishR*1.1,flourishR);
+    ctx.stroke();
+    drawStar(ctx, flourishR*0.35, flourishR*0.35, W*0.008, W*0.0035, 5, 0, gold);
+    ctx.restore();
+  });
+
+  var pm = W*0.1;
+  roundedRect(ctx, pm, H*0.08, W-2*pm, H*0.84, W*0.01);
+  ctx.fillStyle = '#faf6ea'; ctx.fill();
+  ctx.strokeStyle = gold; ctx.lineWidth = W*0.0022; ctx.stroke();
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.175, H*0.053, gold, '#0d2136', gold);
+
+  ctx.textAlign='center';
+  ctx.fillStyle = '#0d2136';
+  ctx.font = '700 ' + Math.round(H*0.032) + 'px "Playfair Display"';
+  ctx.fillText(data.school, cx, H*0.265);
+
+  ctx.fillStyle = gold;
+  ctx.font = '700 ' + Math.round(H*0.062) + 'px "Playfair Display"';
+  ctx.fillText(data.title || 'Certificate of Excellence', cx, H*0.35);
+
+  ctx.fillStyle = '#5c5546';
+  ctx.font = 'italic 500 ' + Math.round(H*0.022) + 'px "Playfair Display"';
+  ctx.fillText('is hereby awarded to', cx, H*0.405);
+
+  ctx.fillStyle = '#0d2136';
+  ctx.font = '600 ' + Math.round(H*0.06) + 'px "Playfair Display"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.475);
+  ctx.strokeStyle = gold; ctx.lineWidth=H*0.003;
+  ctx.beginPath(); ctx.moveTo(cx-W*0.13,H*0.495); ctx.lineTo(cx+W*0.13,H*0.495); ctx.stroke();
+
+  ctx.fillStyle = '#3a3527';
+  ctx.font = '500 ' + Math.round(H*0.023) + 'px "Manrope"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.55, W*0.55, H*0.032);
+
+  drawSeal(ctx, cx, H*0.685, H*0.045, gold);
+  ctx.fillStyle = '#0d2136'; ctx.font='700 '+Math.round(H*0.02)+'px "Manrope"';
+  ctx.fillText('★', cx, H*0.69);
+
+  ctx.textAlign='left';
+  ctx.fillStyle = '#5c5546';
+  ctx.font = '500 ' + Math.round(H*0.018) + 'px "Manrope"';
+  ctx.fillText('Date: ' + (data.dateStr||''), pm+W*0.03, H*0.86);
+  if(data.certNo){ ctx.fillText('Cert. No: ' + data.certNo, pm+W*0.03, H*0.885); }
+
+  drawSignatures(ctx, pm+W*0.06, H*0.845, (W-2*pm)-W*0.12, data.signatories, {ink:'#0d2136', inkLight:'#5c5546', lineColor:gold});
+}
+
+function tplKidsStars(ctx, W, H, data){
+  var grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#bfe6ff'); grad.addColorStop(1,'#e6d9ff');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+  drawConfettiField(ctx, W, H, 42, ['#ff8fa3','#ffd166','#8ecae6','#95e1a3','#c9a7ff'], 90);
+
+  [[0.08,0.18,0.05,'#ff8fa3'],[0.92,0.15,0.045,'#8ecae6'],[0.88,0.8,0.05,'#ffd166'],[0.1,0.82,0.045,'#95e1a3']].forEach(function(b){
+    drawBalloon(ctx, W*b[0], H*b[1], W*b[2], H*b[2]*1.25, b[3]);
+  });
+
+  var pm = W*0.09;
+  roundedRect(ctx, pm, H*0.1, W-2*pm, H*0.8, W*0.02);
+  ctx.fillStyle = 'rgba(255,255,255,.93)'; ctx.fill();
+  ctx.strokeStyle = '#ffb648'; ctx.lineWidth = W*0.006; ctx.stroke();
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.195, H*0.05, '#ffb648', '#fff', '#123b4a');
+
+  ctx.textAlign='center';
+  ctx.fillStyle = '#123b4a';
+  ctx.font = '700 ' + Math.round(H*0.028) + 'px "Baloo 2"';
+  ctx.fillText(data.school, cx, H*0.275);
+
+  for(var i=0;i<5;i++){
+    drawStar(ctx, cx - W*0.14 + i*(W*0.07), H*0.33, W*0.014, W*0.006, 5, -Math.PI/2, '#ffd166');
+  }
+
+  ctx.fillStyle = '#ff6f91';
+  ctx.font = '800 ' + Math.round(H*0.065) + 'px "Baloo 2"';
+  ctx.fillText(data.title || 'Certificate of Participation', cx, H*0.415);
+
+  ctx.fillStyle = '#4a5568';
+  ctx.font = '600 ' + Math.round(H*0.022) + 'px "Baloo 2"';
+  ctx.fillText('This certificate is awarded to', cx, H*0.465);
+
+  ctx.fillStyle = '#123b4a';
+  ctx.font = '700 ' + Math.round(H*0.062) + 'px "Baloo 2"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.545);
+
+  ctx.fillStyle = '#4a5568';
+  ctx.font = '600 ' + Math.round(H*0.024) + 'px "Baloo 2"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.6, W*0.56, H*0.033);
+
+  drawMedal(ctx, cx, H*0.7, H*0.04, '#ffd166', '#8ecae6');
+
+  ctx.textAlign='left';
+  ctx.fillStyle = '#4a5568';
+  ctx.font = '600 ' + Math.round(H*0.019) + 'px "Baloo 2"';
+  ctx.fillText('Date: ' + (data.dateStr||''), pm+W*0.03, H*0.855);
+  if(data.certNo){ ctx.fillText('No: ' + data.certNo, pm+W*0.03, H*0.88); }
+
+  drawSignatures(ctx, pm+W*0.06, H*0.84, (W-2*pm)-W*0.12, data.signatories, {ink:'#123b4a', inkLight:'#4a5568', lineColor:'#ffb648'});
+}
+
+function tplSports(ctx, W, H, data){
+  var accent = data.accentColor || '#e2941a';
+  var teal = '#0d3841';
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,W,H);
+
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(W*0.36,0); ctx.lineTo(0,H*0.5); ctx.closePath();
+  ctx.fillStyle = teal; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(W*0.24,0); ctx.lineTo(0,H*0.33); ctx.closePath();
+  ctx.fillStyle = accent; ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(W,H); ctx.lineTo(W-W*0.36,H); ctx.lineTo(W,H-H*0.5); ctx.closePath();
+  ctx.fillStyle = teal; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(W,H); ctx.lineTo(W-W*0.24,H); ctx.lineTo(W,H-H*0.33); ctx.closePath();
+  ctx.fillStyle = accent; ctx.fill();
+  ctx.restore();
+
+  var m = W*0.06;
+  ctx.strokeStyle = teal; ctx.lineWidth = W*0.003;
+  ctx.strokeRect(m,m,W-2*m,H-2*m);
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.16, H*0.051, accent, '#fff', teal);
+
+  ctx.textAlign='center';
+  ctx.fillStyle = teal;
+  ctx.font = '700 ' + Math.round(H*0.03) + 'px "Manrope"';
+  ctx.fillText(data.school, cx, H*0.25);
+
+  ctx.fillStyle = accent;
+  ctx.font = '800 ' + Math.round(H*0.075) + 'px "Fraunces"';
+  ctx.fillText(data.title || 'Certificate of Excellence', cx, H*0.36);
+
+  ctx.fillStyle = '#5f6f70';
+  ctx.font = '600 ' + Math.round(H*0.024) + 'px "Manrope"';
+  ctx.fillText('Proudly awarded to', cx, H*0.42);
+
+  ctx.fillStyle = teal;
+  ctx.font = '700 ' + Math.round(H*0.065) + 'px "Fraunces"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.5);
+  ctx.strokeStyle = accent; ctx.lineWidth=H*0.004;
+  ctx.beginPath(); ctx.moveTo(cx-W*0.14,H*0.52); ctx.lineTo(cx+W*0.14,H*0.52); ctx.stroke();
+
+  ctx.fillStyle = '#1c2626';
+  ctx.font = '500 ' + Math.round(H*0.025) + 'px "Manrope"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.575, W*0.58, H*0.033);
+
+  drawMedal(ctx, cx, H*0.68, H*0.045, accent, teal);
+
+  ctx.textAlign='left';
+  ctx.fillStyle = '#5f6f70';
+  ctx.font = '600 ' + Math.round(H*0.019) + 'px "Manrope"';
+  ctx.fillText('Date: ' + (data.dateStr||''), m+W*0.05, H*0.865);
+  if(data.certNo){ ctx.fillText('Cert. No: ' + data.certNo, m+W*0.05, H*0.89); }
+
+  drawSignatures(ctx, m+W*0.08, H*0.85, (W-2*m)-W*0.16, data.signatories, {ink:'#1c2626', inkLight:'#5f6f70', lineColor:teal});
+}
+
+function tplAppreciation(ctx, W, H, data){
+  var gold = '#f0c469';
+  ctx.fillStyle = '#0d3841'; ctx.fillRect(0,0,W,H);
+  var m = W*0.035;
+  ctx.strokeStyle = gold; ctx.lineWidth = W*0.006;
+  ctx.strokeRect(m,m,W-2*m,H-2*m);
+  ctx.strokeStyle = gold; ctx.lineWidth = W*0.0016;
+  ctx.strokeRect(m*1.6,m*1.6,W-3.2*m,H-3.2*m);
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.165, H*0.053, gold, '#0d3841', gold);
+
+  ctx.textAlign='center';
+  ctx.fillStyle = gold;
+  ctx.font = '600 ' + Math.round(H*0.028) + 'px "Playfair Display"';
+  ctx.fillText(data.school, cx, H*0.25);
+
+  drawLaurelPair(ctx, cx, H*0.315, H*0.04, gold);
+  ctx.fillStyle = '#faf6ea';
+  ctx.font = '700 ' + Math.round(H*0.068) + 'px "Playfair Display"';
+  ctx.fillText(data.title || 'Certificate of Appreciation', cx, H*0.375);
+
+  ctx.fillStyle = gold;
+  ctx.font = 'italic 500 ' + Math.round(H*0.022) + 'px "Playfair Display"';
+  ctx.fillText('With sincere gratitude, presented to', cx, H*0.435);
+
+  ctx.fillStyle = '#faf6ea';
+  ctx.font = '600 ' + Math.round(H*0.06) + 'px "Playfair Display"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.51);
+  ctx.strokeStyle = gold; ctx.lineWidth=H*0.003;
+  ctx.beginPath(); ctx.moveTo(cx-W*0.13,H*0.53); ctx.lineTo(cx+W*0.13,H*0.53); ctx.stroke();
+
+  ctx.fillStyle = '#e7e2d3';
+  ctx.font = '500 ' + Math.round(H*0.023) + 'px "Manrope"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.585, W*0.56, H*0.032);
+
+  ctx.textAlign='left';
+  ctx.fillStyle = gold;
+  ctx.font = '500 ' + Math.round(H*0.018) + 'px "Manrope"';
+  ctx.fillText('Date: ' + (data.dateStr||''), m+W*0.05, H*0.865);
+  if(data.certNo){ ctx.fillText('Cert. No: ' + data.certNo, m+W*0.05, H*0.89); }
+
+  drawSignatures(ctx, m+W*0.08, H*0.85, (W-2*m)-W*0.16, data.signatories, {ink:'#faf6ea', inkLight:gold, lineColor:gold});
+}
+
+function tplFloral(ctx, W, H, data){
+  var rose = '#c98a76';
+  ctx.fillStyle = '#fbf3ee'; ctx.fillRect(0,0,W,H);
+
+  var flowers = [[0.08,0.1,1],[0.14,0.16,0.6],[0.92,0.9,1],[0.86,0.84,0.6],[0.92,0.1,0.8],[0.08,0.9,0.8]];
+  flowers.forEach(function(f){ drawFlowerDoodle(ctx, W*f[0], H*f[1], W*0.0009*f[2]*70, 'rgba(201,138,118,.55)', '#e8b7a2'); });
+
+  var m = W*0.06;
+  ctx.strokeStyle = rose; ctx.lineWidth = W*0.0022;
+  ctx.strokeRect(m,m,W-2*m,H-2*m);
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.155, H*0.05, rose, '#fff', '#5c3a30');
+
+  ctx.textAlign='center';
+  ctx.fillStyle = '#5c3a30';
+  ctx.font = '600 ' + Math.round(H*0.026) + 'px "Cormorant Garamond"';
+  ctx.fillText(data.school, cx, H*0.24);
+
+  ctx.fillStyle = rose;
+  ctx.font = '700 ' + Math.round(H*0.06) + 'px "Cormorant Garamond"';
+  ctx.fillText(data.title || 'Certificate of Achievement', cx, H*0.335);
+
+  ctx.fillStyle = '#8a6a5e';
+  ctx.font = 'italic 500 ' + Math.round(H*0.022) + 'px "Cormorant Garamond"';
+  ctx.fillText('is happily presented to', cx, H*0.39);
+
+  ctx.fillStyle = '#5c3a30';
+  ctx.font = '400 ' + Math.round(H*0.095) + 'px "Great Vibes"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.485);
+
+  ctx.strokeStyle = rose; ctx.lineWidth=H*0.0022;
+  ctx.beginPath(); ctx.moveTo(cx-W*0.12,H*0.51); ctx.lineTo(cx+W*0.12,H*0.51); ctx.stroke();
+
+  ctx.fillStyle = '#5c4a42';
+  ctx.font = '500 ' + Math.round(H*0.023) + 'px "Manrope"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.565, W*0.54, H*0.032);
+
+  ctx.textAlign='left';
+  ctx.fillStyle = '#8a6a5e';
+  ctx.font = '500 ' + Math.round(H*0.018) + 'px "Manrope"';
+  ctx.fillText('Date: ' + (data.dateStr||''), m+W*0.04, H*0.87);
+  if(data.certNo){ ctx.fillText('Cert. No: ' + data.certNo, m+W*0.04, H*0.895); }
+
+  drawSignatures(ctx, m+W*0.07, H*0.855, (W-2*m)-W*0.14, data.signatories, {ink:'#5c3a30', inkLight:'#8a6a5e', lineColor:rose});
+}
+
+function tplKidsAnimals(ctx, W, H, data){
+  ctx.fillStyle = '#fff6df'; ctx.fillRect(0,0,W,H);
+
+  var m = W*0.045;
+  ctx.save();
+  ctx.setLineDash([W*0.012, W*0.008]);
+  ctx.strokeStyle = '#ff9f43'; ctx.lineWidth = W*0.008;
+  roundedRect(ctx, m, m, W-2*m, H-2*m, W*0.03);
+  ctx.stroke();
+  ctx.restore();
+
+  drawOwl(ctx, W*0.12, H*0.82, W*0.0016*70, '#c48a5a', '#f0d9b5', '#e07a3f');
+  drawOwl(ctx, W*0.9, H*0.2, W*0.0012*70, '#8ec9c9', '#eafafa', '#e07a3f');
+  drawConfettiField(ctx, W, H, 7, ['#ff9f43','#ffd166','#7bd389','#8ec9c9','#ff8fa3'], 60);
+
+  for(var i=0;i<6;i++){
+    drawStar(ctx, m+W*0.03 + i*(W*0.15), m+H*0.02, W*0.012, W*0.005, 5, -Math.PI/2, ['#ffd166','#ff9f43','#7bd389'][i%3]);
+  }
+
+  var pm = W*0.11;
+  roundedRect(ctx, pm, H*0.11, W-2*pm, H*0.78, W*0.025);
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fill();
+  ctx.strokeStyle = '#7bd389'; ctx.lineWidth = W*0.005; ctx.stroke();
+
+  var cx = W/2;
+  drawLogoOrMonogram(ctx, data, cx, H*0.205, H*0.048, '#ff9f43', '#fff', '#4a3728');
+
+  ctx.textAlign='center';
+  ctx.fillStyle = '#4a3728';
+  ctx.font = '700 ' + Math.round(H*0.027) + 'px "Baloo 2"';
+  ctx.fillText(data.school, cx, H*0.28);
+
+  ctx.fillStyle = '#ff9f43';
+  ctx.font = '800 ' + Math.round(H*0.06) + 'px "Baloo 2"';
+  ctx.fillText(data.title || 'Star Student Award', cx, H*0.36);
+
+  ctx.fillStyle = '#7a6a58';
+  ctx.font = '600 ' + Math.round(H*0.022) + 'px "Baloo 2"';
+  ctx.fillText('This award goes to the amazing', cx, H*0.415);
+
+  ctx.fillStyle = '#4a3728';
+  ctx.font = '700 ' + Math.round(H*0.058) + 'px "Baloo 2"';
+  ctx.fillText(data.recipientName || 'Recipient Name', cx, H*0.49);
+
+  ctx.fillStyle = '#7a6a58';
+  ctx.font = '600 ' + Math.round(H*0.023) + 'px "Baloo 2"';
+  drawWrappedCentered(ctx, data.body || 'for outstanding performance and dedication', cx, H*0.545, W*0.52, H*0.032);
+
+  drawStar(ctx, cx, H*0.66, H*0.05, H*0.022, 5, -Math.PI/2, '#ffd166');
+
+  ctx.textAlign='left';
+  ctx.fillStyle = '#7a6a58';
+  ctx.font = '600 ' + Math.round(H*0.018) + 'px "Baloo 2"';
+  ctx.fillText('Date: ' + (data.dateStr||''), pm+W*0.03, H*0.845);
+  if(data.certNo){ ctx.fillText('No: ' + data.certNo, pm+W*0.03, H*0.868); }
+
+  drawSignatures(ctx, pm+W*0.06, H*0.83, (W-2*pm)-W*0.12, data.signatories, {ink:'#4a3728', inkLight:'#7a6a58', lineColor:'#ff9f43'});
+}
+
+/* =========================================================
+   TEMPLATE REGISTRY
+========================================================= */
+var ACCENT_PRESETS = ['#e2941a', '#1b6b78', '#c9432f', '#3f6b3a'];
+
+var TEMPLATES = [
+  { id:'classic', name:'Classic Teal & Gold', category:'Achievement', draw:tplClassic, accent:true },
+  { id:'minimal', name:'Minimalist Elegance', category:'Any occasion', draw:tplMinimal, accent:true },
+  { id:'ornate', name:'Regal Gold Seal', category:'Excellence', draw:tplOrnate, accent:false },
+  { id:'kidsstars', name:'Starry Celebration', category:'Students', draw:tplKidsStars, accent:false },
+  { id:'sports', name:'Champion Ribbon', category:'Sports & merit', draw:tplSports, accent:true },
+  { id:'appreciation', name:'Formal Appreciation', category:'Staff', draw:tplAppreciation, accent:false },
+  { id:'floral', name:'Rose Garden', category:'Any occasion', draw:tplFloral, accent:false },
+  { id:'kidsanimals', name:'Little Explorers', category:'Young students', draw:tplKidsAnimals, accent:false }
+];
+
+var TITLE_PRESETS = ['Certificate of Achievement','Certificate of Excellence','Certificate of Participation','Certificate of Appreciation','Certificate of Completion','Certificate of Merit'];
+
+/* =========================================================
+   APP DATA MODEL
+========================================================= */
+var certData = {
+  templateId: 'classic',
+  title: 'Certificate of Achievement',
+  recipientType: 'student',
+  recipientName: '',
+  recipients: [],
+  body: 'for outstanding performance and dedication throughout the academic year',
+  school: 'Gopal Sharma Memorial School',
+  dateStr: '',
+  certNo: '',
+  signatories: [ { name:'Dr. Nagpal Singh', post:'Academic Director' } ],
+  orientation: 'landscape',
+  pageSize: 'A4',
+  accentColor: ACCENT_PRESETS[0],
+  logoImg: null,
+  logoUsable: false
+};
+
+var PX_PER_MM = 7;
+function pageDimsMM(pageSize, orientation){
+  var w = pageSize === 'A3' ? 297 : 210;
+  var h = pageSize === 'A3' ? 420 : 297;
+  return orientation === 'landscape' ? { w:h, h:w } : { w:w, h:h };
+}
+
+/* =========================================================
+   LOGO LOADING
+========================================================= */
+function tryLoadDefaultLogo(){
+  var img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function(){
+    var ok = false;
+    try{
+      var c = document.createElement('canvas'); c.width = 4; c.height = 4;
+      var cctx = c.getContext('2d'); cctx.drawImage(img,0,0,4,4); c.toDataURL();
+      ok = true;
+    }catch(e){ ok = false; }
+    certData.logoImg = img;
+    certData.logoUsable = ok;
+    updateLogoPreview(img.src);
+    scheduleRender();
+  };
+  img.onerror = function(){ certData.logoImg = null; certData.logoUsable = false; scheduleRender(); };
+  img.src = DEFAULT_LOGO_URL;
+}
+function updateLogoPreview(src){
+  var el = document.getElementById('logo-preview-img');
+  if(src){ el.src = src; el.style.display='block'; } else { el.style.display='none'; }
+}
+document.getElementById('logo-upload').addEventListener('change', function(e){
+  var file = e.target.files && e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var img = new Image();
+    img.onload = function(){
+      certData.logoImg = img; certData.logoUsable = true;
+      updateLogoPreview(ev.target.result);
+      scheduleRender();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('logo-reset').addEventListener('click', function(){ tryLoadDefaultLogo(); });
+document.getElementById('logo-remove').addEventListener('click', function(){
+  certData.logoImg = null; certData.logoUsable = false; updateLogoPreview(null); scheduleRender();
+});
+
+/* =========================================================
+   TEMPLATE GALLERY
+========================================================= */
+function renderTemplateGallery(){
+  var wrap = document.getElementById('tpl-scroll');
+  wrap.innerHTML = '';
+  TEMPLATES.forEach(function(t){
+    var card = document.createElement('div');
+    card.className = 'tpl-card' + (t.id === certData.templateId ? ' selected' : '');
+    card.dataset.id = t.id;
+    var canvas = document.createElement('canvas');
+    var tw = 300, th = 212;
+    canvas.width = tw; canvas.height = th;
+    var ctx = canvas.getContext('2d');
+    var sampleData = {
+      title: t.name.indexOf('Appreciation')>-1 ? 'Certificate of Appreciation' : (TITLE_PRESETS[0]),
+      recipientName: 'Ananya Sharma',
+      body: 'for outstanding performance and dedication',
+      school: certData.school,
+      dateStr: '4 Sep 2026',
+      certNo: '',
+      signatories: certData.signatories,
+      accentColor: t.accent ? certData.accentColor : undefined,
+      logoImg: certData.logoImg, logoUsable: certData.logoUsable
+    };
+    try{ t.draw(ctx, tw, th, sampleData); }catch(e){}
+    card.appendChild(canvas);
+    var nameEl = document.createElement('p'); nameEl.className='tpl-card-name'; nameEl.textContent = t.name;
+    var catEl = document.createElement('p'); catEl.className='tpl-card-cat'; catEl.textContent = t.category;
+    card.appendChild(nameEl); card.appendChild(catEl);
+    card.addEventListener('click', function(){
+      certData.templateId = t.id;
+      document.getElementById('accent-field').style.display = t.accent ? 'block' : 'none';
+      renderTemplateGallery();
+      scheduleRender();
+    });
+    wrap.appendChild(card);
+  });
+  var current = TEMPLATES.filter(function(t){return t.id===certData.templateId;})[0];
+  document.getElementById('accent-field').style.display = (current && current.accent) ? 'block' : 'none';
+}
+
+/* =========================================================
+   FORM WIRING
+========================================================= */
+function renderTitlePresets(){
+  var wrap = document.getElementById('title-presets');
+  wrap.innerHTML = '';
+  TITLE_PRESETS.forEach(function(p){
+    var b = document.createElement('button');
+    b.type='button'; b.className='chip'; b.style.cursor='pointer'; b.style.border='none';
+    b.textContent = p;
+    b.addEventListener('click', function(){ document.getElementById('f-title').value = p; certData.title = p; scheduleRender(); });
+    wrap.appendChild(b);
+  });
+}
+function renderAccentSwatches(){
+  var wrap = document.getElementById('accent-swatches');
+  wrap.innerHTML = '';
+  ACCENT_PRESETS.forEach(function(c){
+    var s = document.createElement('div');
+    s.className = 'swatch' + (c === certData.accentColor ? ' selected' : '');
+    s.style.background = c;
+    s.addEventListener('click', function(){
+      certData.accentColor = c;
+      renderAccentSwatches();
+      renderTemplateGallery();
+      scheduleRender();
+    });
+    wrap.appendChild(s);
+  });
+}
+
+function renderSignatories(){
+  var wrap = document.getElementById('sig-list');
+  wrap.innerHTML = '';
+  certData.signatories.forEach(function(sig, idx){
+    var row = document.createElement('div');
+    row.className = 'sig-row';
+    var nameInput = document.createElement('input');
+    nameInput.type='text'; nameInput.value = sig.name; nameInput.placeholder='Signatory name';
+    nameInput.addEventListener('input', function(){ sig.name = nameInput.value; scheduleRender(); });
+    var postInput = document.createElement('input');
+    postInput.type='text'; postInput.value = sig.post; postInput.placeholder='Designation';
+    postInput.addEventListener('input', function(){ sig.post = postInput.value; scheduleRender(); });
+    row.appendChild(nameInput); row.appendChild(postInput);
+    if(certData.signatories.length > 1){
+      var rm = document.createElement('button');
+      rm.type='button'; rm.className='sig-remove'; rm.title='Remove';
+      rm.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+      rm.addEventListener('click', function(){ certData.signatories.splice(idx,1); renderSignatories(); scheduleRender(); });
+      row.appendChild(rm);
+    }
+    wrap.appendChild(row);
+  });
+  document.getElementById('btn-add-sig').disabled = certData.signatories.length >= 3;
+}
+document.getElementById('btn-add-sig').addEventListener('click', function(){
+  if(certData.signatories.length >= 3) return;
+  certData.signatories.push({ name:'', post:'' });
+  renderSignatories();
+  scheduleRender();
+});
+
+document.getElementById('f-title').addEventListener('input', function(e){ certData.title = e.target.value; scheduleRender(); });
+document.getElementById('f-recipient-type').addEventListener('change', function(e){
+  certData.recipientType = e.target.value;
+  scheduleRender();
+  var nameEl = document.getElementById('f-recipient-name');
+  if(nameEl.value.trim().length >= 2) fetchRecipientSuggestions(nameEl.value.trim());
+  else hideSuggestions();
+});
+document.getElementById('f-recipient-name').addEventListener('input', function(e){
+  certData.recipientName = e.target.value;
+  scheduleRender();
+  scheduleSuggestionFetch(e.target.value);
+  updateBatchCountChip();
+});
+document.getElementById('f-body').addEventListener('input', function(e){ certData.body = e.target.value; scheduleRender(); });
+document.getElementById('f-date').addEventListener('change', function(e){ certData.dateStr = formatDisplayDate(e.target.value); scheduleRender(); });
+document.getElementById('f-certno').addEventListener('input', function(e){ certData.certNo = e.target.value; scheduleRender(); });
+document.getElementById('f-school').addEventListener('input', function(e){ certData.school = e.target.value || 'School Name'; renderTemplateGallery(); scheduleRender(); });
+
+function formatDisplayDate(iso){
+  if(!iso) return '';
+  var parts = iso.split('-');
+  var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+  return d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function wirePillGroup(id, onChange){
+  var group = document.getElementById(id);
+  group.querySelectorAll('.pill-opt').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      group.querySelectorAll('.pill-opt').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      onChange(btn.dataset.value);
+    });
+  });
+}
+wirePillGroup('orientation-group', function(v){ certData.orientation = v; scheduleRender(); });
+wirePillGroup('pagesize-group', function(v){ certData.pageSize = v; scheduleRender(); });
+
+/* =========================================================
+   RECIPIENT QUEUE (chips)
+========================================================= */
+function renderRecipientChips(){
+  var wrap = document.getElementById('recipient-chips');
+  wrap.innerHTML = '';
+  if(certData.recipients.length === 0){
+    var empty = document.createElement('span');
+    empty.className = 'chip-list-empty';
+    empty.textContent = 'No recipients queued yet — the name above will be used for a single certificate.';
+    wrap.appendChild(empty);
+  } else {
+    certData.recipients.forEach(function(name, idx){
+      var chip = document.createElement('span');
+      chip.className = 'chip-item';
+      var label = document.createElement('span');
+      label.textContent = name;
+      var rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'chip-remove'; rm.title = 'Remove'; rm.textContent = '✕';
+      rm.addEventListener('click', function(){
+        certData.recipients.splice(idx, 1);
+        renderRecipientChips();
+      });
+      chip.appendChild(label); chip.appendChild(rm);
+      wrap.appendChild(chip);
+    });
+  }
+  document.getElementById('recipient-count-chip').textContent = certData.recipients.length + ' added';
+  updateBatchCountChip();
+}
+function updateBatchCountChip(){
+  var batchChip = document.getElementById('batch-count-chip');
+  var effectiveCount = getEffectiveRecipients().length;
+  batchChip.textContent = effectiveCount + ' recipient' + (effectiveCount === 1 ? '' : 's');
+}
+function addRecipientToQueue(rawName){
+  var name = (rawName || '').trim();
+  if(!name){ toast('Type a name first.', true); return; }
+  certData.recipients.push(name);
+  renderRecipientChips();
+  var input = document.getElementById('f-recipient-name');
+  input.value = '';
+  certData.recipientName = '';
+  hideSuggestions();
+  input.focus();
+}
+document.getElementById('btn-add-recipient').addEventListener('click', function(){
+  addRecipientToQueue(document.getElementById('f-recipient-name').value);
+});
+document.getElementById('f-recipient-name').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    var active = document.querySelector('#recipient-suggestions .suggest-item.active');
+    if(active){ selectSuggestion(active.dataset.name); }
+    else { addRecipientToQueue(e.target.value); }
+  } else if(e.key === 'Escape'){
+    hideSuggestions();
+  }
+});
+
+document.getElementById('btn-bulk-toggle').addEventListener('click', function(){
+  var wrap = document.getElementById('bulk-add-wrap');
+  wrap.style.display = (wrap.style.display === 'none') ? 'block' : 'none';
+});
+document.getElementById('btn-bulk-add').addEventListener('click', function(){
+  var raw = document.getElementById('bulk-add-text').value;
+  var names = raw.split(/[\n,]/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if(names.length === 0){ toast('Paste at least one name.', true); return; }
+  names.forEach(function(n){ certData.recipients.push(n); });
+  renderRecipientChips();
+  document.getElementById('bulk-add-text').value = '';
+  document.getElementById('bulk-add-wrap').style.display = 'none';
+  toast(names.length + ' recipient' + (names.length === 1 ? '' : 's') + ' added to the queue.');
+});
+
+/* =========================================================
+   AUTOSUGGEST (bandwidth-efficient: debounced, small column set,
+   capped results, cancels stale requests)
+========================================================= */
+var suggestDebounceTimer = null;
+var suggestRequestToken = 0;
+function scheduleSuggestionFetch(term){
+  clearTimeout(suggestDebounceTimer);
+  var t = (term || '').trim();
+  if(t.length < 2){ hideSuggestions(); return; }
+  suggestDebounceTimer = setTimeout(function(){ fetchRecipientSuggestions(t); }, 280);
+}
+function hideSuggestions(){
+  var box = document.getElementById('recipient-suggestions');
+  box.style.display = 'none';
+  box.innerHTML = '';
+}
+async function fetchRecipientSuggestions(term){
+  var box = document.getElementById('recipient-suggestions');
+  var myToken = ++suggestRequestToken;
+  box.style.display = 'block';
+  box.innerHTML = '<div class="suggest-loading">Searching…</div>';
+  try{
+    var rows = [];
+    if(certData.recipientType === 'staff'){
+      var r = await supabaseClient
+        .from('teachers')
+        .select('name,email')
+        .ilike('name', '%' + term + '%')
+        .order('name', { ascending: true })
+        .limit(8);
+      if(!r.error && r.data){
+        rows = r.data.map(function(row){ return { name: row.name, meta: row.email || '' }; });
+      }
+    } else {
+      var r2 = await supabaseClient
+        .from('students_master')
+        .select('name,class,roll_no')
+        .ilike('name', '%' + term + '%')
+        .order('name', { ascending: true })
+        .limit(8);
+      if(!r2.error && r2.data){
+        rows = r2.data.map(function(row){
+          var meta = row.class || '';
+          if(row.roll_no !== null && row.roll_no !== undefined) meta += (meta ? ' · ' : '') + 'Roll ' + row.roll_no;
+          return { name: row.name, meta: meta };
+        });
+      }
+    }
+    if(myToken !== suggestRequestToken) return; // stale response, ignore
+    renderSuggestions(rows);
+  }catch(err){
+    if(myToken !== suggestRequestToken) return;
+    hideSuggestions();
+  }
+}
+function renderSuggestions(rows){
+  var box = document.getElementById('recipient-suggestions');
+  if(!rows || rows.length === 0){
+    box.innerHTML = '<div class="suggest-empty">No matches — you can still use this name as typed.</div>';
+    box.style.display = 'block';
+    return;
+  }
+  box.innerHTML = '';
+  rows.forEach(function(row){
+    var item = document.createElement('div');
+    item.className = 'suggest-item';
+    item.dataset.name = row.name;
+    var nameEl = document.createElement('span'); nameEl.className = 's-name'; nameEl.textContent = row.name;
+    var metaEl = document.createElement('span'); metaEl.className = 's-meta'; metaEl.textContent = row.meta || '';
+    item.appendChild(nameEl); item.appendChild(metaEl);
+    item.addEventListener('mousedown', function(e){ e.preventDefault(); selectSuggestion(row.name); });
+    box.appendChild(item);
+  });
+  box.style.display = 'block';
+}
+function selectSuggestion(name){
+  var input = document.getElementById('f-recipient-name');
+  input.value = name;
+  certData.recipientName = name;
+  hideSuggestions();
+  scheduleRender();
+  input.focus();
+}
+document.getElementById('f-recipient-name').addEventListener('blur', function(){
+  setTimeout(hideSuggestions, 120);
+});
+document.addEventListener('click', function(e){
+  var box = document.getElementById('recipient-suggestions');
+  var input = document.getElementById('f-recipient-name');
+  if(e.target !== input && !box.contains(e.target)){ hideSuggestions(); }
+});
+
+/* =========================================================
+   BATCH GENERATION (all queued recipients, one go)
+========================================================= */
+var batchFormat = 'pdf-single';
+var BATCH_FORMAT_HELP = {
+  'pdf-single': 'All certificates will be combined into a single multi-page PDF, one page per recipient.',
+  'pdf-multi': 'Each recipient gets their own PDF file. For more than one recipient these are bundled into a single .zip.',
+  'img-multi': 'Each recipient gets their own PNG image. For more than one recipient these are bundled into a single .zip.'
+};
+wirePillGroup('batch-format-group', function(v){
+  batchFormat = v;
+  document.getElementById('batch-format-help').textContent = BATCH_FORMAT_HELP[v];
+});
+
+function getEffectiveRecipients(){
+  if(certData.recipients.length > 0) return certData.recipients.slice();
+  var typed = document.getElementById('f-recipient-name').value.trim();
+  return typed ? [typed] : [];
+}
+
+function sanitizeFileName(name){
+  return (name || 'Recipient').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'Recipient';
+}
+
+function renderCertificateFor(name){
+  var savedName = certData.recipientName;
+  certData.recipientName = name;
+  renderMainCanvas();
+  var canvas = document.getElementById('cert-canvas');
+  var dataUrl = canvas.toDataURL('image/png');
+  certData.recipientName = savedName;
+  return dataUrl;
+}
+
+document.getElementById('btn-batch-generate').addEventListener('click', async function(){
+  var recipients = getEffectiveRecipients();
+  if(recipients.length === 0){
+    toast('Add at least one recipient name first.', true);
+    return;
+  }
+  var btn = document.getElementById('btn-batch-generate');
+  btn.disabled = true;
+  var originalLabel = btn.textContent;
+  var dims = pageDimsMM(certData.pageSize, certData.orientation);
+  var jsPDF = window.jspdf.jsPDF;
+  var usedNames = {};
+
+  function uniqueFileBase(name){
+    var base = sanitizeFileName(name);
+    if(!usedNames[base]){ usedNames[base] = 1; return base; }
+    usedNames[base] += 1;
+    return base + '_' + usedNames[base];
+  }
+
+  try{
+    if(recipients.length === 1){
+      // Single recipient: no zip needed regardless of mode chosen.
+      var only = recipients[0];
+      var dataUrl = renderCertificateFor(only);
+      if(batchFormat === 'img-multi'){
+        var a = document.createElement('a');
+        a.href = dataUrl; a.download = 'Certificate_' + uniqueFileBase(only) + '.png';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      } else {
+        var doc = new jsPDF({ unit:'mm', format:[dims.w, dims.h], orientation: certData.orientation === 'landscape' ? 'landscape' : 'portrait' });
+        doc.addImage(dataUrl, 'PNG', 0, 0, dims.w, dims.h);
+        doc.save('Certificate_' + uniqueFileBase(only) + '.pdf');
+      }
+      toast('Certificate generated.');
+    } else if(batchFormat === 'pdf-single'){
+      btn.textContent = 'Generating 1 / ' + recipients.length + '…';
+      var combined = new jsPDF({ unit:'mm', format:[dims.w, dims.h], orientation: certData.orientation === 'landscape' ? 'landscape' : 'portrait' });
+      for(var i=0;i<recipients.length;i++){
+        btn.textContent = 'Generating ' + (i+1) + ' / ' + recipients.length + '…';
+        var du = renderCertificateFor(recipients[i]);
+        if(i > 0) combined.addPage([dims.w, dims.h], certData.orientation === 'landscape' ? 'landscape' : 'portrait');
+        combined.addImage(du, 'PNG', 0, 0, dims.w, dims.h);
+        await new Promise(function(res){ requestAnimationFrame(res); });
+      }
+      combined.save('Certificates_' + recipients.length + '_recipients.pdf');
+      toast('Combined PDF with ' + recipients.length + ' certificates downloaded.');
+    } else {
+      // pdf-multi or img-multi, multiple recipients -> zip
+      var zip = new JSZip();
+      for(var j=0;j<recipients.length;j++){
+        btn.textContent = 'Generating ' + (j+1) + ' / ' + recipients.length + '…';
+        var name = recipients[j];
+        var durl = renderCertificateFor(name);
+        var base = uniqueFileBase(name);
+        if(batchFormat === 'img-multi'){
+          var b64 = durl.split(',')[1];
+          zip.file('Certificate_' + base + '.png', b64, { base64: true });
+        } else {
+          var pdoc = new jsPDF({ unit:'mm', format:[dims.w, dims.h], orientation: certData.orientation === 'landscape' ? 'landscape' : 'portrait' });
+          pdoc.addImage(durl, 'PNG', 0, 0, dims.w, dims.h);
+          var pdfBlob = pdoc.output('blob');
+          zip.file('Certificate_' + base + '.pdf', pdfBlob);
+        }
+        await new Promise(function(res){ requestAnimationFrame(res); });
+      }
+      btn.textContent = 'Packaging zip…';
+      var zipBlob = await zip.generateAsync({ type: 'blob' });
+      var url = URL.createObjectURL(zipBlob);
+      var a2 = document.createElement('a');
+      a2.href = url; a2.download = 'Certificates_' + recipients.length + '_recipients.zip';
+      document.body.appendChild(a2); a2.click(); document.body.removeChild(a2);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      toast(recipients.length + ' certificates packaged into a zip.');
+    }
+  }catch(err){
+    console.error(err);
+    toast('Could not generate certificates (a logo image may be blocked). Try uploading the logo instead.', true);
+  } finally {
+    scheduleRender();
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+/* =========================================================
+   RENDER MAIN PREVIEW
+========================================================= */
+var renderScheduled = false;
+function scheduleRender(){
+  if(renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(function(){ renderScheduled = false; renderMainCanvas(); });
+}
+function renderMainCanvas(){
+  var canvas = document.getElementById('cert-canvas');
+  var dims = pageDimsMM(certData.pageSize, certData.orientation);
+  var W = Math.round(dims.w * PX_PER_MM);
+  var H = Math.round(dims.h * PX_PER_MM);
+  canvas.width = W; canvas.height = H;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  var tpl = TEMPLATES.filter(function(t){ return t.id === certData.templateId; })[0] || TEMPLATES[0];
+  try{ tpl.draw(ctx, W, H, certData); }catch(e){ console.error(e); }
+  document.getElementById('preview-dims-chip').textContent = certData.pageSize + ' \u00b7 ' + certData.orientation + ' \u00b7 ' + dims.w + '\u00d7' + dims.h + 'mm';
+}
+
+/* =========================================================
+   EXPORT: PRINT / PDF / IMAGE
+========================================================= */
+document.getElementById('btn-print').addEventListener('click', function(){
+  renderMainCanvas();
+  var canvas = document.getElementById('cert-canvas');
+  var dataUrl;
+  try{ dataUrl = canvas.toDataURL('image/png'); }
+  catch(e){ toast('Could not prepare certificate for printing (logo image blocked).', true); return; }
+  var dims = pageDimsMM(certData.pageSize, certData.orientation);
+  var w = window.open('', '_blank');
+  if(!w){ toast('Please allow pop-ups to print.', true); return; }
+  w.document.write(
+    '<!DOCTYPE html><html><head><title>Print Certificate</title>' +
+    '<style>@page{size:' + dims.w + 'mm ' + dims.h + 'mm; margin:0;} html,body{margin:0;padding:0;} img{width:' + dims.w + 'mm; height:' + dims.h + 'mm; display:block;}</style>' +
+    '</head><body><img src="' + dataUrl + '" onload="setTimeout(function(){window.print();},200)"></body></html>'
+  );
+  w.document.close();
+});
+
+document.getElementById('btn-download-pdf').addEventListener('click', function(){
+  renderMainCanvas();
+  var canvas = document.getElementById('cert-canvas');
+  var dataUrl;
+  try{ dataUrl = canvas.toDataURL('image/png'); }
+  catch(e){ toast('Could not generate PDF (logo image blocked). Try uploading the logo instead.', true); return; }
+  try{
+    var jsPDF = window.jspdf.jsPDF;
+    var dims = pageDimsMM(certData.pageSize, certData.orientation);
+    var doc = new jsPDF({ unit:'mm', format:[dims.w, dims.h], orientation: certData.orientation === 'landscape' ? 'landscape' : 'portrait' });
+    doc.addImage(dataUrl, 'PNG', 0, 0, dims.w, dims.h);
+    var fileName = 'Certificate_' + (certData.recipientName || 'Recipient').replace(/[^a-z0-9]/gi,'_') + '.pdf';
+    doc.save(fileName);
+    toast('PDF downloaded.');
+  }catch(e){ console.error(e); toast('Could not generate PDF.', true); }
+});
+
+document.getElementById('btn-download-png').addEventListener('click', function(){
+  renderMainCanvas();
+  var canvas = document.getElementById('cert-canvas');
+  var dataUrl;
+  try{ dataUrl = canvas.toDataURL('image/png'); }
+  catch(e){ toast('Could not generate image (logo image blocked). Try uploading the logo instead.', true); return; }
+  var a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = 'Certificate_' + (certData.recipientName || 'Recipient').replace(/[^a-z0-9]/gi,'_') + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('Image downloaded.');
+});
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var userId = session.user.id;
+
+    var teacherResult = await supabaseClient
+      .from('teachers')
+      .select('id, name, email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var isTeacher = !teacherResult.error && !!teacherResult.data;
+    state.isTeacher = isTeacher;
+
+    // Any of the three is enough to use this page: teacher, admin, or a
+    // teacher who is also an admin. Only someone with neither role (a
+    // student, a guardian, or an unauthenticated visitor) is redirected
+    // back to the login page.
+    if(!isTeacher && !state.isAdmin){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = isTeacher
+      ? teacherResult.data.name
+      : (session.user.email ? session.user.email.split('@')[0] : 'Administrator');
+
+    var badge = document.getElementById('role-badge');
+    if(isTeacher && state.isAdmin){
+      badge.textContent = state.teacherName.split(' ')[0] + ' • Teacher & Admin access';
+      badge.classList.add('admin-badge');
+    }else if(state.isAdmin){
+      badge.textContent = 'Admin access — all templates';
+      badge.classList.add('admin-badge');
+    }else{
+      badge.textContent = state.teacherName.split(' ')[0] + ' • Design & print';
+    }
+
+    var today = new Date();
+    var isoToday = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    document.getElementById('f-date').value = isoToday;
+    certData.dateStr = formatDisplayDate(isoToday);
+
+    document.getElementById('f-title').value = certData.title;
+    document.getElementById('f-recipient-type').value = certData.recipientType;
+    document.getElementById('f-body').value = certData.body;
+    document.getElementById('f-school').value = certData.school;
+
+    renderTitlePresets();
+    renderAccentSwatches();
+    renderSignatories();
+    renderRecipientChips();
+    tryLoadDefaultLogo();
+
+    await preloadFonts();
+    renderTemplateGallery();
+    renderMainCanvas();
+
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
