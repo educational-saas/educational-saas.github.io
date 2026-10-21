@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Quick Share</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --header-bg: rgba(250,248,243,.85);
+    --header-border: rgba(13,56,65,.08);
+
+    --danger:#c9432f;
+    --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b;
+    --success-bg: rgba(47,143,91,.1);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --header-bg: rgba(9,34,39,.85);
+    --header-border: rgba(255,255,255,.08);
+
+    --danger:#ff6b57;
+    --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492;
+    --success-bg: rgba(87,212,146,.12);
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;}
+  button, input, select, textarea{font-family:inherit; color:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:3px solid var(--gold-500); outline-offset:2px;}
+
+  /* ---------- App header ---------- */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:760px;
+    margin:0 auto;
+  }
+  .header-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.02rem;
+    color:var(--ink-900);
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .3s var(--ease);
+  }
+  .header-sub{
+    margin:1px 0 0;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--teal-700);
+  }
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
+  }
+  .icon-btn{
+    width:40px; height:40px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn svg{
+    width:19px; height:19px;
+    fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute;
+    transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  /* ---------- layout ---------- */
+  main.layout{
+    max-width:640px;
+    margin:0 auto;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);
+  }
+  .stage-col{ display:flex; flex-direction:column; gap:16px; }
+
+  .step{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    box-shadow:var(--shadow-card);
+    padding:22px;
+    transition:border-color .3s var(--ease), background-color .3s var(--ease), opacity .2s var(--ease);
+    animation:fadeIn .35s var(--ease);
+  }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+
+  .step-head{display:flex; align-items:center; gap:10px; margin-bottom:16px;}
+  .step-icon{
+    width:36px;height:36px;border-radius:50%;flex:none;
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .step-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .step-title{font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; margin:0;}
+  .step-sub{font-size:.84rem; color:var(--ink-500); margin:2px 0 0;}
+
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  .field label.field-label{
+    display:block; font-size:.76rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--ink-500); margin-bottom:7px;
+  }
+  .hint{font-size:.78rem; color:var(--ink-500); margin-top:6px; line-height:1.5;}
+
+  select, .num-input, textarea{
+    width:100%; padding:11px 13px; border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card); background:var(--cream); color:var(--ink-900);
+    font-family:'Manrope',sans-serif; font-size:.9rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  textarea{ resize:vertical; min-height:110px; font-family:'Manrope',sans-serif; }
+  select:focus, .num-input:focus, textarea:focus{
+    border-color:var(--border-card-hover);
+    box-shadow:0 0 0 4px var(--bg-tint-gold);
+  }
+  input#downloadPin, input#retrievePin{
+    font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:.02em;
+  }
+
+  .row{display:flex; gap:10px;}
+  .row > *{flex:1;}
+  .row.tight > *{flex:initial;}
+
+  /* ---------- choice cards ---------- */
+  .choice-grid{display:flex; flex-direction:column; gap:12px;}
+  .choice-card{
+    display:flex; gap:14px; align-items:flex-start; text-align:left;
+    border:1.5px solid var(--border-card); background:var(--cream);
+    border-radius:var(--r-sm); padding:16px; width:100%;
+    transition:border-color .2s var(--ease), background-color .2s var(--ease), transform .15s var(--ease);
+  }
+  .choice-card:hover{ border-color:var(--border-card-hover); transform:translateY(-1px); }
+  .choice-card .cc-icon{
+    width:40px;height:40px;border-radius:50%;flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900);
+  }
+  .choice-card.get .cc-icon{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:#fff; }
+  .choice-card .cc-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .choice-card .cc-title{font-family:'Fraunces',serif; font-size:.98rem; font-weight:600; color:var(--ink-900); margin:0 0 2px;}
+  .choice-card .cc-desc{font-size:.82rem; color:var(--ink-500); margin:0;}
+
+  /* ---------- dropzone / file chip ---------- */
+  .dropzone{
+    border:1.5px dashed var(--border-card-hover); border-radius:var(--r-md);
+    padding:32px 16px; text-align:center; cursor:pointer; background:var(--cream);
+    transition:border-color .15s var(--ease), background .15s var(--ease);
+  }
+  .dropzone.drag{border-color:var(--gold-500); background:var(--bg-tint-gold);}
+  .dropzone svg{width:30px;height:30px; margin-bottom:10px; stroke:var(--teal-700); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;}
+  .dropzone .dz-title{font-family:'Fraunces',serif; font-size:.94rem; font-weight:600; margin-bottom:4px; color:var(--ink-900);}
+  .dropzone .dz-title b{color:var(--teal-700);}
+  .dropzone .dz-sub{font-size:.78rem; color:var(--ink-500);}
+  #fileInput{display:none;}
+
+  .text-toggle-row{text-align:center; margin:12px 0 0;}
+  .text-toggle-link{
+    background:none; border:none; font-family:'Manrope',sans-serif; font-size:.8rem; font-weight:700;
+    color:var(--teal-700); text-decoration:underline; cursor:pointer; padding:4px;
+  }
+  .text-panel{ margin-top:12px; }
+  .text-panel-actions{ display:flex; gap:8px; margin-top:8px; }
+
+  .file-chip{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border:1.5px solid var(--border-card); border-radius:var(--r-sm); padding:12px 14px; font-size:.82rem;
+    background:var(--cream);
+  }
+  .file-chip .fc-name{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-900);}
+  .file-chip .fc-meta{color:var(--ink-500); font-family:'JetBrains Mono',monospace; font-size:.7rem;}
+  .file-chip button{background:none; border:none; color:var(--ink-500); font-size:16px; line-height:1;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    border-radius:14px; padding:13px 18px; font-size:.88rem; font-weight:700;
+    border:none; width:100%; font-family:'Manrope',sans-serif;
+    transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-secondary{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:#fff; box-shadow:0 14px 26px -14px rgba(13,56,65,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-sm{padding:9px 14px; font-size:.78rem; width:auto; border-radius:10px;}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .action-row{display:flex; gap:10px; margin-top:14px;}
+  .spinner{width:15px;height:15px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex:none;}
+  .btn-ghost .spinner{border-color:rgba(28,38,38,.25); border-top-color:var(--ink-900);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- messages ---------- */
+  .error-msg{
+    background:var(--danger-bg); border:1.5px solid transparent; color:var(--danger); border-radius:var(--r-sm);
+    padding:12px 14px; font-size:.84rem; margin-bottom:0; display:none; font-weight:600;
+  }
+  .error-msg.show{display:block;}
+  .msg-box{ border-radius:var(--r-sm); padding:12px 14px; font-size:.84rem; font-weight:600; line-height:1.5; margin-top:14px; }
+  .msg-info{ background:var(--bg-tint-teal); color:var(--teal-700); }
+  .msg-success{ background:var(--success-bg); color:var(--success); }
+
+  /* ---------- progress ---------- */
+  .progress-wrap{ margin-top:14px; }
+  .progress-meta{ display:flex; justify-content:space-between; font-size:.76rem; font-weight:700; color:var(--ink-500); margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
+  .progress-track{ height:10px; background:var(--cream); border:1px solid var(--border-card); border-radius:999px; overflow:hidden; }
+  .progress-fill{ height:100%; width:0; background:linear-gradient(90deg,var(--gold-500),var(--teal-700)); border-radius:999px; transition:width .25s ease; }
+
+  /* ---------- result ticket ---------- */
+  .ticket{
+    border:1.5px dashed var(--border-card-hover); border-radius:var(--r-md);
+    background:var(--bg-tint-gold); overflow:hidden; margin-top:12px;
+  }
+  .ticket-top{ padding:11px 14px 3px; display:flex; align-items:center; justify-content:space-between; }
+  .ticket-label{ font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-500); }
+  .ticket-expiry{ font-size:.68rem; color:var(--ink-500); font-weight:600; font-family:'JetBrains Mono',monospace; }
+  .ticket-row{ display:flex; align-items:center; border-top:1.5px dashed var(--border-card-hover); padding:12px 14px; gap:10px; }
+  .ticket-value{ font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:700; color:var(--teal-800); letter-spacing:.02em; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ticket-link-row{ flex-direction:column; align-items:stretch; gap:8px; }
+  .ticket-link-input{
+    width:100%; padding:9px 11px; border:1.5px solid var(--border-card-hover); border-radius:10px;
+    font-size:.76rem; font-family:'JetBrains Mono',monospace; color:var(--teal-800); background:var(--white);
+    outline:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .copy-btn.copied{ background:linear-gradient(150deg,var(--success),#1f6b41); color:#fff; box-shadow:none; }
+
+  /* ---------- toast ---------- */
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px);
+    z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900);
+    color:var(--white);
+    font-size:.84rem;
+    font-weight:600;
+    padding:12px 18px;
+    border-radius:999px;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px);
+    transition:opacity .3s var(--ease), transform .3s var(--ease);
+    max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+
+  .hidden{display:none !important;}
+
+  @media (max-width:480px){
+    .step{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-top">
+    <div class="header-brand">
+      <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="header-text">
+        <p class="header-greeting">Quick Share</p>
+        <p class="header-sub">Tools &bull; Send &amp; Receive Files</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="stage-col">
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- ═══════ CHOICE STEP ═══════ -->
+    <div class="step" id="choiceStep">
+      <div class="step-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <div>
+          <h2 class="step-title">What would you like to do?</h2>
+          <p class="step-sub">No account needed — just a shared PIN.</p>
+        </div>
+      </div>
+      <div class="choice-grid">
+        <button class="choice-card send" id="goSend" type="button">
+          <span class="cc-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
+          <span>
+            <p class="cc-title">Send a file</p>
+            <p class="cc-desc">Share a file, some text, or a link with a PIN.</p>
+          </span>
+        </button>
+        <button class="choice-card get" id="goGet" type="button">
+          <span class="cc-icon"><svg viewBox="0 0 24 24"><path d="M12 4v12M12 16l-4-4M12 16l4-4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
+          <span>
+            <p class="cc-title">Get a file</p>
+            <p class="cc-desc">Enter a Download PIN someone shared with you.</p>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ SEND STEP ═══════ -->
+    <div class="step hidden" id="sendStep">
+      <div class="step-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        </div>
+        <div>
+          <h2 class="step-title">Send a file</h2>
+          <p class="step-sub">Add a file, set a Download PIN, then share it.</p>
+        </div>
+      </div>
+
+      <div id="uploadZoneWrap">
+        <div class="dropzone" id="dropZone" tabindex="0" role="button" aria-label="Upload a file">
+          <svg viewBox="0 0 24 24"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <div class="dz-title">Drop a file here, or <b>click to browse</b></div>
+          <div class="dz-sub">Any file type &middot; up to 200 MB</div>
+        </div>
+      </div>
+      <input type="file" id="fileInput" aria-hidden="true">
+
+      <p class="text-toggle-row"><button type="button" class="text-toggle-link" id="toggleTextMode">Or paste text or a link instead</button></p>
+
+      <div id="textPanel" class="text-panel hidden">
+        <div class="field">
+          <label class="field-label" for="textInput">Text or link</label>
+          <textarea id="textInput" placeholder="Type or paste your text, or a link, here…"></textarea>
+        </div>
+        <div class="text-panel-actions">
+          <button class="btn btn-ghost btn-sm" id="useTextBtn" type="button">Use this</button>
+          <button class="btn btn-ghost btn-sm" id="cancelTextBtn" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <div id="fileChipWrap" class="hidden" style="margin-top:12px;">
+        <div class="file-chip" id="fileChip">
+          <div style="overflow:hidden;">
+            <div class="fc-name" id="chipName"></div>
+            <div class="fc-meta" id="chipSize"></div>
+          </div>
+          <button type="button" id="removeFile" aria-label="Remove this file">✕</button>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:16px;">
+        <label class="field-label" for="masterKey">Master Upload Key</label>
+        <input type="password" class="num-input" id="masterKey" placeholder="Enter the master key" autocomplete="off" spellcheck="false">
+        <div class="hint">Contact your admin if you don't have this key.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="downloadPin">Download PIN</label>
+        <div class="row">
+          <input type="text" class="num-input" id="downloadPin" placeholder="e.g. lunar482" autocomplete="off" spellcheck="false">
+          <button class="btn btn-ghost btn-sm" id="genPinBtn" type="button" title="Generate a new PIN" style="flex:initial;">
+            <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg> New
+          </button>
+        </div>
+        <div class="hint">Share this PIN with whoever needs the file.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="expirySelect">Expires after</label>
+        <select id="expirySelect">
+          <option value="5">5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+          <option value="240" selected>4 hours</option>
+          <option value="720">12 hours</option>
+          <option value="1440">24 hours</option>
+          <option value="2880">2 days</option>
+          <option value="4320">3 days</option>
+          <option value="10080">1 week</option>
+        </select>
+      </div>
+
+      <div class="progress-wrap hidden" id="progressBlock">
+        <div class="progress-meta">
+          <span id="progressLabel">Sending…</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <div id="uploadStatus"></div>
+
+      <div class="action-row">
+        <button class="btn btn-ghost btn-sm" id="backFromSend" type="button">← Back</button>
+        <button class="btn btn-primary" id="uploadBtn" type="button">
+          <svg viewBox="0 0 24 24"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          Send file
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ GET STEP ═══════ -->
+    <div class="step hidden" id="getStep">
+      <div class="step-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 4v12M12 16l-4-4M12 16l4-4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        </div>
+        <div>
+          <h2 class="step-title">Get a file</h2>
+          <p class="step-sub">Enter the Download PIN you were given.</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="retrievePin">Download PIN</label>
+        <input type="text" class="num-input" id="retrievePin" placeholder="e.g. lunar482" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div id="downloadStatus"></div>
+
+      <div class="hint" style="margin-top:14px;">Your file link will stay active for <b>5 minutes</b> after you tap the button.</div>
+
+      <div class="action-row">
+        <button class="btn btn-ghost btn-sm" id="backFromGet" type="button">← Back</button>
+        <button class="btn btn-secondary" id="downloadBtn" type="button">
+          <svg viewBox="0 0 24 24"><path d="M12 4v12M12 16l-4-4M12 16l4-4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          Get file
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast-wrap"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   SUPABASE CONFIG
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var EDGE_BASE = SUPABASE_URL + '/functions/v1/quick-share';
+var MAX_FILE_BYTES = 200 * 1024 * 1024; // 200 MB hard limit
+
+function authHeaders(extra){
+  return extra || {};
+}
+
+/* =========================================================
+   THEME TOGGLE (matches GSMS portal)
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+document.getElementById('back-btn').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+
+/* =========================================================
+   TOAST (matches GSMS portal)
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 2800);
+}
+
+var errorMsg = document.getElementById('errorMsg');
+function showError(msg){
+  errorMsg.textContent = msg;
+  errorMsg.classList.add('show');
+  window.clearTimeout(showError._t);
+  showError._t = window.setTimeout(function(){ errorMsg.classList.remove('show'); }, 6000);
+}
+function clearError(){ errorMsg.classList.remove('show'); }
+
+/* =========================================================
+   STEP NAVIGATION
+========================================================= */
+var steps = {
+  choice: document.getElementById('choiceStep'),
+  send: document.getElementById('sendStep'),
+  get: document.getElementById('getStep')
+};
+function showStep(name){
+  Object.keys(steps).forEach(function(k){ steps[k].classList.toggle('hidden', k !== name); });
+  clearError();
+}
+document.getElementById('goSend').addEventListener('click', function(){ showStep('send'); });
+document.getElementById('goGet').addEventListener('click', function(){ showStep('get'); });
+document.getElementById('backFromSend').addEventListener('click', function(){ showStep('choice'); });
+document.getElementById('backFromGet').addEventListener('click', function(){ showStep('choice'); });
+
+/* =========================================================
+   DOWNLOAD PIN GENERATOR — friendly word + 3 digits
+========================================================= */
+var WORDS = [
+  'azure','beach','blaze','brave','cedar','cloud','comet','crisp','dream','drift',
+  'eagle','elite','ember','extra','flame','flare','frost','giant','globe','grace',
+  'happy','haven','hedge','honor','island','ivory','jewel','joker','karma','knack',
+  'lemon','light','lunar','magic','mango','maple','marsh','nexus','night','noble',
+  'novel','ocean','olive','orbit','ozone','pearl','pilot','plaza','prism','quest',
+  'quiet','radar','rapid','ridge','river','silver','storm','sugar','sunny','tiger',
+  'trace','trend','ultra','unity','valor','vivid','voice','waltz','wheat','yacht',
+  'yield','acorn','apple','arena','beans','berry','birth','black','bloom','brave',
+  'bread','brick','bring','brush','build','candy','cargo','chain','chalk','charm',
+  'cheer','chess','chick','choir','claim','class','click','cliff','climb','clock',
+  'cloth','coach','coast','color','comic','couch','crazy','cream','crown','curve',
+  'daisy','dance','dozen','draft','dream','eager','early','earth','eight','elder',
+  'enjoy','equal','fable','fairy','fancy','feast','fence','ferry','field','fifty',
+  'fight','final','first','flash','fleet','float','flock','flood','floor','flour',
+  'focus','force','forge','forty','frame','fresh','front','fruit','funny','glass',
+  'glory','grand','grant','graph','grass','great','green','greet','group','grove',
+  'guard','guest','guide','habit','happy','harsh','heart','heavy','hello','hobby',
+  'honey','horse','hotel','house','human','humor','hurry','ideal','image','input',
+  'jelly','joint','judge','juice','koala','label','large','laser','later','laugh',
+  'learn','level','light','lucky','lunch','magic','major','maker','march','match',
+  'medal','melon','merit','metal','model','money','month','moral','motor','mount',
+  'mouse','movie','music','noble','north','nurse','ocean','offer','onion','order',
+  'other','owner','paint','panda','panel','paper','party','pasta','peace','peach',
+  'phone','photo','piano','piece','pizza','place','plain','plant','plate','point',
+  'power','press','price','pride','prize','proud','puppy','queen','quick','rabbit',
+  'radio','raise','ready','river','robot','rocket','round','safe','salad','shine'
+];
+function generatePin(){
+  var word = WORDS[Math.floor(Math.random() * WORDS.length)];
+  var digits = String(Math.floor(100 + Math.random() * 900));
+  return word + digits;
+}
+document.getElementById('genPinBtn').addEventListener('click', function(){
+  document.getElementById('downloadPin').value = generatePin();
+});
+document.getElementById('downloadPin').value = generatePin();
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function fmtBytes(b){
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(2) + ' GB';
+}
+function fmtDate(iso){
+  return new Date(iso).toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function setStatus(containerId, html){
+  document.getElementById(containerId).innerHTML = html;
+}
+function clearStatus(containerId){
+  document.getElementById(containerId).innerHTML = '';
+}
+var UPLOAD_BTN_INNER = document.getElementById('uploadBtn').innerHTML;
+var DOWNLOAD_BTN_INNER = document.getElementById('downloadBtn').innerHTML;
+function setBtnLoading(id, isLoading, innerHtml){
+  var btn = document.getElementById(id);
+  btn.disabled = isLoading;
+  btn.innerHTML = isLoading ? '<div class="spinner"></div> One moment…' : innerHtml;
+}
+
+/* =========================================================
+   FILE SELECTION — drag & drop + click-to-browse
+========================================================= */
+var selectedFile = null;
+var dropZone = document.getElementById('dropZone');
+var fileInput = document.getElementById('fileInput');
+var fileChipWrap = document.getElementById('fileChipWrap');
+var textToggleRow = document.querySelector('.text-toggle-row');
+
+dropZone.addEventListener('click', function(){ fileInput.click(); });
+dropZone.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+['dragenter','dragover'].forEach(function(ev){
+  dropZone.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(function(ev){
+  dropZone.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag'); });
+});
+dropZone.addEventListener('drop', function(e){
+  if (e.dataTransfer.files.length) applyFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', function(){ if (fileInput.files.length) applyFile(fileInput.files[0]); });
+
+function applyFile(f){
+  if (f.size > MAX_FILE_BYTES){
+    showError('That file is too big. The largest file this tool can take is 200 MB — yours is ' + fmtBytes(f.size) + '.');
+    return;
+  }
+  clearError();
+  selectedFile = f;
+  document.getElementById('chipName').textContent = f.name;
+  document.getElementById('chipSize').textContent = fmtBytes(f.size);
+  document.getElementById('uploadZoneWrap').classList.add('hidden');
+  textToggleRow.classList.add('hidden');
+  fileChipWrap.classList.remove('hidden');
+}
+
+/* ── Plain-text → safe HTML file conversion ─────────────────────────── */
+function textToSafeHtml(text){
+  var urlRegex = /((?:https?:\/\/|www\.)[^\s<>"']+)/gi;
+  var lastIndex = 0, html = '', match;
+  while ((match = urlRegex.exec(text)) !== null){
+    html += escapeHtml(text.slice(lastIndex, match.index));
+    var raw = match[0];
+    var href = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    html += '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(raw) + '</a>';
+    lastIndex = match.index + raw.length;
+  }
+  html += escapeHtml(text.slice(lastIndex));
+  return html;
+}
+function buildHtmlFromText(text){
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Shared Text</title>'
+    + '<style>body{font-family:Arial,Helvetica,sans-serif;max-width:700px;margin:2rem auto;padding:0 1rem;'
+    + 'line-height:1.6;color:#222;white-space:pre-wrap;word-wrap:break-word;}a{color:#3366cc;word-break:break-all;}</style>'
+    + '</head><body>' + textToSafeHtml(text) + '</body></html>';
+}
+function textToFile(text){
+  var blob = new Blob([buildHtmlFromText(text)], { type: 'text/html' });
+  return new File([blob], 'shared-text-' + Date.now() + '.html', { type: 'text/html' });
+}
+
+var toggleTextMode = document.getElementById('toggleTextMode');
+var textPanel = document.getElementById('textPanel');
+var textInput = document.getElementById('textInput');
+
+toggleTextMode.addEventListener('click', function(){
+  document.getElementById('uploadZoneWrap').classList.add('hidden');
+  textToggleRow.classList.add('hidden');
+  textPanel.classList.remove('hidden');
+  textInput.focus();
+});
+document.getElementById('cancelTextBtn').addEventListener('click', function(){
+  textInput.value = '';
+  textPanel.classList.add('hidden');
+  document.getElementById('uploadZoneWrap').classList.remove('hidden');
+  textToggleRow.classList.remove('hidden');
+});
+document.getElementById('useTextBtn').addEventListener('click', function(){
+  var text = textInput.value;
+  if (!text.trim()){ showError('Please type something first.'); return; }
+  applyFile(textToFile(text));
+  textPanel.classList.add('hidden');
+});
+document.getElementById('removeFile').addEventListener('click', function(){
+  selectedFile = null;
+  fileInput.value = '';
+  fileChipWrap.classList.add('hidden');
+  document.getElementById('uploadZoneWrap').classList.remove('hidden');
+  textToggleRow.classList.remove('hidden');
+  clearStatus('uploadStatus');
+});
+
+/* =========================================================
+   UPLOAD FLOW
+========================================================= */
+document.getElementById('uploadBtn').addEventListener('click', handleUpload);
+
+function setProgress(pct, label){
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+function putToR2(url, file, contentType){
+  return new Promise(function(resolve, reject){
+    var xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.setRequestHeader('Content-Type', contentType);
+    xhr.timeout = 180000;
+    xhr.upload.onprogress = function(e){
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100), 'Sending your file…');
+    };
+    xhr.onload = function(){
+      if (xhr.status >= 200 && xhr.status < 300){ setProgress(100, 'Done ✓'); resolve(); }
+      else reject(new Error('The file storage returned an error (status ' + xhr.status + '). Please try again.'));
+    };
+    xhr.onerror = function(){ reject(new Error("Couldn't reach the network. Check your connection and try again.")); };
+    xhr.ontimeout = function(){ reject(new Error('That took too long. Please try again.')); };
+    xhr.send(file);
+  });
+}
+
+function handleUpload(){
+  clearError();
+  clearStatus('uploadStatus');
+  document.getElementById('progressBlock').classList.add('hidden');
+
+  var uploadKey = document.getElementById('masterKey').value.trim();
+  var pin = document.getElementById('downloadPin').value.trim().toLowerCase();
+  var expiry = document.getElementById('expirySelect').value;
+
+  if (!selectedFile){ showError('Please add a file, or some text, first.'); return; }
+  if (!uploadKey){ showError('Please enter the Master Upload Key.'); return; }
+  if (!pin || pin.length < 4){ showError('The Download PIN needs at least 4 letters or numbers.'); return; }
+
+  setBtnLoading('uploadBtn', true, UPLOAD_BTN_INNER);
+
+  var objectKey = null;
+  var keySnapshot = uploadKey;
+
+  var fd = new FormData();
+  fd.append('upload_key', uploadKey);
+  fd.append('download_pin', pin);
+  fd.append('expiry_duration', expiry);
+  fd.append('filename', selectedFile.name);
+  fd.append('file_type', selectedFile.type || 'application/octet-stream');
+  fd.append('file_size', String(selectedFile.size));
+
+  fetch(EDGE_BASE + '/upload', { method: 'POST', headers: authHeaders(), body: fd })
+    .then(function(initRes){
+      return initRes.json().then(function(initData){ return { ok: initRes.ok, data: initData }; });
+    })
+    .then(function(result){
+      if (!result.ok) throw new Error(result.data.error || "That didn't work. Please try again.");
+      var initData = result.data;
+      objectKey = initData.object_key;
+
+      document.getElementById('progressBlock').classList.remove('hidden');
+      setProgress(0, 'Sending your file…');
+
+      // Updated to confirm success
+return putToR2(initData.presigned_upload_url, selectedFile, initData.content_type).then(function(){
+    setProgress(100, 'Finalizing…');
+    return fetch(EDGE_BASE + '/confirm', {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ object_key: initData.object_key })
+    }).then(function(confirmRes){
+      return confirmRes.json().then(function(confirmData){
+        return { ok: confirmRes.ok, data: confirmData, initData: initData };
+      });
+    });
+  });
+})
+.then(function(result){
+  if (!result.ok) throw new Error(result.data.error || "Could not finalize the share. Please try again.");
+  var initData = result.initData;
+  document.getElementById('progressBlock').classList.add('hidden');
+
+      var shareUrl = new URL(window.location.pathname, window.location.origin);
+      shareUrl.searchParams.set('pin', pin);
+      var shareUrlStr = shareUrl.toString();
+      var expiresAt = initData.expires_at;
+
+      setStatus('uploadStatus',
+        '<div class="msg-box msg-success">Your file is ready to share. Give the PIN or link below to whoever needs it — it works until ' + fmtDate(expiresAt) + '.</div>'
+        + '<div class="ticket">'
+        +   '<div class="ticket-top"><span class="ticket-label">Download PIN</span><span class="ticket-expiry">Until ' + fmtDate(expiresAt) + '</span></div>'
+        +   '<div class="ticket-row"><span class="ticket-value" id="ticketPin">' + escapeHtml(pin) + '</span>'
+        +   '<button class="btn btn-ghost btn-sm copy-btn" id="copyPinBtn" type="button" style="flex:initial;">'
+        +     '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy'
+        +   '</button></div>'
+        + '</div>'
+        + '<div class="ticket">'
+        +   '<div class="ticket-top"><span class="ticket-label">Share link</span>'
+        +   '<a href="' + escapeHtml(shareUrlStr) + '" target="_blank" rel="noopener noreferrer" style="font-size:.68rem;color:var(--teal-700);font-weight:700;text-decoration:none;">Open ↗</a></div>'
+        +   '<div class="ticket-row ticket-link-row">'
+        +     '<input class="ticket-link-input" id="shareLinkInput" type="text" value="' + escapeHtml(shareUrlStr) + '" readonly onclick="this.select()">'
+        +     '<button class="btn btn-ghost btn-sm copy-btn" id="copyLinkBtn" type="button">'
+        +       '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy link'
+        +     '</button>'
+        +   '</div>'
+        + '</div>'
+      );
+
+      document.getElementById('copyPinBtn').addEventListener('click', function(){
+        var btn = this;
+        navigator.clipboard.writeText(pin).then(function(){
+          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Copied';
+          btn.classList.add('copied');
+          setTimeout(function(){
+            btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      });
+      document.getElementById('copyLinkBtn').addEventListener('click', function(){
+        var btn = this;
+        navigator.clipboard.writeText(shareUrlStr).then(function(){
+          btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Copied';
+          btn.classList.add('copied');
+          setTimeout(function(){
+            btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy link';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      });
+
+      toast('File shared successfully.');
+    })
+    .catch(function(err){
+      document.getElementById('progressBlock').classList.add('hidden');
+      if (objectKey){
+        fetch(EDGE_BASE + '/cleanup', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ object_key: objectKey, upload_key: keySnapshot })
+        }).catch(function(){});
+      }
+      showError(err.message);
+      toast('Upload failed.', true);
+    })
+    .finally(function(){
+      setBtnLoading('uploadBtn', false, UPLOAD_BTN_INNER);
+    });
+}
+
+/* =========================================================
+   DOWNLOAD FLOW
+========================================================= */
+document.getElementById('downloadBtn').addEventListener('click', handleDownload);
+document.getElementById('retrievePin').addEventListener('keydown', function(e){ if (e.key === 'Enter') handleDownload(); });
+document.getElementById('retrievePin').addEventListener('input', function(){
+  var pos = this.selectionStart;
+  this.value = this.value.replace(/\s/g, '');
+  this.setSelectionRange(pos, pos);
+});
+
+function handleDownload(){
+  clearError();
+  clearStatus('downloadStatus');
+  var pin = document.getElementById('retrievePin').value.trim().toLowerCase();
+  if (!pin){ showError('Please enter the Download PIN first.'); return; }
+
+  setBtnLoading('downloadBtn', true, DOWNLOAD_BTN_INNER);
+
+  fetch(EDGE_BASE + '/download', {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ download_pin: pin })
+  })
+    .then(function(res){ return res.json().then(function(data){ return { ok: res.ok, data: data }; }); })
+    .then(function(result){
+      if (!result.ok) throw new Error(result.data.error || "We couldn't find that PIN.");
+      var download_url = result.data.download_url;
+      window.location.href = download_url;
+      setStatus('downloadStatus',
+        '<div class="msg-box msg-success">Your file is on its way. If it didn\'t start, '
+        + '<a href="' + escapeHtml(download_url) + '" target="_blank" rel="noopener noreferrer" style="color:var(--teal-700);font-weight:700;">open it here</a>.'
+        + '<br><span style="font-size:.72rem;opacity:.85;">This link works for 5 minutes.</span></div>'
+      );
+      toast('Download started.');
+    })
+    .catch(function(err){
+      showError(err.message);
+      toast('Could not retrieve that file.', true);
+    })
+    .finally(function(){
+      setBtnLoading('downloadBtn', false, DOWNLOAD_BTN_INNER);
+    });
+}
+
+/* =========================================================
+   AUTO-DOWNLOAD via ?pin=<value>
+========================================================= */
+(function autoDownloadFromUrl(){
+  var pinFromUrl = new URLSearchParams(window.location.search).get('pin');
+  if (!pinFromUrl) return;
+  document.getElementById('retrievePin').value = pinFromUrl.trim().toLowerCase();
+  showStep('get');
+  handleDownload();
+})();
+
+})();
+</script>
+
+</body>
+</html>
