@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Student List Generator</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1); --success:#2f8f5b; --success-bg: rgba(47,143,91,.1);
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35); --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12); --success:#57d492; --success-bg: rgba(87,212,146,.12);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55); --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease); }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  .app-header{
+    position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1040px; margin:0 auto 14px; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease); }
+  .back-btn:hover{ transform:translateX(-2px); } .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{ font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease); }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600); }
+  .header-sub.admin-badge{ color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0; }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); } .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{ width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease); }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);} .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  .tabs{ max-width:1040px; margin:0 auto; display:flex; gap:6px; background:var(--white); border:1.5px solid var(--border-card); border-radius:999px; padding:5px; }
+  .tab-btn{ flex:1; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.86rem; padding:10px 8px; border-radius:999px; cursor:pointer; transition:background-color .25s var(--ease), color .25s var(--ease); }
+  .tab-btn.active{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); box-shadow:0 10px 22px -12px rgba(13,56,65,.5); }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--teal-900); }
+
+  main.dash{ flex:1; width:100%; max-width:1040px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px); }
+  .panel{ display:none; flex-direction:column; gap:16px; } .panel.active{ display:flex; }
+
+  .card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); transition:border-color .3s var(--ease), background-color .3s var(--ease); }
+  .card-title{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; margin:0 0 14px; color:var(--ink-900); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .chip{ font-size:.72rem; font-weight:700; letter-spacing:.02em; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+  .chip.gold{ color:var(--gold-600); background:var(--bg-tint-gold); }
+
+  .field{ margin-bottom:14px; } .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; } @media (max-width:480px){ .row2{ grid-template-columns:1fr; } }
+
+  input[type="text"], input[type="search"], select, textarea{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="text"]:focus, input[type="search"]:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+  select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>"); background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px; }
+  select:disabled, input:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .search-wrap{ position:relative; }
+  .search-wrap svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; stroke:var(--ink-500); fill:none; stroke-width:2; }
+  .search-wrap input{ padding-left:38px; }
+  .search-wrap .clear-search{ position:absolute; right:8px; top:50%; transform:translateY(-50%); width:26px; height:26px; border-radius:50%; border:none; background:transparent; display:none; align-items:center; justify-content:center; cursor:pointer; }
+  .search-wrap .clear-search svg{ position:static; transform:none; width:14px; height:14px; }
+  .search-wrap.has-value .clear-search{ display:flex; }
+
+  .btn{ padding:13px 18px; border-radius:14px; border:none; font-family:'Manrope',sans-serif; font-weight:700; font-size:.88rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active{ transform:scale(.97); } .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-teal{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); }
+  html[data-theme="dark"] .btn-teal{ color:var(--teal-900); }
+  .btn-sm{ padding:8px 12px; font-size:.78rem; border-radius:10px; }
+  .btn-block{ width:100%; } .btn-row{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; } .btn-row .btn{ flex:1; min-width:130px; }
+
+  .placeholder-note{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500); }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Class chips ---------- */
+  .chip-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .class-chip{ padding:8px 15px; border-radius:999px; border:1.5px solid var(--border-card); background:var(--cream); font-size:.82rem; font-weight:700; color:var(--ink-500); cursor:pointer; transition:all .2s var(--ease); }
+  .class-chip.active{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); border-color:transparent; color:var(--white); }
+  html[data-theme="dark"] .class-chip.active{ color:var(--teal-900); }
+  .class-chip:hover{ border-color:var(--border-card-hover); }
+
+  /* ---------- Filter bar ---------- */
+  .filter-bar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; }
+  .filter-pill{ padding:6px 13px; border-radius:999px; border:1.5px solid var(--border-card); background:var(--cream); font-size:.76rem; font-weight:700; color:var(--ink-500); cursor:pointer; transition:all .2s var(--ease); }
+  .filter-pill.active{ background:var(--bg-tint-gold); border-color:var(--gold-500); color:var(--gold-600); }
+  .filter-sep{ width:1px; height:18px; background:var(--border-card); margin:0 2px; }
+
+  /* ---------- Student list ---------- */
+  .student-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 8px; }
+  .student-count{ font-size:.78rem; font-weight:700; color:var(--teal-700); }
+  .student-scroll{ max-height:360px; overflow-y:auto; border:1.5px solid var(--border-card); border-radius:var(--r-sm); background:var(--cream); }
+  .class-group-label{ position:sticky; top:0; z-index:1; background:var(--bg-tint-teal); backdrop-filter:blur(6px); font-size:.7rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--teal-700); padding:8px 14px; }
+  .student-row{ display:flex; align-items:center; gap:12px; padding:10px 14px; border-top:1px solid var(--border-card); cursor:pointer; transition:background-color .15s var(--ease); }
+  .student-row:first-child{ border-top:none; }
+  .student-row:hover{ background:var(--bg-tint-gold); }
+  .student-row input[type="checkbox"]{ width:18px; height:18px; accent-color:var(--gold-500); flex-shrink:0; cursor:pointer; }
+  .student-row .s-name{ font-weight:600; font-size:.88rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .student-row .s-meta{ font-size:.74rem; color:var(--ink-500); flex-shrink:0; }
+  .student-empty{ padding:28px 14px; text-align:center; color:var(--ink-500); font-size:.85rem; }
+
+  /* ---------- Field checkboxes ---------- */
+  .field-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; } @media (max-width:480px){ .field-grid{ grid-template-columns:1fr; } }
+  .field-check{ display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--border-card); background:var(--cream); cursor:pointer; transition:border-color .2s var(--ease); }
+  .field-check.active{ border-color:var(--gold-500); background:var(--bg-tint-gold); }
+  .field-check input{ width:17px; height:17px; accent-color:var(--gold-500); }
+  .field-check span{ font-size:.85rem; font-weight:600; }
+
+  /* ---------- Preview table ---------- */
+  .preview-scroll{ overflow-x:auto; border:1.5px solid var(--border-card); border-radius:var(--r-sm); }
+  table.preview-table{ width:100%; border-collapse:collapse; font-size:.82rem; min-width:420px; }
+  table.preview-table th{ text-align:left; padding:10px 12px; background:var(--bg-tint-teal); color:var(--teal-700); font-weight:800; font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+  table.preview-table td{ padding:9px 12px; border-top:1px solid var(--border-card); white-space:nowrap; }
+  table.preview-table tr:nth-child(even) td{ background:var(--cream); }
+
+  /* ---------- Saved list cards ---------- */
+  .saved-card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:16px; box-shadow:var(--shadow-card); opacity:0; animation:rise .5s var(--ease) forwards; }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .saved-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .saved-name{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; color:var(--teal-700); margin:0; }
+  .saved-meta{ font-size:.76rem; color:var(--ink-500); margin-top:3px; }
+  .saved-actions{ display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; }
+  .mini-btn{ width:32px; height:32px; border-radius:10px; border:1.5px solid var(--border-card); background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .2s var(--ease), border-color .2s var(--ease); }
+  .mini-btn:hover{ transform:translateY(-1px); border-color:var(--border-card-hover); }
+  .mini-btn svg{ width:15px; height:15px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .mini-btn.danger svg{ stroke:var(--danger); }
+  .vis-badge{ font-size:.68rem; font-weight:800; padding:4px 10px; border-radius:999px; letter-spacing:.03em; text-transform:uppercase; }
+  .vis-badge.private{ background:var(--danger-bg); color:var(--danger); }
+  .vis-badge.admin{ background:var(--bg-tint-teal); color:var(--teal-700); }
+  .vis-badge.everyone{ background:var(--success-bg); color:var(--success); }
+
+  .radio-row{ display:flex; flex-direction:column; gap:8px; }
+  .radio-opt{ display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:12px; border:1.5px solid var(--border-card); background:var(--cream); cursor:pointer; transition:border-color .2s var(--ease); }
+  .radio-opt.active{ border-color:var(--gold-500); background:var(--bg-tint-gold); }
+  .radio-opt input{ width:17px; height:17px; accent-color:var(--gold-500); margin-top:2px; }
+  .radio-opt .r-title{ font-weight:700; font-size:.86rem; } .radio-opt .r-sub{ font-size:.76rem; color:var(--ink-500); margin-top:2px; }
+
+  /* ---------- Sheet ---------- */
+  .sheet-backdrop{ position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease); }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{ position:fixed; left:0; right:0; bottom:0; z-index:101; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); max-width:1040px; margin:0 auto; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35); transform:translateY(100%); transition:transform .3s var(--ease); max-height:88vh; overflow-y:auto; }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; } .sheet-actions .btn{ flex:1; }
+
+  #toast-wrap{ position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast{ background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw; }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); } .toast.error{ background:var(--danger); color:var(--white); }
+
+  .skeleton{ background:linear-gradient(90deg, var(--border-card) 25%, var(--bg-tint-gold) 50%, var(--border-card) 75%); background-size:200% 100%; animation:shimmer 1.3s ease-in-out infinite; border-radius:8px; }
+  @keyframes shimmer{ 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Student Lists</p>
+          <p class="header-sub" id="role-badge">Build &bull; Export &bull; Share</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-create-btn" type="button">Create List</button>
+      <button class="tab-btn" id="tab-saved-btn" type="button">Saved Lists</button>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ PANEL: CREATE ============ -->
+    <section class="panel active" id="panel-create">
+
+      <div class="card">
+        <p class="card-title">1. Select class(es) <span class="chip" id="class-count-chip" style="display:none;"></span></p>
+        <div class="chip-grid" id="class-chip-grid">
+          <span class="skeleton" style="width:60px;height:34px;display:inline-block;"></span>
+          <span class="skeleton" style="width:60px;height:34px;display:inline-block;"></span>
+          <span class="skeleton" style="width:60px;height:34px;display:inline-block;"></span>
+        </div>
+      </div>
+
+      <div class="card" id="student-card" style="display:none;">
+        <p class="card-title">2. Select students <span class="chip" id="selected-count-chip">0 selected</span></p>
+
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="student-search" placeholder="Search by name or roll number…" autocomplete="off">
+          <button class="clear-search" id="clear-search" type="button" aria-label="Clear search"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+
+        <div class="filter-bar" id="filter-bar">
+          <button class="filter-pill" data-filter="gender" data-value="M" type="button">Boys</button>
+          <button class="filter-pill" data-filter="gender" data-value="F" type="button">Girls</button>
+          <span class="filter-sep"></span>
+          <button class="filter-pill" data-filter="house" data-value="Aristocrat" type="button">Aristocrat</button>
+          <button class="filter-pill" data-filter="house" data-value="Diplomat" type="button">Diplomat</button>
+          <button class="filter-pill" data-filter="house" data-value="Republic" type="button">Republic</button>
+          <button class="filter-pill" data-filter="house" data-value="Democrat" type="button">Democrat</button>
+        </div>
+
+        <div class="student-toolbar">
+          <span class="student-count" id="visible-count-label">0 students</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" id="btn-select-all" type="button">Select all</button>
+            <button class="btn btn-ghost btn-sm" id="btn-select-none" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div class="student-scroll" id="student-scroll">
+          <div class="student-empty">Loading students…</div>
+        </div>
+      </div>
+
+      <div class="card" id="fields-card" style="display:none;">
+        <p class="card-title">3. Choose fields to include</p>
+        <div class="field-grid" id="field-grid"></div>
+      </div>
+
+      <div class="card" id="details-card" style="display:none;">
+        <p class="card-title">4. Name &amp; generate</p>
+        <div class="field">
+          <label for="list-name">List name</label>
+          <input type="text" id="list-name" placeholder="e.g. Class 6-A — Sports Day list">
+        </div>
+
+        <div class="preview-scroll" id="preview-wrap" style="display:none;">
+          <table class="preview-table" id="preview-table"></table>
+        </div>
+        <div class="placeholder-note" id="preview-placeholder" style="padding:22px 10px;">
+          <p>Pick at least one student to see a live preview here.</p>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="btn-copy" type="button">Copy text</button>
+          <button class="btn btn-ghost" id="btn-share" type="button">Share</button>
+          <button class="btn btn-teal" id="btn-pdf" type="button">Download PDF</button>
+          <button class="btn btn-primary" id="btn-open-save" type="button">Save list…</button>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="create-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3.5 9h17"/><rect x="3" y="4.5" width="18" height="17" rx="3"/></svg>
+        <p>Choose one or more classes above to start building a list.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ PANEL: SAVED LISTS ============ -->
+    <section class="panel" id="panel-saved">
+      <div class="card">
+        <p class="card-title">Your saved lists</p>
+        <p style="margin:0;font-size:.82rem;color:var(--ink-500);">Lists you've saved, plus any shared with admins or the whole staff, appear here.</p>
+        <button class="btn btn-ghost btn-block" id="btn-refresh-saved" type="button" style="margin-top:14px;">Refresh</button>
+      </div>
+      <div id="saved-results" style="display:flex;flex-direction:column;gap:12px;"></div>
+      <div class="placeholder-note" id="saved-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <p>No saved lists yet. Build one in Create List, then save it here.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm sheet -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm action">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-message">This action cannot be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save list sheet -->
+<div class="sheet-backdrop" id="sheet-save">
+  <div class="sheet" role="dialog" aria-label="Save list">
+    <div class="sheet-handle"></div>
+    <h3 id="save-sheet-title">Save this list</h3>
+    <p>Choose who can see this saved list.</p>
+    <div class="radio-row" id="visibility-options">
+      <label class="radio-opt active" data-value="private">
+        <input type="radio" name="visibility" value="private" checked>
+        <span><span class="r-title">Visible to me only</span><br><span class="r-sub">Only you can see and manage this list.</span></span>
+      </label>
+      <label class="radio-opt" data-value="admin">
+        <input type="radio" name="visibility" value="admin">
+        <span><span class="r-title">Visible to admins only</span><br><span class="r-sub">You and every admin can see this list.</span></span>
+      </label>
+      <label class="radio-opt" data-value="everyone">
+        <input type="radio" name="visibility" value="everyone">
+        <span><span class="r-title">Visible to everyone</span><br><span class="r-sub">All teachers and admins can see this list.</span></span>
+      </label>
+    </div>
+    <div class="sheet-actions" style="margin-top:18px;">
+      <button class="btn btn-ghost" id="cancel-save">Cancel</button>
+      <button class="btn btn-primary" id="confirm-save">Save list</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var SCHOOL_NAME = 'Some Public School';
+var SCHOOL_LOGO = 'https://educational-saas.github.io/gsms-logo.png';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var FIELD_DEFS = [
+  { key:'roll_no',     label:'Roll No.',        heavy:false },
+  { key:'name',        label:'Name',            heavy:false },
+  { key:'class',       label:'Class',           heavy:false },
+  { key:'sr_no',       label:'Sr. No.',         heavy:false },
+  { key:'gender',      label:'Gender',          heavy:false },
+  { key:'house',       label:'House',           heavy:false },
+  { key:'father_name', label:"Father's Name",   heavy:true  },
+  { key:'mother_name', label:"Mother's Name",   heavy:true  },
+  { key:'phone',       label:'Phone',           heavy:true  },
+  { key:'address',     label:'Address',         heavy:true  }
+];
+var LIGHT_COLUMNS = 'id, sr_no, roll_no, name, class, gender, house';
+var DEFAULT_FIELDS = ['roll_no','name','class'];
+
+var state = {
+  user: null, teacherName: '', isAdmin: false,
+  allClasses: [],
+  selectedClasses: [],
+  studentsByClass: {},      // class -> array of light student rows (cached, fetched once per class)
+  selectedIds: {},          // id -> true
+  activeFilters: { gender: null, house: null },
+  searchTerm: '',
+  selectedFields: DEFAULT_FIELDS.slice(),
+  heavyDataCache: {},        // id -> {father_name, mother_name, phone, address}
+  editingListId: null,       // set when editing an existing saved list
+  savedLists: [],
+  teacherNamesById: {}
+};
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+
+/* =========================================================
+   SHEETS
+========================================================= */
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+var sheetConfirm = document.getElementById('sheet-confirm');
+var confirmCallback = null;
+function askConfirm(title, message, onConfirm){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  confirmCallback = onConfirm;
+  sheetConfirm.classList.add('show');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); confirmCallback = null; });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm){ sheetConfirm.classList.remove('show'); confirmCallback = null; } });
+document.getElementById('confirm-ok').addEventListener('click', function(){
+  var cb = confirmCallback; sheetConfirm.classList.remove('show'); confirmCallback = null;
+  if(cb) cb();
+});
+
+var sheetSave = document.getElementById('sheet-save');
+document.getElementById('btn-open-save').addEventListener('click', function(){
+  if(Object.keys(state.selectedIds).length === 0){ toast('Select at least one student first.', true); return; }
+  if(!document.getElementById('list-name').value.trim()){ toast('Give your list a name first.', true); return; }
+  document.getElementById('save-sheet-title').textContent = state.editingListId ? 'Update this list' : 'Save this list';
+  sheetSave.classList.add('show');
+});
+document.getElementById('cancel-save').addEventListener('click', function(){ sheetSave.classList.remove('show'); });
+sheetSave.addEventListener('click', function(e){ if(e.target === sheetSave){ sheetSave.classList.remove('show'); } });
+document.querySelectorAll('#visibility-options .radio-opt').forEach(function(opt){
+  opt.addEventListener('click', function(){
+    document.querySelectorAll('#visibility-options .radio-opt').forEach(function(o){ o.classList.remove('active'); });
+    opt.classList.add('active');
+    opt.querySelector('input').checked = true;
+  });
+});
+document.getElementById('confirm-save').addEventListener('click', saveList);
+
+/* =========================================================
+   BACK BUTTON + TABS
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+var tabCreateBtn = document.getElementById('tab-create-btn');
+var tabSavedBtn = document.getElementById('tab-saved-btn');
+var panelCreate = document.getElementById('panel-create');
+var panelSaved = document.getElementById('panel-saved');
+tabCreateBtn.addEventListener('click', function(){ setTab('create'); });
+tabSavedBtn.addEventListener('click', function(){ setTab('saved'); if(state.savedLists.length === 0) loadSavedLists(); });
+function setTab(which){
+  var isCreate = which === 'create';
+  tabCreateBtn.classList.toggle('active', isCreate);
+  tabSavedBtn.classList.toggle('active', !isCreate);
+  panelCreate.classList.toggle('active', isCreate);
+  panelSaved.classList.toggle('active', !isCreate);
+}
+
+/* =========================================================
+   CLASS SELECTION
+========================================================= */
+function renderClassChips(){
+  var grid = document.getElementById('class-chip-grid');
+  grid.innerHTML = state.allClasses.map(function(c){
+    var active = state.selectedClasses.indexOf(c) !== -1;
+    return '<button class="class-chip'+(active?' active':'')+'" data-class="'+escapeHtml(c)+'" type="button">'+escapeHtml(c)+'</button>';
+  }).join('');
+  Array.prototype.forEach.call(grid.querySelectorAll('.class-chip'), function(btn){
+    btn.addEventListener('click', function(){ toggleClass(btn.getAttribute('data-class')); });
+  });
+  updateClassCountChip();
+}
+function updateClassCountChip(){
+  var chip = document.getElementById('class-count-chip');
+  if(state.selectedClasses.length > 0){
+    chip.style.display = 'inline-block';
+    chip.textContent = state.selectedClasses.length + ' selected';
+  }else{
+    chip.style.display = 'none';
+  }
+}
+
+function toggleClass(cls){
+  var idx = state.selectedClasses.indexOf(cls);
+  if(idx === -1){ state.selectedClasses.push(cls); }
+  else{ state.selectedClasses.splice(idx, 1); }
+  renderClassChips();
+  onClassSelectionChanged();
+}
+
+function onClassSelectionChanged(){
+  var hasClasses = state.selectedClasses.length > 0;
+  document.getElementById('create-placeholder').style.display = hasClasses ? 'none' : 'flex';
+  document.getElementById('student-card').style.display = hasClasses ? 'block' : 'none';
+  document.getElementById('fields-card').style.display = hasClasses ? 'block' : 'none';
+  document.getElementById('details-card').style.display = hasClasses ? 'block' : 'none';
+  if(!hasClasses){
+    state.selectedIds = {};
+    updatePreview();
+    return;
+  }
+  // Drop selections belonging to classes no longer selected
+  Object.keys(state.selectedIds).forEach(function(id){
+    var row = findStudentById(id);
+    if(row && state.selectedClasses.indexOf(row.class) === -1) delete state.selectedIds[id];
+  });
+  fetchMissingClasses().then(renderStudentList);
+}
+
+/* Bandwidth-conscious fetch: only pull light columns, only for classes not already cached */
+function fetchMissingClasses(){
+  var toFetch = state.selectedClasses.filter(function(c){ return !state.studentsByClass[c]; });
+  if(toFetch.length === 0) return Promise.resolve();
+  document.getElementById('student-scroll').innerHTML = '<div class="student-empty">Loading students…</div>';
+  return supabaseClient
+    .from('students_master')
+    .select(LIGHT_COLUMNS)
+    .in('class', toFetch)
+    .order('roll_no', { ascending: true })
+    .then(function(res){
+      if(res.error){ toast('Could not load students: ' + res.error.message, true); return; }
+      toFetch.forEach(function(c){ state.studentsByClass[c] = []; });
+      (res.data || []).forEach(function(row){
+        if(!state.studentsByClass[row.class]) state.studentsByClass[row.class] = [];
+        state.studentsByClass[row.class].push(row);
+      });
+    });
+}
+
+function findStudentById(id){
+  for(var i=0;i<state.selectedClasses.length;i++){
+    var arr = state.studentsByClass[state.selectedClasses[i]] || [];
+    for(var j=0;j<arr.length;j++){ if(String(arr[j].id) === String(id)) return arr[j]; }
+  }
+  return null;
+}
+function allVisibleRows(){
+  var rows = [];
+  state.selectedClasses.forEach(function(c){ (state.studentsByClass[c] || []).forEach(function(r){ rows.push(r); }); });
+  return rows;
+}
+function passesFilters(row){
+  if(state.activeFilters.gender && row.gender !== state.activeFilters.gender) return false;
+  if(state.activeFilters.house && row.house !== state.activeFilters.house) return false;
+  if(state.searchTerm){
+    var t = state.searchTerm.toLowerCase();
+    var hay = (row.name + ' ' + row.roll_no).toLowerCase();
+    if(hay.indexOf(t) === -1) return false;
+  }
+  return true;
+}
+
+/* =========================================================
+   STUDENT LIST RENDERING
+========================================================= */
+function renderStudentList(){
+  var container = document.getElementById('student-scroll');
+  var rows = allVisibleRows().filter(passesFilters);
+  document.getElementById('visible-count-label').textContent = rows.length + (rows.length === 1 ? ' student' : ' students');
+
+  if(rows.length === 0){
+    container.innerHTML = '<div class="student-empty">No students match your search/filters.</div>';
+    return;
+  }
+
+  // group by class for readability when multiple classes selected
+  var byClass = {};
+  rows.forEach(function(r){ (byClass[r.class] = byClass[r.class] || []).push(r); });
+
+  var html = '';
+  Object.keys(byClass).sort().forEach(function(cls){
+    if(state.selectedClasses.length > 1){ html += '<div class="class-group-label">Class ' + escapeHtml(cls) + '</div>'; }
+    byClass[cls].forEach(function(r){
+      var checked = state.selectedIds[r.id] ? 'checked' : '';
+      html += '<label class="student-row" data-id="'+r.id+'">' +
+        '<input type="checkbox" '+checked+'>' +
+        '<span class="s-name">'+escapeHtml(r.name)+'</span>' +
+        '<span class="s-meta">Roll '+escapeHtml(String(r.roll_no))+(r.house ? ' • '+escapeHtml(r.house) : '')+'</span>' +
+      '</label>';
+    });
+  });
+  container.innerHTML = html;
+
+  Array.prototype.forEach.call(container.querySelectorAll('.student-row'), function(row){
+    var id = row.getAttribute('data-id');
+    var box = row.querySelector('input[type="checkbox"]');
+    row.addEventListener('click', function(e){
+      if(e.target !== box) box.checked = !box.checked;
+      if(box.checked) state.selectedIds[id] = true; else delete state.selectedIds[id];
+      updateSelectedCountChip();
+      updatePreview();
+    });
+  });
+  updateSelectedCountChip();
+}
+
+function updateSelectedCountChip(){
+  var n = Object.keys(state.selectedIds).length;
+  document.getElementById('selected-count-chip').textContent = n + (n === 1 ? ' selected' : ' selected');
+}
+
+var searchInput = document.getElementById('student-search');
+var searchWrap = searchInput.closest('.search-wrap');
+var searchDebounce = null;
+searchInput.addEventListener('input', function(){
+  searchWrap.classList.toggle('has-value', !!searchInput.value);
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(function(){
+    state.searchTerm = searchInput.value.trim();
+    renderStudentList();
+  }, 120);
+});
+document.getElementById('clear-search').addEventListener('click', function(){
+  searchInput.value = ''; searchWrap.classList.remove('has-value');
+  state.searchTerm = ''; renderStudentList();
+});
+
+Array.prototype.forEach.call(document.querySelectorAll('.filter-pill'), function(pill){
+  pill.addEventListener('click', function(){
+    var kind = pill.getAttribute('data-filter'), val = pill.getAttribute('data-value');
+    var isActive = state.activeFilters[kind] === val;
+    Array.prototype.forEach.call(document.querySelectorAll('.filter-pill[data-filter="'+kind+'"]'), function(p){ p.classList.remove('active'); });
+    state.activeFilters[kind] = isActive ? null : val;
+    if(!isActive) pill.classList.add('active');
+    renderStudentList();
+  });
+});
+
+document.getElementById('btn-select-all').addEventListener('click', function(){
+  allVisibleRows().filter(passesFilters).forEach(function(r){ state.selectedIds[r.id] = true; });
+  renderStudentList(); updatePreview();
+});
+document.getElementById('btn-select-none').addEventListener('click', function(){
+  allVisibleRows().filter(passesFilters).forEach(function(r){ delete state.selectedIds[r.id]; });
+  renderStudentList(); updatePreview();
+});
+
+/* =========================================================
+   FIELD SELECTION
+========================================================= */
+function renderFieldGrid(){
+  var grid = document.getElementById('field-grid');
+  grid.innerHTML = FIELD_DEFS.map(function(f){
+    var active = state.selectedFields.indexOf(f.key) !== -1;
+    return '<label class="field-check'+(active?' active':'')+'" data-key="'+f.key+'">' +
+      '<input type="checkbox" '+(active?'checked':'')+'><span>'+f.label+'</span></label>';
+  }).join('');
+  Array.prototype.forEach.call(grid.querySelectorAll('.field-check'), function(el){
+    var key = el.getAttribute('data-key');
+    var box = el.querySelector('input');
+    el.addEventListener('click', function(e){
+      if(e.target !== box) box.checked = !box.checked;
+      el.classList.toggle('active', box.checked);
+      var idx = state.selectedFields.indexOf(key);
+      if(box.checked && idx === -1) state.selectedFields.push(key);
+      if(!box.checked && idx !== -1) state.selectedFields.splice(idx, 1);
+      updatePreview();
+    });
+  });
+}
+
+/* =========================================================
+   PREVIEW + HEAVY FIELD FETCH
+========================================================= */
+var previewDebounce = null;
+function updatePreview(){
+  clearTimeout(previewDebounce);
+  previewDebounce = setTimeout(renderPreview, 150);
+}
+
+function needsHeavyFetch(ids){
+  var heavyKeys = FIELD_DEFS.filter(function(f){ return f.heavy && state.selectedFields.indexOf(f.key) !== -1; }).map(function(f){ return f.key; });
+  if(heavyKeys.length === 0) return { ids: [], keys: [] };
+  var missingIds = ids.filter(function(id){ return !state.heavyDataCache[id]; });
+  return { ids: missingIds, keys: heavyKeys };
+}
+
+/* Fetch heavy columns only for the exact selected students, only when needed */
+function ensureHeavyData(ids){
+  var need = needsHeavyFetch(ids);
+  if(need.ids.length === 0) return Promise.resolve();
+  var cols = 'id,' + need.keys.join(',');
+  return supabaseClient
+    .from('students_master')
+    .select(cols)
+    .in('id', need.ids)
+    .then(function(res){
+      if(res.error){ toast('Could not load extra fields: ' + res.error.message, true); return; }
+      (res.data || []).forEach(function(row){
+        state.heavyDataCache[row.id] = Object.assign(state.heavyDataCache[row.id] || {}, row);
+      });
+    });
+}
+
+function buildListRows(){
+  var ids = Object.keys(state.selectedIds);
+  var rows = ids.map(function(id){
+    var base = findStudentById(id) || {};
+    var heavy = state.heavyDataCache[id] || {};
+    return Object.assign({}, base, heavy);
+  });
+  rows.sort(function(a,b){
+    if(a.class !== b.class) return (a.class||'').localeCompare(b.class||'');
+    return (a.roll_no||0) - (b.roll_no||0);
+  });
+  return rows;
+}
+
+function renderPreview(){
+  var ids = Object.keys(state.selectedIds);
+  var wrap = document.getElementById('preview-wrap');
+  var placeholder = document.getElementById('preview-placeholder');
+  if(ids.length === 0 || state.selectedFields.length === 0){
+    wrap.style.display = 'none'; placeholder.style.display = 'flex';
+    placeholder.querySelector('p').textContent = state.selectedFields.length === 0
+      ? 'Choose at least one field to include.'
+      : 'Pick at least one student to see a live preview here.';
+    return;
+  }
+  ensureHeavyData(ids).then(function(){
+    var rows = buildListRows();
+    var fieldDefs = FIELD_DEFS.filter(function(f){ return state.selectedFields.indexOf(f.key) !== -1; });
+    var html = '<thead><tr>' + fieldDefs.map(function(f){ return '<th>'+f.label+'</th>'; }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function(r){
+      html += '<tr>' + fieldDefs.map(function(f){ return '<td>'+escapeHtml(r[f.key] != null ? String(r[f.key]) : '—')+'</td>'; }).join('') + '</tr>';
+    });
+    html += '</tbody>';
+    document.getElementById('preview-table').innerHTML = html;
+    wrap.style.display = 'block'; placeholder.style.display = 'none';
+  });
+}
+
+document.getElementById('list-name').addEventListener('input', function(){});
+
+/* =========================================================
+   COPY / SHARE (plain text)
+========================================================= */
+function buildPlainText(){
+  var rows = buildListRows();
+  var fieldDefs = FIELD_DEFS.filter(function(f){ return state.selectedFields.indexOf(f.key) !== -1; });
+  var name = document.getElementById('list-name').value.trim() || 'Student List';
+  var lines = [name, SCHOOL_NAME, ''];
+  var header = fieldDefs.map(function(f){ return f.label; }).join('\t');
+  lines.push(header);
+  rows.forEach(function(r){
+    lines.push(fieldDefs.map(function(f){ return r[f.key] != null ? String(r[f.key]) : ''; }).join('\t'));
+  });
+  return lines.join('\n');
+}
+
+document.getElementById('btn-copy').addEventListener('click', function(){
+  if(Object.keys(state.selectedIds).length === 0){ toast('Select at least one student first.', true); return; }
+  ensureHeavyData(Object.keys(state.selectedIds)).then(function(){
+    var text = buildPlainText();
+    navigator.clipboard.writeText(text).then(function(){
+      toast('List copied to clipboard.');
+    }).catch(function(){ toast('Could not copy to clipboard.', true); });
+  });
+});
+
+document.getElementById('btn-share').addEventListener('click', function(){
+  if(Object.keys(state.selectedIds).length === 0){ toast('Select at least one student first.', true); return; }
+  ensureHeavyData(Object.keys(state.selectedIds)).then(function(){
+    var text = buildPlainText();
+    var name = document.getElementById('list-name').value.trim() || 'Student List';
+    if(navigator.share){
+      navigator.share({ title: name, text: text }).catch(function(err){
+        if(err && err.name !== 'AbortError'){ /* silent */ }
+      });
+    }else{
+      navigator.clipboard.writeText(text).then(function(){ toast('Sharing not supported here — copied to clipboard instead.'); });
+    }
+  });
+});
+
+/* =========================================================
+   PDF GENERATION
+========================================================= */
+function loadImageAsDataURL(url){
+  return new Promise(function(resolve){
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function(){
+      try{
+        var canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      }catch(e){ resolve(null); }
+    };
+    img.onerror = function(){ resolve(null); };
+    img.src = url;
+  });
+}
+
+function buildPdf(logoDataUrl, rows, fieldDefs, listName){
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  var pageW = doc.internal.pageSize.getWidth();
+  var margin = 42;
+  var teal = [13, 56, 65];
+
+  doc.setFillColor(teal[0], teal[1], teal[2]);
+  doc.rect(0, 0, pageW, 86, 'F');
+  if(logoDataUrl){ try{ doc.addImage(logoDataUrl, 'PNG', margin, 18, 50, 50); }catch(e){} }
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+  doc.text(SCHOOL_NAME, margin + (logoDataUrl ? 62 : 0), 40);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
+  doc.setTextColor(255, 214, 133);
+  doc.text(listName, margin + (logoDataUrl ? 62 : 0), 58);
+
+  doc.setFontSize(9.5); doc.setTextColor(255, 214, 133);
+  doc.text('Generated ' + new Date().toLocaleDateString(), pageW - margin, 40, { align: 'right' });
+  doc.setFontSize(9.5); doc.setTextColor(255,255,255);
+  doc.text(rows.length + (rows.length === 1 ? ' student' : ' students'), pageW - margin, 56, { align: 'right' });
+
+  var head = [ fieldDefs.map(function(f){ return f.label; }) ];
+  var body = rows.map(function(r){ return fieldDefs.map(function(f){ return r[f.key] != null ? String(r[f.key]) : '—'; }); });
+
+  doc.autoTable({
+    head: head, body: body, startY: 106, margin: { left: margin, right: margin },
+    styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 6, textColor: [28,38,38], lineColor: [230,225,212], lineWidth: 0.6 },
+    headStyles: { fillColor: [227, 238, 240], textColor: [13,56,65], fontStyle: 'bold', halign: 'left' },
+    alternateRowStyles: { fillColor: [250,248,243] },
+    didDrawPage: function(){
+      var pageH = doc.internal.pageSize.getHeight();
+      doc.setDrawColor(226, 148, 26); doc.setLineWidth(1);
+      doc.line(margin, pageH - 34, pageW - margin, pageH - 34);
+      doc.setFontSize(8); doc.setTextColor(95,111,112);
+      doc.text(SCHOOL_NAME + ' — ' + listName, margin, pageH - 20);
+      doc.text('Page ' + doc.internal.getNumberOfPages(), pageW - margin, pageH - 20, { align: 'right' });
+    }
+  });
+
+  var fileName = (listName || 'Student-List').replace(/[^a-z0-9]+/gi,'-') + '.pdf';
+  return { blob: doc.output('blob'), fileName: fileName };
+}
+
+document.getElementById('btn-pdf').addEventListener('click', function(){
+  if(Object.keys(state.selectedIds).length === 0){ toast('Select at least one student first.', true); return; }
+  var btn = document.getElementById('btn-pdf'); var original = btn.innerHTML;
+  btn.disabled = true; btn.textContent = 'Preparing PDF…';
+  var ids = Object.keys(state.selectedIds);
+  ensureHeavyData(ids).then(function(){ return loadImageAsDataURL(SCHOOL_LOGO); }).then(function(logo){
+    try{
+      var rows = buildListRows();
+      var fieldDefs = FIELD_DEFS.filter(function(f){ return state.selectedFields.indexOf(f.key) !== -1; });
+      var listName = document.getElementById('list-name').value.trim() || 'Student List';
+      var result = buildPdf(logo, rows, fieldDefs, listName);
+      downloadBlob(result.blob, result.fileName);
+      toast('PDF downloaded.');
+    }catch(e){ console.error(e); toast('Could not generate PDF.', true); }
+    finally{ btn.disabled = false; btn.innerHTML = original; }
+  });
+});
+
+function downloadBlob(blob, fileName){
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = fileName;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+}
+
+/* =========================================================
+   SAVE / LOAD / EDIT / DELETE SAVED LISTS
+========================================================= */
+function saveList(){
+  var name = document.getElementById('list-name').value.trim();
+  var visibility = document.querySelector('input[name="visibility"]:checked').value;
+  var ids = Object.keys(state.selectedIds).map(function(id){ return parseInt(id, 10); });
+  var payload = { name: name, visibility: visibility, fields: state.selectedFields, student_ids: ids };
+
+  var btn = document.getElementById('confirm-save'); btn.disabled = true; btn.textContent = 'Saving…';
+
+  var query;
+  if(state.editingListId){
+    query = supabaseClient.from('student_lists').update(payload).eq('id', state.editingListId).select();
+  }else{
+    payload.created_by = state.user.id;
+    query = supabaseClient.from('student_lists').insert(payload).select();
+  }
+
+  query.then(function(res){
+    btn.disabled = false; btn.textContent = 'Save list';
+    document.getElementById('sheet-save').classList.remove('show');
+    if(res.error){ toast('Save failed: ' + res.error.message, true); return; }
+    toast(state.editingListId ? 'List updated.' : 'List saved.');
+    state.editingListId = res.data && res.data[0] ? res.data[0].id : null;
+    loadSavedLists();
+  });
+}
+
+function loadSavedLists(){
+  var container = document.getElementById('saved-results');
+  var placeholder = document.getElementById('saved-placeholder');
+  container.innerHTML = '<div class="skeleton" style="height:70px;"></div>';
+  placeholder.style.display = 'none';
+
+  // Metadata-only fetch: student_count is a stored generated column, so the
+  // full student_ids array is never transferred just to show the list.
+  // created_by only has a FK to auth.users (not to teachers, since a
+  // standalone admin need not be a teacher), so PostgREST can't embed
+  // teachers(name) here — owner names are resolved in a small follow-up query.
+  supabaseClient
+    .from('student_lists')
+    .select('id, name, visibility, student_count, created_by, created_at, updated_at')
+    .order('updated_at', { ascending: false })
+    .then(function(res){
+      if(res.error){ toast('Could not load saved lists: ' + res.error.message, true); container.innerHTML=''; placeholder.style.display='flex'; return; }
+      state.savedLists = res.data || [];
+      var otherOwnerIds = Array.from(new Set(
+        state.savedLists.map(function(l){ return l.created_by; }).filter(function(id){ return id !== state.user.id; })
+      ));
+      if(otherOwnerIds.length === 0){ renderSavedLists(); return; }
+      supabaseClient.from('teachers').select('id, name').in('id', otherOwnerIds).then(function(tres){
+        state.teacherNamesById = {};
+        (tres.data || []).forEach(function(t){ state.teacherNamesById[t.id] = t.name; });
+        renderSavedLists();
+      });
+    });
+}
+document.getElementById('btn-refresh-saved').addEventListener('click', loadSavedLists);
+
+function renderSavedLists(){
+  var container = document.getElementById('saved-results');
+  var placeholder = document.getElementById('saved-placeholder');
+  if(state.savedLists.length === 0){
+    container.innerHTML = ''; placeholder.style.display = 'flex';
+    return;
+  }
+  placeholder.style.display = 'none';
+  container.innerHTML = '';
+  state.savedLists.forEach(function(list, i){
+    var canEdit = state.isAdmin || list.created_by === state.user.id;
+    var ownerName = list.created_by === state.user.id ? 'You' : ((state.teacherNamesById && state.teacherNamesById[list.created_by]) || 'Admin');
+    var card = document.createElement('div');
+    card.className = 'saved-card';
+    card.style.animationDelay = (i * 0.04) + 's';
+    card.innerHTML =
+      '<div class="saved-card-top">' +
+        '<div><p class="saved-name">'+escapeHtml(list.name)+'</p>' +
+        '<p class="saved-meta">'+list.student_count+(list.student_count===1?' student':' students')+' • by '+escapeHtml(ownerName)+' • '+new Date(list.updated_at).toLocaleDateString()+'</p></div>' +
+        '<span class="vis-badge '+list.visibility+'">'+(list.visibility === 'private' ? 'Only me' : list.visibility === 'admin' ? 'Admins' : 'Everyone')+'</span>' +
+      '</div>' +
+      '<div class="saved-actions">' +
+        '<button class="btn btn-ghost btn-sm" data-action="open">Open</button>' +
+        (canEdit ? '<button class="mini-btn" data-action="edit" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' : '') +
+        (canEdit ? '<button class="mini-btn danger" data-action="delete" title="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' : '') +
+      '</div>';
+
+    card.querySelector('[data-action="open"]').addEventListener('click', function(){ openSavedList(list.id, false); });
+    if(canEdit){
+      card.querySelector('[data-action="edit"]').addEventListener('click', function(){ openSavedList(list.id, true); });
+      card.querySelector('[data-action="delete"]').addEventListener('click', function(){
+        askConfirm('Delete this list?', 'This will permanently remove "'+list.name+'". This cannot be undone.', function(){
+          supabaseClient.from('student_lists').delete().eq('id', list.id).then(function(res){
+            if(res.error){ toast('Delete failed: ' + res.error.message, true); return; }
+            toast('List deleted.');
+            state.savedLists = state.savedLists.filter(function(l){ return l.id !== list.id; });
+            renderSavedLists();
+          });
+        });
+      });
+    }
+    container.appendChild(card);
+  });
+}
+
+function openSavedList(id, forEdit){
+  // Full fetch (student_ids + fields) only happens when a specific list is opened.
+  supabaseClient.from('student_lists').select('*').eq('id', id).maybeSingle().then(function(res){
+    if(res.error || !res.data){ toast('Could not open list.', true); return; }
+    var list = res.data;
+    var neededClasses = {};
+    var idsSet = {};
+    (list.student_ids || []).forEach(function(sid){ idsSet[sid] = true; });
+
+    supabaseClient.from('students_master').select(LIGHT_COLUMNS).in('id', list.student_ids).then(function(sres){
+      if(sres.error){ toast('Could not load list students: ' + sres.error.message, true); return; }
+      (sres.data || []).forEach(function(row){
+        neededClasses[row.class] = true;
+        if(!state.studentsByClass[row.class]) state.studentsByClass[row.class] = [];
+        var exists = state.studentsByClass[row.class].some(function(r){ return String(r.id) === String(row.id); });
+        if(!exists) state.studentsByClass[row.class].push(row);
+      });
+
+      state.selectedClasses = Object.keys(neededClasses);
+      state.selectedIds = {}; Object.keys(idsSet).forEach(function(sid){ state.selectedIds[sid] = true; });
+      state.selectedFields = (list.fields && list.fields.length) ? list.fields.slice() : DEFAULT_FIELDS.slice();
+      state.editingListId = forEdit ? list.id : null;
+      document.getElementById('list-name').value = list.name;
+
+      setTab('create');
+      renderClassChips();
+      onClassSelectionChangedNoRefetch();
+      renderFieldGrid();
+      updatePreview();
+      toast(forEdit ? 'Editing "'+list.name+'" — adjust and save to update.' : 'Opened "'+list.name+'".');
+    });
+  });
+}
+function onClassSelectionChangedNoRefetch(){
+  var hasClasses = state.selectedClasses.length > 0;
+  document.getElementById('create-placeholder').style.display = hasClasses ? 'none' : 'flex';
+  document.getElementById('student-card').style.display = hasClasses ? 'block' : 'none';
+  document.getElementById('fields-card').style.display = hasClasses ? 'block' : 'none';
+  document.getElementById('details-card').style.display = hasClasses ? 'block' : 'none';
+  renderStudentList();
+}
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var userId = session.user.id;
+
+    var teacherResult = await supabaseClient.from('teachers').select('id, name, email').eq('id', userId).maybeSingle();
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var badge = document.getElementById('role-badge');
+    if(state.isAdmin){ badge.textContent = 'Admin access — all classes'; badge.classList.add('admin-badge'); }
+    else{ badge.textContent = state.teacherName.split(' ')[0] + ' • Build & Share'; }
+
+    // Classes come straight from the dedicated `classes` table — cheap,
+    // already indexed, and no extra RPC or DISTINCT query needed.
+    var classesRes = await supabaseClient.from('classes').select('name').order('name', { ascending: true });
+    if(classesRes.error){ toast('Could not load class list: ' + classesRes.error.message, true); }
+    state.allClasses = (classesRes.data || []).map(function(r){ return r.name; });
+
+    renderClassChips();
+    renderFieldGrid();
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
