@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+
+  /* Strategy 1: Pre-Paint Language Preference Reading & Attribute Setting */
+  (function(){
+    try{
+      var savedLang = localStorage.getItem('gsms-lang');
+      var lang = (savedLang === 'hi') ? 'hi' : 'en';
+      document.documentElement.setAttribute('data-lang', lang);
+      window.LANG = lang;
+    }catch(e){
+      window.LANG = 'en';
+    }
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Weekly Lesson Plan</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Devanagari-capable web font, loaded so the PDF snapshot (rendered by html2canvas) always has a proper Hindi typeface available, regardless of the device's installed system fonts. -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- html2canvas rasterises the actual browser-rendered DOM (fonts, shaping, ligatures and all) into an image.
+     jsPDF is now only used as a thin container that places those page images onto A4 pages — it never draws
+     text itself, so its font/glyph limitations (the cause of the Hindi-in-PDF bug) never come into play. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://educational-saas.github.io/commons/ai-help.js"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+    --border-card-hover: rgba(245,166,35,.45);
+
+    --toggle-bg: rgba(255,255,255,.75);
+    --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700);
+    --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+
+    --header-bg: rgba(250,248,243,.85);
+    --header-border: rgba(13,56,65,.08);
+
+    --danger:#c9432f;
+    --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b;
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.07);
+    --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08);
+    --border-card-hover: rgba(255,198,92,.4);
+
+    --toggle-bg: rgba(24,36,37,.85);
+    --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400);
+    --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+
+    --header-bg: rgba(9,34,39,.85);
+    --header-border: rgba(255,255,255,.08);
+
+    --danger:#ff6b57;
+    --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492;
+
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  /* Scoped Hindi Typography Override */
+  html[data-lang="hi"] body,
+  html[data-lang="hi"] input,
+  html[data-lang="hi"] select,
+  html[data-lang="hi"] textarea,
+  html[data-lang="hi"] button {
+    font-family: 'Noto Sans Devanagari', 'Manrope', system-ui, -apple-system, sans-serif;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ---------- Loading gate ---------- */
+  #gate{
+    position:fixed; inset:0; z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--cream);
+    transition:opacity .35s var(--ease), visibility .35s var(--ease);
+  }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid var(--border-card);
+    border-top-color:var(--gold-500);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  /* ---------- App header ---------- */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:40;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:960px;
+    margin:0 auto 14px;
+  }
+  .header-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.02rem;
+    color:var(--ink-900);
+    margin:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .3s var(--ease);
+  }
+  .header-sub{
+    margin:1px 0 0;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--gold-600);
+  }
+  .header-sub.admin-badge{ color:var(--teal-700); }
+
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    width:40px; height:40px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg);
+    border:1.5px solid var(--toggle-border);
+    box-shadow:var(--toggle-shadow);
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative;
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{
+    width:19px; height:19px;
+    fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute;
+    transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  /* ---------- Tabs ---------- */
+  .tabs{
+    max-width:960px;
+    margin:0 auto;
+    display:flex;
+    gap:6px;
+    background:var(--white);
+    border:1.5px solid var(--border-card);
+    border-radius:999px;
+    padding:5px;
+  }
+  .tab-btn{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--ink-500);
+    font-weight:700;
+    font-size:.86rem;
+    padding:10px 8px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background-color .25s var(--ease), color .25s var(--ease);
+  }
+  .tab-btn.active{
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900));
+    color:var(--white);
+    box-shadow:0 10px 22px -12px rgba(13,56,65,.5);
+  }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--teal-900); }
+
+  /* ---------- Main ---------- */
+  main.dash{
+    flex:1;
+    width:100%;
+    max-width:960px;
+    margin:0 auto;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);
+  }
+
+  .panel{ display:none; flex-direction:column; gap:16px; }
+  .panel.active{ display:flex; }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:18px;
+    box-shadow:var(--shadow-card);
+    transition:border-color .3s var(--ease), background-color .3s var(--ease);
+  }
+  .card-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1rem;
+    margin:0 0 14px;
+    color:var(--ink-900);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .chip{
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.02em;
+    color:var(--teal-700);
+    background:var(--bg-tint-teal);
+    padding:5px 11px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{
+    display:block;
+    font-size:.76rem;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--ink-500);
+    margin-bottom:7px;
+  }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:480px){ .row2{ grid-template-columns:1fr; } }
+
+  input[type="date"], select, textarea{
+    width:100%;
+    padding:12px 14px;
+    border-radius:var(--r-sm);
+    border:1.5px solid var(--border-card);
+    background:var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',sans-serif;
+    font-size:.92rem;
+    font-weight:500;
+    outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="date"]:focus, select:focus, textarea:focus{
+    border-color:var(--border-card-hover);
+    box-shadow:0 0 0 4px var(--bg-tint-gold);
+  }
+  textarea{ resize:vertical; min-height:64px; line-height:1.5; }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;
+    padding-right:36px;
+  }
+  select:disabled, input:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .week-range-note{
+    font-size:.8rem;
+    font-weight:600;
+    color:var(--teal-700);
+    margin-top:8px;
+  }
+
+  .btn{
+    padding:13px 18px;
+    border-radius:14px;
+    border:none;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:.88rem;
+    cursor:pointer;
+    transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-teal{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); }
+  html[data-theme="dark"] .btn-teal{ color:var(--teal-900); }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+
+  .ai-gen-row{
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.btn-ai{
+  padding:8px 14px;
+  font-size:.78rem;
+  border-radius:10px;
+}
+.btn-ai:disabled{ opacity:.6; }
+
+  .last-modified{
+    font-size:.76rem;
+    color:var(--ink-500);
+    margin-top:12px;
+    text-align:right;
+  }
+
+  .placeholder-note{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+    padding:36px 16px; color:var(--ink-500);
+  }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Browse results ---------- */
+  .results-header{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px;
+  }
+  .subject-card{
+    background:var(--white);
+    border:1px solid var(--border-card);
+    border-radius:var(--r-md);
+    padding:16px;
+    box-shadow:var(--shadow-card);
+    opacity:0; animation:rise .5s var(--ease) forwards;
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .subject-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .subject-name{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; color:var(--teal-700); margin:0; }
+  .subject-meta{ font-size:.74rem; color:var(--ink-500); margin-top:3px; }
+  .subject-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .mini-btn{
+    width:32px; height:32px; border-radius:10px; border:1.5px solid var(--border-card);
+    background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:transform .2s var(--ease), border-color .2s var(--ease);
+  }
+  .mini-btn:hover{ transform:translateY(-1px); border-color:var(--border-card-hover); }
+  .mini-btn svg{ width:15px; height:15px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .mini-btn.danger svg{ stroke:var(--danger); }
+  .plan-field{ margin-bottom:9px; }
+  .plan-field:last-child{ margin-bottom:0; }
+  .plan-field-label{ font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-600); margin-bottom:3px; margin-top:6px; }
+  .plan-field-value{ font-size:.86rem; line-height:1.5; color:var(--ink-900); white-space:pre-wrap; }
+  .plan-field-value.empty{ color:var(--ink-500); font-style:italic; }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:100;
+    background:rgba(9,34,39,.4);
+    opacity:0; visibility:hidden;
+    transition:opacity .25s var(--ease), visibility .25s var(--ease);
+  }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:101;
+    background:var(--cream);
+    border-radius:22px 22px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);
+    max-width:960px; margin:0 auto;
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);
+    transform:translateY(100%);
+    transition:transform .3s var(--ease);
+  }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  /* ---------- Toast ---------- */
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px);
+    z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900);
+    color:var(--white);
+    font-size:.84rem;
+    font-weight:600;
+    padding:12px 18px;
+    border-radius:999px;
+    box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px);
+    transition:opacity .3s var(--ease), transform .3s var(--ease);
+    max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+  textarea.auto-resize{
+  overflow:hidden;
+  resize:none; /* height is now automatic, no need for manual drag */
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading / auth gate -->
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting" id="txt-header-title">Weekly Lesson Plan</p>
+          <p class="header-sub" id="role-badge">Plan &bull; Manage &bull; Share</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;">
+            <path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-edit-btn" type="button">My Plans</button>
+      <button class="tab-btn" id="tab-browse-btn" type="button">Browse &amp; Share</button>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ PANEL: MY PLANS (add / edit) ============ -->
+    <section class="panel active" id="panel-edit">
+
+      <div class="card">
+        <p class="card-title" id="txt-card-title-select">Select week &amp; class</p>
+
+        <div class="row2">
+          <div class="field">
+            <label for="edit-week-start" id="lbl-week-start">Week starting</label>
+            <input type="date" id="edit-week-start">
+          </div>
+          <div class="field">
+            <label for="edit-week-end" id="lbl-week-end">Week ending</label>
+            <input type="date" id="edit-week-end">
+          </div>
+        </div>
+        <p class="week-range-note" id="edit-week-range-note"></p>
+
+        <div class="row2" style="margin-top:14px;">
+          <div class="field">
+            <label for="edit-class" id="lbl-class">Class</label>
+            <select id="edit-class"><option value="">Select class…</option></select>
+          </div>
+          <div class="field">
+            <label for="edit-subject" id="lbl-subject">Subject</label>
+            <select id="edit-subject" disabled><option value="">Select class first…</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="edit-form-card" style="display:none;">
+        <p class="card-title"><span id="txt-card-title-details">Lesson plan details</span> <span class="chip" id="edit-existing-chip" style="display:none;">Existing entry</span></p>
+
+        <div class="field">
+  <label for="f-topics" id="lbl-topics">Chapter / Topics to be taught</label>
+  <textarea id="f-topics" rows="2" placeholder="e.g. Chapter 4: Fractions — addition &amp; subtraction of like fractions"></textarea>
+  <div class="ai-gen-row">
+    <button class="btn btn-ghost btn-ai" type="button" data-ai-field="f-topics">✨ Generate with AI</button>
+    <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-topics">🩹 Auto-correct</button>
+  </div>
+</div>
+<div class="field">
+  <label for="f-classwork" id="lbl-classwork">Classwork</label>
+  <textarea id="f-classwork" rows="2" placeholder="What will be covered / practised in class"></textarea>
+  <div class="ai-gen-row">
+    <button class="btn btn-ghost btn-ai" type="button" data-ai-field="f-classwork">✨ Generate with AI</button>
+    <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-classwork">🩹 Auto-correct</button>
+  </div>
+</div>
+<div class="field">
+  <label for="f-homework" id="lbl-homework">Homework</label>
+  <textarea id="f-homework" rows="2" placeholder="What students should complete at home"></textarea>
+  <div class="ai-gen-row">
+    <button class="btn btn-ghost btn-ai" type="button" data-ai-field="f-homework">✨ Generate with AI</button>
+    <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-homework">🩹 Auto-correct</button>
+  </div>
+</div>
+<div class="field">
+  <label for="f-activity" id="lbl-activity">Activity</label>
+  <textarea id="f-activity" rows="2" placeholder="Any planned classroom or group activity"></textarea>
+  <div class="ai-gen-row">
+    <button class="btn btn-ghost btn-ai" type="button" data-ai-field="f-activity">✨ Generate with AI</button>
+    <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-activity">🩹 Auto-correct</button>
+  </div>
+</div>
+<div class="field">
+  <label for="f-skills" id="lbl-skills">Skills developed</label>
+  <textarea id="f-skills" rows="2" placeholder="e.g. Critical thinking, collaboration, numeracy"></textarea>
+  <div class="ai-gen-row">
+    <button class="btn btn-ghost btn-ai" type="button" data-ai-field="f-skills">✨ Generate with AI</button>
+    <button class="btn btn-ghost btn-ai-correct" type="button" data-correct-field="f-skills">🩹 Auto-correct</button>
+  </div>
+</div>
+
+        <p class="last-modified" id="edit-last-modified"></p>
+
+        <div class="btn-row">
+          <button class="btn btn-danger" id="btn-delete-plan" type="button" style="display:none;">Delete</button>
+          <button class="btn btn-primary" id="btn-save-plan" type="button">Save plan</button>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="edit-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3.5 9h17"/><rect x="3" y="4.5" width="18" height="17" rx="3"/></svg>
+        <p id="txt-edit-placeholder">Choose a week, class and subject above to add or update a lesson plan.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ PANEL: BROWSE & SHARE ============ -->
+    <section class="panel" id="panel-browse">
+
+      <div class="card">
+        <p class="card-title" id="txt-browse-card-title">Find a week's plan</p>
+        <div class="field">
+          <label for="browse-class" id="lbl-browse-class">Class</label>
+          <select id="browse-class"><option value="">Select class…</option></select>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="browse-week-start" id="lbl-browse-week-start">Week starting</label>
+            <input type="date" id="browse-week-start">
+          </div>
+          <div class="field">
+            <label for="browse-week-end" id="lbl-browse-week-end">Week ending</label>
+            <input type="date" id="browse-week-end">
+          </div>
+        </div>
+        <p class="week-range-note" id="browse-week-range-note"></p>
+        <button class="btn btn-teal btn-block" id="btn-load-week" type="button" style="margin-top:6px;">View this week's plan</button>
+      </div>
+
+      <div id="browse-results-wrap" style="display:none;">
+        <div class="results-header">
+          <p class="card-title" style="margin:0;" id="browse-results-title">Results</p>
+          <button class="btn btn-primary" id="btn-share-pdf" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+            <span id="txt-share-pdf">Share PDF</span>
+          </button>
+          <button class="btn btn-ghost" id="btn-download-pdf" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span id="txt-download-pdf">Download PDF</span>
+          </button>
+        </div>
+        <div id="browse-results" style="display:flex;flex-direction:column;gap:12px;margin-top:12px;"></div>
+      </div>
+
+      <div class="placeholder-note" id="browse-placeholder">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <p id="txt-browse-placeholder">Pick a class and a week to view every subject's plan.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3 id="txt-signout-title">Sign out?</h3>
+    <p id="txt-signout-msg">You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm sheet (delete) -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm action">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-message">This action cannot be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   STRATEGY 2: CENTRALIZED I18N DICTIONARY & HELPER FUNCTION t()
+========================================================= */
+var I18N = {
+  en: {
+    headerTitle: 'Weekly Lesson Plan',
+    tabMyPlans: 'My Plans',
+    tabBrowse: 'Browse & Share',
+    cardSelectTitle: 'Select week & class',
+    lblWeekStart: 'Week starting',
+    lblWeekEnd: 'Week ending',
+    lblClass: 'Class',
+    lblSubject: 'Subject',
+    selectClassDefault: 'Select class…',
+    selectClassFirst: 'Select class first…',
+    selectSubjectDefault: 'Select subject…',
+    cardDetailsTitle: 'Lesson plan details',
+    existingChip: 'Existing entry',
+    lblTopics: 'Chapter / Topics to be taught',
+    phTopics: 'e.g. Chapter 4: Fractions — addition & subtraction of like fractions',
+    lblClasswork: 'Classwork',
+    phClasswork: 'What will be covered / practised in class',
+    lblHomework: 'Homework',
+    phHomework: 'What students should complete at home',
+    lblActivity: 'Activity',
+    phActivity: 'Any planned classroom or group activity',
+    lblSkills: 'Skills developed',
+    phSkills: 'e.g. Critical thinking, collaboration, numeracy',
+    btnGenerateAi: '✨ Generate with AI',
+    btnCorrectAi: '🩹 Auto-correct',
+    btnDelete: 'Delete',
+    btnSavePlan: 'Save plan',
+    btnSavingPlan: 'Saving…',
+    editPlaceholder: 'Choose a week, class and subject above to add or update a lesson plan.',
+    cardBrowseTitle: "Find a week's plan",
+    btnViewWeek: "View this week's plan",
+    btnLoadingWeek: 'Loading…',
+    btnSharePdf: 'Share PDF',
+    btnDownloadPdf: 'Download PDF',
+    btnPreparingPdf: 'Preparing PDF…',
+    browsePlaceholder: "Pick a class and a week to view every subject's plan.",
+    signoutTitle: 'Sign out?',
+    signoutMsg: "You'll need to sign in again to access your dashboard.",
+    signoutCancel: 'Cancel',
+    signoutConfirm: 'Sign out',
+    confirmCancel: 'Cancel',
+    confirmDelete: 'Delete',
+    aiLabelTopics: 'Chapter / Topics',
+    aiLabelClasswork: 'Classwork',
+    aiLabelHomework: 'Homework',
+    aiLabelActivity: 'Activity',
+    aiLabelSkills: 'Skills developed',
+    toastSelectClassSub: 'Select class and subject first.',
+    toastFillOneField: 'Fill in at least one other field first, so the AI has something to work from.',
+    toastAiGenerating: 'Generating…',
+    toastAiGenerated: '{label} generated.',
+    toastAiNoContent: 'AI did not return any content. Please try again.',
+    toastAiFailed: 'AI generation failed. Please try again.',
+    toastNothingToCorrect: 'Nothing to correct — this field is empty.',
+    toastAiCorrecting: 'Correcting…',
+    toastAiCorrected: '{label} corrected.',
+    toastAutoCorrectFailed: 'Auto-correct failed. Please try again.',
+    toastNoAssignmentsFound: 'No class-subject assignments found yet.',
+    toastNoAssignmentsContactAdmin: 'You have no class-subject assignments yet. Contact an admin.',
+    toastCouldNotLoadEntry: 'Could not load existing entry.',
+    toastLastUpdated: 'Last updated {date}',
+    toastSelectWeekClassSub: 'Please select week, class and subject first.',
+    toastWeekEndError: 'Week ending must be on or after week starting.',
+    toastSaveFailed: 'Save failed: {msg}',
+    toastPlanSaved: 'Lesson plan saved.',
+    toastDeleteConfirmTitle: 'Delete this lesson plan?',
+    toastDeleteConfirmMsg: 'This will remove the {subject} plan for {cls}. This cannot be undone.',
+    toastDeleteFailed: 'Delete failed: {msg}',
+    toastPlanDeleted: 'Lesson plan deleted.',
+    toastSelectClassWeekFirst: 'Select a class and week first.',
+    toastCouldNotLoadPlans: 'Could not load plans: {msg}',
+    toastNoPlansFound: 'No lesson plans found for {cls} in that week yet.',
+    toastSubjectTeacherFallback: 'Subject teacher',
+    toastUpdatedDate: 'updated {date}',
+    toastNotSpecified: 'Not specified',
+    toastLoadWeekFirst: 'Load a week with at least one plan first.',
+    toastPdfDownloaded: 'PDF downloaded.',
+    toastCouldNotGenPdf: 'Could not generate PDF.',
+    toastPdfSharingNotSupported: 'PDF downloaded (sharing not supported on this device/browser).',
+    adminBadgeText: 'Admin access — all classes',
+    teacherBadgeText: '{name} • Plan & Manage'
+  },
+  hi: {
+    headerTitle: 'साप्ताहिक पाठ योजना',
+    tabMyPlans: 'मेरी योजनाएं',
+    tabBrowse: 'देखें और शेयर करें',
+    cardSelectTitle: 'सप्ताह और कक्षा चुनें',
+    lblWeekStart: 'सप्ताह प्रारंभ',
+    lblWeekEnd: 'सप्ताह समाप्त',
+    lblClass: 'कक्षा',
+    lblSubject: 'विषय',
+    selectClassDefault: 'कक्षा चुनें…',
+    selectClassFirst: 'पहले कक्षा चुनें…',
+    selectSubjectDefault: 'विषय चुनें…',
+    cardDetailsTitle: 'पाठ योजना का विवरण',
+    existingChip: 'मौजूद प्रविष्टि',
+    lblTopics: 'अध्याय / पढ़ाए जाने वाले विषय',
+    phTopics: 'जैसे: अध्याय 4: भिन्न — समान भिन्नों का जोड़ और घटाव',
+    lblClasswork: 'कक्षा का कार्य (Classwork)',
+    phClasswork: 'कक्षा में क्या पढ़ाया / अभ्यास कराया जाएगा',
+    lblHomework: 'गृहकार्य (Homework)',
+    phHomework: 'छात्रों को घर पर क्या पूरा करना है',
+    lblActivity: 'गतिविधि (Activity)',
+    phActivity: 'कक्षा या समूह की कोई भी योजनाबद्ध गतिविधि',
+    lblSkills: 'विकसित होने वाले कौशल',
+    phSkills: 'जैसे: सोच-विचार, सहयोग, गणितीय क्षमता',
+    btnGenerateAi: '✨ AI से बनाएं',
+    btnCorrectAi: '🩹 ऑटो-करेक्ट (सुधारें)',
+    btnDelete: 'हटाएं',
+    btnSavePlan: 'योजना सुरक्षित करें',
+    btnSavingPlan: 'सुरक्षित हो रहा है…',
+    editPlaceholder: 'पाठ योजना जोड़ने या अपडेट करने के लिए ऊपर सप्ताह, कक्षा और विषय चुनें।',
+    cardBrowseTitle: 'सप्ताह की योजना खोजें',
+    btnViewWeek: 'इस सप्ताह की योजना देखें',
+    btnLoadingWeek: 'लोड हो रहा है…',
+    btnSharePdf: 'PDF शेयर करें',
+    btnDownloadPdf: 'PDF डाउनलोड करें',
+    btnPreparingPdf: 'PDF तैयार हो रही है…',
+    browsePlaceholder: 'हर विषय की योजना देखने के लिए कक्षा और सप्ताह चुनें।',
+    signoutTitle: 'साइन आउट करें?',
+    signoutMsg: 'डैशबोर्ड देखने के लिए आपको दोबारा साइन इन करना होगा।',
+    signoutCancel: 'रद्द करें',
+    signoutConfirm: 'साइन आउट करें',
+    confirmCancel: 'रद्द करें',
+    confirmDelete: 'हटाएं',
+    aiLabelTopics: 'अध्याय / विषय',
+    aiLabelClasswork: 'कक्षा का कार्य',
+    aiLabelHomework: 'गृहकार्य',
+    aiLabelActivity: 'गतिविधि',
+    aiLabelSkills: 'विकसित होने वाले कौशल',
+    toastSelectClassSub: 'पहले कक्षा और विषय चुनें।',
+    toastFillOneField: 'कम से कम एक अन्य फ़ील्ड भरें, ताकि AI उसके आधार पर जानकारी बना सके।',
+    toastAiGenerating: 'तैयार किया जा रहा है…',
+    toastAiGenerated: '{label} तैयार हो गया।',
+    toastAiNoContent: 'AI से कोई जानकारी नहीं मिली। कृपया पुनः प्रयास करें।',
+    toastAiFailed: 'AI जनरेशन विफल रहा। कृपया पुनः प्रयास करें।',
+    toastNothingToCorrect: 'सुधारने के लिए कुछ नहीं है — यह फ़ील्ड खाली है।',
+    toastAiCorrecting: 'सुधारा जा रहा है…',
+    toastAiCorrected: '{label} सुधर गया।',
+    toastAutoCorrectFailed: 'ऑटो-करेक्ट विफल रहा। कृपया पुनः प्रयास करें।',
+    toastNoAssignmentsFound: 'अभी तक कोई कक्षा-विषय असाइनमेंट नहीं मिला।',
+    toastNoAssignmentsContactAdmin: 'आपको अभी तक कोई कक्षा-विषय आवंटित नहीं किया गया है। एडमिन से संपर्क करें।',
+    toastCouldNotLoadEntry: 'मौजूद प्रविष्टि लोड नहीं की जा सकी।',
+    toastLastUpdated: 'अंतिम अपडेट: {date}',
+    toastSelectWeekClassSub: 'कृपया पहले सप्ताह, कक्षा और विषय चुनें।',
+    toastWeekEndError: 'सप्ताह समाप्ति की तारीख प्रारंभ तिथि के बाद या बराबर होनी चाहिए।',
+    toastSaveFailed: 'सुरक्षित करना विफल: {msg}',
+    toastPlanSaved: 'पाठ योजना सुरक्षित हो गई।',
+    toastDeleteConfirmTitle: 'क्या आप इस पाठ योजना को हटाना चाहते हैं?',
+    toastDeleteConfirmMsg: 'यह {cls} के लिए {subject} की योजना को हटा देगा। इसे वापस नहीं लाया जा सकता।',
+    toastDeleteFailed: 'हटाना विफल: {msg}',
+    toastPlanDeleted: 'पाठ योजना हटा दी गई।',
+    toastSelectClassWeekFirst: 'पहले कक्षा और सप्ताह चुनें।',
+    toastCouldNotLoadPlans: 'योजनाएं लोड नहीं की जा सकीं: {msg}',
+    toastNoPlansFound: 'उस सप्ताह में {cls} के लिए कोई पाठ योजना नहीं मिली।',
+    toastSubjectTeacherFallback: 'विषय शिक्षक',
+    toastUpdatedDate: 'अपडेट किया गया {date}',
+    toastNotSpecified: 'निर्दिष्ट नहीं है',
+    toastLoadWeekFirst: 'पहले कम से कम एक योजना वाला सप्ताह लोड करें।',
+    toastPdfDownloaded: 'PDF डाउनलोड हो गई।',
+    toastCouldNotGenPdf: 'PDF नहीं बनाई जा सकी।',
+    toastPdfSharingNotSupported: 'PDF डाउनलोड हो गई (इस डिवाइस/ब्राउज़र पर शेयरिंग समर्थित नहीं है)।',
+    adminBadgeText: 'एडमिन एक्सेस — सभी कक्षाएं',
+    teacherBadgeText: '{name} • योजना और प्रबंधन'
+  }
+};
+
+function t(key, vars) {
+  var lang = window.LANG || 'en';
+  var dict = I18N[lang] || I18N.en;
+  var str = dict[key] || I18N.en[key] || key;
+  if (vars && typeof vars === 'object') {
+    Object.keys(vars).forEach(function(k) {
+      str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+    });
+  }
+  return str;
+}
+
+/* =========================================================
+   STRATEGY 4: PROGRESSIVE BEST-EFFORT TRANSLITERATION VIA GOOGLE INPUT TOOLS
+========================================================= */
+var nameCache = {};
+
+async function transliterateName(name) {
+  if (!name || window.LANG !== 'hi') return name;
+  if (nameCache[name]) return nameCache[name];
+
+  try {
+    var url = 'https://inputtools.google.com/request?text=' + encodeURIComponent(name) + '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=jsapi';
+    var response = await fetch(url);
+    var data = await response.json();
+    if (data && data[0] === 'SUCCESS' && data[1] && data[1][0] && data[1][0][1] && data[1][0][1][0]) {
+      var converted = data[1][0][1][0];
+      nameCache[name] = converted;
+      return converted;
+    }
+  } catch (e) {
+    /* Graceful fallback to original name */
+  }
+  return name;
+}
+
+/* =========================================================
+   STRATEGY 3: DOM TEXT FACTORING (STATIC CHROME INITIALIZATION)
+========================================================= */
+function applyLanguage() {
+  document.getElementById('txt-header-title').textContent = t('headerTitle');
+  document.getElementById('tab-edit-btn').textContent = t('tabMyPlans');
+  document.getElementById('tab-browse-btn').textContent = t('tabBrowse');
+  document.getElementById('txt-card-title-select').textContent = t('cardSelectTitle');
+  document.getElementById('lbl-week-start').textContent = t('lblWeekStart');
+  document.getElementById('lbl-week-end').textContent = t('lblWeekEnd');
+  document.getElementById('lbl-class').textContent = t('lblClass');
+  document.getElementById('lbl-subject').textContent = t('lblSubject');
+  document.getElementById('txt-card-title-details').textContent = t('cardDetailsTitle');
+  document.getElementById('edit-existing-chip').textContent = t('existingChip');
+
+  document.getElementById('lbl-topics').textContent = t('lblTopics');
+  document.getElementById('f-topics').placeholder = t('phTopics');
+
+  document.getElementById('lbl-classwork').textContent = t('lblClasswork');
+  document.getElementById('f-classwork').placeholder = t('phClasswork');
+
+  document.getElementById('lbl-homework').textContent = t('lblHomework');
+  document.getElementById('f-homework').placeholder = t('phHomework');
+
+  document.getElementById('lbl-activity').textContent = t('lblActivity');
+  document.getElementById('f-activity').placeholder = t('phActivity');
+
+  document.getElementById('lbl-skills').textContent = t('lblSkills');
+  document.getElementById('f-skills').placeholder = t('phSkills');
+
+  document.querySelectorAll('.btn-ai').forEach(function(btn){ btn.textContent = t('btnGenerateAi'); });
+  document.querySelectorAll('.btn-ai-correct').forEach(function(btn){ btn.textContent = t('btnCorrectAi'); });
+
+  document.getElementById('btn-delete-plan').textContent = t('btnDelete');
+  document.getElementById('btn-save-plan').textContent = t('btnSavePlan');
+  document.getElementById('txt-edit-placeholder').textContent = t('editPlaceholder');
+
+  document.getElementById('txt-browse-card-title').textContent = t('cardBrowseTitle');
+  document.getElementById('lbl-browse-class').textContent = t('lblClass');
+  document.getElementById('lbl-browse-week-start').textContent = t('lblWeekStart');
+  document.getElementById('lbl-browse-week-end').textContent = t('lblWeekEnd');
+  document.getElementById('btn-load-week').textContent = t('btnViewWeek');
+
+  document.getElementById('txt-share-pdf').textContent = t('btnSharePdf');
+  document.getElementById('txt-download-pdf').textContent = t('btnDownloadPdf');
+  document.getElementById('txt-browse-placeholder').textContent = t('browsePlaceholder');
+
+  document.getElementById('txt-signout-title').textContent = t('signoutTitle');
+  document.getElementById('txt-signout-msg').textContent = t('signoutMsg');
+  document.getElementById('cancel-signout').textContent = t('signoutCancel');
+  document.getElementById('confirm-signout').textContent = t('signoutConfirm');
+
+  document.getElementById('confirm-cancel').textContent = t('confirmCancel');
+  document.getElementById('confirm-ok').textContent = t('confirmDelete');
+}
+
+document.addEventListener('DOMContentLoaded', applyLanguage);
+
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = {
+  user: null,
+  teacherName: '',
+  isAdmin: false,
+  myAssignments: [],   // [{class,subject}] for this teacher
+  allCombos: [],        // [{class,subject}] across everyone (used for admin dropdowns)
+  allClasses: [],        // sorted unique class list
+  editingExists: false,
+  subjectOrder: {}
+};
+
+/* =========================================================
+   TEXTAREA AUTO-RESIZE
+========================================================= */
+function autoResizeTextarea(el){
+  el.classList.add('auto-resize');
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+function autoResizeAll(selector){
+  document.querySelectorAll(selector).forEach(autoResizeTextarea);
+}
+document.querySelectorAll('#panel-edit textarea').forEach(function(ta){
+  autoResizeTextarea(ta);
+  ta.addEventListener('input', function(){ autoResizeTextarea(ta); });
+});
+
+/* =========================================================
+   AI "GENERATE WITH AI" FEATURE
+========================================================= */
+var AI_FIELD_LABELS = {
+  'f-topics': 'Chapter / Topics',
+  'f-classwork': 'Classwork',
+  'f-homework': 'Homework',
+  'f-activity': 'Activity',
+  'f-skills': 'Skills developed'
+};
+
+function getAiFieldLabel(fieldId) {
+  if (fieldId === 'f-topics') return t('aiLabelTopics');
+  if (fieldId === 'f-classwork') return t('aiLabelClasswork');
+  if (fieldId === 'f-homework') return t('aiLabelHomework');
+  if (fieldId === 'f-activity') return t('aiLabelActivity');
+  if (fieldId === 'f-skills') return t('aiLabelSkills');
+  return AI_FIELD_LABELS[fieldId];
+}
+
+function collectCurrentElements(excludeFieldId){
+  var elements = {};
+  Object.keys(AI_FIELD_LABELS).forEach(function(fieldId){
+    if(fieldId === excludeFieldId) return;
+    var val = document.getElementById(fieldId).value.trim();
+    if(val) elements[AI_FIELD_LABELS[fieldId]] = val;
+  });
+  return elements;
+}
+
+function extractAiText(data){
+  if(typeof data === 'string') return data;
+  if(data && typeof data === 'object'){
+    if(typeof data.text === 'string') return data.text;
+    if(typeof data.result === 'string') return data.result;
+    if(typeof data.response === 'string') return data.response;
+  }
+  return data == null ? '' : String(data);
+}
+
+document.querySelectorAll('.btn-ai').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var fieldId = btn.getAttribute('data-ai-field');
+    var grade = editClassSel.value;
+    var subject = editSubjectSel.value;
+
+    if(!grade || !subject){
+      toast(t('toastSelectClassSub'), true);
+      return;
+    }
+
+    var elements = collectCurrentElements(fieldId);
+    if(Object.keys(elements).length === 0){
+      toast(t('toastFillOneField'), true);
+      return;
+    }
+
+    var payload = {
+      grade: grade,
+      subject: subject,
+      elements: elements,
+      generate: AI_FIELD_LABELS[fieldId]
+    };
+
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = t('toastAiGenerating');
+
+    window.reword(JSON.stringify(payload))
+      .then(function(data){
+        var text = extractAiText(data).trim();
+        if(!text){
+          toast(t('toastAiNoContent'), true);
+          return;
+        }
+        var textarea = document.getElementById(fieldId);
+        textarea.value = text;
+        autoResizeTextarea(textarea);
+        toast(t('toastAiGenerated', { label: getAiFieldLabel(fieldId) }));
+      })
+      .catch(function(err){
+        console.error('AI generation failed:', err);
+        toast(t('toastAiFailed'), true);
+      })
+      .finally(function(){
+        btn.disabled = false;
+        btn.textContent = originalText;
+      });
+  });
+});
+
+/* =========================================================
+   AI "AUTO-CORRECT" FEATURE
+========================================================= */
+document.querySelectorAll('.btn-ai-correct').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var fieldId = btn.getAttribute('data-correct-field');
+    var textarea = document.getElementById(fieldId);
+    var currentText = textarea.value.trim();
+
+    if(!currentText){
+      toast(t('toastNothingToCorrect'), true);
+      return;
+    }
+
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = t('toastAiCorrecting');
+
+    window.correct(currentText)
+      .then(function(data){
+        var corrected = extractAiText(data).trim();
+        if(!corrected){
+          toast(t('toastAiNoContent'), true);
+          return;
+        }
+        textarea.value = corrected;
+        autoResizeTextarea(textarea);
+        toast(t('toastAiCorrected', { label: getAiFieldLabel(fieldId) }));
+      })
+      .catch(function(err){
+        console.error('AI auto-correct failed:', err);
+        toast(t('toastAutoCorrectFailed'), true);
+      })
+      .finally(function(){
+        btn.disabled = false;
+        btn.textContent = originalText;
+      });
+  });
+});
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 2800);
+}
+
+/* =========================================================
+   SHEETS (signout / confirm)
+========================================================= */
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+var sheetConfirm = document.getElementById('sheet-confirm');
+var confirmCallback = null;
+function askConfirm(title, message, onConfirm){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  confirmCallback = onConfirm;
+  sheetConfirm.classList.add('show');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); confirmCallback = null; });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm){ sheetConfirm.classList.remove('show'); confirmCallback = null; } });
+document.getElementById('confirm-ok').addEventListener('click', function(){
+  var cb = confirmCallback;
+  sheetConfirm.classList.remove('show');
+  confirmCallback = null;
+  if(cb) cb();
+});
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){
+  window.location.href = DASHBOARD_URL;
+});
+
+/* =========================================================
+   TABS
+========================================================= */
+var tabEditBtn = document.getElementById('tab-edit-btn');
+var tabBrowseBtn = document.getElementById('tab-browse-btn');
+var panelEdit = document.getElementById('panel-edit');
+var panelBrowse = document.getElementById('panel-browse');
+tabEditBtn.addEventListener('click', function(){ setTab('edit'); });
+tabBrowseBtn.addEventListener('click', function(){
+  window.location.href = 'generate-pdf.html';
+});
+function setTab(which){
+  var isEdit = which === 'edit';
+  tabEditBtn.classList.toggle('active', isEdit);
+  tabBrowseBtn.classList.toggle('active', !isEdit);
+  panelEdit.classList.toggle('active', isEdit);
+  panelBrowse.classList.toggle('active', !isEdit);
+}
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+function toISODate(d){
+  var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + day;
+}
+function parseISODate(s){
+  var parts = s.split('-');
+  return new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+}
+function mondayOfCurrentWeek(){
+  var d = new Date();
+  var day = d.getDay(); // 0 Sun .. 6 Sat
+  var diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+function addDays(d, n){
+  var nd = new Date(d);
+  nd.setDate(nd.getDate() + n);
+  return nd;
+}
+function formatRange(startISO, endISO){
+  if(!startISO || !endISO) return '';
+  var s = parseISODate(startISO), e = parseISODate(endISO);
+  var locale = (window.LANG === 'hi') ? 'hi-IN' : 'en-GB';
+  var opts = { weekday:'short', day:'numeric', month:'short' };
+  var optsWithYear = { weekday:'short', day:'numeric', month:'short', year:'numeric' };
+  return s.toLocaleDateString(locale, opts) + ' – ' + e.toLocaleDateString(locale, optsWithYear);
+}
+
+/* =========================================================
+   EDIT PANEL — week inputs
+========================================================= */
+var editWeekStart = document.getElementById('edit-week-start');
+var editWeekEnd = document.getElementById('edit-week-end');
+var editWeekRangeNote = document.getElementById('edit-week-range-note');
+var editClassSel = document.getElementById('edit-class');
+var editSubjectSel = document.getElementById('edit-subject');
+
+function initDefaultWeek(startEl, endEl, noteEl){
+  var mon = mondayOfCurrentWeek();
+  var sun = addDays(mon, 5);
+  startEl.value = toISODate(mon);
+  endEl.value = toISODate(sun);
+  noteEl.textContent = formatRange(startEl.value, endEl.value);
+}
+
+editWeekStart.addEventListener('change', function(){
+  if(editWeekStart.value){
+    var s = parseISODate(editWeekStart.value);
+    editWeekEnd.value = toISODate(addDays(s, 5));
+  }
+  editWeekRangeNote.textContent = formatRange(editWeekStart.value, editWeekEnd.value);
+  maybeLoadEditEntry();
+});
+editWeekEnd.addEventListener('change', function(){
+  editWeekRangeNote.textContent = formatRange(editWeekStart.value, editWeekEnd.value);
+  maybeLoadEditEntry();
+});
+
+/* =========================================================
+   EDIT PANEL — class / subject population
+========================================================= */
+function uniqueClasses(combos){
+  var set = {};
+  combos.forEach(function(c){ set[c.class] = true; });
+  return Object.keys(set).sort();
+}
+function subjectsForClass(combos, cls){
+  var set = {};
+  combos.forEach(function(c){ if(c.class === cls) set[c.subject] = true; });
+  return Object.keys(set).sort();
+}
+function sortPlansByDisplayOrder(plans){
+  return plans.slice().sort(function(a, b){
+    var oa = state.subjectOrder[a.subject] != null ? state.subjectOrder[a.subject] : 1;
+    var ob = state.subjectOrder[b.subject] != null ? state.subjectOrder[b.subject] : 1;
+    if(oa !== ob) return oa - ob;
+    return a.subject.localeCompare(b.subject); // tie-break alphabetically
+  });
+}
+
+function populateEditClassDropdown(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  editClassSel.innerHTML = '<option value="">' + t('selectClassDefault') + '</option>' +
+    classes.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  editClassSel.disabled = classes.length === 0;
+  if(classes.length === 0){
+    toast(state.isAdmin ? t('toastNoAssignmentsFound') : t('toastNoAssignmentsContactAdmin'), true);
+  }
+}
+
+editClassSel.addEventListener('change', function(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var subs = subjectsForClass(combos, editClassSel.value);
+  editSubjectSel.innerHTML = '<option value="">' + (editClassSel.value ? t('selectSubjectDefault') : t('selectClassFirst')) + '</option>' +
+    subs.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+  editSubjectSel.disabled = subs.length === 0;
+  hideEditForm();
+});
+editSubjectSel.addEventListener('change', function(){ maybeLoadEditEntry(); });
+
+function hideEditForm(){
+  document.getElementById('edit-form-card').style.display = 'none';
+  document.getElementById('edit-placeholder').style.display = 'flex';
+}
+function showEditForm(){
+  document.getElementById('edit-form-card').style.display = 'block';
+  document.getElementById('edit-placeholder').style.display = 'none';
+}
+
+function clearEditFields(){
+  ['f-topics','f-classwork','f-homework','f-activity','f-skills'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  autoResizeAll('#panel-edit textarea');
+  document.getElementById('edit-last-modified').textContent = '';
+  document.getElementById('edit-existing-chip').style.display = 'none';
+  document.getElementById('btn-delete-plan').style.display = 'none';
+  state.editingExists = false;
+}
+
+function maybeLoadEditEntry(){
+  var cls = editClassSel.value, subj = editSubjectSel.value;
+  var ws = editWeekStart.value, we = editWeekEnd.value;
+  if(!cls || !subj || !ws || !we){ hideEditForm(); return; }
+  showEditForm();
+  clearEditFields();
+
+  supabaseClient
+    .from('weekly_lesson_plans')
+    .select('*')
+    .eq('week_start', ws).eq('week_end', we).eq('class', cls).eq('subject', subj)
+    .maybeSingle()
+    .then(function(res){
+      if(res.error){ toast(t('toastCouldNotLoadEntry'), true); return; }
+      if(res.data){
+        document.getElementById('f-topics').value = res.data.topics || '';
+        document.getElementById('f-classwork').value = res.data.classwork || '';
+        document.getElementById('f-homework').value = res.data.homework || '';
+        document.getElementById('f-activity').value = res.data.activity || '';
+        document.getElementById('f-skills').value = res.data.skills || '';
+        autoResizeAll('#panel-edit textarea');
+        document.getElementById('edit-existing-chip').style.display = 'inline-block';
+        document.getElementById('btn-delete-plan').style.display = 'inline-flex';
+        var locale = (window.LANG === 'hi') ? 'hi-IN' : 'en-GB';
+        document.getElementById('edit-last-modified').textContent = t('toastLastUpdated', { date: new Date(res.data.last_modified).toLocaleString(locale) });
+        state.editingExists = true;
+      }
+    });
+}
+
+document.getElementById('btn-save-plan').addEventListener('click', function(){
+  var cls = editClassSel.value, subj = editSubjectSel.value;
+  var ws = editWeekStart.value, we = editWeekEnd.value;
+  if(!cls || !subj || !ws || !we){ toast(t('toastSelectWeekClassSub'), true); return; }
+  if(we < ws){ toast(t('toastWeekEndError'), true); return; }
+
+  var payload = {
+    week_start: ws, week_end: we, class: cls, subject: subj,
+    topics: document.getElementById('f-topics').value.trim(),
+    classwork: document.getElementById('f-classwork').value.trim(),
+    homework: document.getElementById('f-homework').value.trim(),
+    activity: document.getElementById('f-activity').value.trim(),
+    skills: document.getElementById('f-skills').value.trim(),
+    teacher_id: state.user.id
+  };
+
+  var btn = document.getElementById('btn-save-plan');
+  btn.disabled = true; btn.textContent = t('btnSavingPlan');
+
+  supabaseClient
+    .from('weekly_lesson_plans')
+    .upsert(payload, { onConflict: 'week_start,week_end,class,subject' })
+    .select()
+    .then(function(res){
+      btn.disabled = false; btn.textContent = t('btnSavePlan');
+      if(res.error){ toast(t('toastSaveFailed', { msg: res.error.message }), true); return; }
+      toast(t('toastPlanSaved'));
+      maybeLoadEditEntry();
+    });
+});
+
+document.getElementById('btn-delete-plan').addEventListener('click', function(){
+  var cls = editClassSel.value, subj = editSubjectSel.value;
+  var ws = editWeekStart.value, we = editWeekEnd.value;
+  askConfirm(t('toastDeleteConfirmTitle'), t('toastDeleteConfirmMsg', { subject: subj, cls: cls }), function(){
+    supabaseClient
+      .from('weekly_lesson_plans')
+      .delete()
+      .eq('week_start', ws).eq('week_end', we).eq('class', cls).eq('subject', subj)
+      .then(function(res){
+        if(res.error){ toast(t('toastDeleteFailed', { msg: res.error.message }), true); return; }
+        toast(t('toastPlanDeleted'));
+        clearEditFields();
+      });
+  });
+});
+
+/* =========================================================
+   BROWSE PANEL
+========================================================= */
+var browseClassSel = document.getElementById('browse-class');
+var browseWeekStart = document.getElementById('browse-week-start');
+var browseWeekEnd = document.getElementById('browse-week-end');
+var browseWeekRangeNote = document.getElementById('browse-week-range-note');
+var lastBrowseResults = { class: '', weekStart: '', weekEnd: '', plans: [] };
+
+browseWeekStart.addEventListener('change', function(){
+  if(browseWeekStart.value){
+    var s = parseISODate(browseWeekStart.value);
+    browseWeekEnd.value = toISODate(addDays(s, 5));
+  }
+  browseWeekRangeNote.textContent = formatRange(browseWeekStart.value, browseWeekEnd.value);
+});
+browseWeekEnd.addEventListener('change', function(){
+  browseWeekRangeNote.textContent = formatRange(browseWeekStart.value, browseWeekEnd.value);
+});
+
+function populateBrowseClassDropdown(){
+  browseClassSel.innerHTML = '<option value="">' + t('selectClassDefault') + '</option>' +
+    state.allClasses.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+}
+
+document.getElementById('btn-load-week').addEventListener('click', function(){
+  var cls = browseClassSel.value, ws = browseWeekStart.value, we = browseWeekEnd.value;
+  if(!cls || !ws || !we){ toast(t('toastSelectClassWeekFirst'), true); return; }
+  if(we < ws){ toast(t('toastWeekEndError'), true); return; }
+
+  var btn = document.getElementById('btn-load-week');
+  btn.disabled = true; btn.textContent = t('btnLoadingWeek');
+
+  supabaseClient
+    .from('weekly_lesson_plans')
+    .select('*, teachers(name)')
+    .eq('class', cls).eq('week_start', ws).eq('week_end', we)
+    .order('subject', { ascending: true })
+    .then(function(res){
+      btn.disabled = false; btn.textContent = t('btnViewWeek');
+      if(res.error){ toast(t('toastCouldNotLoadPlans', { msg: res.error.message }), true); return; }
+      lastBrowseResults = { class: cls, weekStart: ws, weekEnd: we, plans: sortPlansByDisplayOrder(res.data || []) };
+      renderBrowseResults();
+    });
+});
+
+function canEditCombo(cls, subj){
+  if(state.isAdmin) return true;
+  return state.myAssignments.some(function(a){ return a.class === cls && a.subject === subj; });
+}
+
+function renderBrowseResults(){
+  var wrap = document.getElementById('browse-results-wrap');
+  var placeholder = document.getElementById('browse-placeholder');
+  var container = document.getElementById('browse-results');
+  var title = document.getElementById('browse-results-title');
+
+  var plans = lastBrowseResults.plans;
+  title.textContent = lastBrowseResults.class + ' • ' + formatRange(lastBrowseResults.weekStart, lastBrowseResults.weekEnd);
+
+  if(plans.length === 0){
+    wrap.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.querySelector('p').textContent = t('toastNoPlansFound', { cls: lastBrowseResults.class });
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  wrap.style.display = 'block';
+  container.innerHTML = '';
+
+  plans.forEach(function(p, i){
+    var editable = canEditCombo(p.class, p.subject);
+    var card = document.createElement('div');
+    card.className = 'subject-card';
+    card.style.animationDelay = (i * 0.05) + 's';
+
+    var rawTeacherName = (p.teachers && p.teachers.name) ? p.teachers.name : '';
+
+    function fieldHtml(label, value){
+      var v = value ? escapeHtml(value) : '';
+      return '<div class="plan-field"><div class="plan-field-label">'+label+'</div>' +
+        '<div class="plan-field-value' + (v ? '' : ' empty') + '">' + (v || t('toastNotSpecified')) + '</div></div>';
+    }
+
+    var locale = (window.LANG === 'hi') ? 'hi-IN' : 'en-GB';
+
+    card.innerHTML =
+      '<div class="subject-card-top">' +
+        '<div><p class="subject-name">' + escapeHtml(p.subject) + '</p>' +
+        '<p class="subject-meta"><span class="teacher-name-placeholder">' + escapeHtml(rawTeacherName || t('toastSubjectTeacherFallback')) + '</span> • ' + t('toastUpdatedDate', { date: new Date(p.last_modified).toLocaleDateString(locale) }) + '</p></div>' +
+        (editable ? '<div class="subject-actions">' +
+          '<button class="mini-btn" data-action="edit" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' +
+          '<button class="mini-btn danger" data-action="delete" title="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' +
+        '</div>' : '') +
+      '</div>' +
+      fieldHtml(t('lblTopics'), p.topics) +
+      fieldHtml(t('lblClasswork'), p.classwork) +
+      fieldHtml(t('lblHomework'), p.homework) +
+      fieldHtml(t('lblActivity'), p.activity) +
+      fieldHtml(t('lblSkills'), p.skills);
+
+    if (rawTeacherName && window.LANG === 'hi') {
+      transliterateName(rawTeacherName).then(function(convertedName){
+        var nameSpan = card.querySelector('.teacher-name-placeholder');
+        if (nameSpan) nameSpan.textContent = convertedName;
+      });
+    }
+
+    if(editable){
+      card.querySelector('[data-action="edit"]').addEventListener('click', function(){
+        jumpToEdit(p);
+      });
+      card.querySelector('[data-action="delete"]').addEventListener('click', function(){
+        askConfirm(t('toastDeleteConfirmTitle'), t('toastDeleteConfirmMsg', { subject: p.subject, cls: p.class }), function(){
+          supabaseClient.from('weekly_lesson_plans').delete()
+            .eq('week_start', p.week_start).eq('week_end', p.week_end).eq('class', p.class).eq('subject', p.subject)
+            .then(function(res){
+              if(res.error){ toast(t('toastDeleteFailed', { msg: res.error.message }), true); return; }
+              toast(t('toastPlanDeleted'));
+              lastBrowseResults.plans = lastBrowseResults.plans.filter(function(x){ return !(x.class===p.class && x.subject===p.subject); });
+              renderBrowseResults();
+            });
+        });
+      });
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function jumpToEdit(p){
+  setTab('edit');
+  editWeekStart.value = p.week_start;
+  editWeekEnd.value = p.week_end;
+  editWeekRangeNote.textContent = formatRange(p.week_start, p.week_end);
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  if(classes.indexOf(p.class) === -1) classes.push(p.class);
+  editClassSel.value = p.class;
+  editClassSel.dispatchEvent(new Event('change'));
+  setTimeout(function(){
+    editSubjectSel.value = p.subject;
+    maybeLoadEditEntry();
+  }, 30);
+}
+
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* =========================================================
+   PDF GENERATION + SHARE
+   ---------------------------------------------------------
+   Approach: html2canvas rasterises the ACTUAL browser-rendered
+   DOM (same fonts/shaping used on screen, so Hindi/Devanagari
+   text — including conjuncts and matras — renders exactly as
+   it appears in the app). jsPDF is only used afterwards, as a
+   plain container to place those page images onto A4 sheets;
+   it never draws text itself, so its Latin-only default fonts
+   never enter the picture. This is what actually fixes the bug
+   (jsPDF's .text() API is the thing that mangled Hindi before).
+========================================================= */
+function loadImageAsDataURL(url){
+  return new Promise(function(resolve){
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function(){
+      try{
+        var canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      }catch(e){ resolve(null); }
+    };
+    img.onerror = function(){ resolve(null); };
+    img.src = url;
+  });
+}
+
+function subjectFieldsList(p){
+  return [
+    ['Chapter / Topics', p.topics],
+    ['Classwork', p.classwork],
+    ['Homework', p.homework],
+    ['Activity', p.activity],
+    ['Skills developed', p.skills]
+  ];
+}
+
+// Builds one subject's block as a real DOM element, styled to match the
+// app's brand (teal/gold), which html2canvas will later snapshot.
+function buildSubjectCardEl(p){
+  var card = document.createElement('div');
+  card.style.cssText =
+    'position:relative; padding:12px 14px 14px 20px; margin-bottom:14px; ' +
+    'border-left:3px solid #e2941a; page-break-inside:avoid;';
+
+  var titleEl = document.createElement('div');
+  titleEl.style.cssText = 'font-family:Georgia,"Times New Roman",serif; font-weight:700; font-size:13pt; color:#124f59;';
+  titleEl.textContent = p.subject;
+  card.appendChild(titleEl);
+
+  var ruleEl = document.createElement('div');
+  ruleEl.style.cssText = 'height:1.4px; background:#e2941a; margin:8px 0 2px;';
+  card.appendChild(ruleEl);
+
+  subjectFieldsList(p).forEach(function(f){
+    var hasValue = !!(f[1] && f[1].trim());
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:9px;';
+
+    var labelEl = document.createElement('div');
+    labelEl.style.cssText = 'font-family:Helvetica,Arial,sans-serif; font-size:8.2pt; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#b26a12;';
+    labelEl.textContent = f[0];
+    wrap.appendChild(labelEl);
+
+    var valueEl = document.createElement('div');
+    valueEl.style.cssText =
+      'font-family:"Noto Sans","Noto Sans Devanagari",Manrope,Helvetica,Arial,sans-serif; ' +
+      'font-size:10.2pt; line-height:1.55; white-space:pre-wrap; word-break:break-word; margin-top:2px; ' +
+      (hasValue ? 'color:#1c2626;' : 'color:#5f6f70; font-style:italic;');
+    valueEl.textContent = hasValue ? f[1] : 'Not specified';
+    wrap.appendChild(valueEl);
+
+    card.appendChild(wrap);
+  });
+
+  return card;
+}
+
+async function buildPdf(logoDataUrl){
+  if(typeof html2canvas === 'undefined'){
+    throw new Error('html2canvas did not load — check your internet connection and try again.');
+  }
+  // Make sure the Noto Sans / Noto Sans Devanagari web fonts are fully
+  // loaded before we snapshot anything, so the canvas doesn't capture a
+  // fallback-font frame mid-swap.
+  if(document.fonts && document.fonts.ready){
+    try{ await document.fonts.ready; }catch(e){}
+  }
+
+  var PAGE_W = 794;   // css px — A4 width @ 96dpi
+  var PAGE_H = 1123;  // css px — A4 height @ 96dpi (same aspect ratio as A4 in pt)
+  var MARGIN = 40;
+  var FOOTER_ZONE = 34;
+
+  var stage = document.createElement('div');
+  stage.style.cssText = 'position:fixed; left:-10000px; top:0; width:'+PAGE_W+'px; z-index:-1; background:#faf8f3;';
+  document.body.appendChild(stage);
+
+  try{
+    /* ---- Header band (page 1 only) ---- */
+    var headerEl = document.createElement('div');
+    headerEl.style.cssText =
+      'width:'+PAGE_W+'px; box-sizing:border-box; background:#0d3841; padding:18px '+MARGIN+'px; ' +
+      'display:flex; align-items:center; justify-content:space-between;';
+    headerEl.innerHTML =
+      '<div style="display:flex; align-items:center; gap:14px;">' +
+        (logoDataUrl ? '<img src="'+logoDataUrl+'" style="width:44px;height:44px;object-fit:contain;">' : '') +
+        '<div>' +
+          '<div style="font-family:Georgia,\'Times New Roman\',serif; font-weight:700; font-size:15pt; color:#ffffff;">Gopal Sharma Memorial School</div>' +
+          '<div style="font-family:Helvetica,Arial,sans-serif; font-size:9.5pt; color:#ffd685; margin-top:3px;">Weekly Lesson Plan</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:right;">' +
+        '<div style="font-family:Helvetica,Arial,sans-serif; font-size:9.5pt; color:#ffffff;">Class ' + escapeHtml(lastBrowseResults.class) + '</div>' +
+        '<div style="font-family:Helvetica,Arial,sans-serif; font-size:8.6pt; color:#ffd685; margin-top:3px;">' + escapeHtml(formatRange(lastBrowseResults.weekStart, lastBrowseResults.weekEnd)) + '</div>' +
+      '</div>';
+    stage.appendChild(headerEl);
+    var headerHeight = headerEl.getBoundingClientRect().height;
+    stage.removeChild(headerEl);
+
+    /* ---- Build & measure each subject card ---- */
+    var cardEls = lastBrowseResults.plans.map(function(p){ return buildSubjectCardEl(p); });
+    var cardHeights = cardEls.map(function(el){
+      el.style.width = (PAGE_W - MARGIN*2) + 'px';
+      stage.appendChild(el);
+      var h = el.getBoundingClientRect().height;
+      stage.removeChild(el);
+      return h;
+    });
+
+    /* ---- Greedy pagination: never split a subject card across pages ---- */
+    var pages = [];
+    var current = [];
+    var usable = PAGE_H - MARGIN*2 - headerHeight - FOOTER_ZONE - 10;
+    var used = 0;
+    for(var i = 0; i < cardEls.length; i++){
+      var h = cardHeights[i] + 14;
+      if(current.length > 0 && used + h > usable){
+        pages.push(current);
+        current = [];
+        used = 0;
+        usable = PAGE_H - MARGIN*2 - FOOTER_ZONE - 10; // no header band on later pages
+      }
+      current.push(i);
+      used += h;
+    }
+    if(current.length > 0 || pages.length === 0) pages.push(current);
+
+    /* ---- Render every page to an image, then assemble the PDF ---- */
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    var pdfW = doc.internal.pageSize.getWidth();
+    var pdfH = doc.internal.pageSize.getHeight();
+
+    for(var pageIndex = 0; pageIndex < pages.length; pageIndex++){
+      var pageEl = document.createElement('div');
+      pageEl.style.cssText =
+        'width:'+PAGE_W+'px; height:'+PAGE_H+'px; background:#faf8f3; box-sizing:border-box; ' +
+        'position:relative; font-family:Manrope,Helvetica,Arial,sans-serif;';
+
+      if(pageIndex === 0){
+        pageEl.appendChild(headerEl.cloneNode(true));
+      }
+
+      var contentEl = document.createElement('div');
+      contentEl.style.cssText = 'padding:'+(pageIndex === 0 ? '18px' : MARGIN+'px')+' '+MARGIN+'px 0;';
+      pages[pageIndex].forEach(function(idx){
+        contentEl.appendChild(cardEls[idx].cloneNode(true));
+      });
+      pageEl.appendChild(contentEl);
+
+      var footerEl = document.createElement('div');
+      footerEl.style.cssText =
+        'position:absolute; left:'+MARGIN+'px; right:'+MARGIN+'px; bottom:'+(MARGIN-8)+'px; ' +
+        'border-top:1px solid #e2941a; padding-top:8px; display:flex; justify-content:space-between; ' +
+        'font-family:Helvetica,Arial,sans-serif; font-size:7.6pt; color:#5f6f70;';
+      footerEl.innerHTML =
+        '<span>Gopal Sharma Memorial School — Weekly Lesson Plan</span>' +
+        '<span>Page ' + (pageIndex+1) + ' of ' + pages.length + '</span>';
+      pageEl.appendChild(footerEl);
+
+      stage.appendChild(pageEl);
+      var canvas = await html2canvas(pageEl, { scale: 2, backgroundColor: '#faf8f3', useCORS: true });
+      stage.removeChild(pageEl);
+
+      var imgData = canvas.toDataURL('image/png');
+      if(pageIndex > 0) doc.addPage();
+      doc.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+    }
+
+    var fileName = 'Weekly-Lesson-Plan_Class_' + lastBrowseResults.class.replace(/[^a-z0-9]/gi,'') + '_' + lastBrowseResults.weekStart + '.pdf';
+    var blob = doc.output('blob');
+    return { blob: blob, fileName: fileName };
+  } finally {
+    document.body.removeChild(stage);
+  }
+}
+
+document.getElementById('btn-share-pdf').addEventListener('click', async function(){
+  if(!lastBrowseResults.plans || lastBrowseResults.plans.length === 0){
+    toast(t('toastLoadWeekFirst'), true);
+    return;
+  }
+  var btn = this;
+  btn.disabled = true;
+  var originalHtml = btn.innerHTML;
+  btn.textContent = t('btnPreparingPdf');
+
+  try{
+    var logoDataUrl = await loadImageAsDataURL('https://sourabhsuneja.github.io/gsms-logo.png');
+    var result = await buildPdf(logoDataUrl);
+    shareOrDownloadBlob(result.blob, result.fileName);
+  }catch(e){
+    console.error(e);
+    toast(t('toastCouldNotGenPdf'), true);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+});
+
+document.getElementById('btn-download-pdf').addEventListener('click', async function(){
+  if(!lastBrowseResults.plans || lastBrowseResults.plans.length === 0){
+    toast(t('toastLoadWeekFirst'), true);
+    return;
+  }
+  var btn = this;
+  btn.disabled = true;
+  var originalHtml = btn.innerHTML;
+  btn.textContent = t('btnPreparingPdf');
+
+  try{
+    var logoDataUrl = await loadImageAsDataURL('https://sourabhsuneja.github.io/gsms-logo.png');
+    var result = await buildPdf(logoDataUrl);
+    downloadBlob(result.blob, result.fileName);
+    toast(t('toastPdfDownloaded'));
+  }catch(e){
+    console.error(e);
+    toast(t('toastCouldNotGenPdf'), true);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+});
+
+function shareOrDownloadBlob(blob, fileName){
+  var file = new File([blob], fileName, { type: 'application/pdf' });
+  var shareTitle = 'Weekly Lesson Plan — ' + lastBrowseResults.class;
+  var shareText = 'Weekly lesson plan for ' + lastBrowseResults.class + ' (' + formatRange(lastBrowseResults.weekStart, lastBrowseResults.weekEnd) + ')';
+
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    navigator.share({ files: [file], title: shareTitle, text: shareText })
+      .catch(function(err){
+        if(err && err.name !== 'AbortError'){ downloadBlob(blob, fileName); }
+      });
+  }else{
+    downloadBlob(blob, fileName);
+    toast(t('toastPdfSharingNotSupported'));
+  }
+}
+
+function downloadBlob(blob, fileName){
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+}
+
+/* =========================================================
+   AUTH + DATA BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var userId = session.user.id;
+
+    var teacherResult = await supabaseClient
+      .from('teachers')
+      .select('id, name, email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    // Check admin status via RPC
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var badge = document.getElementById('role-badge');
+    if(state.isAdmin){
+      badge.textContent = t('adminBadgeText');
+      badge.classList.add('admin-badge');
+    }else{
+      var displayFirstName = state.teacherName.split(' ')[0];
+      if (window.LANG === 'hi') {
+        displayFirstName = await transliterateName(displayFirstName);
+      }
+      badge.textContent = t('teacherBadgeText', { name: displayFirstName });
+    }
+
+    // Load this teacher's own class-subject assignments
+    var myAssignRes = await supabaseClient
+      .from('class_subject_assignments')
+      .select('class, subject')
+      .eq('teacher_id', userId);
+    state.myAssignments = myAssignRes.data || [];
+
+    // Load full combo list (needed for admins to add/edit anything,
+    // and to build the full class list for browsing).
+    // Admins have access to every class/subject combination that
+    // exists, so pull from class_subjects (the canonical class ->
+    // subject mapping) instead of class_subject_assignments (which
+    // only reflects what's been assigned to a specific teacher).
+    var allCombosRes = state.isAdmin
+      ? await supabaseClient.from('class_subjects').select('class, subject')
+      : await supabaseClient.from('class_subject_assignments').select('class, subject');
+    state.allCombos = allCombosRes.data || [];
+
+    // Merge in classes from class_teachers too, so browsing covers
+    // classes that may not yet have a subject assignment
+    var classTeacherRes = await supabaseClient
+      .from('class_teachers')
+      .select('class');
+    var classSet = {};
+    state.allCombos.forEach(function(c){ classSet[c.class] = true; });
+    (classTeacherRes.data || []).forEach(function(c){ classSet[c.class] = true; });
+    state.allClasses = Object.keys(classSet).sort();
+
+    // Load subject display order for sorting compiled plans
+    var subjectsRes = await supabaseClient.from('subjects').select('name, display_order');
+    (subjectsRes.data || []).forEach(function(s){ state.subjectOrder[s.name] = s.display_order; });
+
+    populateEditClassDropdown();
+    populateBrowseClassDropdown();
+    initDefaultWeek(editWeekStart, editWeekEnd, editWeekRangeNote);
+    initDefaultWeek(browseWeekStart, browseWeekEnd, browseWeekRangeNote);
+
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
