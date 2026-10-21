@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Notebook Checking Record</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold:rgba(245,166,35,.10); --bg-tint-teal:rgba(27,107,120,.10);
+    --border:rgba(13,56,65,.08); --border-hover:rgba(245,166,35,.45);
+    --toggle-bg:rgba(255,255,255,.75); --toggle-border:rgba(13,56,65,.14);
+    --header-bg:rgba(250,248,243,.85);
+    --danger:#c9432f; --danger-bg:rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg:rgba(47,143,91,.1);
+    --medical:#0e7fb0; --holiday:#7c5ce0;
+    --shadow:0 18px 40px -22px rgba(13,56,65,.35);
+    --ease:cubic-bezier(.22,1,.36,1);
+    --r-md:18px; --r-sm:14px;
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-700:#5fd0de; --teal-600:#7fdbe6;
+    --gold-600:#ffb648; --gold-400:#ffd685;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold:rgba(255,182,72,.07); --bg-tint-teal:rgba(95,208,222,.10);
+    --border:rgba(255,255,255,.08); --border-hover:rgba(255,198,92,.4);
+    --toggle-bg:rgba(24,36,37,.85); --toggle-border:rgba(255,255,255,.14);
+    --header-bg:rgba(9,34,39,.85);
+    --danger:#ff6b57; --danger-bg:rgba(255,107,87,.12);
+    --success:#57d492; --success-bg:rgba(87,212,146,.12);
+    --medical:#5cc8f0; --holiday:#a994ff;
+    --shadow:0 18px 40px -22px rgba(0,0,0,.55);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100svh; overflow-x:hidden;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,sans-serif;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color:transparent;
+  }
+  button,input,select{font-family:inherit;}
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+
+  /* Loading gate */
+  #gate{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s;}
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{width:36px; height:36px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--gold-500); animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{display:none; min-height:100svh; flex-direction:column;}
+  #app.ready{display:flex;}
+
+  /* Header */
+  .app-header{
+    position:sticky; top:0; z-index:40; background:var(--header-bg);
+    border-bottom:1px solid var(--border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+  }
+  .hdr-top{display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto;}
+  .hdr-brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .hdr-title{font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; margin:0; color:var(--ink-900);}
+  .hdr-sub{margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600);}
+  .hdr-actions{display:flex; gap:8px;}
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; flex-shrink:0; position:relative;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    background:var(--toggle-bg); border:1.5px solid var(--toggle-border);
+    box-shadow:0 10px 24px -12px rgba(13,56,65,.4);
+    transition:transform .2s var(--ease);
+  }
+  .icon-btn:hover{transform:translateY(-2px);}
+  .icon-btn:active{transform:scale(.96);}
+  .icon-btn:focus-visible{outline:3px solid var(--gold-500); outline-offset:3px;}
+  .icon-btn.sm{width:44px; height:44px; font-size:1.3rem; color:var(--teal-700); font-weight:700;}
+  .icon-btn svg{width:19px; height:19px; fill:none; stroke:var(--teal-700); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s, transform .4s var(--ease);}
+  .icon-sun{opacity:1; transform:rotate(0) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0) scale(1);}
+  html[data-theme="dark"] .icon-btn svg{stroke:var(--gold-400);}
+  .icon-btn.danger svg{stroke:var(--danger);}
+
+  /* Layout */
+  main{flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 40px); display:flex; flex-direction:column; gap:14px;}
+  .card{background:var(--white); border:1px solid var(--border); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:560px){ .row2{grid-template-columns:1fr;} }
+  .field label{display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px;}
+  .field + .field{margin-top:14px;}
+  select,input[type="date"],input[type="text"]{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border);
+    background:var(--cream); color:var(--ink-900); font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease);
+  }
+  select{appearance:none; -webkit-appearance:none; padding-right:36px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;}
+  select:focus,input:focus{border-color:var(--border-hover); box-shadow:0 0 0 4px var(--bg-tint-gold);}
+  input:disabled,select:disabled{opacity:.55; cursor:not-allowed;}
+  .combo-row{display:flex; gap:8px; align-items:center;}
+  .combo-row select{flex:1; min-width:0;}
+  .placeholder{display:flex; flex-direction:column; align-items:center; text-align:center; padding:36px 16px; color:var(--ink-500); font-size:.9rem;}
+  .placeholder p{margin:0;}
+
+  /* Stats */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px;}
+  .stat{background:var(--white); border:1px solid var(--border); border-radius:var(--r-sm); padding:12px 14px; box-shadow:var(--shadow);}
+  .stat b{display:block; font-family:'Fraunces',serif; font-size:1.4rem; font-weight:600;}
+  .stat span{font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500);}
+
+  .lock{display:none; margin:0; font-size:.84rem; font-weight:600; padding:10px 14px; border-radius:var(--r-sm); background:var(--bg-tint-gold); color:var(--gold-600);}
+
+  /* Toolbar & buttons */
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap;}
+  .toolbar .btn{flex:1; min-width:150px;}
+  .btn{padding:13px 18px; border-radius:14px; border:none; font-weight:700; font-size:.88rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:transform .2s var(--ease), opacity .2s;}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .btn-primary{background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55);}
+  .btn-ghost{background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border);}
+  .btn-danger{background:var(--danger-bg); color:var(--danger);}
+  .btn-sm{padding:9px 14px; font-size:.8rem; border-radius:11px;}
+  .footer-actions{display:flex; gap:10px; margin-top:6px;}
+  .footer-actions .btn-primary{flex:1;}
+
+  /* Assignment / target picker */
+  .assign-row{display:flex; gap:8px; align-items:flex-end;}
+  .assign-row .field{flex:1; margin:0;}
+  .target-row{display:flex; gap:8px; align-items:flex-end; margin-top:14px;}
+  .target-row .field{flex:1; margin:0;}
+
+  /* Student list */
+  .list{display:flex; flex-direction:column; gap:8px;}
+  .srow{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; cursor:pointer; user-select:none;
+    background:var(--white); border:1px solid var(--border); border-left:4px solid var(--border);
+    border-radius:var(--r-sm); transition:background-color .2s, border-color .2s, transform .15s var(--ease);
+  }
+  .srow:active{transform:scale(.99);}
+  .srow.is-C{border-left-color:var(--success);}
+  .srow.is-I{border-left-color:var(--gold-600); background:var(--bg-tint-gold);}
+  .srow.is-N{border-left-color:var(--danger); background:var(--danger-bg);}
+  .srow.is-S{border-left-color:var(--medical); background:rgba(14,127,176,.08);}
+  .srow.is-L{border-left-color:var(--holiday); background:rgba(124,92,224,.10);}
+  .roll{width:36px; flex-shrink:0; text-align:center; font-size:.76rem; font-weight:800; color:var(--ink-500); background:var(--cream); border-radius:8px; padding:5px 0;}
+  .who{flex:1; min-width:0;}
+  .name{font-weight:600; font-size:.96rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .meta{font-size:.76rem; color:var(--ink-500); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .note{font-size:.78rem; color:var(--ink-500); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ic{width:34px; height:34px; border-radius:10px; border:1.5px solid var(--border); background:var(--cream); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+  .ic svg{width:16px; height:16px; fill:none; stroke:var(--ink-500); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .badge{min-width:40px; height:34px; padding:0 10px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.8rem; color:#fff; background:var(--border); flex-shrink:0; letter-spacing:.02em;}
+  .is-C .badge{background:var(--success);}
+  .is-I .badge{background:var(--gold-600);}
+  .is-N .badge{background:var(--danger);}
+  .is-S .badge{background:var(--medical);}
+  .is-L .badge{background:var(--holiday);}
+  .badge.none{background:transparent; color:var(--ink-500); border:1.5px dashed var(--border);}
+  html[data-theme="dark"] .badge{color:var(--teal-900);}
+  html[data-theme="dark"] .badge.none{color:var(--ink-500);}
+  .loader{display:flex; justify-content:center; padding:40px 0;}
+
+  /* Legend */
+  .legend{display:flex; flex-wrap:wrap; gap:8px 14px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px; font-size:.76rem; font-weight:600; color:var(--ink-500);}
+  .legend i{width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0;}
+
+  /* Target chips (inside create/add-target sheet) */
+  .chip-list{display:flex; flex-direction:column; gap:8px; margin-top:12px;}
+  .chip{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-sm); background:var(--cream); border:1.5px solid var(--border); font-size:.86rem; font-weight:600;}
+  .chip span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .chip button{background:none; border:none; color:var(--danger); font-weight:800; cursor:pointer; font-size:1rem; line-height:1; padding:2px 4px;}
+
+  /* Sheets & toast */
+  .sheet-backdrop{position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s;}
+  .sheet-backdrop.show{opacity:1; visibility:visible;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:101; max-width:960px; margin:0 auto; max-height:88svh; overflow-y:auto; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); transform:translateY(100%); transition:transform .3s var(--ease); box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);}
+  .sheet-backdrop.show .sheet{transform:translateY(0);}
+  .sheet-handle{width:38px; height:4px; border-radius:99px; background:var(--border); margin:0 auto 18px;}
+  .sheet h3{font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem;}
+  .sheet p{margin:0 0 16px; color:var(--ink-500); font-size:.88rem;}
+  .sheet .btn-row{display:flex; gap:10px;}
+  .sheet .btn-row .btn{flex:1;}
+  #toast-wrap{position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;}
+  .toast{background:var(--teal-900); color:#fff; font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s, transform .3s var(--ease); max-width:88vw;}
+  html[data-theme="dark"] .toast{background:var(--gold-400); color:var(--teal-900);}
+  .toast.error{background:var(--danger); color:#fff;}
+  .toast.show{opacity:1; transform:translateY(0);}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+  <header class="app-header">
+    <div class="hdr-top">
+      <div class="hdr-brand">
+        <button class="icon-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div>
+          <p class="hdr-title">Notebook Checking</p>
+          <p class="hdr-sub" id="role-badge">Mark &bull; View</p>
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="assign-row">
+        <div class="field">
+          <label for="assignment-select">Assignment</label>
+          <select id="assignment-select"><option value="">Select assignment…</option></select>
+        </div>
+        <button class="icon-btn sm" id="new-assignment-btn" type="button" aria-label="New assignment" title="New assignment">+</button>
+        <button class="icon-btn sm danger" id="delete-assignment-btn" type="button" aria-label="Delete assignment" title="Delete assignment" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+
+      <div class="target-row" id="target-row" style="display:none">
+        <div class="field">
+          <label for="target-select">Class</label>
+          <select id="target-select"><option value="">Select class…</option></select>
+        </div>
+        <button class="icon-btn sm" id="add-target-btn" type="button" aria-label="Add class/subject" title="Map to another class/subject">+</button>
+      </div>
+    </section>
+
+    <div class="placeholder card" id="empty"><p>Pick an assignment, then a class, to mark or view checking status. Use + to create a new assignment.</p></div>
+
+    <div id="body" style="display:none; flex-direction:column; gap:14px;">
+      <div class="stats" id="stats"></div>
+
+      <section class="card legend" id="legend"></section>
+
+      <p class="lock" id="lock-note"></p>
+
+      <div class="toolbar">
+        <button class="btn btn-ghost" id="btn-all-c" type="button">Mark unmarked checked</button>
+        <button class="btn btn-ghost" id="btn-share" type="button">Share list</button>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div class="footer-actions">
+        <button class="btn btn-danger" id="btn-delete-all" type="button">Clear all</button>
+        <button class="btn btn-primary" id="btn-save" type="button" disabled>Save changes</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Sign-out sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access notebook checking.</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="cancel-signout" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout" type="button">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm sheet (delete / discard) -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-msg"></p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="confirm-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note sheet -->
+<div class="sheet-backdrop" id="sheet-note">
+  <div class="sheet" role="dialog" aria-label="Add note">
+    <div class="sheet-handle"></div>
+    <h3 id="note-title">Note</h3>
+    <p>Optional note about this status. Visible in the shared list.</p>
+    <input type="text" id="note-input" placeholder="e.g. Good handwriting, QAs missing" maxlength="200">
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-ghost" id="note-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="note-save" type="button">Save note</button>
+    </div>
+  </div>
+</div>
+
+<!-- New assignment / add-target sheet -->
+<div class="sheet-backdrop" id="sheet-assignment">
+  <div class="sheet" role="dialog" aria-label="Assignment">
+    <div class="sheet-handle"></div>
+    <h3 id="assign-sheet-title">New assignment</h3>
+    <p id="assign-sheet-sub">Give it a name, then map it to the classes and subjects it applies to.</p>
+
+    <div class="field" id="assign-title-field">
+      <label for="assign-title-input">Title</label>
+      <input type="text" id="assign-title-input" placeholder="e.g. Chapter 1 Notebook Work" maxlength="200">
+    </div>
+
+    <div class="field" style="margin-top:14px">
+      <label for="assign-class-select">Class</label>
+      <div class="combo-row">
+        <select id="assign-class-select"><option value="">Select class…</option></select>
+        <select id="assign-subject-select" disabled><option value="">Select subject…</option></select>
+        <button class="btn btn-ghost btn-sm" id="assign-add-pair-btn" type="button">Add</button>
+      </div>
+    </div>
+
+    <div class="chip-list" id="assign-chip-list"></div>
+
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn btn-ghost" id="assign-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="assign-save" type="button">Create assignment</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Status codes stored in the DB. null = no status (no row).
+// 'N' is stored as a single char but shown to users as "NB" (Not Brought).
+var CYCLE = [null, 'C', 'I', 'N', 'S', 'L'];
+var LABEL = { C: 'C', I: 'I', N: 'NB', S: 'S', L: 'L' };
+var NAME  = { C: 'Checked', I: 'Incomplete', N: 'Not brought', S: 'Submitted', L: 'Lost' };
+var COLOR = { C: 'var(--success)', I: 'var(--gold-600)', N: 'var(--danger)', S: 'var(--medical)', L: 'var(--holiday)' };
+
+var S = {
+  isAdmin: false,
+  myName: '',
+  myUid: '',
+  classes: [],        // class names, oldest created_at first
+  classOrder: {},      // name -> index
+  subjects: [],        // subject names, by display_order
+  subjectOrder: {},    // name -> index
+  classSubjects: [],   // [{class, subject}] curriculum map (all, school-wide)
+  myPairs: [],         // [{class, subject}] this teacher is assigned (empty if admin)
+  myPairSet: {},        // "class|subject" -> true
+
+  assignments: [],     // [{id, title}]
+  assignmentId: '',
+  targets: [],          // [{class, subject}] for the current assignment
+  cls: '', subject: '',
+
+  students: [],        // [{id, roll_no, name}]
+  cur: {}, orig: {},         // student id -> status or null
+  notes: {}, origNotes: {},  // student id -> note
+  markedBy: {},          // student id -> {name, at} (read-only, for display)
+  dirty: false
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function $(id){ return document.getElementById(id); }
+function esc(s){ var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+function pairKey(c, s){ return c + '|' + s; }
+function canWrite(c, s){ return S.isAdmin || !!S.myPairSet[pairKey(c, s)]; }
+function canEdit(){ return !!S.assignmentId && !!S.cls && !!S.subject && canWrite(S.cls, S.subject); }
+function fmtShort(iso){ return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short' }); }
+
+function toast(msg, isError){
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  $('toast-wrap').appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2600);
+}
+
+/* =========================================================
+   SHEETS (generic confirm / note / sign-out)
+========================================================= */
+var confirmOk = null, confirmCancel = null;
+function askConfirm(title, msg, onOk, okLabel, onCancel){
+  $('confirm-title').textContent = title;
+  $('confirm-msg').textContent = msg;
+  $('confirm-ok').textContent = okLabel || 'Delete';
+  confirmOk = onOk; confirmCancel = onCancel || null;
+  $('sheet-confirm').classList.add('show');
+}
+function closeConfirm(fromCancel){
+  $('sheet-confirm').classList.remove('show');
+  var c = confirmCancel;
+  confirmOk = confirmCancel = null;
+  if(fromCancel && c) c();
+}
+$('confirm-cancel').addEventListener('click', function(){ closeConfirm(true); });
+$('confirm-ok').addEventListener('click', function(){ var f = confirmOk; closeConfirm(false); if(f) f(); });
+
+function guard(proceed, revert){
+  if(!S.dirty){ proceed(); return; }
+  askConfirm('Discard changes?', 'Unsaved marks for this class and subject will be lost.', proceed, 'Discard', revert);
+}
+
+var noteId = null;
+function openNote(id){
+  var s = S.students.filter(function(x){ return x.id === id; })[0];
+  noteId = id;
+  $('note-title').textContent = 'Note for ' + (s ? s.name : 'student');
+  $('note-input').value = S.notes[id] || '';
+  $('sheet-note').classList.add('show');
+  setTimeout(function(){ $('note-input').focus(); }, 250);
+}
+function closeNote(){ $('sheet-note').classList.remove('show'); noteId = null; }
+$('note-cancel').addEventListener('click', closeNote);
+$('note-save').addEventListener('click', function(){
+  if(noteId != null){ S.notes[noteId] = $('note-input').value.trim(); S.dirty = true; }
+  closeNote();
+  render();
+});
+$('sheet-note').addEventListener('click', function(e){ if(e.target === this) closeNote(); });
+
+$('signout-btn').addEventListener('click', function(){ $('sheet-signout').classList.add('show'); });
+$('cancel-signout').addEventListener('click', function(){ $('sheet-signout').classList.remove('show'); });
+$('confirm-signout').addEventListener('click', function(){
+  sb.auth.signOut().then(async function(){ await wipeInstitutionData(); location.href = AUTH_REDIRECT; });
+});
+
+/* =========================================================
+   THEME + NAV
+========================================================= */
+$('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+$('back-btn').addEventListener('click', function(){ location.href = DASHBOARD_URL; });
+
+/* =========================================================
+   ASSIGNMENT / TARGET SELECTION
+========================================================= */
+function populateAssignments(){
+  var h = '<option value="">Select assignment…</option>';
+  S.assignments.forEach(function(a){ h += '<option value="' + a.id + '">' + esc(a.title) + '</option>'; });
+  $('assignment-select').innerHTML = h;
+  $('assignment-select').value = S.assignmentId;
+}
+
+function populateTargets(){
+  var sorted = S.targets.slice().sort(function(a, b){
+    var d = (S.classOrder[a.class] || 0) - (S.classOrder[b.class] || 0);
+    return d !== 0 ? d : (S.subjectOrder[a.subject] || 0) - (S.subjectOrder[b.subject] || 0);
+  });
+  var h = '<option value="">Select class…</option>';
+  sorted.forEach(function(t){
+    h += '<option value="' + esc(pairKey(t.class, t.subject)) + '">' + esc(t.class) + ' — ' + esc(t.subject) + '</option>';
+  });
+  $('target-select').innerHTML = h;
+  $('target-select').value = S.cls ? pairKey(S.cls, S.subject) : '';
+}
+
+async function loadAssignments(){
+  var res = await sb.from('checking_assignments').select('id, title, created_by').order('created_at', { ascending: false });
+  if(res.error){ toast('Could not load assignments: ' + res.error.message, true); return; }
+  S.assignments = res.data || [];
+  populateAssignments();
+}
+
+function canDeleteAssignment(id){
+  var a = S.assignments.filter(function(x){ return String(x.id) === String(id); })[0];
+  return !!a && (S.isAdmin || a.created_by === S.myUid);
+}
+
+async function selectAssignment(id){
+  var proceed = async function(){
+    S.assignmentId = id;
+    S.cls = ''; S.subject = ''; S.targets = [];
+    $('assignment-select').value = id;
+    $('target-row').style.display = id ? 'flex' : 'none';
+    $('delete-assignment-btn').style.display = (id && canDeleteAssignment(id)) ? 'flex' : 'none';
+    S.students = []; render();
+    if(!id) return;
+    var res = await sb.from('checking_assignment_targets').select('class, subject').eq('assignment_id', id);
+    if(res.error){ toast('Could not load targets: ' + res.error.message, true); return; }
+    S.targets = res.data || [];
+    populateTargets();
+  };
+  var revert = function(){ $('assignment-select').value = S.assignmentId; };
+  guard(proceed, revert);
+}
+
+function selectTarget(key){
+  if(!key){ guard(function(){ S.cls = ''; S.subject = ''; S.students = []; $('target-select').value = ''; render(); }, function(){ $('target-select').value = S.cls ? pairKey(S.cls, S.subject) : ''; }); return; }
+  var i = key.indexOf('|');
+  var c = key.slice(0, i), subj = key.slice(i + 1);
+  var proceed = function(){ S.cls = c; S.subject = subj; $('target-select').value = key; loadTarget(); };
+  var revert = function(){ $('target-select').value = S.cls ? pairKey(S.cls, S.subject) : ''; };
+  guard(proceed, revert);
+}
+
+$('assignment-select').addEventListener('change', function(){ selectAssignment(this.value); });
+$('target-select').addEventListener('change', function(){ selectTarget(this.value); });
+
+/* =========================================================
+   LOAD TARGET (class + subject under the current assignment)
+========================================================= */
+async function loadTarget(){
+  if(!S.assignmentId || !S.cls || !S.subject){ S.students = []; render(); return; }
+  $('list').innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+  try{
+    var sRes = await sb.from('students_master').select('id, roll_no, name')
+      .eq('class', S.cls).order('roll_no', { ascending: true, nullsFirst: false });
+    if(sRes.error) throw sRes.error;
+
+    var cRes = await sb.from('checking_status').select('student_id, status, note, marked_by_name, marked_at')
+      .eq('assignment_id', S.assignmentId).eq('class', S.cls).eq('subject', S.subject);
+    if(cRes.error) throw cRes.error;
+
+    S.students = sRes.data || [];
+    S.cur = {}; S.orig = {}; S.notes = {}; S.origNotes = {}; S.markedBy = {};
+
+    (cRes.data || []).forEach(function(r){
+      S.cur[r.student_id] = r.status;
+      S.orig[r.student_id] = r.status;
+      S.origNotes[r.student_id] = r.note || null;
+      if(r.note) S.notes[r.student_id] = r.note;
+      S.markedBy[r.student_id] = { name: r.marked_by_name, at: r.marked_at };
+    });
+
+    S.dirty = false;
+    render();
+  }catch(e){
+    console.error(e);
+    toast('Could not load checking status: ' + e.message, true);
+  }
+}
+
+/* =========================================================
+   RENDER
+========================================================= */
+function render(){
+  var hasTarget = !!(S.assignmentId && S.cls && S.subject);
+  $('empty').style.display = hasTarget ? 'none' : 'flex';
+  $('body').style.display = hasTarget ? 'flex' : 'none';
+  if(!hasTarget) return;
+
+  var edit = canEdit();
+  var counts = { C:0, I:0, N:0, S:0, L:0, none:0 };
+  S.students.forEach(function(s){
+    var v = S.cur[s.id];
+    if(!v) counts.none++; else counts[v]++;
+  });
+
+  $('stats').innerHTML = [
+      ['Total', S.students.length, 'var(--ink-900)'],
+      ['Checked', counts.C, COLOR.C],
+      ['Incomplete', counts.I, COLOR.I],
+      ['Not brought', counts.N, COLOR.N],
+      ['Submitted', counts.S, COLOR.S],
+      ['Lost', counts.L, COLOR.L],
+      ['Unmarked', counts.none, 'var(--ink-500)']
+    ].map(function(x){ return '<div class="stat"><b style="color:' + x[2] + '">' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('');
+
+  $('legend').innerHTML = Object.keys(NAME).map(function(k){
+    return '<span><i style="background:' + COLOR[k] + '"></i>' + LABEL[k] + ' — ' + NAME[k] + '</span>';
+  }).join('');
+
+  var lock = $('lock-note');
+  if(!edit){
+    lock.style.display = 'block';
+    lock.textContent = 'View only. This class/subject is not assigned to you.';
+  } else {
+    lock.style.display = 'none';
+  }
+
+  $('btn-all-c').disabled = !edit;
+  $('btn-delete-all').disabled = !edit;
+  $('btn-save').disabled = !edit || !S.dirty;
+
+  $('list').innerHTML = S.students.map(function(s){
+    var v = S.cur[s.id] || null;
+    var cls = v ? ' is-' + v : '';
+    var note = S.notes[s.id];
+    var mb = S.markedBy[s.id];
+    var metaBits = [];
+    if(v && mb && mb.name) metaBits.push(esc(mb.name) + (mb.at ? ' · ' + fmtShort(mb.at) : ''));
+    var badge = v ? '<span class="badge">' + LABEL[v] + '</span>' : '<span class="badge none">–</span>';
+    var noteBtn = (edit && v)
+      ? '<button class="ic" type="button" data-act="note" aria-label="Add note for ' + esc(s.name) + '"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+      : '';
+    return '<div class="srow' + cls + '" data-id="' + s.id + '" role="button" tabindex="0" aria-label="' + esc(s.name) + ', ' + (v ? NAME[v] : 'no status') + '">' +
+      '<div class="roll">' + esc(s.roll_no != null ? s.roll_no : '–') + '</div>' +
+      '<div class="who"><div class="name">' + esc(s.name) + '</div>' +
+      (metaBits.length ? '<div class="meta">' + metaBits.join('') + '</div>' : '') +
+      (note ? '<div class="note">' + esc(note) + '</div>' : '') + '</div>' +
+      noteBtn + badge + '</div>';
+  }).join('') || '<p class="placeholder" style="padding:20px">No students in this class yet.</p>';
+}
+
+/* Event delegation for the student list */
+$('list').addEventListener('click', function(e){
+  var row = e.target.closest('.srow');
+  if(!row || !canEdit()) return;
+  var id = Number(row.getAttribute('data-id'));
+  if(e.target.closest('[data-act="note"]')){ openNote(id); return; }
+  var i = CYCLE.indexOf(S.cur[id] || null);
+  S.cur[id] = CYCLE[(i + 1) % CYCLE.length];
+  S.dirty = true;
+  render();
+});
+$('list').addEventListener('keydown', function(e){
+  if((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('srow')){ e.preventDefault(); e.target.click(); }
+});
+
+/* Bulk: mark unmarked students as Checked */
+$('btn-all-c').addEventListener('click', function(){
+  S.students.forEach(function(s){ if(!S.cur[s.id]) S.cur[s.id] = 'C'; });
+  S.dirty = true;
+  render();
+});
+
+/* =========================================================
+   SAVE (writes only changed rows, deletes cleared rows)
+========================================================= */
+$('btn-save').addEventListener('click', async function(){
+  if(!canEdit()){ toast('You cannot edit this class/subject.', true); return; }
+
+  var upserts = [], deletes = [];
+  S.students.forEach(function(s){
+    var v = S.cur[s.id] || null;
+    var o = S.orig[s.id] || null;
+    var note = v ? (S.notes[s.id] || null) : null;
+    var oNote = S.origNotes[s.id] || null;
+    if(v){
+      if(v !== o || note !== oNote){
+        upserts.push({ assignment_id: S.assignmentId, class: S.cls, subject: S.subject, student_id: s.id, status: v, note: note });
+      }
+    } else if(o){
+      deletes.push(s.id);
+    }
+  });
+
+  if(!upserts.length && !deletes.length){ toast('Nothing to save.'); return; }
+
+  var btn = $('btn-save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    if(upserts.length){
+      var u = await sb.from('checking_status').upsert(upserts, { onConflict: 'assignment_id,class,subject,student_id' });
+      if(u.error) throw u.error;
+    }
+    if(deletes.length){
+      var d = await sb.from('checking_status').delete()
+        .eq('assignment_id', S.assignmentId).eq('class', S.cls).eq('subject', S.subject).in('student_id', deletes);
+      if(d.error) throw d.error;
+    }
+    toast('Checking status saved.');
+    await loadTarget();
+  }catch(e){
+    console.error(e);
+    toast('Save failed: ' + e.message, true);
+    btn.disabled = false; btn.textContent = 'Save changes';
+  }
+});
+
+/* Clear every record for this assignment + class + subject. RLS enforces who may. */
+$('btn-delete-all').addEventListener('click', function(){
+  askConfirm('Clear all checking status?',
+    'All marks and notes for this assignment in ' + S.cls + ' (' + S.subject + ') will be removed.',
+    async function(){
+      var r = await sb.from('checking_status').delete()
+        .eq('assignment_id', S.assignmentId).eq('class', S.cls).eq('subject', S.subject);
+      if(r.error){ toast('Delete failed: ' + r.error.message, true); return; }
+      toast('Checking status cleared.');
+      loadTarget();
+    }, 'Clear all');
+});
+
+/* Delete the whole assignment: cascades to all its targets and checking_status rows. */
+$('delete-assignment-btn').addEventListener('click', function(){
+  if(!S.assignmentId || !canDeleteAssignment(S.assignmentId)) return;
+  var a = S.assignments.filter(function(x){ return String(x.id) === String(S.assignmentId); })[0];
+  var title = a ? a.title : 'this assignment';
+  askConfirm('Delete "' + title + '"?',
+    'This permanently deletes the assignment and every checking record marked against it, for every class and subject it was mapped to. This cannot be undone.',
+    async function(){
+      var r = await sb.from('checking_assignments').delete().eq('id', S.assignmentId);
+      if(r.error){ toast('Delete failed: ' + r.error.message, true); return; }
+      toast('Assignment deleted.');
+      S.assignmentId = ''; S.cls = ''; S.subject = ''; S.targets = []; S.students = [];
+      $('target-row').style.display = 'none';
+      $('delete-assignment-btn').style.display = 'none';
+      await loadAssignments();
+      render();
+    }, 'Delete assignment');
+});
+
+/* Share the full roster, grouped by status */
+$('btn-share').addEventListener('click', function(){
+  if(!S.students.length){ toast('No students in this class.'); return; }
+
+  var assignTitle = (S.assignments.filter(function(a){ return String(a.id) === String(S.assignmentId); })[0] || {}).title || 'Checking';
+  var msg = '*' + assignTitle + ' - Class ' + S.cls + ' (' + S.subject + ')*\n';
+
+  // Fixed group order; "No status" only appears if someone is actually unmarked.
+  var groups = [
+    ['C', 'Checked'], ['I', 'Incomplete'], ['N', 'Not Brought'],
+    ['S', 'Submitted'], ['L', 'Lost'], [null, 'No Status']
+  ];
+  groups.forEach(function(g){
+    var code = g[0], label = g[1];
+    var names = S.students.filter(function(s){ return (S.cur[s.id] || null) === code; });
+    if(!names.length) return;
+    msg += '\n' + label + ':\n';
+    names.forEach(function(s, i){
+      var note = code && S.notes[s.id] ? ' - ' + S.notes[s.id] : '';
+      msg += (i + 1) + '. ' + s.name + note + '\n';
+    });
+  });
+
+  if(navigator.share){
+    navigator.share({ text: msg }).catch(function(){});
+  }else if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(function(){ toast('List copied to clipboard.'); });
+  }
+});
+
+/* =========================================================
+   NEW ASSIGNMENT / ADD-TARGET SHEET
+========================================================= */
+var assignMode = 'new';    // 'new' | 'add'
+var assignPairs = [];      // working list of {class, subject} chips
+
+function classOptionsForAssign(){
+  if(S.isAdmin) return S.classes.slice();
+  var seen = {}, out = [];
+  S.myPairs.forEach(function(p){ if(!seen[p.class]){ seen[p.class] = true; out.push(p.class); } });
+  return out.sort(function(a, b){ return (S.classOrder[a] || 0) - (S.classOrder[b] || 0); });
+}
+function subjectOptionsForAssign(cls){
+  var subs;
+  if(S.isAdmin){
+    subs = S.classSubjects.filter(function(p){ return p.class === cls; }).map(function(p){ return p.subject; });
+  }else{
+    subs = S.myPairs.filter(function(p){ return p.class === cls; }).map(function(p){ return p.subject; });
+  }
+  return subs.sort(function(a, b){ return (S.subjectOrder[a] || 0) - (S.subjectOrder[b] || 0); });
+}
+
+function populateAssignClassSelect(){
+  var opts = classOptionsForAssign();
+  $('assign-class-select').innerHTML = '<option value="">Select class…</option>' +
+    opts.map(function(c){ return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+  $('assign-subject-select').innerHTML = '<option value="">Select subject…</option>';
+  $('assign-subject-select').disabled = true;
+}
+$('assign-class-select').addEventListener('change', function(){
+  var cls = this.value;
+  var subs = cls ? subjectOptionsForAssign(cls) : [];
+  $('assign-subject-select').innerHTML = '<option value="">Select subject…</option>' +
+    subs.map(function(s){ return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
+  $('assign-subject-select').disabled = !cls || !subs.length;
+});
+
+function renderAssignChips(){
+  $('assign-chip-list').innerHTML = assignPairs.map(function(p, idx){
+    return '<div class="chip"><span>' + esc(p.class) + ' — ' + esc(p.subject) + '</span>' +
+      '<button type="button" data-idx="' + idx + '" aria-label="Remove">✕</button></div>';
+  }).join('');
+}
+$('assign-chip-list').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-idx]');
+  if(!btn) return;
+  assignPairs.splice(Number(btn.getAttribute('data-idx')), 1);
+  renderAssignChips();
+});
+
+$('assign-add-pair-btn').addEventListener('click', function(){
+  var cls = $('assign-class-select').value, subj = $('assign-subject-select').value;
+  if(!cls || !subj){ toast('Pick a class and a subject first.', true); return; }
+  if(assignPairs.some(function(p){ return p.class === cls && p.subject === subj; })){ toast('Already added.'); return; }
+  if(assignMode === 'add' && S.targets.some(function(t){ return t.class === cls && t.subject === subj; })){ toast('Already mapped to this assignment.'); return; }
+  assignPairs.push({ class: cls, subject: subj });
+  renderAssignChips();
+});
+
+function openAssignSheet(mode){
+  assignMode = mode;
+  assignPairs = [];
+  renderAssignChips();
+  populateAssignClassSelect();
+  $('assign-title-input').value = '';
+  if(mode === 'new'){
+    $('assign-sheet-title').textContent = 'New assignment';
+    $('assign-sheet-sub').textContent = 'Give it a name, then map it to the classes and subjects it applies to.';
+    $('assign-title-field').style.display = 'block';
+    $('assign-save').textContent = 'Create assignment';
+  }else{
+    $('assign-sheet-title').textContent = 'Map to another class/subject';
+    $('assign-sheet-sub').textContent = 'Add more classes or subjects this assignment applies to.';
+    $('assign-title-field').style.display = 'none';
+    $('assign-save').textContent = 'Add mapping';
+  }
+  $('sheet-assignment').classList.add('show');
+}
+$('new-assignment-btn').addEventListener('click', function(){ openAssignSheet('new'); });
+$('add-target-btn').addEventListener('click', function(){
+  if(!S.assignmentId){ toast('Select an assignment first.', true); return; }
+  openAssignSheet('add');
+});
+$('assign-cancel').addEventListener('click', function(){ $('sheet-assignment').classList.remove('show'); });
+
+$('assign-save').addEventListener('click', async function(){
+  var btn = $('assign-save');
+  if(assignMode === 'new'){
+    var title = $('assign-title-input').value.trim();
+    if(!title){ toast('Give the assignment a title.', true); return; }
+    if(!assignPairs.length){ toast('Map it to at least one class and subject.', true); return; }
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try{
+      var aRes = await sb.from('checking_assignments').insert({ title: title }).select('id, title').single();
+      if(aRes.error) throw aRes.error;
+      var newId = aRes.data.id;
+      var rows = assignPairs.map(function(p){ return { assignment_id: newId, class: p.class, subject: p.subject }; });
+      var tRes = await sb.from('checking_assignment_targets').insert(rows);
+      if(tRes.error) throw tRes.error;
+      toast('Assignment created.');
+      $('sheet-assignment').classList.remove('show');
+      await loadAssignments();
+      await selectAssignment(String(newId));
+    }catch(e){
+      console.error(e);
+      toast('Could not create assignment: ' + e.message, true);
+    }
+    btn.disabled = false; btn.textContent = 'Create assignment';
+  }else{
+    if(!assignPairs.length){ toast('Add at least one class/subject.', true); return; }
+    btn.disabled = true; btn.textContent = 'Adding…';
+    try{
+      var rows2 = assignPairs.map(function(p){ return { assignment_id: S.assignmentId, class: p.class, subject: p.subject }; });
+      var r2 = await sb.from('checking_assignment_targets').insert(rows2);
+      if(r2.error) throw r2.error;
+      toast('Mapping added.');
+      $('sheet-assignment').classList.remove('show');
+      var res = await sb.from('checking_assignment_targets').select('class, subject').eq('assignment_id', S.assignmentId);
+      if(!res.error){ S.targets = res.data || []; populateTargets(); }
+    }catch(e){
+      console.error(e);
+      toast('Could not add mapping: ' + e.message, true);
+    }
+    btn.disabled = false; btn.textContent = 'Add mapping';
+  }
+});
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+(async function init(){
+  try{
+    var sess = await sb.auth.getSession();
+    var session = sess && sess.data ? sess.data.session : null;
+    if(!session){ location.href = AUTH_REDIRECT; return; }
+    var uid = session.user.id;
+    S.myUid = uid;
+
+    var t = await sb.from('teachers').select('name').eq('id', uid).maybeSingle();
+    if(t.error || !t.data){ location.href = AUTH_REDIRECT; return; }
+    S.myName = t.data.name;
+
+    var a = await sb.rpc('is_admin');
+    S.isAdmin = !!(a && a.data === true);
+
+    var cl = await sb.from('classes').select('name, created_at').order('created_at', { ascending: true });
+    if(cl.error) throw cl.error;
+    S.classes = (cl.data || []).map(function(c){ return c.name; });
+    S.classes.forEach(function(c, i){ S.classOrder[c] = i; });
+
+    var sj = await sb.from('subjects').select('name, display_order').order('display_order', { ascending: true });
+    if(sj.error) throw sj.error;
+    S.subjects = (sj.data || []).map(function(s){ return s.name; });
+    S.subjects.forEach(function(s, i){ S.subjectOrder[s] = i; });
+
+    var csRes = await sb.from('class_subjects').select('class, subject');
+    if(csRes.error) throw csRes.error;
+    S.classSubjects = csRes.data || [];
+
+    if(!S.isAdmin){
+      var ca = await sb.from('class_subject_assignments').select('class, subject').eq('teacher_id', uid);
+      if(ca.error) throw ca.error;
+      S.myPairs = (ca.data || []).filter(function(p){ return p.class && p.subject; });
+      S.myPairs.forEach(function(p){ S.myPairSet[pairKey(p.class, p.subject)] = true; });
+    }
+
+    $('role-badge').textContent = S.isAdmin ? 'Admin • all classes'
+      : S.myName.split(' ')[0] + ' • Mark & view';
+
+    await loadAssignments();
+
+    $('gate').classList.add('hidden');
+    $('app').classList.add('ready');
+  }catch(e){
+    console.error('Bootstrap failed:', e);
+    location.href = AUTH_REDIRECT;
+  }
+})();
+</script>
+</body>
+</html>
