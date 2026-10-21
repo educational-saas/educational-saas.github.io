@@ -720,6 +720,7 @@ $('btn-save').addEventListener('click', async function(){
     }
     toast('Checking status saved.');
     await loadTarget();
+    btn.textContent = 'Save changes';
   }catch(e){
     console.error(e);
     toast('Save failed: ' + e.message, true);
