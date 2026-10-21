@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>My Files</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- file-type semantics ---------- */
+    --kind-showcase:#f5a623;
+    --kind-showcase-dark:#b06f12;
+    --kind-highlights:#4aa8e0;
+    --kind-highlights-dark:#2878aa;
+    --kind-subject:#4fc98a;
+    --kind-subject-dark:#2f8f61;
+    --status-blank:#e4e9ea;
+
+    --panel-tint: var(--bg-tint-teal);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+    --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:12px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.08);
+    --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10);
+
+    --kind-showcase:#ffc65c;
+    --kind-showcase-dark:#ffe2a8;
+    --kind-highlights:#63bdf2;
+    --kind-highlights-dark:#b4e0fb;
+    --kind-subject:#49d696;
+    --kind-subject-dark:#8be9c4;
+    --status-blank:#1f2a2c;
+
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5);
+    --edge-shadow-soft: rgba(0,0,0,.35);
+    --track: color-mix(in srgb, var(--white) 14%, transparent);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    transition:background .3s var(--ease), color .3s var(--ease);
+    padding:14px 14px 28px;
+  }
+
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .card{
+    background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border-card);
+    box-shadow:0 6px 0 var(--edge-shadow-soft);padding:20px;margin-bottom:16px;
+  }
+
+  .section-title{
+    font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 2px;color:var(--ink-900);
+  }
+  .section-sub{font-size:13px;color:var(--ink-500);margin:0 0 14px;font-weight:600;}
+
+  /* ---------- breadcrumbs ---------- */
+  .crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:14px;}
+  .crumb-btn{
+    font-family:var(--font-body);font-weight:800;font-size:13px;border:none;background:none;cursor:pointer;
+    color:var(--ink-500);padding:4px 6px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;
+  }
+  .crumb-btn:hover{background:var(--panel-tint);color:var(--ink-900);}
+  .crumb-btn.current{color:var(--teal-700);cursor:default;}
+  .crumb-btn.current:hover{background:none;}
+  .crumb-sep{color:var(--ink-500);opacity:.5;font-size:13px;}
+
+  .back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .back-btn{
+    display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-weight:800;font-size:13.5px;
+    border:1px solid var(--border-card);background:var(--panel-tint);color:var(--ink-900);border-radius:999px;
+    padding:8px 14px;cursor:pointer;transition:transform .12s ease;
+  }
+  .back-btn:hover{transform:translateY(-1px);}
+  .back-btn:active{transform:translateY(1px);}
+  .back-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+
+  /* ---------- icons ---------- */
+  .icon{display:inline-flex;flex:0 0 auto;}
+  .icon svg{display:block;}
+
+  /* ---------- folder grid (root / class view) ---------- */
+  .folder-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  @media (max-width:480px){ .folder-grid{grid-template-columns:1fr;} }
+  .folder-card{
+    display:flex;align-items:center;gap:12px;text-align:left;border:1px solid var(--border-card);
+    border-radius:var(--r-md);padding:14px 16px;background:var(--panel-tint);cursor:pointer;
+    font-family:var(--font-body);transition:transform .12s ease, box-shadow .2s ease;
+  }
+  .folder-card:hover{transform:translateY(-1px);}
+  .folder-card:active{transform:translateY(1px);}
+  .folder-card:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .folder-icon{
+    width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+    color:#fff;
+  }
+  .folder-icon.showcase{background:var(--kind-showcase);}
+  .folder-icon.highlights{background:var(--kind-highlights);}
+  .folder-icon.subject{background:var(--kind-subject);}
+  .folder-icon.classfolder{background:var(--teal-700);}
+  .folder-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .folder-name{font-weight:800;font-size:14.5px;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .folder-count{font-size:11.5px;font-weight:700;color:var(--ink-500);}
+
+  /* ---------- file list (folder view) ---------- */
+  .file-list{display:flex;flex-direction:column;gap:10px;}
+  .file-card{
+    display:flex;align-items:center;gap:12px;border-radius:var(--r-md);border:1px solid var(--border-card);
+    padding:13px 14px;background:var(--white);position:relative;overflow:hidden;
+  }
+  .file-card:before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--status-blank);
+  }
+  .file-card.showcase:before{background:var(--kind-showcase);}
+  .file-card.highlights:before{background:var(--kind-highlights);}
+  .file-card.subject:before{background:var(--kind-subject);}
+
+  .file-type-icon{
+    width:38px;height:38px;border-radius:10px;background:var(--panel-tint);display:flex;align-items:center;
+    justify-content:center;flex:0 0 auto;color:var(--teal-700);margin-left:4px;
+  }
+  .file-info{flex:1 1 auto;min-width:0;}
+  .file-name{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink-900);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .file-meta{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-500);margin-top:2px;
+    flex-wrap:wrap;}
+  .file-meta .dot-sep{opacity:.5;}
+
+  .dl-btn{
+    display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-weight:800;font-size:12.5px;
+    border:none;border-radius:999px;padding:9px 14px;cursor:pointer;background:var(--teal-700);color:#fff;
+    flex:0 0 auto;transition:transform .12s ease, opacity .2s ease;white-space:nowrap;
+  }
+  .dl-btn:hover{transform:translateY(-1px);}
+  .dl-btn:active{transform:translateY(1px);}
+  .dl-btn:disabled{opacity:.6;cursor:default;transform:none;}
+  .dl-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .dl-spinner{
+    width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+    animation:spin .7s linear infinite;
+  }
+
+  .file-err{font-size:11.5px;font-weight:700;color:var(--status-notsubmitted-dark,#c23b41);margin-top:4px;}
+
+  /* ---------- status / loading ---------- */
+  .state-msg{text-align:center;padding:30px 12px;font-weight:700;color:var(--ink-500);font-size:14.5px;}
+  .state-msg.err{color:#c23b41;}
+  html[data-theme="dark"] .state-msg.err{color:#ffb0b2;}
+  .retry-btn{
+    margin-top:10px;font-family:var(--font-body);font-weight:800;font-size:13.5px;border:none;
+    border-radius:999px;padding:9px 18px;cursor:pointer;background:var(--teal-700);color:#fff;
+  }
+  .spinner{
+    width:26px;height:26px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--teal-600);
+    margin:0 auto 10px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+
+  @media (max-width:420px){
+    .card{padding:16px;}
+    .file-name{font-size:14px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="card" id="mainCard">
+    <h2 class="section-title" id="mainTitle">My files</h2>
+    <p class="section-sub" id="mainSub">Everything shared with you</p>
+
+    <div class="crumbs" id="crumbs"></div>
+
+    <div id="mainBody">
+      <div class="state-msg" id="initialState"><div class="spinner"></div>Loading your files…</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     Multi-tenant credentials — provided as-is, do not modify.
+  ============================================================ */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  var AUTH_REDIRECT = 'https://educational-saas.github.io/'; // If user not already logged in or does not have a "student" role
+
+  // Name of the Edge Function (created later) that turns an r2_key into a
+  // short-lived pre-signed download URL. It is invoked as:
+  //   supabase.functions.invoke(DOWNLOAD_FN_NAME, { body: { object_key: r2Key } })
+  // and is expected to resolve with { url: '<presigned-url>' } on success.
+  var DOWNLOAD_FN_NAME = 'generate-download-url';
+
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Theme is controlled entirely by the parent page, which sets
+  // data-theme="light" | "dark" on <html>. This page's CSS already
+  // keys off html[data-theme="dark"], so nothing else is needed here.
+
+  /* ============================================================
+     Icons
+  ============================================================ */
+  var ICONS = {
+    chevronRight: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+    back: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+    home: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5L12 4l8 7.5"/><path d="M6 10v9h12v-9"/></svg>',
+    showcase: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="8" cy="8.5" r="1.4" fill="currentColor" stroke="none"/></svg>',
+    classfolder: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
+    highlights: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8l2.6 5.6 6 .7-4.5 4.2 1.2 6-5.3-3-5.3 3 1.2-6-4.5-4.2 6-.7z"/></svg>',
+    subject: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V6a2 2 0 012-2h11a1 1 0 011 1v14.5"/><path d="M4 19.5A2.5 2.5 0 016.5 17H18"/></svg>',
+    filePdf: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2.5h7l4 4V20a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 20V4A1.5 1.5 0 017 2.5z"/><path d="M14 2.5V7a1.5 1.5 0 001.5 1.5H18.5"/></svg>',
+    fileImg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="9" cy="10" r="1.6" fill="currentColor" stroke="none"/><path d="M4 17l5-5 4.5 4.5L17 13l3 3.5"/></svg>',
+    fileGeneric: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2.5h7l4 4V20a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 20V4A1.5 1.5 0 017 2.5z"/><path d="M14 2.5V7a1.5 1.5 0 001.5 1.5H18.5"/><path d="M9 13.5h6M9 17h4"/></svg>',
+    download: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 19.5h16"/></svg>',
+    empty: '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/><path d="M8.5 14.5l3-3 2 2 2-2.5"/></svg>'
+  };
+  function iconSpan(name){ return '<span class="icon">'+ICONS[name]+'</span>'; }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function formatIndianDate(isoTimestamp){
+    if(!isoTimestamp) return '—';
+    var d = new Date(isoTimestamp);
+    if(isNaN(d.getTime())) return '—';
+    return d.getDate() + ' ' + MONTH_SHORT[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  function formatFileSize(bytes){
+    if(bytes === null || bytes === undefined) return '';
+    if(bytes < 1024) return bytes + ' B';
+    var units = ['KB','MB','GB','TB'];
+    var val = bytes;
+    for(var i=0;i<units.length;i++){
+      val = val / 1024;
+      if(val < 1024 || i === units.length-1){
+        return val.toFixed(val < 10 ? 1 : 0) + ' ' + units[i];
+      }
+    }
+    return bytes + ' B';
+  }
+
+  function iconForExt(ext){
+    ext = (ext||'').toLowerCase();
+    if(ext === 'pdf') return ICONS.filePdf;
+    if(['jpg','jpeg','png','gif','webp','heic','svg'].indexOf(ext) !== -1) return ICONS.fileImg;
+    return ICONS.fileGeneric;
+  }
+
+  /* ============================================================
+     App state
+     view: 'root' | 'class' | 'folder'
+     folder.kind: 'showcase' | 'highlights' | 'subject'
+     folder.subject: subject name, only when kind === 'subject'
+  ============================================================ */
+  var state = {
+    studentName: null,
+    class: null,
+    subjects: [],              // [{name, order}]
+    view: 'root',
+    activeFolder: null,        // {kind, label, subject?}
+    cache: {}                  // cacheKey -> files array
+  };
+
+  function cacheKeyFor(folder){
+    if(folder.kind === 'subject') return 'subject:' + folder.subject;
+    return folder.kind;
+  }
+
+  /* ============================================================
+     Auth + identity resolution
+  ============================================================ */
+  async function init(){
+    try{
+      var sessionRes = await supabase.auth.getSession();
+      var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+      if(!session){ window.location.href = AUTH_REDIRECT; return; }
+
+      var uid = session.user.id;
+
+      var studentRes = await supabase.from('students')
+        .select('name, class')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if(studentRes.error || !studentRes.data || !studentRes.data.class){
+        window.location.href = AUTH_REDIRECT; return;
+      }
+
+      state.studentName = studentRes.data.name;
+      state.class = studentRes.data.class;
+
+      document.getElementById('mainSub').textContent = 'Files shared with Class ' + state.class;
+
+      await loadSubjects();
+      renderRoot();
+    } catch(e){
+      showMainError('Something went wrong loading your files.', init);
+    }
+  }
+
+  async function loadSubjects(){
+    var res = await supabase.from('class_subjects')
+      .select('subject, subjects(display_order)')
+      .eq('class', state.class);
+    if(res.error) throw res.error;
+
+    var subjects = (res.data || []).map(function(row){
+      return {
+        name: row.subject,
+        order: (row.subjects && typeof row.subjects.display_order === 'number') ? row.subjects.display_order : 1
+      };
+    });
+    subjects.sort(function(a,b){
+      if(a.order !== b.order) return a.order - b.order;
+      return a.name.localeCompare(b.name);
+    });
+    state.subjects = subjects;
+  }
+
+  /* ============================================================
+     Breadcrumbs
+  ============================================================ */
+  function renderCrumbs(){
+    var parts = [];
+    parts.push({label: iconSpan('home') + ' Home', action: goHome, current: state.view === 'root'});
+    if(state.view === 'class' || state.view === 'folder'){
+      parts.push({label: 'Class ' + escapeHtml(state.class), action: goClass, current: state.view === 'class'});
+    }
+    if(state.view === 'folder'){
+      parts.push({label: escapeHtml(state.activeFolder.label), action: null, current: true});
+    }
+
+    var html = parts.map(function(p, idx){
+      var cls = 'crumb-btn' + (p.current ? ' current' : '');
+      var sep = idx > 0 ? '<span class="crumb-sep">/</span>' : '';
+      return sep + '<button class="'+cls+'" data-crumb="'+idx+'">'+p.label+'</button>';
+    }).join('');
+    document.getElementById('crumbs').innerHTML = html;
+
+    var btns = document.getElementById('crumbs').querySelectorAll('.crumb-btn');
+    btns.forEach(function(btn, idx){
+      var p = parts[idx];
+      if(p.action){ btn.addEventListener('click', p.action); }
+    });
+  }
+
+  function goHome(){ state.view = 'root'; state.activeFolder = null; renderRoot(); }
+  function goClass(){ state.view = 'class'; state.activeFolder = null; renderClass(); }
+
+  /* ============================================================
+     Root view — Showcase + the student's single Class folder
+  ============================================================ */
+  function renderRoot(){
+    state.view = 'root';
+    document.getElementById('mainTitle').textContent = 'My files';
+    renderCrumbs();
+
+    var html = '<div class="folder-grid">'
+      + folderCard('showcase', 'classfolder', ICONS.classfolder, 'Class ' + escapeHtml(state.class), 'Subjects & highlights')
+      + folderCard('showcase-tile', 'showcase', ICONS.showcase, 'Showcase', 'School-wide files')
+      + '</div>';
+    document.getElementById('mainBody').innerHTML = html;
+
+    document.getElementById('mainBody').querySelector('[data-action="class"]')
+      .addEventListener('click', goClass);
+    document.getElementById('mainBody').querySelector('[data-action="showcase"]')
+      .addEventListener('click', function(){ openFolder({kind:'showcase', label:'Showcase'}); });
+  }
+
+  function folderCard(action, iconCls, iconSvg, name, subtitle){
+    var dataAction = action === 'showcase-tile' ? 'showcase' : 'class';
+    return '<button class="folder-card" data-action="'+dataAction+'">'
+      + '<span class="folder-icon '+iconCls+'">'+iconSvg+'</span>'
+      + '<span class="folder-text"><span class="folder-name">'+name+'</span>'
+      + '<span class="folder-count">'+subtitle+'</span></span>'
+      + '</button>';
+  }
+
+  /* ============================================================
+     Class view — Highlights + each subject
+  ============================================================ */
+  function renderClass(){
+    state.view = 'class';
+    document.getElementById('mainTitle').textContent = 'Class ' + escapeHtml(state.class);
+    renderCrumbs();
+
+    var tiles = [];
+    tiles.push({kind:'highlights', label:'Highlights', iconCls:'highlights', icon:ICONS.highlights, sub:'Photos & events'});
+    state.subjects.forEach(function(s){
+      tiles.push({kind:'subject', subject:s.name, label:s.name, iconCls:'subject', icon:ICONS.subject, sub:'Subject files'});
+    });
+
+    if(!state.subjects.length){
+      document.getElementById('mainBody').innerHTML =
+        '<div class="folder-grid">' + subjectTileHtml(tiles[0]) + '</div>'
+        + '<p class="section-sub" style="margin-top:12px;margin-bottom:0;">No subjects are set up for your class yet.</p>';
+    } else {
+      document.getElementById('mainBody').innerHTML =
+        '<div class="folder-grid">' + tiles.map(subjectTileHtml).join('') + '</div>';
+    }
+
+    var cards = document.getElementById('mainBody').querySelectorAll('.folder-card');
+    cards.forEach(function(card, idx){
+      card.addEventListener('click', function(){
+        var t = tiles[idx];
+        openFolder(t.kind === 'subject'
+          ? {kind:'subject', subject:t.subject, label:t.subject}
+          : {kind:'highlights', label:'Highlights'});
+      });
+    });
+  }
+
+  function subjectTileHtml(t){
+    return '<button class="folder-card">'
+      + '<span class="folder-icon '+t.iconCls+'">'+t.icon+'</span>'
+      + '<span class="folder-text"><span class="folder-name">'+escapeHtml(t.label)+'</span>'
+      + '<span class="folder-count">'+t.sub+'</span></span>'
+      + '</button>';
+  }
+
+  /* ============================================================
+     Folder view — file list
+  ============================================================ */
+  function openFolder(folder){
+    state.view = 'folder';
+    state.activeFolder = folder;
+    document.getElementById('mainTitle').textContent = folder.label;
+    renderCrumbs();
+    loadFiles(folder);
+  }
+
+  async function loadFiles(folder){
+    var key = cacheKeyFor(folder);
+    document.getElementById('mainBody').innerHTML =
+      '<div class="state-msg"><div class="spinner"></div>Loading files…</div>';
+
+    if(state.cache[key]){
+      renderFiles(folder, state.cache[key]);
+      return;
+    }
+
+    try{
+      var files;
+      if(folder.kind === 'showcase'){
+        var res = await supabase.from('vault_files')
+          .select('id, r2_key, display_name, file_ext, size_bytes, created_at')
+          .eq('kind', 'showcase')
+          .eq('status', 'active')
+          .order('created_at', {ascending:false});
+        if(res.error) throw res.error;
+        files = res.data || [];
+
+      } else if(folder.kind === 'highlights'){
+        var res2 = await supabase.from('vault_files')
+          .select('id, r2_key, display_name, file_ext, size_bytes, created_at')
+          .eq('kind', 'highlights')
+          .eq('status', 'active')
+          .eq('highlight_class', state.class)
+          .order('created_at', {ascending:false});
+        if(res2.error) throw res2.error;
+        files = res2.data || [];
+
+      } else { // subject
+        var res3 = await supabase.from('vault_file_targets')
+          .select('vault_files!inner(id, r2_key, display_name, file_ext, size_bytes, created_at, status, kind)')
+          .eq('class', state.class)
+          .eq('subject', folder.subject);
+        if(res3.error) throw res3.error;
+        files = (res3.data || [])
+          .map(function(row){ return row.vault_files; })
+          .filter(function(f){ return f && f.status === 'active' && f.kind === 'subject'; })
+          .sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
+      }
+
+      state.cache[key] = files;
+      renderFiles(folder, files);
+    } catch(e){
+      showMainError('Could not load files for ' + folder.label + '.', function(){ loadFiles(folder); });
+    }
+  }
+
+  function renderFiles(folder, files){
+    if(!files.length){
+      document.getElementById('mainBody').innerHTML =
+        '<div class="state-msg">' + iconSpan('empty') + '<br><br>No files here yet.</div>';
+      return;
+    }
+
+    var html = '<div class="file-list">' + files.map(function(f, idx){
+      return ''
+        + '<div class="file-card '+folder.kind+'" data-idx="'+idx+'">'
+        + '<span class="file-type-icon">'+iconForExt(f.file_ext)+'</span>'
+        + '<div class="file-info">'
+        +   '<div class="file-name">'+escapeHtml(f.display_name)+'</div>'
+        +   '<div class="file-meta"><span>'+formatIndianDate(f.created_at)+'</span>'
+        +     '<span class="dot-sep">&bull;</span><span>'+formatFileSize(f.size_bytes)+'</span>'
+        +     '<span class="dot-sep">&bull;</span><span>'+escapeHtml((f.file_ext||'').toUpperCase())+'</span></div>'
+        +   '<div class="file-err" style="display:none;"></div>'
+        + '</div>'
+        + '<button class="dl-btn" data-idx="'+idx+'">'+iconSpan('download')+'<span class="dl-label">Download</span></button>'
+        + '</div>';
+    }).join('') + '</div>';
+
+    document.getElementById('mainBody').innerHTML = html;
+
+    var btns = document.getElementById('mainBody').querySelectorAll('.dl-btn');
+    btns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        downloadFile(files[idx], btn);
+      });
+    });
+  }
+
+  /* ============================================================
+     Download — calls the (not-yet-created) Edge Function to get a
+     pre-signed URL for the given object key, then opens it.
+  ============================================================ */
+  async function downloadFile(file, btn){
+    var card = btn.closest('.file-card');
+    var errEl = card ? card.querySelector('.file-err') : null;
+    if(errEl){ errEl.style.display = 'none'; errEl.textContent = ''; }
+
+    var label = btn.querySelector('.dl-label');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="dl-spinner"></span><span class="dl-label">Preparing…</span>';
+
+    try{
+      var res = await supabase.functions.invoke(DOWNLOAD_FN_NAME, {
+        body: { object_key: file.r2_key }
+      });
+
+      if(res.error) throw res.error;
+      var url = res.data && res.data.url;
+      if(!url) throw new Error('No download URL was returned.');
+
+      window.open(url, '_blank', 'noopener');
+    } catch(e){
+      if(errEl){
+        errEl.textContent = 'Could not start the download. Please try again.';
+        errEl.style.display = '';
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = iconSpan('download') + '<span class="dl-label">Download</span>';
+    }
+  }
+
+  /* ============================================================
+     Generic error state for the main card
+  ============================================================ */
+  function showMainError(msg, retryFn){
+    document.getElementById('mainBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryMain">Try again</button></div>';
+    var btn = document.getElementById('retryMain');
+    if(btn) btn.addEventListener('click', retryFn);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
