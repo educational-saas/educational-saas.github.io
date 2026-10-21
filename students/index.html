@@ -556,6 +556,16 @@
   }
   .modal-close svg{ width:13px; height:13px; stroke:var(--ink-500); fill:none; stroke-width:2.4; stroke-linecap:round; }
   .modal-card{ position:relative; }
+
+  /* ---------- Smooth, non-flashy state updates ----------
+     Applied only to the handful of elements whose content swaps once the
+     background auth check resolves (greeting, class label, avatar, tile
+     grid). These crossfade briefly via JS (see crossFade()) instead of
+     popping to their new content instantly. Purely cosmetic additions â€”
+     they don't change layout, sizing, or final appearance. */
+  #greeting, #header-sub, #avatar-img, #tile-grid{
+    transition: opacity .16s var(--ease), color .3s var(--ease);
+  }
 </style>
 </head>
 
@@ -1549,6 +1559,74 @@ function capitalizeFirstLetter(str) {
   var AVATAR_MALE   = 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairShortCurly&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerSweater&eyeType=Happy&eyebrowType=Default&mouthType=Smile&skinColor=Light';
   var AVATAR_FEMALE = 'https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight2&hairColor=BrownDark&clotheType=BlazerSweater&eyeType=Happy&mouthType=Smile&skinColor=Light&facialHairType=Blank&accessoriesType=Blank';
 
+  /* ==========================================================
+     PROFILE PICTURE LOCAL CACHE
+     The Edge Function only ever hands back a short-lived SIGNED url, so
+     what we persist locally is the actual image (as a data: URL), not
+     that url. A fresh copy is re-downloaded once the cache entry expires
+     (or belongs to a different student id â€” e.g. a new session on a
+     shared device), so the picture never goes stale for too long even
+     if the school changes/removes it.
+  ========================================================== */
+  var PROFILE_PIC_CACHE_KEY = 'gsms_profile_pic_cache';
+  var PROFILE_PIC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h â€” reasonable staleness window
+
+  function readProfilePicCache(userId){
+    try{
+      var raw = localStorage.getItem(PROFILE_PIC_CACHE_KEY);
+      if(!raw) return null;
+      var cached = JSON.parse(raw);
+      if(!cached || cached.userId !== userId || !cached.dataUrl || !cached.cachedAt) return null;
+      if((Date.now() - cached.cachedAt) > PROFILE_PIC_CACHE_TTL_MS) return null;
+      return cached.dataUrl;
+    }catch(e){ return null; }
+  }
+
+  function writeProfilePicCache(userId, dataUrl){
+    try{
+      localStorage.setItem(PROFILE_PIC_CACHE_KEY, JSON.stringify({ userId: userId, dataUrl: dataUrl, cachedAt: Date.now() }));
+    }catch(e){ /* storage full/unavailable â€” just skip caching, no functional impact */ }
+  }
+
+  // Call this on logout so the next sign-in (possibly a different student
+  // on the same device) always re-checks the DB/Edge Function instead of
+  // reusing a stale/foreign cached picture.
+  function clearProfilePicCache(){
+    try{ localStorage.removeItem(PROFILE_PIC_CACHE_KEY); }catch(e){}
+  }
+
+  // Downloads the (currently valid, signed) picture url, converts it to a
+  // data: URL and caches it â€” fire-and-forget, run in the background so it
+  // never delays showing the avatar in the current session. If the fetch
+  // is blocked (e.g. CORS on the R2 bucket) it just quietly skips caching;
+  // the signed url already in state.profilePicUrl keeps working either way.
+  function fetchAndCacheProfilePic(url, userId){
+    fetch(url)
+      .then(function(res){ if(!res.ok) throw new Error('bad status'); return res.blob(); })
+      .then(function(blob){
+        return new Promise(function(resolve, reject){
+          var reader = new FileReader();
+          reader.onload = function(){ resolve(reader.result); };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      })
+      .then(function(dataUrl){ writeProfilePicCache(userId, dataUrl); })
+      .catch(function(){ /* ignore â€” nothing cached this time, no visible effect */ });
+  }
+
+  // Briefly fades `el` out, runs `mutate` to swap its content/src, then
+  // fades it back in â€” turns an abrupt content swap into a smooth update
+  // instead of a sudden flash once async auth/profile data resolves.
+  function crossFade(el, mutate){
+    if(!el){ mutate(); return; }
+    el.style.opacity = '0';
+    window.setTimeout(function(){
+      mutate();
+      el.style.opacity = '1';
+    }, 140);
+  }
+
   function updateAvatar(){
   var img = document.getElementById('avatar-img');
   if(state.profilePicUrl){
@@ -1665,17 +1743,24 @@ var AUTH_REDIRECT = 'https://educational-saas.github.io/';
         return; // guest tiles already shown, restricted ones will prompt sign-in
       }
 
-      var studentCheck = await supabaseClient.rpc('is_student');
+      // is_student() and the student's own profile row don't depend on each
+      // other, so fire them together instead of one-after-another â€” this
+      // shaves a full network round trip off the time it takes to resolve
+      // signed-in state.
+      var parallelResults = await Promise.all([
+        supabaseClient.rpc('is_student'),
+        supabaseClient
+          .from('students')
+          .select('name, gender, class, master_token')
+          .eq('id', session.user.id)
+          .maybeSingle()
+      ]);
+      var studentCheck = parallelResults[0];
+      var profileResult = parallelResults[1];
+
       if(studentCheck.error || studentCheck.data !== true){
         return; // logged in, but not with a student account
       }
-
-      var profileResult = await supabaseClient
-        .from('students')
-        .select('name, gender, class, master_token')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
       if(profileResult.error || !profileResult.data){
         return;
       }
@@ -1684,30 +1769,51 @@ var AUTH_REDIRECT = 'https://educational-saas.github.io/';
       state.name = profileResult.data.name;
       state.gender = profileResult.data.gender;
 
-      // Pre-check: does this student even have a profile_pic_key? No Edge Function hit otherwise.
-if(profileResult.data.master_token){
-  try{
-    var masterResult = await supabaseClient
-      .from('students_master')
-      .select('profile_pic_key')
-      .eq('token', profileResult.data.master_token)
-      .maybeSingle();
+      // Profile picture: a fresh-enough locally cached copy skips the DB +
+      // Edge Function entirely. Only fall back to that round trip when
+      // there's no usable cache (first visit, cache expired, or a
+      // different student session started on this device).
+      var cachedPic = readProfilePicCache(session.user.id);
+      if(cachedPic){
+        state.profilePicUrl = cachedPic;
+      } else if(profileResult.data.master_token){
+        // Pre-check: does this student even have a profile_pic_key? No Edge Function hit otherwise.
+        try{
+          var masterResult = await supabaseClient
+            .from('students_master')
+            .select('profile_pic_key')
+            .eq('token', profileResult.data.master_token)
+            .maybeSingle();
 
-    if(!masterResult.error && masterResult.data && masterResult.data.profile_pic_key){
-      var picResult = await supabaseClient.functions.invoke('profile-picture', {
-        body: { action: 'get-own-download-url' }
-      });
-      if(!picResult.error && picResult.data && picResult.data.download_url){
-        state.profilePicUrl = picResult.data.download_url;
+          if(!masterResult.error && masterResult.data && masterResult.data.profile_pic_key){
+            var picResult = await supabaseClient.functions.invoke('profile-picture', {
+              body: { action: 'get-own-download-url' }
+            });
+            if(!picResult.error && picResult.data && picResult.data.download_url){
+              state.profilePicUrl = picResult.data.download_url;
+              // Cache a local copy in the background for next time â€” doesn't
+              // delay showing the avatar now.
+              fetchAndCacheProfilePic(picResult.data.download_url, session.user.id);
+            }
+          }
+        }catch(e){ /* ignore — falls back to default gender avatar */ }
       }
-    }
-  }catch(e){ /* ignore — falls back to default gender avatar */ }
-}
 
-      document.getElementById('greeting').textContent = 'Hi, ' + capitalizeFirstLetter(state.name.split(' ')[0]);
-      setIdentityLabel('Class ' + profileResult.data.class);
-      updateAvatar();
-      renderTiles(filterTools(document.getElementById('search').value));
+      var greetingEl = document.getElementById('greeting');
+      var avatarImgEl = document.getElementById('avatar-img');
+
+      crossFade(greetingEl, function(){
+        greetingEl.textContent = 'Hi, ' + capitalizeFirstLetter(state.name.split(' ')[0]);
+      });
+      crossFade(headerSub, function(){
+        setIdentityLabel('Class ' + profileResult.data.class);
+      });
+      crossFade(avatarImgEl, function(){
+        updateAvatar();
+      });
+      crossFade(tileGrid, function(){
+        renderTiles(filterTools(document.getElementById('search').value));
+      });
     }catch(err){
       console.error('Auth check failed:', err);
     }
