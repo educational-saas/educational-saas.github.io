@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Classwork &amp; Homework</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="ai-help.js"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1); --success:#2f8f5b;
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12); --success:#57d492;
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease);}
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{display:none; min-height:100svh; flex-direction:column;}
+  #app.ready{display:flex;}
+
+  .app-header{
+    position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto 14px;}
+  .header-brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .back-btn{width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);}
+  .back-btn:hover{transform:translateX(-2px);}
+  .back-btn:active{transform:scale(.95);}
+  .back-btn svg{width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round;}
+  .header-text{min-width:0;}
+  .header-greeting{font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease);}
+  .header-sub{margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600);}
+  .header-sub.admin-badge{color:var(--teal-700);}
+  .header-actions{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  .icon-btn{width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0;}
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(0) scale(.96);}
+  .icon-btn:focus-visible{outline:3px solid var(--gold-500); outline-offset:3px;}
+  .icon-btn svg{width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease);}
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  .tabs{max-width:960px; margin:0 auto; display:flex; gap:6px; background:var(--white); border:1.5px solid var(--border-card); border-radius:999px; padding:5px;}
+  .tab-btn{flex:1; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.86rem; padding:10px 8px; border-radius:999px; cursor:pointer; transition:background-color .25s var(--ease), color .25s var(--ease);}
+  .tab-btn.active{background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); box-shadow:0 10px 22px -12px rgba(13,56,65,.5);}
+  html[data-theme="dark"] .tab-btn.active{color:var(--teal-900);}
+
+  main.dash{flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px);}
+  .panel{display:none; flex-direction:column; gap:16px;}
+  .panel.active{display:flex;}
+
+  .card{background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); transition:border-color .3s var(--ease), background-color .3s var(--ease);}
+  .card-title{font-family:'Fraunces',serif; font-weight:600; font-size:1rem; margin:0 0 14px; color:var(--ink-900); display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .chip-tag{font-size:.72rem; font-weight:700; letter-spacing:.02em; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap;}
+
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  @media (max-width:640px){ .row3{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:480px){ .row2,.row3{ grid-template-columns:1fr; } }
+
+  input[type="date"], select, textarea, input[type="text"]{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="date"]:focus, select:focus, textarea:focus, input[type="text"]:focus{border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold);}
+  textarea{resize:vertical; min-height:110px; line-height:1.5;}
+  textarea.auto-resize{overflow:hidden; resize:none;}
+  select{appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px;}
+  select:disabled, input:disabled{opacity:.55; cursor:not-allowed;}
+
+  .kind-toggle{display:flex; gap:6px; background:var(--cream); border:1.5px solid var(--border-card); border-radius:999px; padding:4px;}
+  .kind-btn{flex:1; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.84rem; padding:9px 8px; border-radius:999px; cursor:pointer; transition:background-color .25s var(--ease), color .25s var(--ease);}
+  .kind-btn.active{background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 10px 20px -12px rgba(226,148,26,.5);}
+
+  .btn{padding:13px 18px; border-radius:14px; border:none; font-family:'Manrope',sans-serif; font-weight:700; font-size:.88rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:8px;}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .btn-primary{background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55);}
+  .btn-ghost{background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card);}
+  .btn-danger{background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent;}
+  .btn-teal{background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white);}
+  html[data-theme="dark"] .btn-teal{color:var(--teal-900);}
+  .btn-block{width:100%;}
+  .btn-row{display:flex; gap:10px; margin-top:16px;}
+  .btn-row .btn{flex:1;}
+  .btn-sm{padding:9px 14px; font-size:.8rem; border-radius:11px;}
+
+  .ai-gen-row{margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;}
+  .btn-ai{padding:8px 14px; font-size:.78rem; border-radius:10px;}
+  .btn-ai:disabled{opacity:.6;}
+
+  .last-modified{font-size:.76rem; color:var(--ink-500); margin-top:12px; text-align:right;}
+  .lock-note{margin:0 0 14px; font-size:.82rem; font-weight:600; padding:10px 14px; border-radius:var(--r-sm); background:var(--bg-tint-gold); color:var(--gold-600);}
+
+  .placeholder-note{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500);}
+  .placeholder-note svg{width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6;}
+  .placeholder-note p{margin:0; font-size:.88rem;}
+
+  /* chips (classes a single entry applies to) */
+  .combo-row{display:flex; gap:8px; align-items:center;}
+  .combo-row select{flex:1; min-width:0;}
+  .chip-list{display:flex; flex-direction:column; gap:8px; margin-top:12px;}
+  .chip{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-sm); background:var(--cream); border:1.5px solid var(--border-card); font-size:.86rem; font-weight:600;}
+  .chip span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .chip button{background:none; border:none; color:var(--danger); font-weight:800; cursor:pointer; font-size:1rem; line-height:1; padding:2px 4px;}
+  .chip.locked button{display:none;}
+
+  /* attachments */
+  .attach-list{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .attach-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-sm); background:var(--cream); border:1.5px solid var(--border-card);}
+  .attach-ic{width:32px; height:32px; border-radius:9px; background:var(--bg-tint-teal); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.58rem; font-weight:800; color:var(--teal-700); text-transform:uppercase;}
+  .attach-who{flex:1; min-width:0;}
+  .attach-name{font-weight:700; font-size:.86rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .attach-meta{font-size:.72rem; color:var(--ink-500); margin-top:1px;}
+  .attach-btns{display:flex; gap:6px; flex-shrink:0;}
+  .mini-btn{width:32px; height:32px; border-radius:10px; border:1.5px solid var(--border-card); background:var(--white); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .2s var(--ease), border-color .2s var(--ease); flex-shrink:0;}
+  .mini-btn:hover{transform:translateY(-1px); border-color:var(--border-card-hover);}
+  .mini-btn svg{width:15px; height:15px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .mini-btn.danger svg{stroke:var(--danger);}
+  .dropzone{border:2px dashed var(--border-card); border-radius:var(--r-sm); padding:18px; text-align:center; color:var(--ink-500); font-size:.84rem; font-weight:600; cursor:pointer; transition:border-color .2s, background .2s; margin-top:10px;}
+  .dropzone.drag{border-color:var(--gold-500); background:var(--bg-tint-gold);}
+  .dropzone:not(.enabled){opacity:.5; cursor:not-allowed;}
+  .qlist{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .qrow{padding:9px 11px; border-radius:var(--r-sm); background:var(--cream); border:1.5px solid var(--border-card);}
+  .qrow-top{display:flex; align-items:center; gap:8px;}
+  .qrow-top input[type="text"]{flex:1; padding:7px 9px; font-size:.82rem;}
+  .qrow-top .mini-btn{width:28px; height:28px;}
+  .qrow-meta{font-size:.7rem; color:var(--ink-500); margin-top:4px; font-weight:600;}
+  .qbar{height:5px; border-radius:99px; background:var(--border-card); margin-top:7px; overflow:hidden;}
+  .qbar-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--gold-500),var(--gold-600)); transition:width .2s var(--ease);}
+  .qrow.is-done .qbar-fill{background:var(--success);}
+  .qrow.is-error .qbar-fill{background:var(--danger);}
+  .qrow.is-error .qrow-meta{color:var(--danger);}
+
+  /* browse */
+  .results-header{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .subject-card{background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:16px; box-shadow:var(--shadow-card); opacity:0; animation:rise .5s var(--ease) forwards;}
+  @keyframes rise{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+  .subject-name{font-family:'Fraunces',serif; font-weight:600; font-size:1rem; color:var(--teal-700); margin:0 0 10px;}
+  .kind-block{margin-bottom:9px; padding:10px 12px; border-radius:12px; background:var(--cream); border:1px solid var(--border-card);}
+  .kind-block:last-child{margin-bottom:0;}
+  .kind-block-top{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .kind-block-label{font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-600); margin-bottom:5px;}
+  .kind-block-value{font-size:.86rem; line-height:1.5; color:var(--ink-900); white-space:pre-wrap;}
+  .kind-block-value.empty{color:var(--ink-500); font-style:italic;}
+  .kind-block-actions{display:flex; gap:6px; flex-shrink:0;}
+  .kind-block-attach{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;}
+  .attach-pill{font-size:.72rem; font-weight:600; color:var(--teal-700); background:var(--bg-tint-teal); padding:4px 9px; border-radius:999px; cursor:pointer; border:none;}
+
+  #toast-wrap{position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;}
+  .toast{background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw;}
+  html[data-theme="dark"] .toast{color:var(--teal-900); background:var(--gold-400);}
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast.error{background:var(--danger); color:var(--white);}
+
+  .sheet-backdrop{position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease);}
+  .sheet-backdrop.show{opacity:1; visibility:visible;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:101; max-width:960px; margin:0 auto; max-height:88svh; overflow-y:auto; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); box-shadow:0 -20px 50px -20px rgba(0,0,0,.35); transform:translateY(100%); transition:transform .3s var(--ease);}
+  .sheet-backdrop.show .sheet{transform:translateY(0);}
+  .sheet-handle{width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px;}
+  .sheet h3{font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem;}
+  .sheet p{margin:0 0 16px; color:var(--ink-500); font-size:.88rem;}
+  .sheet-actions{display:flex; gap:10px;}
+  .sheet-actions .btn{flex:1;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Classwork &amp; Homework</p>
+          <p class="header-sub" id="role-badge">Record &bull; Manage &bull; Share</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-edit-btn" type="button">Edit CW/HW</button>
+      <button class="tab-btn" id="tab-browse-btn" type="button">Browse</button>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ PANEL: MY CLASSWORK/HOMEWORK (add / edit) ============ -->
+    <section class="panel active" id="panel-edit">
+
+      <div class="card">
+        <p class="card-title">Select date, class &amp; subject</p>
+        <div class="row3">
+          <div class="field">
+            <label for="edit-date">Date</label>
+            <input type="date" id="edit-date">
+          </div>
+          <div class="field">
+            <label for="edit-class">Class</label>
+            <select id="edit-class"><option value="">Select class…</option></select>
+          </div>
+          <div class="field">
+            <label for="edit-subject">Subject</label>
+            <select id="edit-subject" disabled><option value="">Select class first…</option></select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:2px;">
+          <label>Entry type</label>
+          <div class="kind-toggle">
+            <button class="kind-btn active" id="kind-c-btn" type="button" data-kind="C">Classwork</button>
+            <button class="kind-btn" id="kind-h-btn" type="button" data-kind="H">Homework</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="edit-form-card" style="display:none;">
+        <p class="card-title">Details <span class="chip-tag" id="edit-existing-chip" style="display:none;">Existing entry</span></p>
+
+        <p class="lock-note" id="edit-lock-note" style="display:none;"></p>
+
+        <div class="field">
+          <label for="f-content" id="f-content-label">Classwork details</label>
+          <textarea id="f-content" rows="4" placeholder="What was covered / practised"></textarea>
+          <div class="ai-gen-row">
+            <button class="btn btn-ghost btn-ai" id="btn-ai-correct" type="button">🩹 Auto-correct</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Also applies to classes</label>
+          <div class="combo-row">
+            <select id="extra-class-select"><option value="">Select another class…</option></select>
+            <button class="btn btn-ghost btn-sm" id="add-extra-class-btn" type="button">Add</button>
+          </div>
+          <div class="chip-list" id="class-chip-list"></div>
+        </div>
+
+        <div class="field">
+          <label>Attachments</label>
+          <div class="attach-list" id="attach-list"></div>
+          <div class="dropzone" id="dropzone">
+            Tap to choose files, or drag and drop here<br><span style="font-weight:500">Multiple files allowed &bull; up to 100&nbsp;MB each</span>
+          </div>
+          <input type="file" id="file-input" multiple hidden>
+          <div class="qlist" id="qlist"></div>
+        </div>
+
+        <p class="last-modified" id="edit-last-modified"></p>
+
+        <div class="btn-row">
+          <button class="btn btn-danger" id="btn-delete-entry" type="button" style="display:none;">Delete</button>
+          <button class="btn btn-primary" id="btn-save-entry" type="button">Save entry</button>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="edit-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3.5 9h17"/><rect x="3" y="4.5" width="18" height="17" rx="3"/></svg>
+        <p>Choose a date, class and subject above to add or update classwork/homework.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ PANEL: BROWSE ============ -->
+    <section class="panel" id="panel-browse">
+
+      <div class="card">
+        <p class="card-title">Find a day's work</p>
+        <div class="row2">
+          <div class="field">
+            <label for="browse-class">Class</label>
+            <select id="browse-class"><option value="">Select class…</option></select>
+          </div>
+          <div class="field">
+            <label for="browse-date">Date</label>
+            <input type="date" id="browse-date">
+          </div>
+        </div>
+        <button class="btn btn-teal btn-block" id="btn-load-day" type="button" style="margin-top:6px;">View this day's work</button>
+      </div>
+
+      <div id="browse-results-wrap" style="display:none;">
+        <div class="results-header">
+          <p class="card-title" style="margin:0;" id="browse-results-title">Results</p>
+          <button class="btn btn-primary" id="btn-copy-text" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy as text
+          </button>
+        </div>
+        <div id="browse-results" style="display:flex;flex-direction:column;gap:12px;margin-top:12px;"></div>
+      </div>
+
+      <div class="placeholder-note" id="browse-placeholder">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <p>Pick a class and a date to view every subject's classwork and homework.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout" type="button">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm action">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-message">This action cannot be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="sheet-rename">
+  <div class="sheet" role="dialog" aria-label="Rename attachment">
+    <div class="sheet-handle"></div>
+    <h3>Rename attachment</h3>
+    <p>Give this file a new name. The extension stays the same.</p>
+    <input type="text" id="rename-input" maxlength="255">
+    <div class="sheet-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" id="rename-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="rename-save" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var VAULT_FUNCTION_URL = SUPABASE_URL + '/functions/v1/vault';
+var MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+var MAX_CONCURRENT_UPLOADS = 4;
+// Upload "kind" sent to the shared vault Edge Function for files attached
+// here. vault_files.cwhw_entry_id (set server-side by the Edge Function from
+// the entryId we pass at init-upload) is what ties an attachment back to its
+// classwork_homework row — see vault-edge-function.ts and the "FILE VAULT
+// INTEGRATION" section of the SQL migration.
+var ATTACHMENT_KIND = 'classwork_homework';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = {
+  user: null, teacherName: '', isAdmin: false, accessToken: '',
+  myAssignments: [],    // [{class,subject}]
+  allCombos: [],        // [{class,subject}] (admins)
+  allClasses: [],
+  subjectOrder: {},
+  serverToday: null,    // 'YYYY-MM-DD' per public.attendance_today()
+  editingEntryId: null,
+  editingClasses: [],   // classes currently linked to the loaded entry
+  attachments: []        // [{id (attachment row n/a — keyed by vault file), vault_file_id, display_name, file_ext, size_bytes}]
+};
+var queue = []; // upload queue for the attachments dropzone
+
+/* =========================================================
+   GENERIC HELPERS
+========================================================= */
+function $(id){ return document.getElementById(id); }
+function esc(str){ var d = document.createElement('div'); d.textContent = str == null ? '' : String(str); return d.innerHTML; }
+function fmtSize(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+function toast(msg, isError){
+  var wrap = $('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+function autoResizeTextarea(el){ el.classList.add('auto-resize'); el.style.height='auto'; el.style.height = el.scrollHeight + 'px'; }
+
+async function vaultCall(action, payload){
+  var res = await fetch(VAULT_FUNCTION_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.accessToken },
+    body: JSON.stringify(Object.assign({ action: action }, payload))
+  });
+  var data = {};
+  try{ data = await res.json(); }catch(e){}
+  if(!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
+  return data;
+}
+function extractAiText(data){
+  if(typeof data === 'string') return data;
+  if(data && typeof data === 'object'){
+    if(typeof data.text === 'string') return data.text;
+    if(typeof data.result === 'string') return data.result;
+    if(typeof data.response === 'string') return data.response;
+  }
+  return data == null ? '' : String(data);
+}
+
+// Deletes every attachment of a classwork/homework entry first, and only
+// deletes the entry row itself if ALL attachment deletes succeeded (or the
+// file was already gone, e.g. a retried attempt). This prevents orphaned R2
+// objects / stuck storage-quota reservations that the previous "best effort"
+// loop (try/catch-and-continue) could silently leave behind: if any
+// attachment fails to delete, the entry row is left intact so the user can
+// retry rather than losing the only link back to the orphaned file.
+async function deleteCwhwEntryAndAttachments(entryId, attachmentIds){
+  var failures = [];
+  for(var i = 0; i < attachmentIds.length; i++){
+    try{
+      await vaultCall('delete', { fileId: attachmentIds[i] });
+    }catch(e){
+      if(!/file not found/i.test(e.message || '')){
+        failures.push(attachmentIds[i]);
+      }
+      // "File not found" means it's already gone (e.g. a prior retry) —
+      // that's the desired end state, not a failure.
+    }
+  }
+  if(failures.length){
+    var err = new Error('ATTACH_DELETE_FAILED');
+    err.failedIds = failures;
+    throw err;
+  }
+  var res = await supabaseClient.from('classwork_homework').delete().eq('id', entryId);
+  if(res.error) throw res.error;
+}
+
+/* =========================================================
+   THEME / HEADER / SHEETS
+========================================================= */
+$('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+$('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+var sheetSignout = $('sheet-signout');
+$('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+$('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout) sheetSignout.classList.remove('show'); });
+$('confirm-signout').addEventListener('click', function(){ supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; }); });
+
+var sheetConfirm = $('sheet-confirm');
+var confirmCallback = null;
+function askConfirm(title, message, onConfirm, okLabel){
+  $('confirm-title').textContent = title;
+  $('confirm-message').textContent = message;
+  $('confirm-ok').textContent = okLabel || 'Delete';
+  confirmCallback = onConfirm;
+  sheetConfirm.classList.add('show');
+}
+$('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); confirmCallback = null; });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm){ sheetConfirm.classList.remove('show'); confirmCallback = null; } });
+$('confirm-ok').addEventListener('click', function(){ var cb = confirmCallback; sheetConfirm.classList.remove('show'); confirmCallback = null; if(cb) cb(); });
+
+/* =========================================================
+   TABS
+========================================================= */
+var tabEditBtn = $('tab-edit-btn'), tabBrowseBtn = $('tab-browse-btn');
+var panelEdit = $('panel-edit'), panelBrowse = $('panel-browse');
+tabEditBtn.addEventListener('click', function(){ setTab('edit'); });
+tabBrowseBtn.addEventListener('click', function(){ setTab('browse'); });
+function setTab(which){
+  var isEdit = which === 'edit';
+  tabEditBtn.classList.toggle('active', isEdit);
+  tabBrowseBtn.classList.toggle('active', !isEdit);
+  panelEdit.classList.toggle('active', isEdit);
+  panelBrowse.classList.toggle('active', !isEdit);
+}
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+function toISODate(d){ var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
+function todayLocalISO(){ return toISODate(new Date()); }
+
+/* =========================================================
+   EDIT PANEL — selectors
+========================================================= */
+var editDate = $('edit-date'), editClassSel = $('edit-class'), editSubjectSel = $('edit-subject');
+var kindCBtn = $('kind-c-btn'), kindHBtn = $('kind-h-btn');
+var currentKind = 'C';
+
+kindCBtn.addEventListener('click', function(){ setKind('C'); });
+kindHBtn.addEventListener('click', function(){ setKind('H'); });
+function setKind(k){
+  currentKind = k;
+  kindCBtn.classList.toggle('active', k === 'C');
+  kindHBtn.classList.toggle('active', k === 'H');
+  $('f-content-label').textContent = k === 'C' ? 'Classwork details' : 'Homework details';
+  $('f-content').placeholder = k === 'C' ? 'What was covered / practised in class' : 'What students should complete at home';
+  maybeLoadEntry();
+}
+
+function uniqueClasses(combos){ var set={}; combos.forEach(function(c){ set[c.class]=true; }); return Object.keys(set).sort(); }
+function subjectsForClass(combos, cls){ var set={}; combos.forEach(function(c){ if(c.class===cls) set[c.subject]=true; }); return Object.keys(set).sort(); }
+
+function populateEditClassDropdown(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  editClassSel.innerHTML = '<option value="">Select class…</option>' + classes.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  editClassSel.disabled = classes.length === 0;
+  if(classes.length === 0){ toast(state.isAdmin ? 'No class-subject assignments found yet.' : 'You have no class-subject assignments yet. Contact an admin.', true); }
+}
+editClassSel.addEventListener('change', function(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var subs = subjectsForClass(combos, editClassSel.value);
+  editSubjectSel.innerHTML = '<option value="">Select subject…</option>' + subs.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+  editSubjectSel.disabled = subs.length === 0;
+  hideEditForm();
+});
+editSubjectSel.addEventListener('change', function(){ maybeLoadEntry(); });
+editDate.addEventListener('change', function(){ maybeLoadEntry(); });
+
+function hideEditForm(){ $('edit-form-card').style.display = 'none'; $('edit-placeholder').style.display = 'flex'; }
+function showEditForm(){ $('edit-form-card').style.display = 'block'; $('edit-placeholder').style.display = 'none'; }
+
+function isTodayForNonAdmin(dateStr){ return state.isAdmin || dateStr === state.serverToday; }
+
+function clearEditFields(){
+  $('f-content').value = '';
+  autoResizeTextarea($('f-content'));
+  $('edit-last-modified').textContent = '';
+  $('edit-existing-chip').style.display = 'none';
+  $('btn-delete-entry').style.display = 'none';
+  state.editingEntryId = null;
+  state.editingClasses = [];
+  state.attachments = [];
+  renderClassChips();
+  renderAttachList();
+  queue = [];
+  renderQueue();
+}
+
+/* =========================================================
+   LOAD / SAVE ENTRY
+========================================================= */
+function maybeLoadEntry(){
+  var cls = editClassSel.value, subj = editSubjectSel.value, dt = editDate.value;
+  if(!cls || !subj || !dt){ hideEditForm(); return; }
+  showEditForm();
+  clearEditFields();
+  updateLockNote(dt);
+
+  supabaseClient
+    .from('classwork_homework_classes')
+    .select('entry_id, classwork_homework!inner(id, entry_date, subject, kind, content, updated_at)')
+    .eq('class', cls)
+    .eq('classwork_homework.entry_date', dt)
+    .eq('classwork_homework.subject', subj)
+    .eq('classwork_homework.kind', currentKind)
+    .maybeSingle()
+    .then(function(res){
+      if(res.error){ toast('Could not check for an existing entry.', true); return; }
+      if(!res.data){ return; }
+      var entry = res.data.classwork_homework;
+      state.editingEntryId = entry.id;
+      $('f-content').value = entry.content || '';
+      autoResizeTextarea($('f-content'));
+      $('edit-existing-chip').style.display = 'inline-block';
+      $('btn-delete-entry').style.display = 'inline-flex';
+      $('edit-last-modified').textContent = 'Last updated ' + new Date(entry.updated_at).toLocaleString();
+      loadEntryClasses(entry.id);
+      loadEntryAttachments(entry.id);
+    });
+}
+
+function loadEntryClasses(entryId){
+  supabaseClient.from('classwork_homework_classes').select('class').eq('entry_id', entryId)
+    .then(function(res){
+      state.editingClasses = (res.data || []).map(function(r){ return r.class; });
+      renderClassChips();
+    });
+}
+
+function loadEntryAttachments(entryId){
+  supabaseClient
+    .from('vault_files')
+    .select('id, display_name, file_ext, size_bytes')
+    .eq('kind', ATTACHMENT_KIND)
+    .eq('cwhw_entry_id', entryId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .then(function(res){
+      if(res.error){ toast('Could not load attachments.', true); return; }
+      state.attachments = res.data || [];
+      renderAttachList();
+    });
+}
+
+function updateLockNote(dt){
+  var note = $('edit-lock-note');
+  if(!state.isAdmin && dt !== state.serverToday){
+    note.style.display = 'block';
+    note.textContent = 'This date isn\u2019t today, so as a teacher you can view this entry here but cannot save, delete or change its attachments.';
+  }else{
+    note.style.display = 'none';
+  }
+}
+
+function canWriteNow(){
+  var dt = editDate.value;
+  return isTodayForNonAdmin(dt);
+}
+
+$('btn-save-entry').addEventListener('click', async function(){
+  var cls = editClassSel.value, subj = editSubjectSel.value, dt = editDate.value;
+  if(!cls || !subj || !dt){ toast('Please select date, class and subject first.', true); return; }
+  if(!canWriteNow()){ toast('You can only save entries dated today.', true); return; }
+  var content = $('f-content').value.trim();
+  if(!content){ toast('Please enter some content first.', true); return; }
+
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try{
+    var entryId = state.editingEntryId;
+    if(entryId){
+      var upd = await supabaseClient.from('classwork_homework')
+        .update({ subject: subj, content: content })
+        .eq('id', entryId);
+      if(upd.error) throw upd.error;
+    }else{
+      var ins = await supabaseClient.from('classwork_homework')
+        .insert({ entry_date: dt, subject: subj, kind: currentKind, content: content, teacher_id: state.user.id })
+        .select().single();
+      if(ins.error) throw ins.error;
+      entryId = ins.data.id;
+      state.editingEntryId = entryId;
+    }
+
+    // Reconcile linked classes: make sure the primary class is linked, plus
+    // whatever is in the chip list, and nothing else that isn't already there.
+    var wantClasses = state.editingClasses.slice();
+    if(wantClasses.indexOf(cls) === -1) wantClasses.push(cls);
+
+    var curRes = await supabaseClient.from('classwork_homework_classes').select('class').eq('entry_id', entryId);
+    var curClasses = (curRes.data || []).map(function(r){ return r.class; });
+    var toAdd = wantClasses.filter(function(c){ return curClasses.indexOf(c) === -1; });
+    var toRemove = curClasses.filter(function(c){ return wantClasses.indexOf(c) === -1; });
+
+    if(toAdd.length){
+      var insLinks = await supabaseClient.from('classwork_homework_classes')
+        .insert(toAdd.map(function(c){ return { entry_id: entryId, class: c }; }));
+      if(insLinks.error) throw insLinks.error;
+    }
+    if(toRemove.length){
+      var delLinks = await supabaseClient.from('classwork_homework_classes')
+        .delete().eq('entry_id', entryId).in('class', toRemove);
+      if(delLinks.error) throw delLinks.error;
+    }
+
+    toast('Entry saved.');
+    maybeLoadEntry();
+  }catch(err){
+    console.error(err);
+    toast('Save failed: ' + (err.message || 'unknown error'), true);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save entry';
+  }
+});
+
+$('btn-delete-entry').addEventListener('click', function(){
+  if(!state.editingEntryId) return;
+  if(!canWriteNow()){ toast('You can only delete entries dated today.', true); return; }
+  askConfirm('Delete this entry?', 'This removes the ' + (currentKind === 'C' ? 'classwork' : 'homework') + ' entry and all its attachments. This cannot be undone.', async function(){
+    try{
+      await deleteCwhwEntryAndAttachments(
+        state.editingEntryId,
+        state.attachments.map(function(f){ return f.id; })
+      );
+      toast('Entry deleted.');
+      clearEditFields();
+    }catch(err){
+      if(err.message === 'ATTACH_DELETE_FAILED'){
+        toast('Could not remove ' + err.failedIds.length + ' attachment(s) — entry was NOT deleted. Please retry.', true);
+        loadEntryAttachments(state.editingEntryId);
+      }else{
+        toast('Delete failed: ' + (err.message || 'unknown error'), true);
+      }
+    }
+  });
+});
+
+/* =========================================================
+   AI AUTO-CORRECT
+========================================================= */
+$('btn-ai-correct').addEventListener('click', function(){
+  var textarea = $('f-content');
+  var currentText = textarea.value.trim();
+  if(!currentText){ toast('Nothing to correct — this field is empty.', true); return; }
+
+  var btn = this;
+  var originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Correcting…';
+
+  window.correct(currentText)
+    .then(function(data){
+      var corrected = extractAiText(data).trim();
+      if(!corrected){ toast('AI did not return any content. Please try again.', true); return; }
+      textarea.value = corrected;
+      autoResizeTextarea(textarea);
+      toast('Content corrected.');
+    })
+    .catch(function(err){
+      console.error('AI auto-correct failed:', err);
+      toast('Auto-correct failed. Please try again.', true);
+    })
+    .finally(function(){ btn.disabled = false; btn.textContent = originalText; });
+});
+
+/* =========================================================
+   CLASS CHIPS ("also applies to")
+========================================================= */
+var extraClassSel = $('extra-class-select');
+function eligibleExtraClasses(){
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var subj = editSubjectSel.value;
+  var all = combos.filter(function(c){ return c.subject === subj; }).map(function(c){ return c.class; });
+  var primary = editClassSel.value;
+  return all.filter(function(c){ return c !== primary && state.editingClasses.indexOf(c) === -1; }).sort();
+}
+function populateExtraClassSelect(){
+  var opts = eligibleExtraClasses();
+  extraClassSel.innerHTML = '<option value="">Select another class…</option>' + opts.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+}
+$('add-extra-class-btn').addEventListener('click', function(){
+  if(!canWriteNow()){ toast('You can only change classes on today\u2019s entries.', true); return; }
+  var c = extraClassSel.value;
+  if(!c){ toast('Pick a class first.', true); return; }
+  state.editingClasses.push(c);
+  renderClassChips();
+});
+function renderClassChips(){
+  populateExtraClassSelect();
+  var primary = editClassSel.value;
+  var writable = canWriteNow();
+  var rows = [];
+  if(primary){
+    rows.push('<div class="chip locked"><span>' + esc(primary) + ' (primary)</span></div>');
+  }
+  state.editingClasses.forEach(function(c, idx){
+    rows.push('<div class="chip' + (writable ? '' : ' locked') + '"><span>' + esc(c) + '</span><button type="button" data-idx="' + idx + '">\u2715</button></div>');
+  });
+  $('class-chip-list').innerHTML = rows.join('');
+}
+$('class-chip-list').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-idx]');
+  if(!btn) return;
+  if(!canWriteNow()){ toast('You can only change classes on today\u2019s entries.', true); return; }
+  state.editingClasses.splice(Number(btn.getAttribute('data-idx')), 1);
+  renderClassChips();
+});
+
+/* =========================================================
+   ATTACHMENTS
+========================================================= */
+function renderAttachList(){
+  var writable = canWriteNow() && !!state.editingEntryId;
+  if(!state.attachments.length){
+    $('attach-list').innerHTML = '';
+  }else{
+    $('attach-list').innerHTML = state.attachments.map(function(f){
+      return '<div class="attach-row" data-id="' + f.id + '">' +
+        '<div class="attach-ic">' + esc((f.file_ext||'').slice(0,4)) + '</div>' +
+        '<div class="attach-who"><div class="attach-name">' + esc(f.display_name) + '.' + esc(f.file_ext) + '</div>' +
+        '<div class="attach-meta">' + fmtSize(f.size_bytes) + '</div></div>' +
+        '<div class="attach-btns">' +
+        '<button class="mini-btn" type="button" data-act="download" aria-label="Download"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></button>' +
+        (writable ? '<button class="mini-btn" type="button" data-act="rename" aria-label="Rename"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' +
+                    '<button class="mini-btn danger" type="button" data-act="remove" aria-label="Remove"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' : '') +
+        '</div></div>';
+    }).join('');
+  }
+  var dz = $('dropzone');
+  var canUpload = writable;
+  dz.classList.toggle('enabled', canUpload);
+  dz.title = canUpload ? '' : (state.editingEntryId ? 'Save a today-dated entry to manage attachments.' : 'Save this entry first, so files have somewhere to attach to.');
+}
+
+$('attach-list').addEventListener('click', async function(e){
+  var row = e.target.closest('.attach-row');
+  if(!row) return;
+  var id = Number(row.dataset.id);
+  var file = state.attachments.filter(function(f){ return f.id === id; })[0];
+  if(!file) return;
+  var act = e.target.closest('[data-act]');
+  if(!act) return;
+  var kind = act.dataset.act;
+
+  if(kind === 'download'){
+    act.disabled = true;
+    try{
+      var res = await vaultCall('presign-download', { fileId: id });
+      var a = document.createElement('a'); a.href = res.url; a.rel = 'noopener'; a.target = '_blank';
+      document.body.appendChild(a); a.click(); a.remove();
+    }catch(err){ toast(err.message, true); }
+    act.disabled = false;
+  }
+
+  if(kind === 'rename'){
+    $('rename-input').value = file.display_name;
+    $('sheet-rename').classList.add('show');
+    $('rename-save').onclick = async function(){
+      var name = $('rename-input').value.trim();
+      if(!name){ toast('Enter a name.', true); return; }
+      $('rename-save').disabled = true;
+      try{
+        await vaultCall('rename', { fileId: id, displayName: name });
+        file.display_name = name;
+        toast('Renamed.');
+        $('sheet-rename').classList.remove('show');
+        renderAttachList();
+      }catch(err){ toast(err.message, true); }
+      $('rename-save').disabled = false;
+    };
+  }
+
+  if(kind === 'remove'){
+    askConfirm('Remove this attachment?', 'This permanently removes "' + file.display_name + '" from storage. This cannot be undone.', async function(){
+      try{
+        await vaultCall('delete', { fileId: id });
+        state.attachments = state.attachments.filter(function(f){ return f.id !== id; });
+        toast('Attachment removed.');
+        renderAttachList();
+      }catch(err){ toast(err.message, true); }
+    });
+  }
+});
+$('rename-cancel').addEventListener('click', function(){ $('sheet-rename').classList.remove('show'); });
+
+$('dropzone').addEventListener('click', function(){
+  if(!this.classList.contains('enabled')){ toast(this.title || 'Attachments aren\u2019t available right now.', true); return; }
+  $('file-input').click();
+});
+$('dropzone').addEventListener('dragover', function(e){ if(this.classList.contains('enabled')){ e.preventDefault(); this.classList.add('drag'); } });
+$('dropzone').addEventListener('dragleave', function(){ this.classList.remove('drag'); });
+$('dropzone').addEventListener('drop', function(e){
+  e.preventDefault(); this.classList.remove('drag');
+  if(this.classList.contains('enabled')) addFilesToQueue(e.dataTransfer.files);
+});
+$('file-input').addEventListener('change', function(){ addFilesToQueue(this.files); this.value = ''; });
+
+function addFilesToQueue(fileList){
+  Array.prototype.forEach.call(fileList, function(f){
+    if(f.size > MAX_UPLOAD_BYTES){ toast(f.name + ' exceeds 100 MB and was skipped.', true); return; }
+    if(f.size <= 0) return;
+    var dot = f.name.lastIndexOf('.');
+    var base = dot > 0 ? f.name.slice(0, dot) : f.name;
+    queue.push({ localId: 'q'+Date.now()+Math.random().toString(36).slice(2), file: f, name: base, status: 'queued', progress: 0, errorMsg: '' });
+  });
+  renderQueue();
+  if(queue.some(function(q){ return q.status === 'queued'; })) startUploads();
+}
+
+function renderQueue(){
+  $('qlist').innerHTML = queue.map(function(q){
+    var statusLabel = q.status === 'queued' ? fmtSize(q.file.size)
+      : q.status === 'uploading' ? 'Uploading… ' + q.progress + '%'
+      : q.status === 'done' ? 'Done'
+      : 'Failed — ' + q.errorMsg;
+    return '<div class="qrow is-' + q.status + '" data-id="' + q.localId + '">' +
+      '<div class="qrow-top"><input type="text" value="' + esc(q.name) + '" disabled></div>' +
+      '<div class="qrow-meta">' + esc(statusLabel) + '</div>' +
+      '<div class="qbar"><div class="qbar-fill" style="width:' + q.progress + '%"></div></div></div>';
+  }).join('');
+}
+
+async function uploadOneFile(q){
+  q.status = 'uploading'; q.progress = 0; renderQueue();
+  try{
+    var payload = {
+      kind: ATTACHMENT_KIND,
+      displayName: q.name,
+      originalName: q.file.name,
+      sizeBytes: q.file.size,
+      mimeType: q.file.type || 'application/octet-stream',
+      entryId: state.editingEntryId
+    };
+    var init = await vaultCall('init-upload', payload);
+
+    await new Promise(function(res, rej){
+      var xhr = new XMLHttpRequest();
+      xhr.open('PUT', init.uploadUrl, true);
+      var headers = init.uploadHeaders || {};
+      Object.keys(headers).forEach(function(k){ xhr.setRequestHeader(k, headers[k]); });
+      xhr.upload.onprogress = function(ev){ if(ev.lengthComputable){ q.progress = Math.round((ev.loaded/ev.total)*95); renderQueue(); } };
+      xhr.onload = function(){ if(xhr.status>=200 && xhr.status<300) res(); else rej(new Error('Upload failed ('+xhr.status+')')); };
+      xhr.onerror = function(){ rej(new Error('Network error during upload')); };
+      xhr.send(q.file);
+    });
+
+    await vaultCall('complete-upload', { objectKey: init.objectKey });
+
+    q.status = 'done'; q.progress = 100;
+    loadEntryAttachments(state.editingEntryId);
+  }catch(err){
+    q.status = 'error'; q.errorMsg = err.message || 'Upload failed';
+  }
+  renderQueue();
+}
+
+async function startUploads(){
+  var pending = queue.filter(function(q){ return q.status === 'queued'; });
+  var running = [];
+  for(var i = 0; i < pending.length; i++){
+    var q = pending[i];
+    var p = uploadOneFile(q).then(function(){ running.splice(running.indexOf(p), 1); });
+    running.push(p);
+    if(running.length >= MAX_CONCURRENT_UPLOADS){ await Promise.race(running); }
+  }
+  await Promise.all(running);
+  var anyError = queue.some(function(q){ return q.status === 'error'; });
+  if(anyError) toast('Some files failed to upload.', true);
+}
+
+/* =========================================================
+   BROWSE PANEL
+========================================================= */
+var browseClassSel = $('browse-class'), browseDate = $('browse-date');
+var lastBrowseResults = { class: '', date: '', subjects: [] }; // [{subject, classwork, homework}]
+
+function populateBrowseClassDropdown(){
+  browseClassSel.innerHTML = '<option value="">Select class…</option>' + state.allClasses.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+}
+
+$('btn-load-day').addEventListener('click', function(){
+  var cls = browseClassSel.value, dt = browseDate.value;
+  if(!cls || !dt){ toast('Select a class and date first.', true); return; }
+
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Loading…';
+
+  supabaseClient
+    .from('classwork_homework_classes')
+    .select('classwork_homework!inner(id, subject, kind, content, updated_at, teachers(name))')
+    .eq('class', cls)
+    .eq('classwork_homework.entry_date', dt)
+    .then(function(res){
+      btn.disabled = false; btn.textContent = "View this day's work";
+      if(res.error){ toast('Could not load entries: ' + res.error.message, true); return; }
+
+      var bySubject = {};
+      (res.data || []).forEach(function(row){
+        var e = row.classwork_homework;
+        if(!bySubject[e.subject]) bySubject[e.subject] = { subject: e.subject, classwork: null, homework: null };
+        if(e.kind === 'C') bySubject[e.subject].classwork = e; else bySubject[e.subject].homework = e;
+      });
+      var list = Object.keys(bySubject).map(function(s){ return bySubject[s]; });
+      list.sort(function(a,b){
+        var oa = state.subjectOrder[a.subject]!=null ? state.subjectOrder[a.subject] : 1;
+        var ob = state.subjectOrder[b.subject]!=null ? state.subjectOrder[b.subject] : 1;
+        if(oa !== ob) return oa - ob;
+        return a.subject.localeCompare(b.subject);
+      });
+      lastBrowseResults = { class: cls, date: dt, subjects: list };
+      renderBrowseResults();
+    });
+});
+
+function canEditCombo(cls, subj){
+  if(state.isAdmin) return true;
+  return state.myAssignments.some(function(a){ return a.class === cls && a.subject === subj; });
+}
+
+function renderBrowseResults(){
+  var wrap = $('browse-results-wrap'), placeholder = $('browse-placeholder'), container = $('browse-results'), title = $('browse-results-title');
+  var list = lastBrowseResults.subjects;
+  title.textContent = lastBrowseResults.class + ' • ' + new Date(lastBrowseResults.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+
+  if(!list.length){
+    wrap.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.querySelector('p').textContent = 'No classwork or homework found for ' + lastBrowseResults.class + ' on that date yet.';
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  wrap.style.display = 'block';
+  container.innerHTML = '';
+
+  list.forEach(function(s, i){
+    var editable = canEditCombo(lastBrowseResults.class, s.subject);
+    var card = document.createElement('div');
+    card.className = 'subject-card';
+    card.style.animationDelay = (i * 0.05) + 's';
+
+    function kindBlock(label, entry, kindCode){
+      var hasValue = !!(entry && entry.content && entry.content.trim());
+      var teacherName = entry && entry.teachers && entry.teachers.name ? entry.teachers.name : '';
+      return '<div class="kind-block">' +
+        '<div class="kind-block-top"><div><div class="kind-block-label">' + esc(label) + (teacherName ? ' &middot; ' + esc(teacherName) : '') + '</div>' +
+        '<div class="kind-block-value' + (hasValue?'':' empty') + '">' + (hasValue ? esc(entry.content) : 'Not recorded') + '</div></div>' +
+        (editable && entry ? '<div class="kind-block-actions">' +
+          '<button class="mini-btn" data-act="edit" data-kind="' + kindCode + '" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>' +
+          '<button class="mini-btn danger" data-act="delete" data-kind="' + kindCode + '" title="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>' +
+        '</div>' : '') + '</div></div>';
+    }
+
+    card.innerHTML = '<p class="subject-name">' + esc(s.subject) + '</p>' +
+      kindBlock('Classwork', s.classwork, 'C') +
+      kindBlock('Homework', s.homework, 'H');
+
+    card.querySelectorAll('[data-act="edit"]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var k = b.getAttribute('data-kind');
+        var entry = k === 'C' ? s.classwork : s.homework;
+        jumpToEdit(lastBrowseResults.class, s.subject, k, entry);
+      });
+    });
+    card.querySelectorAll('[data-act="delete"]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var k = b.getAttribute('data-kind');
+        var entry = k === 'C' ? s.classwork : s.homework;
+        askConfirm('Delete this ' + (k==='C'?'classwork':'homework') + ' entry?', 'This removes it for every class it was mapped to, and all its attachments. This cannot be undone.', async function(){
+          try{
+            var atts = await supabaseClient.from('vault_files').select('id').eq('kind', ATTACHMENT_KIND).eq('cwhw_entry_id', entry.id);
+            await deleteCwhwEntryAndAttachments(
+              entry.id,
+              (atts.data || []).map(function(a){ return a.id; })
+            );
+            toast('Entry deleted.');
+            $('btn-load-day').click();
+          }catch(err){
+            if(err.message === 'ATTACH_DELETE_FAILED'){
+              toast('Could not remove ' + err.failedIds.length + ' attachment(s) — entry was NOT deleted. Please retry.', true);
+            }else{
+              toast('Delete failed: ' + (err.message || 'unknown error'), true);
+            }
+            $('btn-load-day').click();
+          }
+        });
+      });
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function jumpToEdit(cls, subject, kind, entry){
+  setTab('edit');
+  editDate.value = lastBrowseResults.date;
+  var combos = state.isAdmin ? state.allCombos : state.myAssignments;
+  var classes = uniqueClasses(combos);
+  if(classes.indexOf(cls) === -1) classes.push(cls);
+  editClassSel.value = cls;
+  editClassSel.dispatchEvent(new Event('change'));
+  setTimeout(function(){
+    editSubjectSel.value = subject;
+    setKind(kind);
+  }, 30);
+}
+
+$('btn-copy-text').addEventListener('click', async function(){
+  var list = lastBrowseResults.subjects;
+  if(!list.length){ toast('Load a day with at least one entry first.', true); return; }
+  var dateLabel = new Date(lastBrowseResults.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  var lines = [lastBrowseResults.class + ' — Classwork & Homework — ' + dateLabel, ''];
+  list.forEach(function(s){
+    lines.push(s.subject);
+    lines.push('Classwork: ' + (s.classwork && s.classwork.content ? s.classwork.content : 'Not recorded'));
+    lines.push('Homework: ' + (s.homework && s.homework.content ? s.homework.content : 'Not recorded'));
+    lines.push('');
+  });
+  var text = lines.join('\n').trim();
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('Copied to clipboard.');
+  }catch(e){
+    toast('Could not copy automatically — please select and copy manually.', true);
+  }
+});
+
+/* =========================================================
+   AUTH + DATA BOOTSTRAP
+========================================================= */
+function showApp(){ $('gate').classList.add('hidden'); $('app').classList.add('ready'); }
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var userId = session.user.id;
+    state.accessToken = session.access_token;
+
+    var teacherResult = await supabaseClient.from('teachers').select('id, name, email').eq('id', userId).maybeSingle();
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var badge = $('role-badge');
+    if(state.isAdmin){ badge.textContent = 'Admin access — all classes'; badge.classList.add('admin-badge'); }
+    else { badge.textContent = state.teacherName.split(' ')[0] + ' • Record & manage'; }
+
+    var todayResult = await supabaseClient.rpc('attendance_today');
+    state.serverToday = (todayResult && todayResult.data) ? todayResult.data : todayLocalISO();
+
+    var myAssignRes = await supabaseClient.from('class_subject_assignments').select('class, subject').eq('teacher_id', userId);
+    state.myAssignments = (myAssignRes.data || []).filter(function(p){ return p.class && p.subject; });
+
+    var allCombosRes = state.isAdmin
+      ? await supabaseClient.from('class_subjects').select('class, subject')
+      : await supabaseClient.from('class_subject_assignments').select('class, subject');
+    state.allCombos = (allCombosRes.data || []).filter(function(p){ return p.class && p.subject; });
+
+    var classTeacherRes = await supabaseClient.from('class_teachers').select('class');
+    var classSet = {};
+    state.allCombos.forEach(function(c){ classSet[c.class] = true; });
+    (classTeacherRes.data || []).forEach(function(c){ classSet[c.class] = true; });
+    state.allClasses = Object.keys(classSet).sort();
+
+    var subjectsRes = await supabaseClient.from('subjects').select('name, display_order');
+    (subjectsRes.data || []).forEach(function(s){ state.subjectOrder[s.name] = s.display_order; });
+
+    populateEditClassDropdown();
+    populateBrowseClassDropdown();
+    editDate.value = state.serverToday;
+    browseDate.value = state.serverToday;
+
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
