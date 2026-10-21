@@ -721,6 +721,7 @@ function categoryFor(key){
 var state = {
   usage: null,
   reservations: [],       // normalized: {key,bytes,reservedAt,expiresAt,isStale,metadata,category}
+  confirmedByCategory: {}, // {catId: {bytes, count}} — confirmed (permanent) usage per feature
   activeCategoryFilter: 'all',
   activeStatusFilter: 'all',
   searchTerm: '',
@@ -868,6 +869,7 @@ function loadOverview(isRefresh){
     .then(function(data){
       state.usage = data.usage;
       state.reservations = normalizeReservations(data.unconfirmed);
+      state.confirmedByCategory = data.confirmed_by_category || {};
       state.lastLoaded = new Date();
       // Drop any selections for keys that no longer exist or are no longer stale.
       var stillValid = {};
@@ -937,7 +939,9 @@ function renderOverview(){
 function categoryStats(){
   var byId = {};
   CATEGORIES.concat([OTHER_CATEGORY]).forEach(function(c){
-    byId[c.id] = { def:c, count:0, bytes:0, staleCount:0, staleBytes:0, graceCount:0, graceBytes:0, staleKeys:[] };
+    var confirmed = (state.confirmedByCategory && state.confirmedByCategory[c.id]) || { bytes:0, count:0 };
+    byId[c.id] = { def:c, count:0, bytes:0, staleCount:0, staleBytes:0, graceCount:0, graceBytes:0, staleKeys:[],
+      confirmedBytes: confirmed.bytes, confirmedCount: confirmed.count };
   });
   state.reservations.forEach(function(r){
     var s = byId[r.category.id];
@@ -982,7 +986,7 @@ function renderCategoryGrid(){
           '</div>' +
           '<div>' +
             '<p class="category-name">' + def.label + '</p>' +
-            '<p class="category-bytes">' + formatBytes(s.bytes) + ' pending</p>' +
+            '<p class="category-bytes">' + formatBytes(s.confirmedBytes) + ' confirmed &middot; ' + formatBytes(s.bytes) + ' pending</p>' +
           '</div>' +
         '</div>' +
         '<div class="category-counts">' + badges + '</div>' +
