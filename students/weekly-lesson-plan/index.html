@@ -38,7 +38,7 @@
     --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
 
     --range-fill: color-mix(in srgb, var(--teal-600) 32%, var(--white));
-    --range-fill-strong: color-mix(in srgb, var(--teal-700) 46%, var(--white));
+    --range-ink: var(--teal-900);
     --has-plan-tint: color-mix(in srgb, var(--gold-500) 16%, var(--white));
 
     --r-lg:26px;
@@ -77,8 +77,8 @@
     --edge-shadow-soft: rgba(0,0,0,.35);
     --track: color-mix(in srgb, var(--white) 14%, transparent);
 
-    --range-fill: color-mix(in srgb, var(--teal-600) 30%, var(--white));
-    --range-fill-strong: color-mix(in srgb, var(--teal-700) 44%, var(--white));
+    --range-fill: color-mix(in srgb, var(--teal-600) 38%, var(--white));
+    --range-ink: var(--ink-900);
     --has-plan-tint: color-mix(in srgb, var(--gold-500) 14%, var(--white));
   }
 
@@ -140,12 +140,11 @@
   .weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:14px 0 6px;}
   .weekday-row span{text-align:center;font-size:11.5px;font-weight:700;color:var(--ink-500);}
 
-  .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;position:relative;}
   .day-cell{
     aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:13px;position:relative;background:var(--input-bg);color:var(--ink-500);
+    font-weight:700;font-size:13px;position:relative;z-index:1;background:var(--input-bg);color:var(--ink-500);
     transition:transform .12s ease;cursor:pointer;border:none;font-family:var(--font-body);
-    isolation:isolate;
   }
   .day-cell.empty{background:transparent;cursor:default;}
   .day-cell:not(.empty):hover{transform:translateY(-1px);}
@@ -157,18 +156,21 @@
     background:var(--gold-600);opacity:.9;z-index:2;
   }
 
-  .day-cell.in-range{color:var(--teal-900);}
-  html[data-theme="dark"] .day-cell.in-range{color:var(--ink-900);}
-  .day-cell.in-range::before{
-    content:"";position:absolute;top:4px;bottom:4px;background:var(--range-fill);z-index:1;
-  }
-  .day-cell.range-mid::before{left:-6px;right:-6px;}
-  .day-cell.range-start::before{left:50%;right:-6px;border-top-left-radius:10px;border-bottom-left-radius:10px;}
-  .day-cell.range-end::before{left:-6px;right:50%;border-top-right-radius:10px;border-bottom-right-radius:10px;}
-  .day-cell.range-single::before{left:4px;right:4px;border-radius:10px;}
+  /* Active week range: day cells stay transparent and merely tint their
+     number; the actual swathe is a separate bar drawn behind the row by
+     JS (drawRangeBars), so it reads as one continuous band rather than
+     per-cell fragments stitched together. */
+  .day-cell.in-range{background:transparent;color:var(--range-ink);font-weight:800;}
 
-  .day-cell.today{box-shadow:0 0 0 2px var(--teal-600) inset;z-index:3;}
-  .day-cell.selected{box-shadow:0 0 0 2.5px var(--gold-600) inset;z-index:3;}
+  .range-bar{
+    position:absolute;background:var(--range-fill);z-index:0;pointer-events:none;
+    border-radius:7px;transition:opacity .15s ease;
+  }
+  .range-bar.cap-start{border-top-left-radius:999px;border-bottom-left-radius:999px;}
+  .range-bar.cap-end{border-top-right-radius:999px;border-bottom-right-radius:999px;}
+
+  .day-cell.today{box-shadow:0 0 0 2px var(--teal-600) inset;z-index:2;}
+  .day-cell.selected{box-shadow:0 0 0 2.5px var(--gold-600) inset;z-index:2;}
   .day-cell.today.selected{box-shadow:0 0 0 2px var(--teal-600) inset, 0 0 0 4.5px var(--gold-600) inset;}
 
   .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
@@ -472,23 +474,16 @@
 
     for(var d=1; d<=totalDays; d++){
       var dateStr = ymd(year, month, d);
-      var dow = new Date(year, month, d).getDay();
       var cls = 'day-cell';
       var attrs = '';
 
-      var hasPlan = dateWithinAnyRange(dateStr, ranges);
-      if(hasPlan) cls += ' has-plan';
-
       var inActive = activeRange && dateStr >= activeRange.start && dateStr <= activeRange.end;
+      var hasPlan = dateWithinAnyRange(dateStr, ranges);
+
       if(inActive){
         cls += ' in-range';
-        var isRowStart = (dow === 0) || dateStr === activeRange.start;
-        var isRowEnd = (dow === 6) || dateStr === activeRange.end;
-        if(isRowStart && isRowEnd) cls += ' range-single';
-        else if(isRowStart) cls += ' range-start';
-        else if(isRowEnd) cls += ' range-end';
-        else cls += ' range-mid';
       } else if(hasPlan){
+        cls += ' has-plan';
         attrs += ' data-dot="1"';
       }
 
@@ -513,7 +508,86 @@
     cellEls.forEach(function(el){
       el.addEventListener('click', function(){ selectDate(el.getAttribute('data-date')); });
     });
+
+    drawRangeBars(activeRange);
   }
+
+  /* ------------------------------------------------------------
+     Draws the active week as a continuous swathe behind the day
+     grid, instead of per-cell fills. Cell edges are measured after
+     layout so the bar lines up exactly regardless of viewport
+     width, then split into one segment per calendar row (a week
+     that straddles a Sunday boundary gets two flush segments).
+     Only the true start/end of the range get a rounded (pill) cap;
+     a segment edge created by a row-wrap or the month's own edge
+     stays square, reading as "continues off-screen".
+  ------------------------------------------------------------ */
+  function drawRangeBars(activeRange){
+    var grid = document.querySelector('#calendarBody .day-grid');
+    if(!grid) return;
+
+    var oldBars = grid.querySelectorAll('.range-bar');
+    oldBars.forEach(function(b){ b.remove(); });
+    if(!activeRange) return;
+
+    var cellsByDate = {};
+    grid.querySelectorAll('.day-cell[data-date]').forEach(function(el){
+      cellsByDate[el.getAttribute('data-date')] = el;
+    });
+
+    // Walk the range day by day, keeping only dates actually rendered
+    // in the current month view, grouped into contiguous row segments.
+    var cursor = parseDateStr(activeRange.start);
+    var endDate = parseDateStr(activeRange.end);
+    var segments = [];
+    var current = null;
+
+    while(cursor <= endDate){
+      var dStr = ymd(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+      var el = cellsByDate[dStr];
+      if(el){
+        var top = el.offsetTop;
+        if(current && current.top === top){
+          current.last = el;
+          current.lastDate = dStr;
+        } else {
+          current = {top: top, first: el, firstDate: dStr, last: el, lastDate: dStr};
+          segments.push(current);
+        }
+      } else {
+        current = null; // gap (date outside this month view) breaks the run
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    var gridRect = grid.getBoundingClientRect();
+    var barInsetY = 0.17; // fraction of cell height trimmed off top+bottom
+
+    segments.forEach(function(seg){
+      var firstRect = seg.first.getBoundingClientRect();
+      var lastRect = seg.last.getBoundingClientRect();
+      var h = firstRect.height;
+      var bar = document.createElement('div');
+      bar.className = 'range-bar';
+      if(seg.firstDate === activeRange.start) bar.className += ' cap-start';
+      if(seg.lastDate === activeRange.end) bar.className += ' cap-end';
+      bar.style.left = (firstRect.left - gridRect.left) + 'px';
+      bar.style.width = (lastRect.right - firstRect.left) + 'px';
+      bar.style.top = (firstRect.top - gridRect.top + h * barInsetY) + 'px';
+      bar.style.height = (h * (1 - barInsetY * 2)) + 'px';
+      grid.appendChild(bar);
+    });
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      if(document.querySelector('#calendarBody .day-grid')){
+        drawRangeBars(activeRangeForSelected());
+      }
+    }, 120);
+  });
 
   function showCalendarError(msg){
     document.getElementById('calendarBody').innerHTML =
