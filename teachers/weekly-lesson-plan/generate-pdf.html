@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Lesson Plan PDF</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Devanagari-capable fonts: the browser embeds only the glyphs used, so the PDF stays small and text stays real text. -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold:rgba(245,166,35,.10); --bg-tint-teal:rgba(27,107,120,.10);
+    --border-card:rgba(13,56,65,.08); --border-card-hover:rgba(245,166,35,.45);
+    --toggle-bg:rgba(255,255,255,.75); --toggle-border:rgba(13,56,65,.14); --toggle-icon:var(--teal-700);
+    --toggle-shadow:0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg:rgba(250,248,243,.85); --header-border:rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg:rgba(201,67,47,.1);
+    --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold:rgba(255,182,72,.07); --bg-tint-teal:rgba(95,208,222,.10);
+    --border-card:rgba(255,255,255,.08); --border-card-hover:rgba(255,198,92,.4);
+    --toggle-bg:rgba(24,36,37,.85); --toggle-border:rgba(255,255,255,.14); --toggle-icon:var(--gold-400);
+    --toggle-shadow:0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg:rgba(9,34,39,.85); --header-border:rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg:rgba(255,107,87,.12);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope','Noto Sans Devanagari',system-ui,sans-serif;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  button{font-family:inherit;}
+
+  #gate{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease);}
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{display:none; min-height:100svh; flex-direction:column;}
+  #app.ready{display:flex;}
+
+  .app-header{position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;}
+  .app-header-top{display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto;}
+  .header-brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .back-btn,.icon-btn{border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; flex-shrink:0; position:relative; transition:transform .2s var(--ease);}
+  .back-btn{width:38px; height:38px;}
+  .icon-btn{width:40px; height:40px; box-shadow:var(--toggle-shadow);}
+  .back-btn:hover{transform:translateX(-2px);}
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:focus-visible,.back-btn:focus-visible{outline:3px solid var(--gold-500); outline-offset:3px;}
+  .back-btn svg{width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round;}
+  .icon-btn svg{width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease);}
+  .icon-sun{opacity:1;} .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:none;}
+  .header-text{min-width:0;}
+  .header-greeting{font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .header-sub{margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600);}
+  .header-sub.admin-badge{color:var(--teal-700);}
+  .header-actions{display:flex; gap:8px; flex-shrink:0;}
+
+  main.dash{flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px); display:flex; flex-direction:column; gap:16px;}
+  .card{background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card);}
+  .card-title{font-family:'Fraunces',serif; font-weight:600; font-size:1rem; margin:0 0 14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:480px){.row2{grid-template-columns:1fr;}}
+  input[type="date"], select{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500; outline:none;
+    transition:border-color .25s var(--ease), box-shadow .25s var(--ease);
+  }
+  input[type="date"]:focus, select:focus{border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold);}
+  select{appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px;}
+  .week-range-note{font-size:.8rem; font-weight:600; color:var(--teal-700); margin:8px 0 0;}
+
+  .btn{padding:13px 18px; border-radius:14px; border:none; font-weight:700; font-size:.88rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:transform .2s var(--ease), opacity .2s var(--ease);}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .btn-primary{background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55);}
+  .btn-ghost{background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card);}
+  .btn-danger{background:var(--danger-bg); color:var(--danger);}
+  .btn-teal{background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white);}
+  html[data-theme="dark"] .btn-teal{color:var(--teal-900);}
+  .btn-block{width:100%;}
+
+  .results-header{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .subject-card{background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:16px; box-shadow:var(--shadow-card);}
+  .subject-name{font-family:'Fraunces',serif; font-weight:600; font-size:1rem; color:var(--teal-700); margin:0;}
+  .subject-meta{font-size:.74rem; color:var(--ink-500); margin:3px 0 10px;}
+  .plan-field-label{font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-600); margin:8px 0 3px;}
+  .plan-field-value{font-family:'Noto Sans','Noto Sans Devanagari',Manrope,sans-serif; font-size:.86rem; line-height:1.55; white-space:pre-wrap;}
+  .plan-field-value.empty{color:var(--ink-500); font-style:italic;}
+  .hint{font-size:.78rem; color:var(--ink-500); margin:0;}
+
+  .placeholder-note{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500);}
+  .placeholder-note svg{width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6;}
+  .placeholder-note p{margin:0; font-size:.88rem;}
+
+  .sheet-backdrop{position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease);}
+  .sheet-backdrop.show{opacity:1; visibility:visible;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); max-width:960px; margin:0 auto; transform:translateY(100%); transition:transform .3s var(--ease);}
+  .sheet-backdrop.show .sheet{transform:none;}
+  .sheet-handle{width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px;}
+  .sheet h3{font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem;}
+  .sheet p{margin:0 0 20px; color:var(--ink-500); font-size:.88rem;}
+  .sheet-actions{display:flex; gap:10px;} .sheet-actions .btn{flex:1;}
+
+  #toast-wrap{position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;}
+  .toast{background:var(--teal-900); color:#fff; font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw;}
+  html[data-theme="dark"] .toast{color:var(--teal-900); background:var(--gold-400);}
+  .toast.show{opacity:1; transform:none;}
+  .toast.error{background:var(--danger); color:#fff;}
+
+  /* ---------- Print sheet: hidden on screen, the ONLY thing printed ---------- */
+  #print-sheet{display:none;}
+
+  @page{
+    size:A4; margin:14mm 14mm 16mm;
+    @bottom-center{ content:"Gopal Sharma Memorial School — Weekly Lesson Plan  |  Page " counter(page) " of " counter(pages); font:8pt Helvetica,Arial,sans-serif; color:#5f6f70; }
+  }
+  @media print{
+    html{ color-scheme: light !important; }
+    html,body{background:#fff !important; color:#1c2626 !important;}
+    #gate,#app,.sheet-backdrop,#toast-wrap{display:none !important;}
+    #print-sheet{display:block; font-family:'Noto Sans','Noto Sans Devanagari',Helvetica,Arial,sans-serif; color:#1c2626;}
+    * {-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .p-head{display:flex; align-items:center; justify-content:space-between; gap:12px; background:#0d3841; color:#fff; padding:12px 16px; border-radius:6px; margin-bottom:14px;}
+    .p-brand{display:flex; align-items:center; gap:12px;}
+    .p-brand img{width:42px; height:42px; object-fit:contain;}
+    .p-school{font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:15pt;}
+    .p-title{font-size:9.5pt; color:#ffd685; margin-top:2px;}
+    .p-right{text-align:right; font-size:9.5pt;}
+    .p-right .p-range{color:#ffd685; font-size:8.6pt; margin-top:2px;}
+    .p-card{border-left:3px solid #e2941a; padding:6px 0 8px 14px; margin-bottom:12px; break-inside:avoid; page-break-inside:avoid;}
+    .p-subject{font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:13pt; color:#124f59; padding-bottom:5px; border-bottom:1.4px solid #e2941a;}
+    .p-teacher{font-size:8pt; color:#5f6f70; margin-top:3px;}
+    .p-label{font-size:8pt; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#b26a12; margin-top:8px;}
+    .p-value{font-size:10pt; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; margin-top:1px;}
+    .p-value.empty{color:#5f6f70; font-style:italic;}
+  }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Lesson Plan PDF</p>
+          <p class="header-sub" id="role-badge">Compile &bull; Print &bull; Share</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash">
+    <div class="card">
+      <p class="card-title">Choose class &amp; week</p>
+      <div class="field">
+        <label for="browse-class">Class</label>
+        <select id="browse-class"><option value="">Select class…</option></select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="browse-week-start">Week starting</label>
+          <input type="date" id="browse-week-start">
+        </div>
+        <div class="field">
+          <label for="browse-week-end">Week ending</label>
+          <input type="date" id="browse-week-end">
+        </div>
+      </div>
+      <p class="week-range-note" id="browse-week-range-note"></p>
+      <button class="btn btn-teal btn-block" id="btn-load-week" type="button" style="margin-top:12px;">Compile this week's plan</button>
+    </div>
+
+    <div id="browse-results-wrap" style="display:none;">
+      <div class="results-header">
+        <p class="card-title" style="margin:0;" id="browse-results-title">Results</p>
+        <button class="btn btn-primary" id="btn-pdf" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          Save as PDF
+        </button>
+      </div>
+      <p class="hint" style="margin-top:8px;">In the print dialog, choose <strong>Save as PDF</strong> as the destination. On phones, use Share / Save to Files.</p>
+      <div id="browse-results" style="display:flex;flex-direction:column;gap:12px;margin-top:12px;"></div>
+    </div>
+
+    <div class="placeholder-note" id="browse-placeholder">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <p>Pick a class and a week to compile every subject's plan.</p>
+    </div>
+  </main>
+</div>
+
+<!-- Print-only compiled document -->
+<div id="print-sheet" aria-hidden="true"></div>
+
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout" type="button">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* ---------- Supabase setup (unchanged) ---------- */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var LOGO_URL = 'https://sourabhsuneja.github.io/gsms-logo.png';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = { user:null, teacherName:'', isAdmin:false, myAssignments:[], allCombos:[], allClasses:[], subjectOrder:{} };
+var lastBrowseResults = { class:'', weekStart:'', weekEnd:'', plans:[] };
+
+/* ---------- Theme, toast, sign-out, back ---------- */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout) sheetSignout.classList.remove('show'); });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+/* ---------- Date helpers ---------- */
+function toISODate(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function parseISODate(s){ var p = s.split('-'); return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10)); }
+function mondayOfCurrentWeek(){ var d = new Date(); var day = d.getDay(); d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day)); return d; }
+function addDays(d, n){ var nd = new Date(d); nd.setDate(nd.getDate() + n); return nd; }
+function formatRange(a, b){
+  if(!a || !b) return '';
+  return parseISODate(a).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) + ' – ' +
+         parseISODate(b).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+}
+function escapeHtml(str){ var div = document.createElement('div'); div.textContent = str == null ? '' : str; return div.innerHTML; }
+
+/* ---------- Week inputs ---------- */
+var browseClassSel = document.getElementById('browse-class');
+var browseWeekStart = document.getElementById('browse-week-start');
+var browseWeekEnd = document.getElementById('browse-week-end');
+var browseWeekRangeNote = document.getElementById('browse-week-range-note');
+
+function initDefaultWeek(){
+  var mon = mondayOfCurrentWeek();
+  browseWeekStart.value = toISODate(mon);
+  browseWeekEnd.value = toISODate(addDays(mon, 5));
+  browseWeekRangeNote.textContent = formatRange(browseWeekStart.value, browseWeekEnd.value);
+}
+browseWeekStart.addEventListener('change', function(){
+  if(browseWeekStart.value) browseWeekEnd.value = toISODate(addDays(parseISODate(browseWeekStart.value), 5));
+  browseWeekRangeNote.textContent = formatRange(browseWeekStart.value, browseWeekEnd.value);
+});
+browseWeekEnd.addEventListener('change', function(){
+  browseWeekRangeNote.textContent = formatRange(browseWeekStart.value, browseWeekEnd.value);
+});
+
+function populateBrowseClassDropdown(){
+  browseClassSel.innerHTML = '<option value="">Select class…</option>' +
+    state.allClasses.map(function(c){ return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>'; }).join('');
+}
+
+function sortPlansByDisplayOrder(plans){
+  return plans.slice().sort(function(a, b){
+    var oa = state.subjectOrder[a.subject] != null ? state.subjectOrder[a.subject] : 1;
+    var ob = state.subjectOrder[b.subject] != null ? state.subjectOrder[b.subject] : 1;
+    return oa !== ob ? oa - ob : a.subject.localeCompare(b.subject);
+  });
+}
+
+function fieldsOf(p){
+  return [['Chapter / Topics', p.topics], ['Classwork', p.classwork], ['Homework', p.homework], ['Activity', p.activity], ['Skills developed', p.skills]];
+}
+function teacherOf(p){ return (p.teachers && p.teachers.name) ? p.teachers.name : 'Subject teacher'; }
+
+/* ---------- Load compiled plans (same query as before) ---------- */
+document.getElementById('btn-load-week').addEventListener('click', function(){
+  var cls = browseClassSel.value, ws = browseWeekStart.value, we = browseWeekEnd.value;
+  if(!cls || !ws || !we){ toast('Select a class and week first.', true); return; }
+  if(we < ws){ toast('Week ending must be on or after week starting.', true); return; }
+
+  var btn = document.getElementById('btn-load-week');
+  btn.disabled = true; btn.textContent = 'Compiling…';
+
+  supabaseClient
+    .from('weekly_lesson_plans')
+    .select('*, teachers(name)')
+    .eq('class', cls).eq('week_start', ws).eq('week_end', we)
+    .order('subject', { ascending: true })
+    .then(function(res){
+      btn.disabled = false; btn.textContent = "Compile this week's plan";
+      if(res.error){ toast('Could not load plans: ' + res.error.message, true); return; }
+      lastBrowseResults = { class: cls, weekStart: ws, weekEnd: we, plans: sortPlansByDisplayOrder(res.data || []) };
+      renderResults();
+    });
+});
+
+function renderResults(){
+  var wrap = document.getElementById('browse-results-wrap');
+  var placeholder = document.getElementById('browse-placeholder');
+  var container = document.getElementById('browse-results');
+  var plans = lastBrowseResults.plans;
+  document.getElementById('browse-results-title').textContent = lastBrowseResults.class + ' • ' + formatRange(lastBrowseResults.weekStart, lastBrowseResults.weekEnd);
+
+  if(plans.length === 0){
+    wrap.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.querySelector('p').textContent = 'No lesson plans found for ' + lastBrowseResults.class + ' in that week yet.';
+    return;
+  }
+  placeholder.style.display = 'none';
+  wrap.style.display = 'block';
+
+  container.innerHTML = plans.map(function(p){
+    return '<div class="subject-card"><p class="subject-name">' + escapeHtml(p.subject) + '</p>' +
+      '<p class="subject-meta">' + escapeHtml(teacherOf(p)) + '</p>' +
+      fieldsOf(p).map(function(f){
+        var v = f[1] && f[1].trim();
+        return '<div class="plan-field-label">' + f[0] + '</div><div class="plan-field-value' + (v ? '' : ' empty') + '">' + (v ? escapeHtml(f[1]) : 'Not specified') + '</div>';
+      }).join('') + '</div>';
+  }).join('');
+
+  buildPrintSheet();
+}
+
+/* ---------- Lightweight PDF: build a print-only document, let the browser
+   render it (real text + embedded font subsets, so Hindi works and the file
+   stays tiny), and save it via the native "Save as PDF" print destination. ---------- */
+function buildPrintSheet(){
+  var r = lastBrowseResults;
+  var html =
+    '<div class="p-head"><div class="p-brand"><img src="' + LOGO_URL + '" alt="">' +
+    '<div><div class="p-school">Gopal Sharma Memorial School</div><div class="p-title">Weekly Lesson Plan</div></div></div>' +
+    '<div class="p-right"><div>Class ' + escapeHtml(r.class) + '</div><div class="p-range">' + escapeHtml(formatRange(r.weekStart, r.weekEnd)) + '</div></div></div>';
+
+  r.plans.forEach(function(p){
+    html += '<div class="p-card"><div class="p-subject">' + escapeHtml(p.subject) + '</div>' +
+      '<div class="p-teacher">' + escapeHtml(teacherOf(p)) + '</div>';
+    fieldsOf(p).forEach(function(f){
+      var v = f[1] && f[1].trim();
+      html += '<div class="p-label">' + f[0] + '</div><div class="p-value' + (v ? '' : ' empty') + '">' + (v ? escapeHtml(f[1]) : 'Not specified') + '</div>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('print-sheet').innerHTML = html;
+}
+
+function pdfFileTitle(){
+  var r = lastBrowseResults;
+  return 'Weekly-Lesson-Plan_Class_' + r.class.replace(/[^a-z0-9]/gi,'') + '_' + r.weekStart;
+}
+
+document.getElementById('btn-pdf').addEventListener('click', async function(){
+  if(!lastBrowseResults.plans.length){ toast('Compile a week with at least one plan first.', true); return; }
+  var btn = this, originalHtml = btn.innerHTML;
+  btn.disabled = true; btn.textContent = 'Preparing…';
+  try{
+    buildPrintSheet();
+    // Wait for fonts (Noto Sans / Devanagari) and the logo so the PDF captures them.
+    if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
+    var img = document.querySelector('#print-sheet img');
+    if(img && !img.complete){
+      await new Promise(function(res){ img.onload = img.onerror = res; setTimeout(res, 3000); });
+    }
+    // The document title becomes the suggested PDF file name.
+    var oldTitle = document.title;
+    document.title = pdfFileTitle();
+    window.addEventListener('afterprint', function restore(){
+      document.title = oldTitle;
+      window.removeEventListener('afterprint', restore);
+    });
+    window.print();
+  }catch(e){
+    console.error(e);
+    toast('Could not open the print dialog.', true);
+  }finally{
+    btn.disabled = false; btn.innerHTML = originalHtml;
+  }
+});
+
+/* ---------- Auth + data bootstrap (same checks and calls as before) ---------- */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+    var userId = session.user.id;
+
+    var teacherResult = await supabaseClient.from('teachers').select('id, name, email').eq('id', userId).maybeSingle();
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var badge = document.getElementById('role-badge');
+    if(state.isAdmin){
+      badge.textContent = 'Admin access — all classes';
+      badge.classList.add('admin-badge');
+    }else{
+      badge.textContent = state.teacherName.split(' ')[0] + ' • Compile & Print';
+    }
+
+    var myAssignRes = await supabaseClient.from('class_subject_assignments').select('class, subject').eq('teacher_id', userId);
+    state.myAssignments = myAssignRes.data || [];
+
+    var allCombosRes = state.isAdmin
+      ? await supabaseClient.from('class_subjects').select('class, subject')
+      : await supabaseClient.from('class_subject_assignments').select('class, subject');
+    state.allCombos = allCombosRes.data || [];
+
+    var classTeacherRes = await supabaseClient.from('class_teachers').select('class');
+    var classSet = {};
+    state.allCombos.forEach(function(c){ classSet[c.class] = true; });
+    (classTeacherRes.data || []).forEach(function(c){ classSet[c.class] = true; });
+    state.allClasses = Object.keys(classSet).sort();
+
+    var subjectsRes = await supabaseClient.from('subjects').select('name, display_order');
+    (subjectsRes.data || []).forEach(function(s){ state.subjectOrder[s.name] = s.display_order; });
+
+    populateBrowseClassDropdown();
+    initDefaultWeek();
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
