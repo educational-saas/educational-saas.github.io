@@ -35,8 +35,8 @@
     --status-checked-dark:#2f8f61;
     --status-submitted:#4aa8e0;
     --status-submitted-dark:#2878aa;
-    --status-late:#f5a623;
-    --status-late-dark:#b06f12;
+    --status-lost:#f5a623;
+    --status-lost-dark:#b06f12;
     --status-incomplete:#ff8a42;
     --status-incomplete-dark:#c15a16;
     --status-notsubmitted:#f2555a;
@@ -84,8 +84,8 @@
     --status-checked-dark:#8be9c4;
     --status-submitted:#63bdf2;
     --status-submitted-dark:#b4e0fb;
-    --status-late:#ffc65c;
-    --status-late-dark:#ffe2a8;
+    --status-lost:#ffc65c;
+    --status-lost-dark:#ffe2a8;
     --status-incomplete:#ff9d5c;
     --status-incomplete-dark:#ffc79a;
     --status-notsubmitted:#ff6b70;
@@ -139,7 +139,11 @@
   .count-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;}
   .count-text{display:flex;flex-direction:column;line-height:1.2;}
   .count-num{font-family:var(--font-display);font-weight:700;font-size:20px;}
-  .count-name{font-size:11.5px;font-weight:700;color:var(--ink-500);}
+  .count-name{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:var(--ink-500);}
+
+  /* ---------- icons: inherit currentColor so they match whatever they sit inside ---------- */
+  .icon{display:inline-flex;flex:0 0 auto;}
+  .icon svg{display:block;}
 
   /* ---------- subject chips ---------- */
   .subject-row{display:flex;gap:8px;flex-wrap:wrap;}
@@ -172,7 +176,7 @@
   }
   .record-card.C:before{background:var(--status-checked);}
   .record-card.S:before{background:var(--status-submitted);}
-  .record-card.L:before{background:var(--status-late);}
+  .record-card.L:before{background:var(--status-lost);}
   .record-card.I:before{background:var(--status-incomplete);}
   .record-card.N:before{background:var(--status-notsubmitted);}
 
@@ -183,17 +187,18 @@
   }
   .status-badge.C{background:color-mix(in srgb, var(--status-checked) 24%, var(--white));color:var(--status-checked-dark);}
   .status-badge.S{background:color-mix(in srgb, var(--status-submitted) 22%, var(--white));color:var(--status-submitted-dark);}
-  .status-badge.L{background:color-mix(in srgb, var(--status-late) 26%, var(--white));color:var(--status-late-dark);}
+  .status-badge.L{background:color-mix(in srgb, var(--status-lost) 26%, var(--white));color:var(--status-lost-dark);}
   .status-badge.I{background:color-mix(in srgb, var(--status-incomplete) 24%, var(--white));color:var(--status-incomplete-dark);}
   .status-badge.N{background:color-mix(in srgb, var(--status-notsubmitted) 22%, var(--white));color:var(--status-notsubmitted-dark);}
 
   .record-date{font-size:12px;font-weight:700;color:var(--ink-500);white-space:nowrap;}
   .record-title{font-family:var(--font-display);font-weight:600;font-size:16px;color:var(--ink-900);margin-bottom:4px;}
-  .record-meta{font-size:12.5px;font-weight:600;color:var(--ink-500);}
+  .record-meta{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink-500);}
   .record-note{
-    margin-top:8px;font-size:12.5px;font-weight:600;color:var(--ink-900);background:var(--panel-tint);
-    border-radius:var(--r-sm);padding:8px 10px;
+    display:flex;align-items:flex-start;gap:6px;margin-top:8px;font-size:12.5px;font-weight:600;color:var(--ink-900);
+    background:var(--panel-tint);border-radius:var(--r-sm);padding:8px 10px;
   }
+  .record-note .icon{margin-top:1px;}
 
   .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
   .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-500);}
@@ -289,12 +294,27 @@
   /* ============================================================
      Helpers
   ============================================================ */
+  // Small line-icon set, drawn to match the portal's rounded, friendly
+  // line weight. Every icon uses stroke="currentColor" so it automatically
+  // takes on whatever color the badge/chip/legend it sits inside is using —
+  // no separate light/dark variants needed.
+  var ICONS = {
+    checked: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5L19.5 7"/></svg>',
+    submitted: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L3 10.5l7.5 3L13.5 21 21 3z"/><path d="M10.5 13.5L21 3"/></svg>',
+    lost: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.3a2.7 2.7 0 015.2.9c0 1.8-2.5 2.1-2.5 3.8"/><circle cx="12" cy="17.1" r="1" fill="currentColor" stroke="none"/></svg>',
+    incomplete: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.5 2"/></svg>',
+    notsubmitted: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
+    teacher: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 5-10 5L2 8l10-5z"/><path d="M6 10.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.5"/></svg>',
+    note: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V17l10-10 2.5 2.5-10 10H4z"/><path d="M13.5 6l2.5 2.5"/></svg>'
+  };
+  function iconSpan(name){ return '<span class="icon">'+ICONS[name]+'</span>'; }
+
   var STATUS_META = {
-    C: {label:'Checked',      emoji:'✅', color:'var(--status-checked)',      colorDark:'var(--status-checked-dark)'},
-    S: {label:'Submitted',    emoji:'📩', color:'var(--status-submitted)',    colorDark:'var(--status-submitted-dark)'},
-    L: {label:'Late',         emoji:'🕒', color:'var(--status-late)',         colorDark:'var(--status-late-dark)'},
-    I: {label:'Incomplete',   emoji:'⏳', color:'var(--status-incomplete)',   colorDark:'var(--status-incomplete-dark)'},
-    N: {label:'Not Submitted',emoji:'❌', color:'var(--status-notsubmitted)', colorDark:'var(--status-notsubmitted-dark)'}
+    C: {label:'Checked',      icon:iconSpan('checked'),      color:'var(--status-checked)',      colorDark:'var(--status-checked-dark)'},
+    S: {label:'Submitted',    icon:iconSpan('submitted'),    color:'var(--status-submitted)',    colorDark:'var(--status-submitted-dark)'},
+    L: {label:'Lost',         icon:iconSpan('lost'),         color:'var(--status-lost)',         colorDark:'var(--status-lost-dark)'},
+    I: {label:'Incomplete',   icon:iconSpan('incomplete'),   color:'var(--status-incomplete)',   colorDark:'var(--status-incomplete-dark)'},
+    N: {label:'Not Submitted',icon:iconSpan('notsubmitted'), color:'var(--status-notsubmitted)', colorDark:'var(--status-notsubmitted-dark)'}
   };
   var STATUS_ORDER = ['C','S','L','I','N'];
   var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -324,7 +344,7 @@
   function colorTierFor(pct){
     if(pct === null) return {fg:'var(--ink-500)'};
     if(pct < 60) return {fg:'var(--status-notsubmitted-dark)'};
-    if(pct < 85) return {fg:'var(--status-late-dark)'};
+    if(pct < 85) return {fg:'var(--status-lost-dark)'};
     return {fg:'var(--status-checked-dark)'};
   }
 
@@ -356,7 +376,7 @@
       + '<div class="count-chip">'
       + '<span class="count-dot" style="background:'+meta.color+'"></span>'
       + '<span class="count-text"><span class="count-num">'+count+'</span>'
-      + '<span class="count-name">'+meta.emoji+' '+meta.label+'</span></span>'
+      + '<span class="count-name">'+meta.icon+meta.label+'</span></span>'
       + '</div>';
   }
 
@@ -604,23 +624,23 @@
     }
 
     var html = '<div class="record-list">' + records.map(function(r){
-      var meta = STATUS_META[r.status] || {label:r.status, emoji:'', };
-      var noteHtml = r.note ? '<div class="record-note">📝 '+escapeHtml(r.note)+'</div>' : '';
+      var meta = STATUS_META[r.status] || {label:r.status, icon:''};
+      var noteHtml = r.note ? '<div class="record-note">'+iconSpan('note')+'<span>'+escapeHtml(r.note)+'</span></div>' : '';
       return ''
         + '<div class="record-card '+r.status+'">'
         + '<div class="record-top">'
-        +   '<span class="status-badge '+r.status+'">'+meta.emoji+' '+meta.label+'</span>'
+        +   '<span class="status-badge '+r.status+'">'+meta.icon+meta.label+'</span>'
         +   '<span class="record-date">'+formatIndianDate(r.markedAt)+'</span>'
         + '</div>'
         + '<div class="record-title">'+escapeHtml(r.title)+'</div>'
-        + '<div class="record-meta">👩‍🏫 Marked by '+escapeHtml(r.teacher)+'</div>'
+        + '<div class="record-meta">'+iconSpan('teacher')+'Marked by '+escapeHtml(r.teacher)+'</div>'
         + noteHtml
         + '</div>';
     }).join('') + '</div>';
 
     html += '<div class="legend">' + STATUS_ORDER.map(function(k){
       var m = STATUS_META[k];
-      return '<span class="legend-item"><span class="legend-dot" style="background:'+m.color+'"></span>'+m.emoji+' '+m.label+'</span>';
+      return '<span class="legend-item"><span class="legend-dot" style="background:'+m.color+'"></span>'+m.icon+m.label+'</span>';
     }).join('') + '</div>';
 
     document.getElementById('recordsBody').innerHTML = html;
