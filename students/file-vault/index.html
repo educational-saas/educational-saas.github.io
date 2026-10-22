@@ -629,7 +629,7 @@
 
     try{
       var res = await supabase.functions.invoke(DOWNLOAD_FN_NAME, {
-        body: { object_key: file.r2_key }
+        body: { object_key: file.r2_key, accessed_as: 'student' }
       });
 
       if(res.error) throw res.error;
