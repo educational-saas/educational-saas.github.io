@@ -543,7 +543,7 @@
         if(res2.error) throw res2.error;
         files = res2.data || [];
 
-      }       } else { // subject
+      } else { // subject
         var res3 = await supabase.from('vault_file_targets')
           .select('vault_files!inner(id, r2_key, display_name, file_ext, size_bytes, created_at, status, kind)')
           .eq('class', state.class)
