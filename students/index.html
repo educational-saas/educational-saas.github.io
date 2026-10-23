@@ -565,6 +565,38 @@
   #greeting, #header-sub, #avatar-img, #tile-grid{
     transition: opacity .16s var(--ease), color .3s var(--ease);
   }
+
+  /* ---------- Single full-width tile on small screens ---------- */
+@media (max-width:480px){
+  .tile-grid{
+    grid-template-columns: 1fr;
+  }
+  .tile{
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 14px;
+    padding: 12px 16px;
+  }
+  .tile-icon{
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+  .tile-icon svg{
+    width: 44px;
+    height: 44px;
+  }
+  .tile-name{
+    font-size: .95rem;
+  }
+  .lock-badge{
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+  }
+}
 </style>
 </head>
 
