@@ -186,6 +186,17 @@
     flex-wrap:wrap;}
   .file-meta .dot-sep{opacity:.5;}
 
+  .dl-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+
+  .view-btn{
+    display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;
+    border:1px solid var(--border-card);border-radius:999px;background:var(--panel-tint);color:var(--teal-700);
+    cursor:pointer;transition:transform .12s ease, background .2s ease;flex:0 0 auto;padding:0;
+  }
+  .view-btn:hover{transform:translateY(-1px);background:var(--bg-tint-teal);}
+  .view-btn:active{transform:translateY(1px);}
+  .view-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+
   .dl-btn{
     display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-weight:800;font-size:12.5px;
     border:none;border-radius:999px;padding:9px 14px;cursor:pointer;background:var(--teal-700);color:#fff;
@@ -216,11 +227,70 @@
   }
   @keyframes spin{to{transform:rotate(360deg);}}
 
+  /* ---------- lightbox viewer ---------- */
+  .lb-overlay{
+    position:fixed;inset:0;background:rgba(9,34,39,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    display:none;align-items:center;justify-content:center;z-index:1000;padding:0;
+    opacity:0;transition:opacity .22s var(--ease);
+  }
+  .lb-overlay.open{display:flex;opacity:1;}
+  .lb-shell{width:100%;height:100%;display:flex;flex-direction:column;}
+  .lb-topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 16px;flex:0 0 auto;
+  }
+  .lb-title{
+    font-family:var(--font-display);font-weight:600;font-size:15px;color:#fff;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+  }
+  .lb-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .lb-icon-btn{
+    width:38px;height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.22);
+    background:rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:background .2s ease, transform .12s ease;flex:0 0 auto;padding:0;
+  }
+  .lb-icon-btn:hover{background:rgba(255,255,255,.18);transform:translateY(-1px);}
+  .lb-icon-btn:active{transform:translateY(1px);}
+  .lb-icon-btn:focus-visible{outline:3px solid var(--gold-400);outline-offset:2px;}
+  .lb-body{
+    flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:0;
+    position:relative;padding:0 14px 18px;overflow:hidden;
+  }
+  .lb-media-wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;min-height:0;}
+  .lb-img{
+    max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;cursor:zoom-in;
+    transition:transform .25s var(--ease);box-shadow:0 10px 40px rgba(0,0,0,.4);
+    touch-action:pinch-zoom;user-select:none;
+  }
+  .lb-img.zoomed{cursor:zoom-out;transform:scale(1.9);}
+  .lb-video{
+    max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.4);background:#000;
+  }
+  .lb-pdf-frame{
+    width:100%;height:100%;border:0;border-radius:10px;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.4);
+  }
+  .lb-state{
+    display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:14.5px;
+    text-align:center;padding:0 20px;
+  }
+  .lb-spinner{
+    width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;
+    animation:spin .8s linear infinite;
+  }
+  .lb-err{color:#ffb0b2;}
+  .lb-retry-btn{
+    font-family:var(--font-body);font-weight:800;font-size:13.5px;border:none;border-radius:999px;
+    padding:9px 18px;cursor:pointer;background:var(--gold-500);color:#1c2626;
+  }
+
   @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
 
   @media (max-width:420px){
     .card{padding:16px;}
     .file-name{font-size:14px;}
+    .lb-topbar{padding:12px;}
+    .lb-icon-btn{width:34px;height:34px;}
+    .lb-body{padding:0 10px 14px;}
   }
 </style>
 </head>
@@ -236,6 +306,19 @@
     <div id="mainBody">
       <div class="state-msg" id="initialState"><div class="spinner"></div>Loading your files…</div>
     </div>
+  </div>
+</div>
+
+<div class="lb-overlay" id="lbOverlay" aria-hidden="true">
+  <div class="lb-shell">
+    <div class="lb-topbar">
+      <div class="lb-title" id="lbTitle"></div>
+      <div class="lb-actions">
+        <button class="lb-icon-btn" id="lbDownloadBtn" title="Download" aria-label="Download file"></button>
+        <button class="lb-icon-btn" id="lbCloseBtn" title="Close" aria-label="Close preview"></button>
+      </div>
+    </div>
+    <div class="lb-body" id="lbBody"></div>
   </div>
 </div>
 
@@ -276,6 +359,56 @@
   // keys off html[data-theme="dark"], so nothing else is needed here.
 
   /* ============================================================
+     Download-link cache (browser localStorage, 7-day TTL)
+     Keyed by r2_key. Mirrors the pre-signed URL expiry on the
+     Edge Function side (see accompanying note) so a cached link
+     never outlives the URL it points to.
+  ============================================================ */
+  var DL_CACHE_KEY = 'vault_dl_cache_v1';
+  var DL_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  function readDlCache(){
+    try{
+      var raw = localStorage.getItem(DL_CACHE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e){ return {}; }
+  }
+  function writeDlCache(cacheObj){
+    try{ localStorage.setItem(DL_CACHE_KEY, JSON.stringify(cacheObj)); } catch(e){ /* storage full/unavailable — fail silently, cache is best-effort */ }
+  }
+  function getCachedDownloadUrl(r2Key){
+    var cache = readDlCache();
+    var entry = cache[r2Key];
+    if(entry && entry.url && typeof entry.exp === 'number' && Date.now() < entry.exp){
+      return entry.url;
+    }
+    return null;
+  }
+  function setCachedDownloadUrl(r2Key, url){
+    var cache = readDlCache();
+    cache[r2Key] = { url: url, exp: Date.now() + DL_CACHE_TTL_MS };
+    writeDlCache(cache);
+  }
+
+  // Single entry point for turning a file into a usable URL: serves the
+  // cached link when one is still valid, otherwise asks the Edge Function
+  // for a fresh pre-signed URL and caches it for next time.
+  async function resolveFileUrl(file){
+    var cached = getCachedDownloadUrl(file.r2_key);
+    if(cached) return cached;
+
+    var res = await supabase.functions.invoke(DOWNLOAD_FN_NAME, {
+      body: { object_key: file.r2_key, accessed_as: 'student' }
+    });
+    if(res.error) throw res.error;
+    var url = res.data && res.data.url;
+    if(!url) throw new Error('No download URL was returned.');
+
+    setCachedDownloadUrl(file.r2_key, url);
+    return url;
+  }
+
+  /* ============================================================
      Icons
   ============================================================ */
   var ICONS = {
@@ -290,7 +423,9 @@
     fileImg: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="9" cy="10" r="1.6" fill="currentColor" stroke="none"/><path d="M4 17l5-5 4.5 4.5L17 13l3 3.5"/></svg>',
     fileGeneric: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2.5h7l4 4V20a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 016 20V4A1.5 1.5 0 017 2.5z"/><path d="M14 2.5V7a1.5 1.5 0 001.5 1.5H18.5"/><path d="M9 13.5h6M9 17h4"/></svg>',
     download: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 19.5h16"/></svg>',
-    empty: '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/><path d="M8.5 14.5l3-3 2 2 2-2.5"/></svg>'
+    empty: '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/><path d="M8.5 14.5l3-3 2 2 2-2.5"/></svg>',
+    eye: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.3 12S6 5.2 12 5.2 21.7 12 21.7 12 18 18.8 12 18.8 2.3 12 2.3 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    close: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
   };
   function iconSpan(name){ return '<span class="icon">'+ICONS[name]+'</span>'; }
 
@@ -327,6 +462,17 @@
     if(ext === 'pdf') return ICONS.filePdf;
     if(['jpg','jpeg','png','gif','webp','heic','svg'].indexOf(ext) !== -1) return ICONS.fileImg;
     return ICONS.fileGeneric;
+  }
+
+  /* ---------- which files get an in-page preview ---------- */
+  var PREVIEW_IMAGE_EXTS = ['jpg','jpeg','png','gif','webp','bmp','svg'];
+  var PREVIEW_VIDEO_EXTS = ['mp4','webm','mov','m4v','ogv'];
+  function previewKindFor(ext){
+    ext = (ext||'').toLowerCase();
+    if(PREVIEW_IMAGE_EXTS.indexOf(ext) !== -1) return 'image';
+    if(PREVIEW_VIDEO_EXTS.indexOf(ext) !== -1) return 'video';
+    if(ext === 'pdf') return 'pdf';
+    return null;
   }
 
   /* ============================================================
@@ -589,6 +735,10 @@
     }
 
     var html = '<div class="file-list">' + files.map(function(f, idx){
+      var kind = previewKindFor(f.file_ext);
+      var viewBtn = kind
+        ? '<button class="view-btn" data-idx="'+idx+'" title="Preview" aria-label="Preview '+escapeHtml(f.display_name)+'">'+iconSpan('eye')+'</button>'
+        : '';
       return ''
         + '<div class="file-card '+folder.kind+'" data-idx="'+idx+'">'
         + '<span class="file-type-icon">'+iconForExt(f.file_ext)+'</span>'
@@ -599,7 +749,10 @@
         +     '<span class="dot-sep">&bull;</span><span>'+escapeHtml((f.file_ext||'').toUpperCase())+'</span></div>'
         +   '<div class="file-err" style="display:none;"></div>'
         + '</div>'
-        + '<button class="dl-btn" data-idx="'+idx+'">'+iconSpan('download')+'<span class="dl-label">Download</span></button>'
+        + '<div class="dl-actions">'
+        +   viewBtn
+        +   '<button class="dl-btn" data-idx="'+idx+'">'+iconSpan('download')+'<span class="dl-label">Download</span></button>'
+        + '</div>'
         + '</div>';
     }).join('') + '</div>';
 
@@ -612,11 +765,20 @@
         downloadFile(files[idx], btn);
       });
     });
+
+    var viewBtns = document.getElementById('mainBody').querySelectorAll('.view-btn');
+    viewBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        openLightbox(files[idx]);
+      });
+    });
   }
 
   /* ============================================================
-     Download — calls the (not-yet-created) Edge Function to get a
-     pre-signed URL for the given object key, then opens it.
+     Download — resolves a URL (cache-first, see resolveFileUrl)
+     for the given file, then opens it. Same user-facing behaviour
+     and error handling as before; only the URL lookup is new.
   ============================================================ */
   async function downloadFile(file, btn){
     var card = btn.closest('.file-card');
@@ -628,14 +790,7 @@
     btn.innerHTML = '<span class="dl-spinner"></span><span class="dl-label">Preparing…</span>';
 
     try{
-      var res = await supabase.functions.invoke(DOWNLOAD_FN_NAME, {
-        body: { object_key: file.r2_key, accessed_as: 'student' }
-      });
-
-      if(res.error) throw res.error;
-      var url = res.data && res.data.url;
-      if(!url) throw new Error('No download URL was returned.');
-
+      var url = await resolveFileUrl(file);
       window.open(url, '_blank', 'noopener');
     } catch(e){
       if(errEl){
@@ -649,6 +804,86 @@
   }
 
   /* ============================================================
+     Lightbox viewer — images, video and PDFs, in place.
+     Reuses resolveFileUrl() so a preview and a download of the
+     same file share the one cached link.
+  ============================================================ */
+  var lbOverlay, lbTitle, lbBody, lbDownloadBtn, lbCloseBtn;
+  var lbCurrentFile = null;
+  var lbKeydownHandler = null;
+
+  function initLightbox(){
+    lbOverlay = document.getElementById('lbOverlay');
+    lbTitle = document.getElementById('lbTitle');
+    lbBody = document.getElementById('lbBody');
+    lbDownloadBtn = document.getElementById('lbDownloadBtn');
+    lbCloseBtn = document.getElementById('lbCloseBtn');
+
+    lbDownloadBtn.innerHTML = iconSpan('download');
+    lbCloseBtn.innerHTML = iconSpan('close');
+
+    lbCloseBtn.addEventListener('click', closeLightbox);
+    lbOverlay.addEventListener('click', function(e){
+      if(e.target === lbOverlay) closeLightbox();
+    });
+    lbDownloadBtn.addEventListener('click', function(){
+      if(!lbCurrentFile) return;
+      resolveFileUrl(lbCurrentFile).then(function(url){
+        window.open(url, '_blank', 'noopener');
+      }).catch(function(){ /* the preview pane already reports load failures */ });
+    });
+  }
+
+  async function openLightbox(file){
+    lbCurrentFile = file;
+    var kind = previewKindFor(file.file_ext);
+
+    lbTitle.textContent = file.display_name;
+    lbBody.innerHTML = '<div class="lb-state"><div class="lb-spinner"></div>Loading preview…</div>';
+    lbOverlay.classList.add('open');
+    lbOverlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    lbKeydownHandler = function(e){ if(e.key === 'Escape') closeLightbox(); };
+    document.addEventListener('keydown', lbKeydownHandler);
+
+    try{
+      var url = await resolveFileUrl(file);
+      if(lbCurrentFile !== file) return; // closed/changed while loading
+      renderLightboxMedia(kind, url, file);
+    } catch(e){
+      if(lbCurrentFile !== file) return;
+      lbBody.innerHTML = '<div class="lb-state lb-err">Could not load this preview.<br>'
+        + '<button class="lb-retry-btn" id="lbRetryBtn">Try again</button></div>';
+      var retry = document.getElementById('lbRetryBtn');
+      if(retry) retry.addEventListener('click', function(){ openLightbox(file); });
+    }
+  }
+
+  function renderLightboxMedia(kind, url, file){
+    if(kind === 'image'){
+      lbBody.innerHTML = '<div class="lb-media-wrap"><img class="lb-img" id="lbImg" src="'+url+'" alt="'+escapeHtml(file.display_name)+'"></div>';
+      var img = document.getElementById('lbImg');
+      if(img){ img.addEventListener('click', function(){ img.classList.toggle('zoomed'); }); }
+    } else if(kind === 'video'){
+      lbBody.innerHTML = '<div class="lb-media-wrap"><video class="lb-video" src="'+url+'" controls autoplay playsinline></video></div>';
+    } else if(kind === 'pdf'){
+      lbBody.innerHTML = '<div class="lb-media-wrap"><iframe class="lb-pdf-frame" src="'+url+'" title="'+escapeHtml(file.display_name)+'"></iframe></div>';
+    } else {
+      lbBody.innerHTML = '<div class="lb-state">Preview isn\'t available for this file type — use download instead.</div>';
+    }
+  }
+
+  function closeLightbox(){
+    lbOverlay.classList.remove('open');
+    lbOverlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    lbBody.innerHTML = '';
+    lbCurrentFile = null;
+    if(lbKeydownHandler){ document.removeEventListener('keydown', lbKeydownHandler); lbKeydownHandler = null; }
+  }
+
+  /* ============================================================
      Generic error state for the main card
   ============================================================ */
   function showMainError(msg, retryFn){
@@ -658,6 +893,7 @@
     if(btn) btn.addEventListener('click', retryFn);
   }
 
+  initLightbox();
   init();
 })();
 </script>
