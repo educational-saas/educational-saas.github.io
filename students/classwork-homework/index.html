@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Classwork &amp; Homework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    --panel-tint: var(--bg-tint-teal);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+    --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
+
+    --has-plan-tint: color-mix(in srgb, var(--gold-500) 16%, var(--white));
+    --chip-bg: color-mix(in srgb, var(--teal-700) 12%, var(--white));
+    --danger: #b3432f;
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:12px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.08);
+    --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10);
+
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5);
+    --edge-shadow-soft: rgba(0,0,0,.35);
+    --track: color-mix(in srgb, var(--white) 14%, transparent);
+
+    --has-plan-tint: color-mix(in srgb, var(--gold-500) 14%, var(--white));
+    --chip-bg: color-mix(in srgb, var(--teal-700) 22%, var(--white));
+    --danger: #ff8a73;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    transition:background .3s var(--ease), color .3s var(--ease);
+    padding:14px 14px 28px;
+  }
+
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--border-card);
+    background:var(--white);font-size:17px;cursor:pointer;box-shadow:0 3px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;color:var(--ink-900);
+  }
+  .icon-btn:hover{transform:translateY(-1px);}
+  .icon-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .icon-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .icon-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:0 3px 0 var(--edge-shadow-soft);}
+
+  .card{
+    background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border-card);
+    box-shadow:0 6px 0 var(--edge-shadow-soft);padding:20px;margin-bottom:16px;
+  }
+
+  .section-title{
+    font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 2px;color:var(--ink-900);
+  }
+  .section-sub{font-size:13px;color:var(--ink-500);margin:0 0 14px;font-weight:600;}
+
+  /* ---------- calendar ---------- */
+  .cal-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+  .cal-title{display:flex;align-items:center;gap:10px;}
+  .cal-month{font-family:var(--font-display);font-weight:700;font-size:19px;min-width:150px;text-align:center;}
+  .cal-nav-btns{display:flex;gap:6px;}
+  .cal-actions{display:flex;align-items:center;gap:8px;}
+
+  .today-btn{
+    font-family:var(--font-body);font-weight:800;font-size:12.5px;border:1px solid var(--border-card);
+    border-radius:999px;padding:8px 14px;cursor:pointer;background:var(--panel-tint);color:var(--teal-800);
+    box-shadow:0 3px 0 var(--edge-shadow-soft);transition:transform .15s ease;
+  }
+  .today-btn:hover{transform:translateY(-1px);}
+  .today-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+
+  .date-jump{
+    font-family:var(--font-body);font-weight:700;font-size:13px;color:var(--ink-900);
+    background:var(--input-bg);border:1px solid var(--input-border);border-radius:var(--r-sm);
+    padding:8px 10px;cursor:pointer;
+  }
+  .date-jump:focus-visible{outline:3px solid var(--teal-600);outline-offset:1px;}
+
+  .weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:14px 0 6px;}
+  .weekday-row span{text-align:center;font-size:11.5px;font-weight:700;color:var(--ink-500);}
+
+  .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;position:relative;}
+  .day-cell{
+    aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;position:relative;z-index:1;background:var(--input-bg);color:var(--ink-500);
+    transition:transform .12s ease;cursor:pointer;border:none;font-family:var(--font-body);
+  }
+  .day-cell.empty{background:transparent;cursor:default;}
+  .day-cell:not(.empty):hover{transform:translateY(-1px);}
+  .day-cell .day-num{position:relative;z-index:2;}
+
+  .day-cell.has-plan{background:var(--has-plan-tint);color:var(--ink-900);}
+  .day-cell[data-dot]:after{
+    content:"";position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;
+    background:var(--gold-600);opacity:.9;z-index:2;
+  }
+
+  .day-cell.today{box-shadow:0 0 0 2px var(--teal-600) inset;z-index:2;}
+  .day-cell.selected{box-shadow:0 0 0 2.5px var(--gold-600) inset;z-index:2;}
+  .day-cell.today.selected{box-shadow:0 0 0 2px var(--teal-600) inset, 0 0 0 4.5px var(--gold-600) inset;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-500);}
+  .legend-dot{width:10px;height:10px;border-radius:3px;}
+  .legend-ring{width:10px;height:10px;border-radius:3px;box-shadow:0 0 0 2px var(--teal-600) inset;background:var(--white);}
+
+  /* ---------- subject / entry cards ---------- */
+  .plans-list{display:flex;flex-direction:column;gap:12px;}
+  .subject-card{
+    border:1px solid var(--border-card);border-radius:var(--r-md);padding:14px 16px;background:var(--panel-tint);
+  }
+  .subject-name{
+    font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--teal-800);margin:0 0 10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .subject-dot{width:9px;height:9px;border-radius:50%;background:var(--gold-500);flex:0 0 auto;}
+
+  .work-group{margin-bottom:12px;}
+  .work-group:last-child{margin-bottom:0;}
+  .work-group-label{
+    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-500);
+    display:flex;align-items:center;gap:6px;margin-bottom:6px;
+  }
+  .kind-chip{
+    display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:5px;
+    font-size:10px;font-weight:800;color:var(--white);background:var(--teal-700);
+  }
+  .kind-chip.hw{background:var(--gold-600);}
+
+  .entry-block{margin-bottom:10px;}
+  .entry-block:last-child{margin-bottom:0;}
+  .entry-content{font-size:14px;line-height:1.55;color:var(--ink-900);white-space:pre-wrap;}
+
+  /* ---------- attachments ---------- */
+  .file-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .file-row{
+    display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border-card);
+    border-radius:var(--r-sm);padding:8px 10px;
+  }
+  .file-icon{font-size:17px;flex:0 0 auto;line-height:1;}
+  .file-meta{flex:1 1 auto;min-width:0;}
+  .file-name{font-size:13.5px;font-weight:700;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .file-size{font-size:11.5px;font-weight:600;color:var(--ink-500);}
+  .dl-btn{
+    flex:0 0 auto;font-family:var(--font-body);font-weight:800;font-size:12px;border:none;
+    border-radius:999px;padding:7px 14px;cursor:pointer;background:var(--teal-700);color:#fff;
+    display:flex;align-items:center;gap:6px;transition:opacity .15s ease;
+  }
+  .dl-btn:hover{opacity:.9;}
+  .dl-btn:disabled{opacity:.55;cursor:default;}
+  .dl-spinner{
+    width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+    animation:spin .7s linear infinite;
+  }
+  .file-error{font-size:11.5px;font-weight:700;color:var(--danger);margin-top:3px;}
+
+  /* ---------- status / loading ---------- */
+  .state-msg{
+    text-align:center;padding:30px 12px;font-weight:700;color:var(--ink-500);font-size:14.5px;
+  }
+  .state-msg.err{color:var(--teal-800);}
+  .state-msg.empty{font-weight:600;}
+  .retry-btn{
+    margin-top:10px;font-family:var(--font-body);font-weight:800;font-size:13.5px;border:none;
+    border-radius:999px;padding:9px 18px;cursor:pointer;background:var(--teal-700);color:#fff;
+  }
+  .spinner{
+    width:26px;height:26px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--teal-600);
+    margin:0 auto 10px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+
+  @media (max-width:420px){
+    .card{padding:16px;}
+    .cal-month{min-width:110px;font-size:16px;}
+    .day-cell{font-size:11.5px;border-radius:8px;}
+    .cal-actions{width:100%;justify-content:space-between;}
+    .file-name{max-width:140px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Calendar: month view, days with published entries marked -->
+  <div class="card" id="calendarCard">
+    <div class="cal-header">
+      <div class="cal-title">
+        <div class="cal-nav-btns">
+          <button class="icon-btn" id="prevMonthBtn" aria-label="Previous month">‹</button>
+        </div>
+        <span class="cal-month" id="calMonthLabel">—</span>
+        <div class="cal-nav-btns">
+          <button class="icon-btn" id="nextMonthBtn" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="cal-actions">
+        <input type="date" class="date-jump" id="dateJumpInput" aria-label="Jump to date">
+        <button class="today-btn" id="todayBtn">Today</button>
+      </div>
+    </div>
+    <div id="calendarBody">
+      <div class="state-msg" id="calendarState"><div class="spinner"></div>Loading calendar…</div>
+    </div>
+  </div>
+
+  <!-- Classwork / homework for the selected date -->
+  <div class="card" id="entriesCard">
+    <h2 class="section-title" id="entriesTitle">Classwork &amp; Homework</h2>
+    <p class="section-sub" id="entriesSub">—</p>
+    <div id="entriesBody">
+      <div class="state-msg" id="entriesState"><div class="spinner"></div>Loading entries…</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     Multi-tenant credentials — provided as-is, do not modify.
+  ============================================================ */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  var AUTH_REDIRECT = 'https://educational-saas.github.io/'; // If user not already logged in or does not have a "student" role
+
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Theme is controlled entirely by the parent page, which sets
+  // data-theme="light" | "dark" on <html>. This page's CSS already
+  // keys off html[data-theme="dark"], so nothing else is needed here.
+
+  /* ============================================================
+     Helpers
+  ============================================================ */
+  var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var KIND_LABELS = { C: 'Classwork', H: 'Homework' };
+
+  function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+  function ymd(y,m,d){ return y+'-'+pad2(m+1)+'-'+pad2(d); }
+  function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
+  function parseDateStr(s){
+    // s is 'YYYY-MM-DD' — parse as local calendar date, no timezone drift.
+    var parts = s.split('-');
+    return new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function formatLongDate(dateStr){
+    var d = parseDateStr(dateStr);
+    var WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    return WEEKDAYS[d.getDay()] + ', ' + MONTH_NAMES[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+  function formatBytes(bytes){
+    if(bytes === null || bytes === undefined || isNaN(bytes)) return '';
+    var units = ['B','KB','MB','GB'];
+    var val = bytes, i = 0;
+    while(val >= 1024 && i < units.length - 1){ val /= 1024; i++; }
+    return (i === 0 ? Math.round(val) : (val >= 10 ? Math.round(val) : val.toFixed(1))) + ' ' + units[i];
+  }
+  var ICON_MAP = {
+    pdf:'📕', doc:'📄', docx:'📄', txt:'📄', rtf:'📄',
+    xls:'📊', xlsx:'📊', csv:'📊',
+    ppt:'📙', pptx:'📙',
+    jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🖼️',
+    mp4:'🎞️', mov:'🎞️', avi:'🎞️', mkv:'🎞️',
+    mp3:'🎧', wav:'🎧', m4a:'🎧',
+    zip:'🗜️', rar:'🗜️', '7z':'🗜️'
+  };
+  function fileIcon(ext){ return ICON_MAP[(ext||'').toLowerCase()] || '📎'; }
+
+  var today = new Date();
+  var todayStr = ymd(today.getFullYear(), today.getMonth(), today.getDate());
+
+  /* ============================================================
+     App state
+  ============================================================ */
+  var state = {
+    myClass: null,
+    viewYear: today.getFullYear(),
+    viewMonth: today.getMonth(),
+    selectedDate: todayStr,
+    datesCache: {},    // 'YYYY-M' -> Set of 'YYYY-MM-DD' strings that have entries
+    entriesCache: {},  // 'YYYY-MM-DD' -> array of entry rows (with .files attached)
+    subjectOrder: null // {subjectName: display_order} or null if not yet loaded / unavailable
+  };
+
+  /* ============================================================
+     Auth + identity resolution
+  ============================================================ */
+  async function init(){
+    try{
+      var sessionRes = await supabase.auth.getSession();
+      var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+      if(!session){ window.location.href = AUTH_REDIRECT; return; }
+
+      var uid = session.user.id;
+
+      // Confirm this user is a student, and get their current class.
+      var studentRes = await supabase.from('students')
+        .select('class')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if(studentRes.error || !studentRes.data || !studentRes.data.class){
+        showCalendarError('We could not find your class assignment.');
+        showEntriesError('We could not find your class assignment.');
+        return;
+      }
+
+      state.myClass = studentRes.data.class;
+
+      document.getElementById('dateJumpInput').value = state.selectedDate;
+
+      // Subject display order is a tiny, rarely-changing lookup — fetch once,
+      // used only to sort the subject cards sensibly. Non-critical if it fails.
+      loadSubjectOrder();
+
+      await loadMonth(state.viewYear, state.viewMonth);
+      await loadEntriesForDate(state.selectedDate);
+    } catch(e){
+      showCalendarError('Something went wrong loading the calendar.');
+      showEntriesError('Something went wrong loading classwork/homework.');
+    }
+  }
+
+  async function loadSubjectOrder(){
+    try{
+      var res = await supabase.from('subjects').select('name, display_order');
+      if(res.error || !res.data) return;
+      var map = {};
+      res.data.forEach(function(row){ map[row.name] = row.display_order; });
+      state.subjectOrder = map;
+      // Re-render currently shown entries with correct ordering, if any.
+      if(state.entriesCache[state.selectedDate]) renderEntries(state.selectedDate);
+    } catch(e){ /* non-critical */ }
+  }
+
+  /* ============================================================
+     Month marker data — fetches only the dates (within the own
+     class) that have at least one classwork/homework entry, used
+     purely to dot the calendar grid. No entry content is
+     transferred for this call.
+  ============================================================ */
+  async function loadMonth(year, month){
+    var key = year + '-' + month;
+    renderCalendarHeader(year, month);
+
+    if(state.datesCache[key]){
+      renderCalendar(year, month);
+      return;
+    }
+
+    document.getElementById('calendarBody').innerHTML =
+      '<div class="state-msg" id="calendarState"><div class="spinner"></div>Loading calendar…</div>';
+
+    try{
+      var first = ymd(year, month, 1);
+      var last = ymd(year, month, daysInMonth(year, month));
+
+      var res = await supabase.from('classwork_homework')
+        .select('entry_date, classwork_homework_classes!inner(class)')
+        .eq('classwork_homework_classes.class', state.myClass)
+        .gte('entry_date', first)
+        .lte('entry_date', last);
+
+      if(res.error) throw res.error;
+
+      var dateSet = {};
+      (res.data || []).forEach(function(r){ dateSet[r.entry_date] = true; });
+      state.datesCache[key] = dateSet;
+      renderCalendar(year, month);
+    } catch(e){
+      showCalendarError('Could not load the calendar for this month.');
+    }
+  }
+
+  function renderCalendarHeader(year, month){
+    document.getElementById('calMonthLabel').textContent = MONTH_NAMES[month] + ' ' + year;
+  }
+
+  function renderCalendar(year, month){
+    var key = year + '-' + month;
+    var dateSet = state.datesCache[key] || {};
+
+    var firstWeekday = new Date(year, month, 1).getDay();
+    var totalDays = daysInMonth(year, month);
+
+    var cells = '<div class="weekday-row">'
+      + ['S','M','T','W','T','F','S'].map(function(d){ return '<span>'+d+'</span>'; }).join('')
+      + '</div><div class="day-grid">';
+
+    for(var i=0;i<firstWeekday;i++) cells += '<div class="day-cell empty"></div>';
+
+    for(var d=1; d<=totalDays; d++){
+      var dateStr = ymd(year, month, d);
+      var cls = 'day-cell';
+      var attrs = '';
+      var hasEntry = !!dateSet[dateStr];
+
+      if(hasEntry){
+        cls += ' has-plan';
+        attrs += ' data-dot="1"';
+      }
+      if(dateStr === todayStr) cls += ' today';
+      if(dateStr === state.selectedDate) cls += ' selected';
+
+      cells += '<button type="button" class="'+cls+'" data-date="'+dateStr+'"'+attrs
+        + ' aria-label="'+formatLongDate(dateStr)+(hasEntry ? ', classwork or homework available' : '')+'">'
+        + '<span class="day-num">'+d+'</span></button>';
+    }
+    cells += '</div>';
+
+    cells += '<div class="legend">'
+      + '<span class="legend-item"><span class="legend-dot" style="background:var(--gold-600)"></span>Entries available</span>'
+      + '<span class="legend-item"><span class="legend-ring"></span>Today</span>'
+      + '</div>';
+
+    document.getElementById('calendarBody').innerHTML = cells;
+
+    var cellEls = document.querySelectorAll('#calendarBody .day-cell:not(.empty)');
+    cellEls.forEach(function(el){
+      el.addEventListener('click', function(){ selectDate(el.getAttribute('data-date')); });
+    });
+  }
+
+  function showCalendarError(msg){
+    document.getElementById('calendarBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryMonth">Try again</button></div>';
+    var btn = document.getElementById('retryMonth');
+    if(btn) btn.addEventListener('click', function(){ loadMonth(state.viewYear, state.viewMonth); });
+  }
+
+  /* ============================================================
+     Classwork / homework entries for a specific date, plus any
+     attached files for each entry.
+  ============================================================ */
+  async function loadEntriesForDate(dateStr){
+    renderEntriesHeader(dateStr);
+
+    if(state.entriesCache[dateStr]){
+      renderEntries(dateStr);
+      return;
+    }
+
+    document.getElementById('entriesBody').innerHTML =
+      '<div class="state-msg" id="entriesState"><div class="spinner"></div>Loading entries…</div>';
+
+    try{
+      var entryRes = await supabase.from('classwork_homework')
+        .select('id, subject, kind, content, classwork_homework_classes!inner(class)')
+        .eq('classwork_homework_classes.class', state.myClass)
+        .eq('entry_date', dateStr);
+
+      if(entryRes.error) throw entryRes.error;
+
+      var entries = (entryRes.data || []).map(function(r){
+        return { id: r.id, subject: r.subject, kind: r.kind, content: r.content, files: [] };
+      });
+
+      if(entries.length){
+        var ids = entries.map(function(e){ return e.id; });
+        var fileRes = await supabase.from('vault_files')
+          .select('id, r2_key, display_name, file_ext, size_bytes, mime_type, cwhw_entry_id')
+          .eq('kind', 'classwork_homework')
+          .eq('status', 'active')
+          .in('cwhw_entry_id', ids);
+
+        if(fileRes.error) throw fileRes.error;
+
+        var filesByEntry = {};
+        (fileRes.data || []).forEach(function(f){
+          if(!filesByEntry[f.cwhw_entry_id]) filesByEntry[f.cwhw_entry_id] = [];
+          filesByEntry[f.cwhw_entry_id].push(f);
+        });
+
+        entries.forEach(function(e){ e.files = filesByEntry[e.id] || []; });
+      }
+
+      state.entriesCache[dateStr] = entries;
+      renderEntries(dateStr);
+
+      // Refresh the dot on the calendar in case this was the first load
+      // for a date that hadn't been covered by the month marker fetch yet.
+      var mKey = state.viewYear + '-' + state.viewMonth;
+      if(state.datesCache[mKey] && entries.length && !state.datesCache[mKey][dateStr]){
+        state.datesCache[mKey][dateStr] = true;
+        renderCalendar(state.viewYear, state.viewMonth);
+      }
+    } catch(e){
+      showEntriesError('Could not load classwork/homework for this date.');
+    }
+  }
+
+  function renderEntriesHeader(dateStr){
+    document.getElementById('entriesTitle').textContent = 'Classwork & Homework';
+    document.getElementById('entriesSub').textContent = formatLongDate(dateStr);
+  }
+
+  function sortedSubjects(subjects){
+    var order = state.subjectOrder;
+    var copy = subjects.slice();
+    copy.sort(function(a, b){
+      if(order && order[a] !== undefined && order[b] !== undefined){
+        if(order[a] !== order[b]) return order[a] - order[b];
+      }
+      return a.localeCompare(b);
+    });
+    return copy;
+  }
+
+  function fileRowHtml(file){
+    var sizeLabel = formatBytes(file.size_bytes);
+    return '<div class="file-row" data-file-id="'+file.id+'">'
+      + '<span class="file-icon">'+fileIcon(file.file_ext)+'</span>'
+      + '<div class="file-meta">'
+        + '<div class="file-name" title="'+escapeHtml(file.display_name)+'.'+escapeHtml(file.file_ext)+'">'+escapeHtml(file.display_name)+'.'+escapeHtml(file.file_ext)+'</div>'
+        + (sizeLabel ? '<div class="file-size">'+sizeLabel+'</div>' : '')
+        + '<div class="file-error" style="display:none;"></div>'
+      + '</div>'
+      + '<button type="button" class="dl-btn" data-r2-key="'+escapeHtml(file.r2_key)+'" data-file-name="'+escapeHtml(file.display_name)+'.'+escapeHtml(file.file_ext)+'">Download</button>'
+      + '</div>';
+  }
+
+  function renderEntries(dateStr){
+    var entries = state.entriesCache[dateStr] || [];
+
+    if(entries.length === 0){
+      document.getElementById('entriesBody').innerHTML =
+        '<div class="state-msg empty">No classwork or homework has been published for this date yet.</div>';
+      return;
+    }
+
+    var bySubject = {};
+    entries.forEach(function(e){
+      if(!bySubject[e.subject]) bySubject[e.subject] = [];
+      bySubject[e.subject].push(e);
+    });
+
+    var subjects = sortedSubjects(Object.keys(bySubject));
+
+    var cards = subjects.map(function(subject){
+      var subjectEntries = bySubject[subject];
+      var classworkEntries = subjectEntries.filter(function(e){ return e.kind === 'C'; });
+      var homeworkEntries = subjectEntries.filter(function(e){ return e.kind === 'H'; });
+
+      function groupHtml(kindKey, kindEntries, chipClass){
+        if(!kindEntries.length) return '';
+        var blocks = kindEntries.map(function(e){
+          var files = e.files && e.files.length
+            ? '<div class="file-list">' + e.files.map(fileRowHtml).join('') + '</div>'
+            : '';
+          return '<div class="entry-block">'
+            + '<div class="entry-content">'+escapeHtml(e.content)+'</div>'
+            + files
+            + '</div>';
+        }).join('');
+        return '<div class="work-group">'
+          + '<div class="work-group-label"><span class="kind-chip'+chipClass+'">'+kindKey+'</span>'+KIND_LABELS[kindKey]+'</div>'
+          + blocks
+          + '</div>';
+      }
+
+      return '<div class="subject-card">'
+        + '<h3 class="subject-name"><span class="subject-dot"></span>'+escapeHtml(subject)+'</h3>'
+        + groupHtml('C', classworkEntries, '')
+        + groupHtml('H', homeworkEntries, ' hw')
+        + '</div>';
+    }).join('');
+
+    document.getElementById('entriesBody').innerHTML = '<div class="plans-list">' + cards + '</div>';
+
+    // Wire up download buttons for this render.
+    document.querySelectorAll('#entriesBody .dl-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ handleDownload(btn); });
+    });
+  }
+
+  function showEntriesError(msg){
+    document.getElementById('entriesBody').innerHTML =
+      '<div class="state-msg err">'+escapeHtml(msg)+'<br><button class="retry-btn" id="retryEntries">Try again</button></div>';
+    var btn = document.getElementById('retryEntries');
+    if(btn) btn.addEventListener('click', function(){ loadEntriesForDate(state.selectedDate); });
+  }
+
+  /* ============================================================
+     File download — calls the generate-download-url Edge Function
+     (which re-checks access via RLS on vault_files using the
+     caller's own JWT) and triggers a browser download of the
+     short-lived pre-signed R2 URL it returns.
+  ============================================================ */
+  async function handleDownload(btn){
+    var r2Key = btn.getAttribute('data-r2-key');
+    var fallbackName = btn.getAttribute('data-file-name');
+    var row = btn.closest('.file-row');
+    var errEl = row ? row.querySelector('.file-error') : null;
+    var originalLabel = btn.textContent;
+
+    if(errEl){ errEl.style.display = 'none'; errEl.textContent = ''; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="dl-spinner"></span>';
+
+    try{
+      var res = await supabase.functions.invoke('generate-download-url', {
+        body: { object_key: r2Key, accessed_as: 'student' }
+      });
+
+      if(res.error) throw res.error;
+      var data = res.data;
+      if(!data || !data.url) throw new Error('No download URL was returned.');
+
+      var a = document.createElement('a');
+      a.href = data.url;
+      a.download = data.file_name || fallbackName || '';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch(e){
+      if(errEl){
+        errEl.textContent = 'Could not download this file. Please try again.';
+        errEl.style.display = 'block';
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
+  }
+
+  /* ============================================================
+     Selection + navigation
+  ============================================================ */
+  function selectDate(dateStr){
+    if(dateStr === state.selectedDate) return;
+    state.selectedDate = dateStr;
+    document.getElementById('dateJumpInput').value = dateStr;
+
+    var d = parseDateStr(dateStr);
+    var monthChanged = (d.getFullYear() !== state.viewYear || d.getMonth() !== state.viewMonth);
+    state.viewYear = d.getFullYear();
+    state.viewMonth = d.getMonth();
+
+    if(monthChanged){
+      loadMonth(state.viewYear, state.viewMonth);
+    } else {
+      renderCalendar(state.viewYear, state.viewMonth);
+    }
+    loadEntriesForDate(dateStr);
+  }
+
+  document.getElementById('prevMonthBtn').addEventListener('click', function(){
+    state.viewMonth -= 1;
+    if(state.viewMonth < 0){ state.viewMonth = 11; state.viewYear -= 1; }
+    loadMonth(state.viewYear, state.viewMonth);
+  });
+  document.getElementById('nextMonthBtn').addEventListener('click', function(){
+    state.viewMonth += 1;
+    if(state.viewMonth > 11){ state.viewMonth = 0; state.viewYear += 1; }
+    loadMonth(state.viewYear, state.viewMonth);
+  });
+  document.getElementById('todayBtn').addEventListener('click', function(){
+    selectDate(todayStr);
+  });
+  document.getElementById('dateJumpInput').addEventListener('change', function(e){
+    if(e.target.value) selectDate(e.target.value);
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
