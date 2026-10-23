@@ -150,7 +150,7 @@
   /* ---------- Theme toggle ---------- */
   .theme-toggle{
     position:fixed;
-    top:18px;
+    top:calc(env(safe-area-inset-top) + 18px);
     right:18px;
     z-index:50;
     width:44px;
@@ -192,7 +192,7 @@
     position:relative; z-index:1;
     width:100%; max-width:1180px;
     display:flex; align-items:center; justify-content:space-between;
-    padding:clamp(20px,4vw,32px) clamp(20px,6vw,56px) 0;
+    padding:calc(env(safe-area-inset-top) + clamp(20px,4vw,32px)) clamp(20px,6vw,56px) 0;
   }
   .brand-id{display:flex; align-items:center; gap:12px;}
   .brand-id img{width:70px; height:70px; border-radius:11px; object-fit:cover; /*box-shadow:0 6px 16px -6px rgba(13,56,65,.4);*/}
@@ -369,7 +369,7 @@
   footer{position:relative; z-index:1; width:100%; text-align:center; padding:10px 20px 26px; font-size:.76rem; color:var(--ink-500); transition:color .3s var(--ease);}
 
   @media (max-width:480px){
-    .theme-toggle{width:40px; height:40px; top:14px; right:14px;}
+    .theme-toggle{width:40px; height:40px; top:calc(env(safe-area-inset-top) + 14px); right:14px;}
     .theme-toggle svg{width:18px; height:18px;}
   }
 
