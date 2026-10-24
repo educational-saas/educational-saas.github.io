@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>My Fees</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- status semantics (mirrors the portal's accent family) ---------- */
+    --status-present:#4fc98a;
+    --status-present-dark:#2f8f61;
+    --status-absent:#f2555a;
+    --status-absent-dark:#c23b41;
+    --status-leave:#f5a623;
+    --status-leave-dark:#b06f12;
+    --status-medical:#4aa8e0;
+    --status-medical-dark:#2878aa;
+    --status-holiday:#9aa7a8;
+    --status-blank:#e4e9ea;
+
+    --panel-tint: var(--bg-tint-teal);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+    --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:12px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.08);
+    --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10);
+
+    --status-present:#49d696;
+    --status-present-dark:#8be9c4;
+    --status-absent:#ff6b70;
+    --status-absent-dark:#ffb0b2;
+    --status-leave:#ffc65c;
+    --status-leave-dark:#ffe2a8;
+    --status-medical:#63bdf2;
+    --status-medical-dark:#b4e0fb;
+    --status-holiday:#71807f;
+    --status-blank:#1f2a2c;
+
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5);
+    --edge-shadow-soft: rgba(0,0,0,.35);
+    --track: color-mix(in srgb, var(--white) 14%, transparent);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    transition:background .3s var(--ease), color .3s var(--ease);
+    padding:14px 14px 28px;
+  }
+
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--border-card);
+    background:var(--white);font-size:17px;cursor:pointer;box-shadow:0 3px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;color:var(--ink-900);
+  }
+  .icon-btn:hover{transform:translateY(-1px);}
+  .icon-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .icon-btn:focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+  .icon-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:0 3px 0 var(--edge-shadow-soft);}
+
+  .card{
+    background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border-card);
+    box-shadow:0 6px 0 var(--edge-shadow-soft);padding:20px;margin-bottom:16px;
+  }
+
+  /* ---------- overview card: ring + counts ---------- */
+  .overview{display:flex;flex-wrap:wrap;gap:20px;align-items:center;}
+  .ring-block{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;}
+  .ring-label{font-weight:700;font-size:13px;color:var(--ink-500);text-align:center;}
+  .ring-svg{display:block;}
+  .ring-pct{font-family:var(--font-display);font-weight:700;}
+
+  .counts-grid{
+    flex:1 1 220px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;min-width:220px;
+  }
+  .count-chip{
+    border-radius:var(--r-sm);padding:10px 12px;display:flex;align-items:center;gap:10px;
+    background:var(--panel-tint);border:1px solid var(--border-card);
+  }
+  .count-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;}
+  .count-text{display:flex;flex-direction:column;line-height:1.2;min-width:0;}
+  .count-num{font-family:var(--font-display);font-weight:700;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .count-name{font-size:11.5px;font-weight:700;color:var(--ink-500);}
+
+  .section-title{
+    font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 2px;color:var(--ink-900);
+  }
+  .section-sub{font-size:13px;color:var(--ink-500);margin:0 0 14px;font-weight:600;}
+
+  /* ---------- filter chips ---------- */
+  .filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .filter-chip{
+    font-family:var(--font-body);font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 14px;
+    background:var(--panel-tint);border:1px solid var(--border-card);color:var(--ink-500);cursor:pointer;
+    transition:background .15s ease, color .15s ease, transform .12s ease;
+  }
+  .filter-chip:hover{transform:translateY(-1px);}
+  .filter-chip.active{background:var(--teal-700);color:#fff;border-color:transparent;}
+
+  /* ---------- due rows ---------- */
+  .due-list{display:flex;flex-direction:column;gap:10px;}
+  .due-row{
+    border-radius:var(--r-md);border:1px solid var(--border-card);background:var(--panel-tint);
+    padding:13px 14px;cursor:pointer;transition:transform .12s ease;
+  }
+  .due-row:hover{transform:translateY(-1px);}
+  .due-row-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .due-name{font-family:var(--font-display);font-weight:700;font-size:15.5px;margin:0;}
+  .due-sub{font-size:12px;font-weight:600;color:var(--ink-500);margin-top:3px;}
+  .due-amt-col{text-align:right;flex:0 0 auto;}
+  .due-balance{font-family:var(--font-display);font-weight:700;font-size:16px;}
+  .due-balance-label{font-size:10.5px;font-weight:700;color:var(--ink-500);text-transform:uppercase;letter-spacing:.03em;}
+
+  .status-pill{
+    display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 9px;border-radius:999px;margin-top:7px;
+  }
+  .status-pill.paid{background:color-mix(in srgb, var(--status-present) 24%, var(--white));color:var(--status-present-dark);}
+  .status-pill.partial{background:color-mix(in srgb, var(--status-leave) 26%, var(--white));color:var(--status-leave-dark);}
+  .status-pill.pending{background:color-mix(in srgb, var(--status-medical) 22%, var(--white));color:var(--status-medical-dark);}
+  .status-pill.overdue{background:color-mix(in srgb, var(--status-absent) 22%, var(--white));color:var(--status-absent-dark);}
+  .status-pill.waived{background:color-mix(in srgb, var(--status-holiday) 20%, var(--white));color:var(--ink-500);}
+
+  .due-progress-track{height:6px;border-radius:99px;background:var(--track);overflow:hidden;margin-top:10px;}
+  .due-progress-fill{height:100%;border-radius:99px;background:var(--status-present-dark);transition:width .4s var(--ease);}
+
+  .due-detail{
+    max-height:0;overflow:hidden;transition:max-height .3s var(--ease), margin-top .3s var(--ease), opacity .25s ease;
+    opacity:0; margin-top:0;
+  }
+  .due-row.open .due-detail{max-height:600px;margin-top:12px;opacity:1;}
+  .due-detail-inner{border-top:1px dashed var(--border-card);padding-top:12px;}
+  .breakdown-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:13px;}
+  .breakdown-row .lbl{color:var(--ink-500);font-weight:600;}
+  .breakdown-row .val{font-weight:700;}
+  .breakdown-row.total{border-top:1px solid var(--border-card);margin-top:4px;padding-top:9px;}
+  .breakdown-row.total .val{font-family:var(--font-display);font-size:16px;}
+
+  .mini-list-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-500);margin:12px 0 6px;}
+  .mini-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;font-size:12.5px;}
+  .mini-row .mini-main{font-weight:700;}
+  .mini-row .mini-sub{color:var(--ink-500);font-weight:600;font-size:11.5px;}
+  .mini-row .mini-amt{font-weight:800;flex:0 0 auto;}
+  .mini-empty{font-size:12.5px;color:var(--ink-500);font-weight:600;padding:4px 0;}
+
+  /* ---------- payment history ---------- */
+  .pay-list{display:flex;flex-direction:column;}
+  .pay-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-card);}
+  .pay-row:last-child{border-bottom:none;}
+  .pay-icon{
+    width:36px;height:36px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb, var(--status-present) 22%, var(--white));color:var(--status-present-dark);
+    font-weight:800;font-size:15px;
+  }
+  .pay-main{flex:1;min-width:0;}
+  .pay-name{font-weight:700;font-size:13.5px;}
+  .pay-sub{font-size:11.5px;color:var(--ink-500);font-weight:600;margin-top:1px;}
+  .pay-amt{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--status-present-dark);flex:0 0 auto;}
+
+  .list-sentinel{display:flex;justify-content:center;padding:14px 0 2px;}
+  .list-sentinel.hidden{display:none;}
+
+  /* ---------- status / loading ---------- */
+  .state-msg{
+    text-align:center;padding:30px 12px;font-weight:700;color:var(--ink-500);font-size:14.5px;
+  }
+  .state-msg.err{color:var(--status-absent-dark);}
+  .retry-btn{
+    margin-top:10px;font-family:var(--font-body);font-weight:800;font-size:13.5px;border:none;
+    border-radius:999px;padding:9px 18px;cursor:pointer;background:var(--teal-700);color:#fff;
+  }
+  .spinner{
+    width:26px;height:26px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--teal-600);
+    margin:0 auto 10px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+
+  @media (max-width:420px){
+    .card{padding:16px;}
+    .due-balance{font-size:14.5px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Overview: payment progress ring + lifetime totals -->
+  <div class="card" id="overviewCard">
+    <h2 class="section-title">Fee overview</h2>
+    <p class="section-sub">Across every fee billed to you</p>
+    <div id="overviewBody">
+      <div class="state-msg" id="overviewState"><div class="spinner"></div>Loading your fee summary…</div>
+    </div>
+  </div>
+
+  <!-- Dues: every fee billed, with a breakdown on tap -->
+  <div class="card" id="duesCard">
+    <h2 class="section-title">Your fee dues</h2>
+    <p class="section-sub">Tap any fee to see how its balance was worked out</p>
+    <div id="duesFilterRow" style="display:none;"></div>
+    <div id="duesBody">
+      <div class="state-msg" id="duesState"><div class="spinner"></div>Loading your dues…</div>
+    </div>
+  </div>
+
+  <!-- Payment history: every payment recorded against you -->
+  <div class="card" id="paymentsCard">
+    <h2 class="section-title">Payment history</h2>
+    <p class="section-sub">Every payment recorded against your account</p>
+    <div id="paymentsBody">
+      <div class="state-msg" id="paymentsState"><div class="spinner"></div>Loading payment history…</div>
+    </div>
+    <div class="list-sentinel hidden" id="paymentsSentinel"><div class="spinner" style="margin:0;width:20px;height:20px;"></div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     Multi-tenant credentials — provided as-is, do not modify.
+  ============================================================ */
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  var AUTH_REDIRECT = 'https://educational-saas.github.io/'; // If user not already logged in or does not have a "student" role
+
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Theme is controlled entirely by the parent page, which sets
+  // data-theme="light" | "dark" on <html>. This page's CSS already
+  // keys off html[data-theme="dark"], so nothing else is needed here.
+
+  /* ============================================================
+     Helpers
+  ============================================================ */
+  var STATUS_META = {
+    paid:    {label:'Paid',     cls:'paid',    dot:'var(--status-present)'},
+    partial: {label:'Partial',  cls:'partial', dot:'var(--status-leave)'},
+    pending: {label:'Pending',  cls:'pending', dot:'var(--status-medical)'},
+    overdue: {label:'Overdue',  cls:'overdue', dot:'var(--status-absent)'},
+    waived:  {label:'Waived',   cls:'waived',  dot:'var(--status-holiday)'}
+  };
+  var FILTERS = [
+    {key:'all', label:'All'},
+    {key:'overdue', label:'Overdue'},
+    {key:'pending', label:'Pending'},
+    {key:'partial', label:'Partial'},
+    {key:'paid', label:'Paid'},
+    {key:'waived', label:'Waived'}
+  ];
+
+  function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+  function fmtDate(dateStr){
+    if(!dateStr) return '—';
+    var d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+  }
+  function fmtMoney(n){
+    if(n === null || n === undefined || isNaN(n)) return '—';
+    return '\u20b9' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+  function escapeHtml(str){
+    var div = document.createElement('div');
+    div.textContent = (str === null || str === undefined) ? '' : str;
+    return div.innerHTML;
+  }
+
+  function colorTierFor(pct){
+    if(pct === null) return {fg:'var(--ink-500)'};
+    if(pct < 50) return {fg:'var(--status-absent-dark)'};
+    if(pct < 90) return {fg:'var(--status-leave-dark)'};
+    return {fg:'var(--status-present-dark)'};
+  }
+
+  function ringSVG(pct, label, size){
+    size = size || 118;
+    var stroke = 11;
+    var r = (size - stroke) / 2;
+    var c = 2 * Math.PI * r;
+    var tier = colorTierFor(pct);
+    var dash = pct === null ? 0 : (pct/100) * c;
+    var displayPct = pct === null ? '—' : Math.round(pct) + '%';
+    return ''
+      + '<div class="ring-block">'
+      + '<svg class="ring-svg" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'
+      + '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="var(--track)" stroke-width="'+stroke+'"/>'
+      + '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+tier.fg+'" stroke-width="'+stroke+'" '
+      +   'stroke-linecap="round" stroke-dasharray="'+dash.toFixed(1)+' '+c.toFixed(1)+'" '
+      +   'transform="rotate(-90 '+size/2+' '+size/2+')"/>'
+      + '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" class="ring-pct" '
+      +   'font-size="'+Math.round(size*0.20)+'" fill="'+tier.fg+'">'+displayPct+'</text>'
+      + '</svg>'
+      + '<span class="ring-label">'+label+'</span>'
+      + '</div>';
+  }
+
+  function countChip(dot, num, label){
+    return ''
+      + '<div class="count-chip">'
+      + '<span class="count-dot" style="background:'+dot+'"></span>'
+      + '<span class="count-text"><span class="count-num">'+num+'</span>'
+      + '<span class="count-name">'+label+'</span></span>'
+      + '</div>';
+  }
+
+  /* ============================================================
+     App state
+  ============================================================ */
+  var PAGE_SIZE = 20;
+  var state = {
+    masterId: null,
+    studentName: '',
+    componentNames: {},   // component_id -> name
+    allDues: [],           // raw rows from fee_due_balances
+    activeFilter: 'all',
+    openDueId: null,       // which due row is expanded
+    dueDetailCache: {},     // due_id -> {payments, discounts}
+
+    paymentPage: 0, paymentLoading: false, paymentExhausted: false
+  };
+
+  /* ============================================================
+     Auth + identity resolution
+  ============================================================ */
+  async function init(){
+    try{
+      var sessionRes = await supabase.auth.getSession();
+      var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+      if(!session){ window.location.href = AUTH_REDIRECT; return; }
+
+      var uid = session.user.id;
+
+      // Confirm this user is a student, and get the link to their master record.
+      var studentRes = await supabase.from('students')
+        .select('name, master_token')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if(studentRes.error || !studentRes.data || !studentRes.data.master_token){
+        window.location.href = AUTH_REDIRECT; return;
+      }
+      state.studentName = studentRes.data.name;
+
+      // Resolve the official master record behind this account.
+      var masterRes = await supabase.from('students_master')
+        .select('id')
+        .eq('token', studentRes.data.master_token)
+        .maybeSingle();
+
+      if(masterRes.error || !masterRes.data){
+        showOverviewError('We could not find your student record.');
+        showDuesError('We could not find your student record.');
+        showPaymentsError('We could not find your student record.');
+        return;
+      }
+
+      state.masterId = masterRes.data.id;
+
+      await loadComponentNames();
+      await loadDues();              // drives overview + dues list
+      await loadNextPaymentPage();   // first page of payment history
+    } catch(e){
+      showOverviewError('Something went wrong loading your fee summary.');
+      showDuesError('Something went wrong loading your dues.');
+      showPaymentsError('Something went wrong loading your payment history.');
+    }
+  }
+
+  /* ============================================================
+     Fee component names (for labeling dues) — one lightweight
+     lookup, reused everywhere a due needs its component's name.
+  ============================================================ */
+  async function loadComponentNames(){
+    try{
+      var res = await supabase.from('fee_components').select('id, name');
+      if(res.error) throw res.error;
+      var map = {};
+      (res.data || []).forEach(function(c){ map[c.id] = c.name; });
+      state.componentNames = map;
+    } catch(e){ /* non-fatal — dues fall back to a generic label */ }
+  }
+
+  function componentNameFor(id){
+    return state.componentNames[id] || 'Fee';
+  }
+
+  /* ============================================================
+     Dues + overview — one query drives both the ring/totals and
+     the filterable list below, so there's no duplicate fetching.
+  ============================================================ */
+  async function loadDues(){
+    try{
+      var res = await supabase.from('fee_due_balances')
+        .select('due_id, component_id, period_label, due_date, gross_amount_due, discount_amount, net_amount_due, amount_paid, balance_due, is_waived, status')
+        .eq('student_master_id', state.masterId)
+        .order('due_date', {ascending:false});
+
+      if(res.error) throw res.error;
+      state.allDues = res.data || [];
+      renderOverview();
+      renderDuesFilters();
+      renderDuesList();
+    } catch(e){
+      showOverviewError('Could not load your fee summary.');
+      showDuesError('Could not load your dues.');
+    }
+  }
+
+  function renderOverview(){
+    var rows = state.allDues;
+    var totalBilled = 0, totalPaid = 0, totalBalance = 0, totalDiscount = 0, overdueCount = 0;
+    rows.forEach(function(r){
+      totalBilled += Number(r.net_amount_due || 0);
+      totalPaid += Number(r.amount_paid || 0);
+      totalBalance += Number(r.balance_due || 0);
+      totalDiscount += Number(r.discount_amount || 0);
+      if(r.status === 'overdue') overdueCount++;
+    });
+
+    var payableBase = rows.filter(function(r){ return !r.is_waived; })
+      .reduce(function(s,r){ return s + Number(r.net_amount_due || 0); }, 0);
+    var pct = payableBase > 0 ? (totalPaid / payableBase) * 100 : (rows.length ? 100 : null);
+
+    var html = '<div class="overview">'
+      + ringSVG(pct, 'of fees paid')
+      + '<div class="counts-grid">'
+      + countChip('var(--status-present)', fmtMoney(totalPaid), 'Total paid')
+      + countChip(totalBalance > 0 ? 'var(--status-absent)' : 'var(--status-present)', fmtMoney(totalBalance), 'Balance due')
+      + countChip('var(--status-leave)', fmtMoney(totalDiscount), 'Discounts received')
+      + countChip('var(--status-absent)', overdueCount, overdueCount === 1 ? 'Overdue due' : 'Overdue dues')
+      + '</div></div>';
+
+    document.getElementById('overviewBody').innerHTML = html;
+  }
+
+  function showOverviewError(msg){
+    document.getElementById('overviewBody').innerHTML =
+      '<div class="state-msg err">'+msg+'<br><button class="retry-btn" id="retryOverview">Try again</button></div>';
+    var btn = document.getElementById('retryOverview');
+    if(btn) btn.addEventListener('click', loadDues);
+  }
+
+  function renderDuesFilters(){
+    var wrap = document.getElementById('duesFilterRow');
+    if(state.allDues.length === 0){ wrap.style.display = 'none'; return; }
+    wrap.className = 'filter-row';
+    wrap.style.display = 'flex';
+    wrap.innerHTML = FILTERS.map(function(f){
+      var count = f.key === 'all' ? state.allDues.length : state.allDues.filter(function(r){ return r.status === f.key; }).length;
+      if(f.key !== 'all' && count === 0) return '';
+      return '<button class="filter-chip'+(state.activeFilter===f.key?' active':'')+'" data-filter="'+f.key+'" type="button">'+f.label+(f.key!=='all' ? ' ('+count+')' : '')+'</button>';
+    }).join('');
+    wrap.querySelectorAll('.filter-chip').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        state.activeFilter = btn.dataset.filter;
+        renderDuesFilters();
+        renderDuesList();
+      });
+    });
+  }
+
+  function renderDuesList(){
+    var rows = state.allDues.filter(function(r){
+      return state.activeFilter === 'all' || r.status === state.activeFilter;
+    });
+
+    if(state.allDues.length === 0){
+      document.getElementById('duesBody').innerHTML =
+        '<div class="state-msg">No fees have been billed to you yet.</div>';
+      return;
+    }
+    if(rows.length === 0){
+      document.getElementById('duesBody').innerHTML =
+        '<div class="state-msg">No dues match this filter.</div>';
+      return;
+    }
+
+    var html = '<div class="due-list">' + rows.map(function(r){
+      var meta = STATUS_META[r.status] || STATUS_META.pending;
+      var pct = r.net_amount_due > 0 ? Math.min(100, (r.amount_paid / r.net_amount_due) * 100) : (r.is_waived ? 100 : 0);
+      var isOpen = state.openDueId === r.due_id;
+      return ''
+        + '<div class="due-row'+(isOpen?' open':'')+'" data-due-id="'+r.due_id+'">'
+        + '<div class="due-row-top">'
+        + '<div><p class="due-name">'+escapeHtml(componentNameFor(r.component_id))+'</p>'
+        + '<p class="due-sub">'+escapeHtml(r.period_label)+' &bull; due '+fmtDate(r.due_date)+'</p>'
+        + '<span class="status-pill '+meta.cls+'">'+meta.label+'</span>'
+        + '</div>'
+        + '<div class="due-amt-col"><div class="due-balance-label">Balance</div>'
+        + '<div class="due-balance">'+fmtMoney(r.balance_due)+'</div></div>'
+        + '</div>'
+        + '<div class="due-progress-track"><div class="due-progress-fill" style="width:'+pct+'%;"></div></div>'
+        + '<div class="due-detail" id="dueDetail-'+r.due_id+'"><div class="due-detail-inner" id="dueDetailInner-'+r.due_id+'">'
+        + '<div class="state-msg" style="padding:14px 0;"><div class="spinner" style="width:18px;height:18px;margin-bottom:6px;"></div>Loading breakdown…</div>'
+        + '</div></div>'
+        + '</div>';
+    }).join('') + '</div>';
+
+    document.getElementById('duesBody').innerHTML = html;
+
+    document.querySelectorAll('.due-row').forEach(function(row){
+      row.addEventListener('click', function(){ toggleDue(+row.dataset.dueId, row); });
+    });
+  }
+
+  function showDuesError(msg){
+    document.getElementById('duesBody').innerHTML =
+      '<div class="state-msg err">'+msg+'<br><button class="retry-btn" id="retryDues">Try again</button></div>';
+    var btn = document.getElementById('retryDues');
+    if(btn) btn.addEventListener('click', loadDues);
+  }
+
+  function toggleDue(dueId, rowEl){
+    if(state.openDueId === dueId){
+      state.openDueId = null;
+      rowEl.classList.remove('open');
+      return;
+    }
+    var prevId = state.openDueId;
+    state.openDueId = dueId;
+    if(prevId !== null){
+      var prevRow = document.querySelector('.due-row[data-due-id="'+prevId+'"]');
+      if(prevRow) prevRow.classList.remove('open');
+    }
+    rowEl.classList.add('open');
+    renderDueDetail(dueId);
+  }
+
+  function renderDueDetail(dueId){
+    var due = state.allDues.find(function(r){ return r.due_id === dueId; });
+    if(!due) return;
+    var inner = document.getElementById('dueDetailInner-' + dueId);
+    if(!inner) return;
+
+    function paint(cache){
+      var html = ''
+        + '<div class="breakdown-row"><span class="lbl">Billed amount</span><span class="val">'+fmtMoney(due.gross_amount_due)+'</span></div>'
+        + '<div class="breakdown-row"><span class="lbl">Discounts</span><span class="val">&minus;'+fmtMoney(due.discount_amount)+'</span></div>'
+        + '<div class="breakdown-row"><span class="lbl">Net amount due</span><span class="val">'+fmtMoney(due.net_amount_due)+'</span></div>'
+        + '<div class="breakdown-row"><span class="lbl">Paid so far</span><span class="val">'+fmtMoney(due.amount_paid)+'</span></div>'
+        + '<div class="breakdown-row total"><span class="lbl">'+(due.is_waived ? 'Waived — nothing owed' : 'Balance remaining')+'</span><span class="val">'+fmtMoney(due.is_waived ? 0 : due.balance_due)+'</span></div>';
+
+      html += '<div class="mini-list-title">Payments</div>';
+      if(cache.payments.length === 0){
+        html += '<div class="mini-empty">No payments recorded yet.</div>';
+      } else {
+        html += cache.payments.map(function(p){
+          return '<div class="mini-row"><div><div class="mini-main">'+fmtDate(p.payment_date)+'</div>'
+            + '<div class="mini-sub">'+escapeHtml(p.payment_mode)+(p.reference_no ? ' &bull; '+escapeHtml(p.reference_no) : '')+'</div></div>'
+            + '<div class="mini-amt">'+fmtMoney(p.amount_paid)+'</div></div>';
+        }).join('');
+      }
+
+      if(cache.discounts.length > 0){
+        html += '<div class="mini-list-title">Discounts applied</div>';
+        html += cache.discounts.map(function(d){
+          return '<div class="mini-row"><div class="mini-main">'+escapeHtml(d.description || 'Discount')+'</div>'
+            + '<div class="mini-amt">&minus;'+fmtMoney(d.amount)+'</div></div>';
+        }).join('');
+      }
+
+      inner.innerHTML = html;
+    }
+
+    if(state.dueDetailCache[dueId]){
+      paint(state.dueDetailCache[dueId]);
+      return;
+    }
+
+    Promise.all([
+      supabase.from('fee_payments').select('id, amount_paid, payment_date, payment_mode, reference_no').eq('due_id', dueId).order('payment_date', {ascending:false}),
+      supabase.from('fee_due_discounts').select('id, amount, description').eq('due_id', dueId).order('created_at', {ascending:false})
+    ]).then(function(results){
+      if(results[0].error || results[1].error){
+        inner.innerHTML = '<div class="state-msg err" style="padding:14px 0;">Could not load this fee\u2019s breakdown.<br>'
+          + '<button class="retry-btn" id="retryDetail-'+dueId+'">Try again</button></div>';
+        var btn = document.getElementById('retryDetail-'+dueId);
+        if(btn) btn.addEventListener('click', function(){ renderDueDetail(dueId); });
+        return;
+      }
+      var cache = {payments: results[0].data || [], discounts: results[1].data || []};
+      state.dueDetailCache[dueId] = cache;
+      paint(cache);
+    });
+  }
+
+  /* ============================================================
+     Payment history — paged, newest first, loads more as the
+     person scrolls near the bottom of the list.
+  ============================================================ */
+  function loadNextPaymentPage(){
+    if(state.paymentLoading || state.paymentExhausted) return Promise.resolve();
+    state.paymentLoading = true;
+    document.getElementById('paymentsSentinel').classList.remove('hidden');
+
+    var from = state.paymentPage * PAGE_SIZE, to = from + PAGE_SIZE - 1;
+
+    return supabase.from('fee_payments')
+      .select('id, amount_paid, payment_date, payment_mode, reference_no, due_id, fee_dues!inner(period_label, student_master_id, component_id)')
+      .eq('fee_dues.student_master_id', state.masterId)
+      .order('payment_date', {ascending:false})
+      .range(from, to)
+      .then(function(res){
+        state.paymentLoading = false;
+        document.getElementById('paymentsSentinel').classList.add('hidden');
+
+        if(res.error){
+          if(state.paymentPage === 0) showPaymentsError('Could not load your payment history.');
+          return;
+        }
+
+        var rows = res.data || [];
+        if(state.paymentPage === 0){
+          document.getElementById('paymentsBody').innerHTML = rows.length === 0
+            ? '<div class="state-msg">No payments recorded yet.</div>'
+            : '<div class="pay-list" id="payList"></div>';
+        }
+        if(rows.length > 0){
+          var list = document.getElementById('payList');
+          if(list){
+            var html = rows.map(function(p){
+              var fd = p.fee_dues || {};
+              return '<div class="pay-row">'
+                + '<div class="pay-icon">\u20b9</div>'
+                + '<div class="pay-main"><div class="pay-name">'+escapeHtml(componentNameFor(fd.component_id))+'</div>'
+                + '<div class="pay-sub">'+escapeHtml(fd.period_label || '')+' &bull; '+fmtDate(p.payment_date)+' &bull; '+escapeHtml(p.payment_mode)+'</div></div>'
+                + '<div class="pay-amt">'+fmtMoney(p.amount_paid)+'</div>'
+                + '</div>';
+            }).join('');
+            list.insertAdjacentHTML('beforeend', html);
+          }
+        }
+
+        state.paymentPage += 1;
+        if(rows.length < PAGE_SIZE) state.paymentExhausted = true;
+      });
+  }
+
+  function showPaymentsError(msg){
+    document.getElementById('paymentsBody').innerHTML =
+      '<div class="state-msg err">'+msg+'<br><button class="retry-btn" id="retryPayments">Try again</button></div>';
+    var btn = document.getElementById('retryPayments');
+    if(btn) btn.addEventListener('click', function(){
+      state.paymentPage = 0; state.paymentExhausted = false;
+      loadNextPaymentPage();
+    });
+  }
+
+  var paymentsIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) loadNextPaymentPage(); });
+  }, {rootMargin:'200px'});
+  paymentsIo.observe(document.getElementById('paymentsSentinel'));
+
+  init();
+})();
+</script>
+</body>
+</html>
