@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Manage Fees</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg: rgba(47,143,91,.1);
+    --warn:#b8750f; --warn-bg: rgba(226,148,26,.12);
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492; --success-bg: rgba(87,212,146,.12);
+    --warn:#ffc65c; --warn-bg: rgba(255,198,92,.14);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease); }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; }
+  .spinner.sm{ width:22px; height:22px; border-width:2.5px; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  #denied{ position:fixed; inset:0; z-index:190; display:none; align-items:center; justify-content:center; background:var(--cream); padding:24px; text-align:center; }
+  #denied.show{ display:flex; }
+  .denied-box{ max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .denied-box svg{ width:44px; height:44px; stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .denied-box h2{ font-family:'Fraunces',serif; font-size:1.2rem; margin:0; }
+  .denied-box p{ color:var(--ink-500); font-size:.9rem; margin:0; line-height:1.5; }
+
+  .app-header{
+    position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 0;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1040px; margin:0 auto; padding-bottom:14px; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease); }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{ font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0; }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn svg{ width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease); }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  .tab-row{ display:flex; gap:4px; max-width:1040px; margin:0 auto; overflow-x:auto; scrollbar-width:none; }
+  .tab-row::-webkit-scrollbar{ display:none; }
+  .tab-btn{
+    flex-shrink:0; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.84rem;
+    padding:10px 14px 12px; cursor:pointer; position:relative; white-space:nowrap;
+    border-bottom:2.5px solid transparent; transition:color .2s var(--ease), border-color .2s var(--ease);
+  }
+  .tab-btn.active{ color:var(--teal-700); border-color:var(--gold-500); }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--gold-400); }
+  .tab-btn[hidden]{ display:none; }
+
+  main.dash{ flex:1; width:100%; max-width:1040px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 110px); }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .section-heading{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .section-heading h1{ font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0; }
+  .count-chip{ font-size:.72rem; font-weight:700; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+
+  .card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); transition:border-color .3s var(--ease), background-color .3s var(--ease); }
+  .placeholder-note{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500); }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:18px; }
+  @media (min-width:560px){ .stat-grid{ grid-template-columns:repeat(4,1fr); } }
+  .stat-card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:14px; box-shadow:var(--shadow-card); }
+  .stat-num{ font-family:'Fraunces',serif; font-weight:700; font-size:1.4rem; color:var(--teal-700); line-height:1; }
+  .stat-num.warn{ color:var(--danger); }
+  .stat-num.ok{ color:var(--success); }
+  .stat-label{ font-size:.74rem; color:var(--ink-500); margin-top:6px; font-weight:600; }
+
+  .list-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid var(--border-card); }
+  .list-row:last-child{ border-bottom:none; }
+  .lr-name{ font-weight:700; font-size:.88rem; }
+  .lr-sub{ font-size:.76rem; color:var(--ink-500); margin-top:2px; }
+  .lr-amt{ font-family:'Fraunces',serif; font-weight:700; font-size:1.05rem; flex-shrink:0; }
+
+  .toolbar{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .search-box{ position:relative; }
+  .search-box svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); width:17px; height:17px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+  .search-box input{ padding-left:40px; }
+  .filter-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+  .filter-row::-webkit-scrollbar{ display:none; }
+  .filter-row select, .filter-row input{ width:auto; flex-shrink:0; min-width:118px; padding:9px 32px 9px 12px; font-size:.82rem; }
+  .filter-row input{ min-width:120px; padding:9px 12px; }
+
+  #component-list, #structure-list, #discount-list, #due-list, #payment-list, #staff-list{ display:flex; flex-direction:column; gap:10px; }
+  .row-card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:14px 16px; box-shadow:var(--shadow-card); cursor:pointer; opacity:0; animation:rise .4s var(--ease) forwards; transition:border-color .2s var(--ease), transform .2s var(--ease); }
+  .row-card:hover{ border-color:var(--border-card-hover); transform:translateY(-1px); }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .row-card-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .row-title{ font-family:'Fraunces',serif; font-weight:600; font-size:.98rem; color:var(--teal-700); margin:0; }
+  .chip{ font-size:.68rem; font-weight:700; color:var(--ink-500); background:var(--cream); border:1px solid var(--border-card); padding:3px 9px; border-radius:999px; white-space:nowrap; }
+  .chip.teal{ color:var(--teal-700); background:var(--bg-tint-teal); border-color:transparent; }
+  .chip.gold{ color:var(--gold-600); background:var(--bg-tint-gold); border-color:transparent; }
+  html[data-theme="dark"] .chip.gold{ color:var(--gold-400); }
+  .chip.inactive{ opacity:.55; }
+  .row-meta{ font-size:.78rem; color:var(--ink-500); margin-top:8px; }
+
+  .status-badge{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+  .status-badge.pending{ color:var(--warn); background:var(--warn-bg); }
+  .status-badge.overdue{ color:var(--danger); background:var(--danger-bg); }
+  .status-badge.partial{ color:var(--gold-600); background:var(--bg-tint-gold); }
+  .status-badge.paid{ color:var(--success); background:var(--success-bg); }
+  .status-badge.waived{ color:var(--ink-500); background:var(--cream); border:1px solid var(--border-card); }
+
+  .list-sentinel{ display:flex; justify-content:center; padding:20px 0; }
+  .list-sentinel.hidden{ display:none; }
+
+  .fab{ position:fixed; right:20px; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:60; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); box-shadow:0 16px 30px -12px rgba(226,148,26,.55); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .2s var(--ease); }
+  .fab:hover{ transform:translateY(-2px) scale(1.05); }
+  .fab:active{ transform:scale(.94); }
+  .fab svg{ width:24px; height:24px; stroke:var(--teal-900); fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; margin-top:10px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:480px){ .row2{ grid-template-columns:1fr; } }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .row3{ grid-template-columns:1fr 1fr; } }
+
+  input[type="text"], input[type="number"], input[type="tel"], input[type="date"], select, textarea{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500;
+    outline:none; transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="text"]{ padding-left: 36px; }
+  input[type="text"].plain{ padding-left:14px; }
+  input:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+  textarea{ resize:vertical; min-height:56px; }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px;
+  }
+  label.checkbox-row{ display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; font-size:.86rem; color:var(--ink-900); cursor:pointer; }
+  label.checkbox-row input[type="checkbox"]{ width:18px; height:18px; accent-color:var(--gold-500); cursor:pointer; }
+  .field-hint{ font-size:.74rem; color:var(--ink-500); margin-top:6px; }
+  .field-error{ font-size:.78rem; color:var(--danger); margin-top:12px; display:none; }
+  .field-error.show{ display:block; }
+
+  .btn{ padding:13px 18px; border-radius:14px; border:none; font-weight:700; font-size:.88rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-sm{ padding:8px 12px; font-size:.78rem; border-radius:10px; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+
+  .delete-icon-btn{ width:34px; height:34px; border-radius:10px; border:1.5px solid var(--border-card); background:var(--white); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .delete-icon-btn svg{ width:16px; height:16px; stroke:var(--danger); fill:none; stroke-width:2; }
+  .sheet-top-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:10px; }
+
+  .search-result{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 12px; border-radius:var(--r-sm); cursor:pointer; transition:background-color .15s var(--ease); }
+  .search-result:hover{ background:var(--bg-tint-teal); }
+  .search-result-name{ font-weight:700; font-size:.88rem; }
+  .search-result-sub{ font-size:.74rem; color:var(--ink-500); margin-top:2px; }
+  .role-chip{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--teal-700); background:var(--bg-tint-teal); padding:3px 9px; border-radius:999px; white-space:nowrap; }
+  #student-results, #staff-search-results{ max-height:280px; overflow-y:auto; border:1.5px solid var(--border-card); border-radius:var(--r-sm); margin-top:6px; display:none; background:var(--white); }
+  #student-results.show, #staff-search-results.show{ display:block; }
+  .student-chosen{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-tint-teal); border-radius:var(--r-sm); padding:12px 14px; margin-top:6px; }
+
+  .progress-track{ height:8px; border-radius:99px; background:var(--cream); border:1px solid var(--border-card); overflow:hidden; margin-top:8px; }
+  .progress-fill{ height:100%; background:linear-gradient(90deg,var(--teal-600),var(--teal-700)); border-radius:99px; transition:width .4s var(--ease); }
+
+  .balance-summary{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0; }
+  .balance-box{ background:var(--cream); border:1px solid var(--border-card); border-radius:var(--r-sm); padding:10px; text-align:center; }
+  .balance-box .num{ font-family:'Fraunces',serif; font-weight:700; font-size:1.05rem; }
+  .balance-box .lbl{ font-size:.68rem; color:var(--ink-500); margin-top:3px; font-weight:600; }
+
+  .sheet-backdrop{ position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease); overflow-y:auto; }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{ position:fixed; left:0; right:0; bottom:0; z-index:101; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); max-width:1040px; margin:0 auto; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35); transform:translateY(100%); transition:transform .3s var(--ease); max-height:92svh; overflow-y:auto; }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p.sheet-desc{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  hr.divider{ border:none; border-top:1px solid var(--border-card); margin:18px 0; }
+  .subhead{ font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin:0 0 10px; }
+
+  #toast-wrap{ position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 90px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast{ background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw; text-align:center; }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="denied">
+  <div class="denied-box">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2>Fee admins &amp; admins only</h2>
+    <p>This page is restricted to fee administrators and school administrators. If you believe this is a mistake, contact your school admin.</p>
+    <button class="btn btn-ghost" id="denied-back" type="button">Back to dashboard</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Manage Fees</p>
+          <p class="header-sub" id="header-role-sub">Fee Admin &bull; Finance</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="tab-row">
+      <button class="tab-btn active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="tab-btn" data-tab="students" type="button">Students &amp; Dues</button>
+      <button class="tab-btn" data-tab="components" type="button">Fee Components</button>
+      <button class="tab-btn" data-tab="structures" type="button">Fee Structures</button>
+      <button class="tab-btn" data-tab="discounts" type="button">Discounts</button>
+      <button class="tab-btn" data-tab="payments" type="button">Payments</button>
+      <button class="tab-btn" data-tab="staff" type="button" id="staff-tab-btn" hidden>Staff Access</button>
+    </nav>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ DASHBOARD ============ -->
+    <div class="view active" id="view-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num ok" id="stat-collected">—</div><div class="stat-label">Collected this month</div></div>
+        <div class="stat-card"><div class="stat-num warn" id="stat-outstanding">—</div><div class="stat-label">Total outstanding</div></div>
+        <div class="stat-card"><div class="stat-num warn" id="stat-overdue">—</div><div class="stat-label">Overdue dues</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-components">—</div><div class="stat-label">Active fee components</div></div>
+      </div>
+
+      <div class="section-heading"><h1>Recent payments</h1></div>
+      <div class="card" id="recent-payments-card">
+        <div class="placeholder-note" id="recent-payments-loading"><div class="spinner sm"></div><p>Loading recent payments…</p></div>
+      </div>
+
+      <div class="section-heading" style="margin-top:22px;"><h1>Most overdue</h1></div>
+      <div class="card" id="overdue-card">
+        <div class="placeholder-note" id="overdue-loading"><div class="spinner sm"></div><p>Checking overdue dues…</p></div>
+      </div>
+    </div>
+
+    <!-- ============ STUDENTS & DUES ============ -->
+    <div class="view" id="view-students">
+      <div class="section-heading"><h1>Student dues</h1></div>
+      <div class="card">
+        <div class="field" style="margin-bottom:0;">
+          <label for="student-search">Find a student</label>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="student-search" placeholder="Search by student name…" autocomplete="off">
+          </div>
+          <div id="student-results"></div>
+          <div class="student-chosen" id="student-chosen" style="display:none;">
+            <div>
+              <div class="search-result-name" id="student-chosen-name"></div>
+              <div class="search-result-sub" id="student-chosen-sub"></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="student-change-btn" type="button">Change</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="student-dues-wrap" style="display:none; margin-top:20px;">
+        <div class="balance-summary">
+          <div class="balance-box"><div class="num" id="sd-total-due">—</div><div class="lbl">Total billed</div></div>
+          <div class="balance-box"><div class="num" id="sd-total-paid">—</div><div class="lbl">Total paid</div></div>
+          <div class="balance-box"><div class="num" id="sd-total-balance">—</div><div class="lbl">Balance</div></div>
+        </div>
+        <div class="section-heading"><h1>Dues</h1><span class="count-chip" id="due-count">—</span></div>
+        <div id="due-list"></div>
+        <div class="placeholder-note" id="due-placeholder" style="display:none;">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <p>No dues billed yet for this student.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ FEE COMPONENTS ============ -->
+    <div class="view" id="view-components">
+      <div class="section-heading">
+        <h1>Fee components</h1>
+        <span class="count-chip" id="component-count">Loading…</span>
+      </div>
+      <p class="field-hint" style="margin:-8px 0 16px;">The catalogue of chargeable items — Tuition, Transport, Lab fee, etc. Set an amount for each under Fee Structures.</p>
+      <div id="component-list"></div>
+      <div class="placeholder-note" id="component-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <p>No fee components yet. Tap + to add one.</p>
+      </div>
+    </div>
+
+    <!-- ============ FEE STRUCTURES ============ -->
+    <div class="view" id="view-structures">
+      <div class="section-heading"><h1>Fee structures</h1></div>
+      <div class="toolbar">
+        <div class="filter-row">
+          <select id="structure-component-filter"><option value="">Choose a fee component…</option></select>
+        </div>
+      </div>
+      <p class="field-hint" style="margin:-8px 0 16px;">Set how much a component costs — school-wide, for one class, or for one student. Student-specific beats class-wise beats school-wide.</p>
+      <div id="structure-list"></div>
+      <div class="placeholder-note" id="structure-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <p id="structure-placeholder-text">Choose a fee component above to see or set its amounts.</p>
+      </div>
+      <hr class="divider">
+      <div class="section-heading"><h1>Generate dues</h1></div>
+      <div class="card">
+        <p class="field-hint" style="margin-top:0;">Bill every eligible student for a component over a period, based on the fee structures above. Safe to run more than once — an already-billed period is skipped.</p>
+        <div class="field">
+          <label for="gd-component">Fee component</label>
+          <select id="gd-component"><option value="">Choose a component…</option></select>
+        </div>
+        <div class="field">
+          <label for="gd-period-label">Period label</label>
+          <input type="text" id="gd-period-label" class="plain" placeholder="e.g. April 2026, Q1 2026-27">
+        </div>
+        <div class="row3">
+          <div class="field" style="margin-top:0;">
+            <label for="gd-period-start">Period start</label>
+            <input type="date" id="gd-period-start">
+          </div>
+          <div class="field" style="margin-top:0;">
+            <label for="gd-period-end">Period end</label>
+            <input type="date" id="gd-period-end">
+          </div>
+          <div class="field" style="margin-top:0;">
+            <label for="gd-due-date">Due date</label>
+            <input type="date" id="gd-due-date">
+          </div>
+        </div>
+        <p class="field-error" id="gd-error"></p>
+        <button class="btn btn-primary btn-block" id="gd-submit" type="button" style="margin-top:10px;">Generate dues</button>
+      </div>
+    </div>
+
+    <!-- ============ DISCOUNTS ============ -->
+    <div class="view" id="view-discounts">
+      <div class="section-heading">
+        <h1>Discount rules</h1>
+        <span class="count-chip" id="discount-count">Loading…</span>
+      </div>
+      <p class="field-hint" style="margin:-8px 0 16px;">Reusable rules — e.g. an early-bird discount or a sibling discount. Several can apply to the same due at once.</p>
+      <div id="discount-list"></div>
+      <div class="placeholder-note" id="discount-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <p>No discount rules yet. Tap + to add one.</p>
+      </div>
+    </div>
+
+    <!-- ============ PAYMENTS ============ -->
+    <div class="view" id="view-payments">
+      <div class="section-heading"><h1>Payment history</h1></div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="payment-person-search" placeholder="Filter by student name…" autocomplete="off">
+        </div>
+        <div class="filter-row">
+          <input type="date" id="payment-from">
+          <input type="date" id="payment-to">
+          <button class="btn btn-ghost btn-sm" id="payment-clear" type="button">Clear</button>
+        </div>
+      </div>
+      <div class="card" id="payment-list-card">
+        <div id="payment-list"></div>
+        <div class="placeholder-note" id="payment-placeholder" style="display:none;">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <p>No payments found for this filter.</p>
+        </div>
+      </div>
+      <div class="list-sentinel hidden" id="payment-sentinel"><div class="spinner sm"></div></div>
+    </div>
+
+    <!-- ============ STAFF ACCESS (true admins only) ============ -->
+    <div class="view" id="view-staff">
+      <div class="section-heading"><h1>Fee admin access</h1></div>
+      <p class="field-hint" style="margin:0 0 16px;">Give a staff member full fee-module access without making them a full school admin. Only school admins can grant or revoke this.</p>
+      <div class="card" style="margin-bottom:20px;">
+        <p class="subhead" style="margin-top:0;">Grant access</p>
+        <div class="field" style="margin-top:0;">
+          <label for="staff-search">Search staff by name</label>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="staff-search" placeholder="Search teachers, admins, storekeepers…" autocomplete="off">
+          </div>
+          <div id="staff-search-results"></div>
+        </div>
+        <p class="field-error" id="staff-add-error"></p>
+      </div>
+      <div class="section-heading"><h1>Current fee admins</h1><span class="count-chip" id="staff-count">Loading…</span></div>
+      <div id="staff-list"></div>
+      <div class="placeholder-note" id="staff-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <p>No fee admins yet.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <button class="fab" id="fab-add" type="button" aria-label="Add" title="Add">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+</div>
+
+<!-- Add / Edit fee component sheet -->
+<div class="sheet-backdrop" id="sheet-component">
+  <div class="sheet" role="dialog" aria-label="Fee component form">
+    <div class="sheet-handle"></div>
+    <div class="sheet-top-row">
+      <h3 id="component-sheet-title">Add fee component</h3>
+      <button class="delete-icon-btn" id="component-delete-btn" style="display:none;" title="Delete component" type="button">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+      </button>
+    </div>
+    <p class="sheet-desc">Give this chargeable item a name and how often it's billed. Set the actual amount under Fee Structures.</p>
+
+    <div class="field">
+      <label for="f-comp-name">Name <span style="color:var(--danger);">*</span></label>
+      <input type="text" class="plain" id="f-comp-name" placeholder="e.g. Tuition Fee, Transport Fee">
+    </div>
+    <div class="field">
+      <label for="f-comp-desc">Description</label>
+      <textarea id="f-comp-desc" placeholder="Optional notes about this fee"></textarea>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="f-comp-frequency">Billing frequency <span style="color:var(--danger);">*</span></label>
+        <select id="f-comp-frequency">
+          <option value="one_time">One-time</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="half_yearly">Half-yearly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-comp-year">Academic year</label>
+        <input type="text" class="plain" id="f-comp-year" placeholder="e.g. 2026-27">
+      </div>
+    </div>
+    <div class="field">
+      <label class="checkbox-row" style="margin-top:0;"><input type="checkbox" id="f-comp-active" checked> Active (visible when creating fee structures and dues)</label>
+    </div>
+
+    <p class="field-error" id="component-error"></p>
+
+    <div class="sheet-actions" style="margin-top:6px;">
+      <button class="btn btn-ghost" id="component-cancel">Cancel</button>
+      <button class="btn btn-primary" id="component-save">Save component</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add fee structure sheet -->
+<div class="sheet-backdrop" id="sheet-structure">
+  <div class="sheet" role="dialog" aria-label="Fee structure form">
+    <div class="sheet-handle"></div>
+    <h3 id="structure-sheet-title">Set an amount</h3>
+    <p class="sheet-desc" id="structure-sheet-desc">This becomes the active amount for the chosen scope starting from the effective date.</p>
+
+    <div class="field">
+      <label for="f-struct-scope">Applies to</label>
+      <select id="f-struct-scope">
+        <option value="school">Every student (school-wide)</option>
+        <option value="class">One class</option>
+        <option value="student">One specific student</option>
+      </select>
+    </div>
+    <div class="field" id="f-struct-class-field" style="display:none;">
+      <label for="f-struct-class">Class</label>
+      <select id="f-struct-class"></select>
+    </div>
+    <div class="field" id="f-struct-student-field" style="display:none;">
+      <label for="f-struct-student-search">Student</label>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="f-struct-student-search" placeholder="Search student name…" autocomplete="off">
+      </div>
+      <div id="f-struct-student-results" style="max-height:220px; overflow-y:auto; border:1.5px solid var(--border-card); border-radius:var(--r-sm); margin-top:6px; display:none; background:var(--white);"></div>
+      <div class="student-chosen" id="f-struct-student-chosen" style="display:none;">
+        <div class="search-result-name" id="f-struct-student-chosen-name"></div>
+        <button class="btn btn-ghost btn-sm" id="f-struct-student-change" type="button">Change</button>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="f-struct-amount">Amount <span style="color:var(--danger);">*</span></label>
+        <input type="number" class="plain" id="f-struct-amount" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label for="f-struct-from">Effective from</label>
+        <input type="date" id="f-struct-from">
+      </div>
+    </div>
+    <p class="field-hint" id="f-struct-replace-note" style="display:none;">This will close out the current active amount for this scope (effective to yesterday) and start this new amount today.</p>
+
+    <p class="field-error" id="structure-error"></p>
+
+    <div class="sheet-actions" style="margin-top:6px;">
+      <button class="btn btn-ghost" id="structure-cancel">Cancel</button>
+      <button class="btn btn-primary" id="structure-save">Save amount</button>
+    </div>
+  </div>
+</div>
+
+<!-- Close / end a fee structure -->
+<div class="sheet-backdrop" id="sheet-structure-end">
+  <div class="sheet" role="dialog" aria-label="End fee structure confirmation">
+    <div class="sheet-handle"></div>
+    <h3>End this amount?</h3>
+    <p class="sheet-desc" id="structure-end-message"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="structure-end-cancel">Cancel</button>
+      <button class="btn btn-danger" id="structure-end-confirm">End it</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit discount sheet -->
+<div class="sheet-backdrop" id="sheet-discount">
+  <div class="sheet" role="dialog" aria-label="Discount form">
+    <div class="sheet-handle"></div>
+    <div class="sheet-top-row">
+      <h3 id="discount-sheet-title">Add discount rule</h3>
+      <button class="delete-icon-btn" id="discount-delete-btn" style="display:none;" title="Delete discount" type="button">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+      </button>
+    </div>
+    <div class="field">
+      <label for="f-disc-name">Name <span style="color:var(--danger);">*</span></label>
+      <input type="text" class="plain" id="f-disc-name" placeholder="e.g. Sibling discount, Early-bird discount">
+    </div>
+    <div class="field">
+      <label for="f-disc-desc">Description</label>
+      <textarea id="f-disc-desc" placeholder="Optional notes"></textarea>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="f-disc-type">Type</label>
+        <select id="f-disc-type">
+          <option value="percentage">Percentage off</option>
+          <option value="flat">Flat amount off</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-disc-value">Value <span style="color:var(--danger);">*</span></label>
+        <input type="number" class="plain" id="f-disc-value" min="0" step="0.01" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-disc-component">Applies to component</label>
+      <select id="f-disc-component"><option value="">Every component</option></select>
+    </div>
+    <div class="field">
+      <label for="f-disc-scope">Applies to</label>
+      <select id="f-disc-scope">
+        <option value="school">Every student (school-wide)</option>
+        <option value="class">One class</option>
+        <option value="student">One specific student</option>
+      </select>
+    </div>
+    <div class="field" id="f-disc-class-field" style="display:none;">
+      <label for="f-disc-class">Class</label>
+      <select id="f-disc-class"></select>
+    </div>
+    <div class="field" id="f-disc-student-field" style="display:none;">
+      <label for="f-disc-student-search">Student</label>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="f-disc-student-search" placeholder="Search student name…" autocomplete="off">
+      </div>
+      <div id="f-disc-student-results" style="max-height:220px; overflow-y:auto; border:1.5px solid var(--border-card); border-radius:var(--r-sm); margin-top:6px; display:none; background:var(--white);"></div>
+      <div class="student-chosen" id="f-disc-student-chosen" style="display:none;">
+        <div class="search-result-name" id="f-disc-student-chosen-name"></div>
+        <button class="btn btn-ghost btn-sm" id="f-disc-student-change" type="button">Change</button>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="f-disc-from">Effective from</label>
+        <input type="date" id="f-disc-from">
+      </div>
+      <div class="field">
+        <label for="f-disc-to">Effective to (optional)</label>
+        <input type="date" id="f-disc-to">
+      </div>
+    </div>
+    <div class="field">
+      <label class="checkbox-row" style="margin-top:0;"><input type="checkbox" id="f-disc-active" checked> Active</label>
+    </div>
+
+    <p class="field-error" id="discount-error"></p>
+
+    <div class="sheet-actions" style="margin-top:6px;">
+      <button class="btn btn-ghost" id="discount-cancel">Cancel</button>
+      <button class="btn btn-primary" id="discount-save">Save discount</button>
+    </div>
+  </div>
+</div>
+
+<!-- Due detail sheet -->
+<div class="sheet-backdrop" id="sheet-due">
+  <div class="sheet" role="dialog" aria-label="Due detail">
+    <div class="sheet-handle"></div>
+    <h3 id="due-sheet-title">Due</h3>
+    <p class="sheet-desc" id="due-sheet-sub"></p>
+
+    <div class="balance-summary">
+      <div class="balance-box"><div class="num" id="due-gross">—</div><div class="lbl">Billed</div></div>
+      <div class="balance-box"><div class="num" id="due-discount">—</div><div class="lbl">Discount</div></div>
+      <div class="balance-box"><div class="num" id="due-balance">—</div><div class="lbl">Balance</div></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="due-progress-fill" style="width:0%;"></div></div>
+
+    <p class="subhead" style="margin-top:18px;">Payments</p>
+    <div id="due-payments-list"><p class="field-hint">No payments recorded yet.</p></div>
+
+    <p class="subhead" style="margin-top:18px;">Discounts applied</p>
+    <div id="due-discounts-list"><p class="field-hint">No discounts applied yet.</p></div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="due-apply-discount-btn" type="button">Apply discount</button>
+      <button class="btn btn-primary" id="due-record-payment-btn" type="button">Record payment</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="due-waive-btn" type="button">Waive this due</button>
+      <button class="btn btn-ghost" id="due-close-btn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Record payment sheet -->
+<div class="sheet-backdrop" id="sheet-payment">
+  <div class="sheet" role="dialog" aria-label="Record payment">
+    <div class="sheet-handle"></div>
+    <h3>Record a payment</h3>
+    <p class="sheet-desc" id="payment-sheet-sub"></p>
+    <div class="row2">
+      <div class="field" style="margin-top:0;">
+        <label for="f-pay-amount">Amount <span style="color:var(--danger);">*</span></label>
+        <input type="number" class="plain" id="f-pay-amount" min="0.01" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field" style="margin-top:0;">
+        <label for="f-pay-date">Payment date</label>
+        <input type="date" id="f-pay-date">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="f-pay-mode">Mode</label>
+        <select id="f-pay-mode">
+          <option value="cash">Cash</option>
+          <option value="cheque">Cheque</option>
+          <option value="online">Online</option>
+          <option value="card">Card</option>
+          <option value="upi">UPI</option>
+          <option value="bank_transfer">Bank transfer</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-pay-ref">Reference no.</label>
+        <input type="text" class="plain" id="f-pay-ref" placeholder="Optional">
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-pay-remarks">Remarks</label>
+      <textarea id="f-pay-remarks" placeholder="Optional"></textarea>
+    </div>
+    <p class="field-error" id="payment-form-error"></p>
+    <div class="sheet-actions" style="margin-top:6px;">
+      <button class="btn btn-ghost" id="payment-cancel">Cancel</button>
+      <button class="btn btn-primary" id="payment-save">Record payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Apply discount to a due sheet -->
+<div class="sheet-backdrop" id="sheet-apply-discount">
+  <div class="sheet" role="dialog" aria-label="Apply discount">
+    <div class="sheet-handle"></div>
+    <h3>Apply a discount</h3>
+    <p class="sheet-desc">Pick a matching discount rule, or apply a one-off amount with a reason.</p>
+    <div class="field" style="margin-top:0;">
+      <label for="f-apply-disc-rule">Matching discount rules</label>
+      <select id="f-apply-disc-rule"><option value="">— One-off amount instead —</option></select>
+    </div>
+    <div class="field" id="f-apply-disc-amount-field">
+      <label for="f-apply-disc-amount">Amount <span style="color:var(--danger);">*</span></label>
+      <input type="number" class="plain" id="f-apply-disc-amount" min="0.01" step="0.01" placeholder="0.00">
+    </div>
+    <div class="field" id="f-apply-disc-reason-field">
+      <label for="f-apply-disc-reason">Reason</label>
+      <input type="text" class="plain" id="f-apply-disc-reason" placeholder="e.g. Goodwill gesture, fee correction">
+    </div>
+    <p class="field-error" id="apply-discount-error"></p>
+    <div class="sheet-actions" style="margin-top:6px;">
+      <button class="btn btn-ghost" id="apply-discount-cancel">Cancel</button>
+      <button class="btn btn-primary" id="apply-discount-save">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Waive due confirmation -->
+<div class="sheet-backdrop" id="sheet-waive">
+  <div class="sheet" role="dialog" aria-label="Waive due">
+    <div class="sheet-handle"></div>
+    <h3>Waive this due?</h3>
+    <p class="sheet-desc">The student will owe nothing further on this due. This can be undone by un-checking it later.</p>
+    <div class="field" style="margin-top:0;">
+      <label for="f-waive-reason">Reason</label>
+      <input type="text" class="plain" id="f-waive-reason" placeholder="e.g. Financial hardship, billing error">
+    </div>
+    <p class="field-error" id="waive-error"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="waive-cancel">Cancel</button>
+      <button class="btn btn-danger" id="waive-confirm">Waive due</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic delete confirmation -->
+<div class="sheet-backdrop" id="sheet-delete">
+  <div class="sheet" role="dialog" aria-label="Delete confirmation">
+    <div class="sheet-handle"></div>
+    <h3 id="delete-title">Delete this?</h3>
+    <p class="sheet-desc" id="delete-message"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="delete-cancel">Cancel</button>
+      <button class="btn btn-danger" id="delete-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Revoke fee admin confirmation -->
+<div class="sheet-backdrop" id="sheet-revoke">
+  <div class="sheet" role="dialog" aria-label="Revoke fee admin access">
+    <div class="sheet-handle"></div>
+    <h3>Revoke fee admin access?</h3>
+    <p class="sheet-desc" id="revoke-message"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="revoke-cancel">Cancel</button>
+      <button class="btn btn-danger" id="revoke-confirm">Revoke</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign-out confirmation -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p class="sheet-desc">You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP — same project as the rest of the portal
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache();
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var PAGE_SIZE = 20;
+var FREQ_LABEL = { one_time:'One-time', monthly:'Monthly', quarterly:'Quarterly', half_yearly:'Half-yearly', yearly:'Yearly' };
+var SCOPE_LABEL = { school:'Every student', class:'Class', student:'Student' };
+var STATUS_LABEL = { pending:'Pending', overdue:'Overdue', partial:'Partial', paid:'Paid', waived:'Waived' };
+
+var state = {
+  isAdmin: false, isFeeAdmin: false,
+  classes: [],
+  components: [],
+
+  componentList: [], componentLoading: false,
+  structureComponentId: '', structures: [],
+
+  discountList: [], discountLoading: false,
+
+  chosenStudent: null,          // {id, name, class, sr_no, roll_no}
+  studentDues: [], activeDue: null,
+
+  paymentPage: 0, paymentLoading: false, paymentExhausted: false,
+  paymentPerson: '', paymentFrom: '', paymentTo: '',
+
+  staffList: [], staffLoading: false,
+
+  structFormScope: 'school', structFormStudent: null, structFormMode: 'new', structFormComponentId: null,
+  discFormScope: 'school', discFormStudent: null, discFormMode: 'new', discFormRow: null,
+
+  pendingDeleteAction: null,
+  pendingStructureEnd: null,
+  pendingRevokeId: null,
+
+  searchDebounce: {}
+};
+
+/* =========================================================
+   THEME / TOAST / NAV / MISC HELPERS
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('denied-back').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout) sheetSignout.classList.remove('show'); });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = (str === null || str === undefined) ? '' : str;
+  return div.innerHTML;
+}
+function money(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function closeAllSheets(){ document.querySelectorAll('.sheet-backdrop.show').forEach(function(s){ s.classList.remove('show'); }); }
+
+/* Simple generic sheet open/close helper */
+function openSheet(id){ document.getElementById(id).classList.add('show'); }
+function closeSheet(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.sheet-backdrop').forEach(function(sb){
+  sb.addEventListener('click', function(e){ if(e.target === sb) sb.classList.remove('show'); });
+});
+
+/* =========================================================
+   TABS
+========================================================= */
+var loadedTabs = { dashboard:false, students:true, components:false, structures:false, discounts:false, payments:false, staff:false };
+var tabDirty = { dashboard:false, students:false, components:false, structures:false, discounts:false, payments:false, staff:false };
+
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.toggle('active', v.id === 'view-' + tab); });
+    document.getElementById('fab-add').style.display = (tab === 'components' || tab === 'discounts') ? 'flex' : 'none';
+    if(!loadedTabs[tab] || tabDirty[tab]){
+      loadedTabs[tab] = true; tabDirty[tab] = false;
+      if(tab === 'dashboard') loadDashboard();
+      if(tab === 'components') resetAndLoadComponents();
+      if(tab === 'structures') { populateStructureComponentFilter(); }
+      if(tab === 'discounts') resetAndLoadDiscounts();
+      if(tab === 'payments') resetAndLoadPayments();
+      if(tab === 'staff') resetAndLoadStaff();
+    }
+  });
+});
+
+document.getElementById('fab-add').addEventListener('click', function(){
+  var activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+  if(activeTab === 'components') openAddComponentSheet();
+  if(activeTab === 'discounts') openAddDiscountSheet();
+});
+
+/* =========================================================
+   SHARED LOOKUPS — classes, components
+========================================================= */
+function loadClasses(){
+  return supabaseClient.from('classes').select('name').order('name').then(function(res){
+    if(!res.error) state.classes = (res.data || []).map(function(r){ return r.name; });
+  });
+}
+function classOptionsHtml(selected){
+  return state.classes.map(function(c){ return '<option value="' + escapeHtml(c) + '"' + (c === selected ? ' selected' : '') + '>' + escapeHtml(c) + '</option>'; }).join('');
+}
+function loadAllComponents(){
+  return supabaseClient.from('fee_components').select('id,name,frequency,academic_year,is_active').order('name').then(function(res){
+    if(!res.error) state.components = res.data || [];
+  });
+}
+function componentOptionsHtml(selected, includeInactive, includeEmpty){
+  var opts = includeEmpty ? '<option value="">Choose a component…</option>' : '';
+  state.components.filter(function(c){ return includeInactive || c.is_active; }).forEach(function(c){
+    opts += '<option value="' + c.id + '"' + (String(c.id) === String(selected) ? ' selected' : '') + '>' + escapeHtml(c.name) + (c.academic_year ? ' (' + escapeHtml(c.academic_year) + ')' : '') + '</option>';
+  });
+  return opts;
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function loadDashboard(){
+  var monthStart = new Date(); monthStart.setDate(1);
+  var monthStartStr = monthStart.toISOString().slice(0,10);
+
+  supabaseClient.from('fee_payments').select('amount_paid').gte('payment_date', monthStartStr).then(function(res){
+    if(res.error) return;
+    var total = (res.data || []).reduce(function(s,r){ return s + Number(r.amount_paid); }, 0);
+    document.getElementById('stat-collected').textContent = money(total);
+  });
+
+  supabaseClient.from('fee_due_balances').select('balance_due,status').then(function(res){
+    if(res.error) return;
+    var rows = res.data || [];
+    var outstanding = rows.reduce(function(s,r){ return s + Number(r.balance_due || 0); }, 0);
+    var overdue = rows.filter(function(r){ return r.status === 'overdue'; }).length;
+    document.getElementById('stat-outstanding').textContent = money(outstanding);
+    document.getElementById('stat-overdue').textContent = overdue;
+  });
+
+  supabaseClient.from('fee_components').select('id', { count:'exact', head:true }).eq('is_active', true).then(function(res){
+    if(!res.error) document.getElementById('stat-components').textContent = res.count ?? '—';
+  });
+
+  supabaseClient.from('fee_payments')
+    .select('id,amount_paid,payment_date,payment_mode,due_id,fee_dues(period_label,students_master(name,class))')
+    .order('created_at', { ascending:false }).limit(8)
+    .then(function(res){
+      var card = document.getElementById('recent-payments-card');
+      if(res.error){ card.innerHTML = '<p class="field-error show">Could not load recent payments.</p>'; return; }
+      var rows = res.data || [];
+      if(rows.length === 0){ card.innerHTML = '<div class="placeholder-note"><p>No payments recorded yet.</p></div>'; return; }
+      card.innerHTML = rows.map(function(r){
+        var sm = r.fee_dues && r.fee_dues.students_master ? r.fee_dues.students_master : {};
+        return '<div class="list-row"><div><div class="lr-name">' + escapeHtml(sm.name || 'Unknown student') + '</div>' +
+          '<div class="lr-sub">' + escapeHtml(sm.class || '') + ' &bull; ' + escapeHtml((r.fee_dues||{}).period_label || '') + ' &bull; ' + new Date(r.payment_date).toLocaleDateString() + '</div></div>' +
+          '<div class="lr-amt" style="color:var(--success);">' + money(r.amount_paid) + '</div></div>';
+      }).join('');
+    });
+
+  supabaseClient.from('fee_due_balances')
+    .select('due_id,student_master_id,period_label,due_date,balance_due,status,students_master(name,class)')
+    .eq('status', 'overdue').order('due_date', { ascending:true }).limit(8)
+    .then(function(res){
+      var card = document.getElementById('overdue-card');
+      if(res.error){ card.innerHTML = '<p class="field-error show">Could not load overdue dues.</p>'; return; }
+      var rows = res.data || [];
+      if(rows.length === 0){ card.innerHTML = '<div class="placeholder-note"><p>Nothing overdue right now. Nicely done.</p></div>'; return; }
+      card.innerHTML = rows.map(function(r){
+        var sm = r.students_master || {};
+        return '<div class="list-row"><div><div class="lr-name">' + escapeHtml(sm.name || 'Unknown student') + '</div>' +
+          '<div class="lr-sub">' + escapeHtml(sm.class || '') + ' &bull; ' + escapeHtml(r.period_label) + ' &bull; due ' + new Date(r.due_date).toLocaleDateString() + '</div></div>' +
+          '<div class="lr-amt" style="color:var(--danger);">' + money(r.balance_due) + '</div></div>';
+      }).join('');
+    });
+}
+
+/* =========================================================
+   FEE COMPONENTS
+========================================================= */
+var componentListEl = document.getElementById('component-list');
+var componentPlaceholderEl = document.getElementById('component-placeholder');
+var componentCountChip = document.getElementById('component-count');
+
+function resetAndLoadComponents(){
+  componentListEl.innerHTML = ''; componentPlaceholderEl.style.display = 'none';
+  componentCountChip.textContent = 'Loading…';
+  supabaseClient.from('fee_components').select('id,name,description,frequency,academic_year,is_active').order('name').then(function(res){
+    if(res.error){ toast('Could not load fee components: ' + res.error.message, true); return; }
+    state.componentList = res.data || [];
+    state.components = state.componentList;
+    renderComponentList();
+  });
+}
+function renderComponentList(){
+  var rows = state.componentList;
+  componentCountChip.textContent = rows.length + (rows.length === 1 ? ' component' : ' components');
+  componentPlaceholderEl.style.display = rows.length === 0 ? 'flex' : 'none';
+  componentListEl.innerHTML = '';
+  rows.forEach(function(r, i){
+    var card = document.createElement('div');
+    card.className = 'row-card';
+    card.style.animationDelay = Math.min(i, 20) * 0.03 + 's';
+    card.innerHTML =
+      '<div class="row-card-top"><p class="row-title">' + escapeHtml(r.name) + '</p>' +
+      '<span class="chip teal">' + FREQ_LABEL[r.frequency] + '</span></div>' +
+      '<div class="row-meta">' + (r.academic_year ? escapeHtml(r.academic_year) + ' &bull; ' : '') +
+      '<span class="chip' + (r.is_active ? '' : ' inactive') + '" style="margin-left:0;">' + (r.is_active ? 'Active' : 'Inactive') + '</span></div>';
+    card.addEventListener('click', function(){ openEditComponentSheet(r); });
+    componentListEl.appendChild(card);
+  });
+}
+
+var sheetComponent = document.getElementById('sheet-component');
+var componentSheetTitle = document.getElementById('component-sheet-title');
+var componentDeleteBtn = document.getElementById('component-delete-btn');
+var componentError = document.getElementById('component-error');
+var fCompName = document.getElementById('f-comp-name');
+var fCompDesc = document.getElementById('f-comp-desc');
+var fCompFrequency = document.getElementById('f-comp-frequency');
+var fCompYear = document.getElementById('f-comp-year');
+var fCompActive = document.getElementById('f-comp-active');
+var activeComponent = null;
+
+function clearComponentForm(){
+  fCompName.value = ''; fCompDesc.value = ''; fCompFrequency.value = 'monthly'; fCompYear.value = ''; fCompActive.checked = true;
+  componentError.classList.remove('show'); componentError.textContent = '';
+}
+function openAddComponentSheet(){
+  activeComponent = null;
+  componentSheetTitle.textContent = 'Add fee component';
+  componentDeleteBtn.style.display = 'none';
+  clearComponentForm();
+  openSheet('sheet-component');
+}
+function openEditComponentSheet(r){
+  activeComponent = r;
+  componentSheetTitle.textContent = 'Edit fee component';
+  componentDeleteBtn.style.display = 'flex';
+  fCompName.value = r.name; fCompDesc.value = r.description || ''; fCompFrequency.value = r.frequency;
+  fCompYear.value = r.academic_year || ''; fCompActive.checked = r.is_active;
+  componentError.classList.remove('show'); componentError.textContent = '';
+  openSheet('sheet-component');
+}
+document.getElementById('component-cancel').addEventListener('click', function(){ closeSheet('sheet-component'); });
+
+document.getElementById('component-save').addEventListener('click', async function(){
+  var name = fCompName.value.trim();
+  if(!name){ componentError.textContent = 'Please enter a name.'; componentError.classList.add('show'); return; }
+  var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+  var payload = {
+    name: name, description: fCompDesc.value.trim() || null, frequency: fCompFrequency.value,
+    academic_year: fCompYear.value.trim() || null, is_active: fCompActive.checked
+  };
+  var res;
+  if(activeComponent){ res = await supabaseClient.from('fee_components').update(payload).eq('id', activeComponent.id); }
+  else{ res = await supabaseClient.from('fee_components').insert(payload); }
+  btn.disabled = false; btn.textContent = 'Save component';
+  if(res.error){ componentError.textContent = res.error.message; componentError.classList.add('show'); return; }
+  toast(activeComponent ? 'Component updated.' : 'Component added.');
+  closeSheet('sheet-component');
+  resetAndLoadComponents();
+  loadAllComponents();
+  tabDirty.structures = true; tabDirty.discounts = true; tabDirty.dashboard = true;
+});
+
+var sheetDelete = document.getElementById('sheet-delete');
+componentDeleteBtn.addEventListener('click', function(){
+  if(!activeComponent) return;
+  document.getElementById('delete-title').textContent = 'Delete this fee component?';
+  document.getElementById('delete-message').textContent = 'If "' + activeComponent.name + '" has fee structures or dues already linked to it, deleting will fail — mark it inactive instead. Only delete a component that was never used.';
+  state.pendingDeleteAction = async function(){
+    var del = await supabaseClient.from('fee_components').delete().eq('id', activeComponent.id);
+    if(del.error){ toast('Could not delete — it\u2019s likely in use. Try marking it inactive instead.', true); return false; }
+    toast('Component deleted.');
+    closeSheet('sheet-component');
+    resetAndLoadComponents();
+    loadAllComponents();
+    tabDirty.structures = true; tabDirty.discounts = true; tabDirty.dashboard = true;
+    return true;
+  };
+  openSheet('sheet-delete');
+});
+
+/* =========================================================
+   FEE STRUCTURES
+========================================================= */
+var structureComponentFilter = document.getElementById('structure-component-filter');
+var structureListEl = document.getElementById('structure-list');
+var structurePlaceholderEl = document.getElementById('structure-placeholder');
+
+function populateStructureComponentFilter(){
+  loadAllComponents().then(function(){
+    var current = structureComponentFilter.value;
+    structureComponentFilter.innerHTML = '<option value="">Choose a fee component…</option>' + componentOptionsHtml(current, true, false);
+    document.getElementById('gd-component').innerHTML = '<option value="">Choose a component…</option>' + componentOptionsHtml('', false, false);
+    if(state.structureComponentId) { structureComponentFilter.value = state.structureComponentId; loadStructuresForComponent(); }
+  });
+  loadClasses();
+}
+structureComponentFilter.addEventListener('change', function(){
+  state.structureComponentId = structureComponentFilter.value;
+  if(state.structureComponentId) loadStructuresForComponent();
+  else { structureListEl.innerHTML=''; structurePlaceholderEl.style.display='flex'; document.getElementById('structure-placeholder-text').textContent = 'Choose a fee component above to see or set its amounts.'; }
+});
+
+function loadStructuresForComponent(){
+  structureListEl.innerHTML = '';
+  structurePlaceholderEl.style.display = 'none';
+  supabaseClient.from('fee_structures')
+    .select('id,component_id,scope_type,class,student_master_id,amount,effective_from,effective_to,students_master(name,class)')
+    .eq('component_id', state.structureComponentId)
+    .order('scope_type').order('effective_from', { ascending:false })
+    .then(function(res){
+      if(res.error){ toast('Could not load fee structures: ' + res.error.message, true); return; }
+      state.structures = res.data || [];
+      renderStructureList();
+    });
+}
+function renderStructureList(){
+  var rows = state.structures;
+  if(rows.length === 0){ structurePlaceholderEl.style.display = 'flex'; document.getElementById('structure-placeholder-text').textContent = 'No amount set yet for this component. Tap "Set an amount" below to add one.'; }
+  structureListEl.innerHTML = '';
+  rows.forEach(function(r, i){
+    var isActive = !r.effective_to;
+    var scopeLabel = r.scope_type === 'school' ? 'Every student' : (r.scope_type === 'class' ? 'Class: ' + r.class : 'Student: ' + ((r.students_master||{}).name || '—'));
+    var card = document.createElement('div');
+    card.className = 'row-card';
+    card.style.animationDelay = Math.min(i, 20) * 0.03 + 's';
+    card.style.cursor = 'default';
+    card.innerHTML =
+      '<div class="row-card-top"><p class="row-title">' + money(r.amount) + '</p>' +
+      '<span class="chip' + (isActive ? ' teal' : ' inactive') + '">' + (isActive ? 'Active' : 'Historical') + '</span></div>' +
+      '<div class="row-meta">' + escapeHtml(scopeLabel) + ' &bull; from ' + new Date(r.effective_from).toLocaleDateString() + (r.effective_to ? ' to ' + new Date(r.effective_to).toLocaleDateString() : '') + '</div>';
+    if(isActive){
+      var actions = document.createElement('div');
+      actions.className = 'btn-row';
+      actions.style.marginTop = '10px';
+      var updateBtn = document.createElement('button');
+      updateBtn.className = 'btn btn-ghost btn-sm'; updateBtn.type = 'button'; updateBtn.textContent = 'Change amount';
+      updateBtn.addEventListener('click', function(e){ e.stopPropagation(); openReplaceStructureSheet(r); });
+      var endBtn = document.createElement('button');
+      endBtn.className = 'btn btn-ghost btn-sm'; endBtn.type = 'button'; endBtn.textContent = 'End it';
+      endBtn.addEventListener('click', function(e){ e.stopPropagation(); openEndStructureSheet(r); });
+      actions.appendChild(updateBtn); actions.appendChild(endBtn);
+      card.appendChild(actions);
+    }
+    structureListEl.appendChild(card);
+  });
+}
+
+var sheetStructure = document.getElementById('sheet-structure');
+var fStructScope = document.getElementById('f-struct-scope');
+var fStructClassField = document.getElementById('f-struct-class-field');
+var fStructClass = document.getElementById('f-struct-class');
+var fStructStudentField = document.getElementById('f-struct-student-field');
+var fStructAmount = document.getElementById('f-struct-amount');
+var fStructFrom = document.getElementById('f-struct-from');
+var structureError = document.getElementById('structure-error');
+
+function toggleStructScopeFields(){
+  var v = fStructScope.value;
+  fStructClassField.style.display = v === 'class' ? 'block' : 'none';
+  fStructStudentField.style.display = v === 'student' ? 'block' : 'none';
+}
+fStructScope.addEventListener('change', toggleStructScopeFields);
+
+function openAddStructureSheet(){
+  if(!state.structureComponentId){ toast('Choose a fee component first.', true); return; }
+  state.structFormMode = 'new'; state.structFormStudent = null;
+  document.getElementById('structure-sheet-title').textContent = 'Set an amount';
+  document.getElementById('structure-sheet-desc').textContent = "This becomes the active amount for the chosen scope starting from the effective date.";
+  document.getElementById('f-struct-replace-note').style.display = 'none';
+  fStructScope.value = 'school'; fStructClass.innerHTML = classOptionsHtml('');
+  fStructAmount.value = ''; fStructFrom.value = todayStr();
+  document.getElementById('f-struct-student-search').value = '';
+  document.getElementById('f-struct-student-chosen').style.display = 'none';
+  document.getElementById('f-struct-student-search').style.display = 'block';
+  toggleStructScopeFields();
+  structureError.classList.remove('show'); structureError.textContent = '';
+  openSheet('sheet-structure');
+}
+function openReplaceStructureSheet(row){
+  state.structFormMode = 'replace'; state.structFormRow = row;
+  state.structFormStudent = row.student_master_id ? { id: row.student_master_id, name: (row.students_master||{}).name } : null;
+  document.getElementById('structure-sheet-title').textContent = 'Change amount';
+  document.getElementById('structure-sheet-desc').textContent = 'Updates the amount for the same scope, keeping the old amount on record.';
+  document.getElementById('f-struct-replace-note').style.display = 'block';
+  fStructScope.value = row.scope_type; fStructClass.innerHTML = classOptionsHtml(row.class);
+  fStructAmount.value = row.amount; fStructFrom.value = todayStr();
+  if(row.scope_type === 'student'){
+    document.getElementById('f-struct-student-chosen-name').textContent = (row.students_master||{}).name || 'Student';
+    document.getElementById('f-struct-student-chosen').style.display = 'flex';
+    document.getElementById('f-struct-student-search').style.display = 'none';
+  }
+  toggleStructScopeFields();
+  structureError.classList.remove('show'); structureError.textContent = '';
+  openSheet('sheet-structure');
+}
+document.getElementById('structure-cancel').addEventListener('click', function(){ closeSheet('sheet-structure'); });
+
+var fStructStudentSearch = document.getElementById('f-struct-student-search');
+var fStructStudentResults = document.getElementById('f-struct-student-results');
+fStructStudentSearch.addEventListener('input', function(){
+  clearTimeout(state.searchDebounce.structStudent);
+  var term = fStructStudentSearch.value.trim();
+  state.searchDebounce.structStudent = setTimeout(function(){
+    if(term.length < 2){ fStructStudentResults.style.display = 'none'; fStructStudentResults.innerHTML=''; return; }
+    searchStudents(term, function(rows){
+      fStructStudentResults.innerHTML = rows.map(function(s){
+        return '<div class="search-result" data-id="' + s.id + '" data-name="' + escapeHtml(s.name) + '"><div><div class="search-result-name">' + escapeHtml(s.name) + '</div><div class="search-result-sub">' + escapeHtml(s.class || '') + (s.roll_no ? ' &bull; Roll ' + s.roll_no : '') + '</div></div></div>';
+      }).join('') || '<div class="placeholder-note"><p>No students found.</p></div>';
+      fStructStudentResults.style.display = 'block';
+      fStructStudentResults.querySelectorAll('.search-result').forEach(function(el){
+        el.addEventListener('click', function(){
+          state.structFormStudent = { id: +el.dataset.id, name: el.dataset.name };
+          document.getElementById('f-struct-student-chosen-name').textContent = el.dataset.name;
+          document.getElementById('f-struct-student-chosen').style.display = 'flex';
+          fStructStudentSearch.style.display = 'none';
+          fStructStudentResults.style.display = 'none';
+        });
+      });
+    });
+  }, 300);
+});
+document.getElementById('f-struct-student-change').addEventListener('click', function(){
+  state.structFormStudent = null;
+  document.getElementById('f-struct-student-chosen').style.display = 'none';
+  fStructStudentSearch.style.display = 'block'; fStructStudentSearch.value = '';
+});
+
+function searchStudents(term, cb){
+  supabaseClient.from('students_master').select('id,name,class,roll_no,sr_no').ilike('name', '%' + term.replace(/[%,()]/g,'') + '%').limit(10).then(function(res){
+    if(res.error){ toast('Could not search students: ' + res.error.message, true); cb([]); return; }
+    cb(res.data || []);
+  });
+}
+
+document.getElementById('structure-save').addEventListener('click', async function(){
+  var scope = fStructScope.value, amount = parseFloat(fStructAmount.value), from = fStructFrom.value;
+  structureError.classList.remove('show');
+  if(isNaN(amount) || amount < 0){ structureError.textContent = 'Please enter a valid amount.'; structureError.classList.add('show'); return; }
+  if(scope === 'class' && !fStructClass.value){ structureError.textContent = 'Please choose a class.'; structureError.classList.add('show'); return; }
+  if(scope === 'student' && !state.structFormStudent){ structureError.textContent = 'Please choose a student.'; structureError.classList.add('show'); return; }
+
+  var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    if(state.structFormMode === 'replace'){
+      var yesterday = new Date(from); yesterday.setDate(yesterday.getDate() - 1);
+      var endRes = await supabaseClient.from('fee_structures').update({ effective_to: yesterday.toISOString().slice(0,10) }).eq('id', state.structFormRow.id);
+      if(endRes.error) throw new Error(endRes.error.message);
+    }
+    var payload = {
+      component_id: state.structureComponentId, scope_type: scope,
+      class: scope === 'class' ? fStructClass.value : null,
+      student_master_id: scope === 'student' ? state.structFormStudent.id : null,
+      amount: amount, effective_from: from
+    };
+    var ins = await supabaseClient.from('fee_structures').insert(payload);
+    if(ins.error) throw new Error(ins.error.message);
+    toast('Amount saved.');
+    closeSheet('sheet-structure');
+    loadStructuresForComponent();
+  }catch(err){
+    structureError.textContent = err.message || 'Something went wrong.';
+    structureError.classList.add('show');
+  }
+  btn.disabled = false; btn.textContent = 'Save amount';
+});
+
+function openEndStructureSheet(row){
+  state.pendingStructureEnd = row;
+  document.getElementById('structure-end-message').textContent = 'This ends the ' + money(row.amount) + ' amount today. No new charge replaces it unless you set one.';
+  openSheet('sheet-structure-end');
+}
+document.getElementById('structure-end-cancel').addEventListener('click', function(){ closeSheet('sheet-structure-end'); });
+document.getElementById('structure-end-confirm').addEventListener('click', async function(){
+  if(!state.pendingStructureEnd) return;
+  var btn = this; btn.disabled = true; btn.textContent = 'Ending…';
+  var res = await supabaseClient.from('fee_structures').update({ effective_to: todayStr() }).eq('id', state.pendingStructureEnd.id);
+  btn.disabled = false; btn.textContent = 'End it';
+  if(res.error){ toast(res.error.message, true); return; }
+  toast('Amount ended.');
+  closeSheet('sheet-structure-end');
+  state.pendingStructureEnd = null;
+  loadStructuresForComponent();
+});
+
+/* "Set an amount" trigger lives inside the structures view */
+(function(){
+  var btn = document.createElement('button');
+})();
+
+/* Generate dues */
+document.getElementById('gd-submit').addEventListener('click', async function(){
+  var compId = document.getElementById('gd-component').value;
+  var label = document.getElementById('gd-period-label').value.trim();
+  var pStart = document.getElementById('gd-period-start').value;
+  var pEnd = document.getElementById('gd-period-end').value;
+  var dueDate = document.getElementById('gd-due-date').value;
+  var errEl = document.getElementById('gd-error');
+  errEl.classList.remove('show');
+  if(!compId || !label || !pStart || !pEnd || !dueDate){ errEl.textContent = 'Please fill in every field.'; errEl.classList.add('show'); return; }
+
+  var btn = this; btn.disabled = true; btn.textContent = 'Generating…';
+  var res = await supabaseClient.rpc('generate_fee_dues', {
+    p_component_id: +compId, p_period_label: label, p_period_start: pStart, p_period_end: pEnd, p_due_date: dueDate
+  });
+  btn.disabled = false; btn.textContent = 'Generate dues';
+  if(res.error){ errEl.textContent = res.error.message; errEl.classList.add('show'); return; }
+  toast((res.data || 0) + ' due' + (res.data === 1 ? '' : 's') + ' generated.');
+  tabDirty.dashboard = true; tabDirty.students = true; tabDirty.payments = true;
+});
+
+/* =========================================================
+   DISCOUNTS
+========================================================= */
+var discountListEl = document.getElementById('discount-list');
+var discountPlaceholderEl = document.getElementById('discount-placeholder');
+var discountCountChip = document.getElementById('discount-count');
+
+function resetAndLoadDiscounts(){
+  discountListEl.innerHTML = ''; discountPlaceholderEl.style.display = 'none';
+  discountCountChip.textContent = 'Loading…';
+  loadClasses();
+  loadAllComponents().then(function(){
+    document.getElementById('f-disc-component').innerHTML = '<option value="">Every component</option>' + componentOptionsHtml('', true, false);
+  });
+  supabaseClient.from('fee_discounts')
+    .select('id,name,description,discount_type,value,component_id,scope_type,class,student_master_id,is_active,effective_from,effective_to,students_master(name),fee_components(name)')
+    .order('name').then(function(res){
+      if(res.error){ toast('Could not load discounts: ' + res.error.message, true); return; }
+      state.discountList = res.data || [];
+      renderDiscountList();
+    });
+}
+function renderDiscountList(){
+  var rows = state.discountList;
+  discountCountChip.textContent = rows.length + (rows.length === 1 ? ' rule' : ' rules');
+  discountPlaceholderEl.style.display = rows.length === 0 ? 'flex' : 'none';
+  discountListEl.innerHTML = '';
+  rows.forEach(function(r, i){
+    var valueLabel = r.discount_type === 'percentage' ? (r.value + '% off') : (money(r.value) + ' off');
+    var scopeLabel = r.scope_type === 'school' ? 'Every student' : (r.scope_type === 'class' ? 'Class: ' + r.class : 'Student: ' + ((r.students_master||{}).name || '—'));
+    var card = document.createElement('div');
+    card.className = 'row-card';
+    card.style.animationDelay = Math.min(i, 20) * 0.03 + 's';
+    card.innerHTML =
+      '<div class="row-card-top"><p class="row-title">' + escapeHtml(r.name) + '</p><span class="chip gold">' + valueLabel + '</span></div>' +
+      '<div class="row-meta">' + escapeHtml(scopeLabel) + ' &bull; ' + escapeHtml((r.fee_components||{}).name || 'Every component') + ' &bull; ' +
+      '<span class="chip' + (r.is_active ? '' : ' inactive') + '" style="margin-left:0;">' + (r.is_active ? 'Active' : 'Inactive') + '</span></div>';
+    card.addEventListener('click', function(){ openEditDiscountSheet(r); });
+    discountListEl.appendChild(card);
+  });
+}
+
+var sheetDiscount = document.getElementById('sheet-discount');
+var fDiscName = document.getElementById('f-disc-name');
+var fDiscDesc = document.getElementById('f-disc-desc');
+var fDiscType = document.getElementById('f-disc-type');
+var fDiscValue = document.getElementById('f-disc-value');
+var fDiscComponent = document.getElementById('f-disc-component');
+var fDiscScope = document.getElementById('f-disc-scope');
+var fDiscClassField = document.getElementById('f-disc-class-field');
+var fDiscClass = document.getElementById('f-disc-class');
+var fDiscStudentField = document.getElementById('f-disc-student-field');
+var fDiscFrom = document.getElementById('f-disc-from');
+var fDiscTo = document.getElementById('f-disc-to');
+var fDiscActive = document.getElementById('f-disc-active');
+var discountError = document.getElementById('discount-error');
+var activeDiscount = null;
+
+function toggleDiscScopeFields(){
+  var v = fDiscScope.value;
+  fDiscClassField.style.display = v === 'class' ? 'block' : 'none';
+  fDiscStudentField.style.display = v === 'student' ? 'block' : 'none';
+}
+fDiscScope.addEventListener('change', toggleDiscScopeFields);
+
+function openAddDiscountSheet(){
+  activeDiscount = null; state.discFormStudent = null;
+  document.getElementById('discount-sheet-title').textContent = 'Add discount rule';
+  document.getElementById('discount-delete-btn').style.display = 'none';
+  fDiscName.value = ''; fDiscDesc.value = ''; fDiscType.value = 'percentage'; fDiscValue.value = '';
+  fDiscComponent.value = ''; fDiscScope.value = 'school'; fDiscClass.innerHTML = classOptionsHtml('');
+  fDiscFrom.value = todayStr(); fDiscTo.value = ''; fDiscActive.checked = true;
+  document.getElementById('f-disc-student-search').value = '';
+  document.getElementById('f-disc-student-chosen').style.display = 'none';
+  document.getElementById('f-disc-student-search').style.display = 'block';
+  toggleDiscScopeFields();
+  discountError.classList.remove('show'); discountError.textContent = '';
+  openSheet('sheet-discount');
+}
+function openEditDiscountSheet(r){
+  activeDiscount = r;
+  state.discFormStudent = r.student_master_id ? { id: r.student_master_id, name: (r.students_master||{}).name } : null;
+  document.getElementById('discount-sheet-title').textContent = 'Edit discount rule';
+  document.getElementById('discount-delete-btn').style.display = 'flex';
+  fDiscName.value = r.name; fDiscDesc.value = r.description || ''; fDiscType.value = r.discount_type; fDiscValue.value = r.value;
+  fDiscComponent.value = r.component_id || ''; fDiscScope.value = r.scope_type; fDiscClass.innerHTML = classOptionsHtml(r.class);
+  fDiscFrom.value = r.effective_from; fDiscTo.value = r.effective_to || ''; fDiscActive.checked = r.is_active;
+  if(r.scope_type === 'student'){
+    document.getElementById('f-disc-student-chosen-name').textContent = (r.students_master||{}).name || 'Student';
+    document.getElementById('f-disc-student-chosen').style.display = 'flex';
+    document.getElementById('f-disc-student-search').style.display = 'none';
+  } else {
+    document.getElementById('f-disc-student-chosen').style.display = 'none';
+    document.getElementById('f-disc-student-search').style.display = 'block';
+    document.getElementById('f-disc-student-search').value = '';
+  }
+  toggleDiscScopeFields();
+  discountError.classList.remove('show'); discountError.textContent = '';
+  openSheet('sheet-discount');
+}
+document.getElementById('discount-cancel').addEventListener('click', function(){ closeSheet('sheet-discount'); });
+
+var fDiscStudentSearch = document.getElementById('f-disc-student-search');
+var fDiscStudentResults = document.getElementById('f-disc-student-results');
+fDiscStudentSearch.addEventListener('input', function(){
+  clearTimeout(state.searchDebounce.discStudent);
+  var term = fDiscStudentSearch.value.trim();
+  state.searchDebounce.discStudent = setTimeout(function(){
+    if(term.length < 2){ fDiscStudentResults.style.display = 'none'; fDiscStudentResults.innerHTML=''; return; }
+    searchStudents(term, function(rows){
+      fDiscStudentResults.innerHTML = rows.map(function(s){
+        return '<div class="search-result" data-id="' + s.id + '" data-name="' + escapeHtml(s.name) + '"><div><div class="search-result-name">' + escapeHtml(s.name) + '</div><div class="search-result-sub">' + escapeHtml(s.class || '') + '</div></div></div>';
+      }).join('') || '<div class="placeholder-note"><p>No students found.</p></div>';
+      fDiscStudentResults.style.display = 'block';
+      fDiscStudentResults.querySelectorAll('.search-result').forEach(function(el){
+        el.addEventListener('click', function(){
+          state.discFormStudent = { id: +el.dataset.id, name: el.dataset.name };
+          document.getElementById('f-disc-student-chosen-name').textContent = el.dataset.name;
+          document.getElementById('f-disc-student-chosen').style.display = 'flex';
+          fDiscStudentSearch.style.display = 'none';
+          fDiscStudentResults.style.display = 'none';
+        });
+      });
+    });
+  }, 300);
+});
+document.getElementById('f-disc-student-change').addEventListener('click', function(){
+  state.discFormStudent = null;
+  document.getElementById('f-disc-student-chosen').style.display = 'none';
+  fDiscStudentSearch.style.display = 'block'; fDiscStudentSearch.value = '';
+});
+
+document.getElementById('discount-save').addEventListener('click', async function(){
+  var name = fDiscName.value.trim(), value = parseFloat(fDiscValue.value), scope = fDiscScope.value;
+  discountError.classList.remove('show');
+  if(!name){ discountError.textContent = 'Please enter a name.'; discountError.classList.add('show'); return; }
+  if(isNaN(value) || value < 0){ discountError.textContent = 'Please enter a valid value.'; discountError.classList.add('show'); return; }
+  if(fDiscType.value === 'percentage' && value > 100){ discountError.textContent = 'A percentage discount can\u2019t exceed 100.'; discountError.classList.add('show'); return; }
+  if(scope === 'class' && !fDiscClass.value){ discountError.textContent = 'Please choose a class.'; discountError.classList.add('show'); return; }
+  if(scope === 'student' && !state.discFormStudent){ discountError.textContent = 'Please choose a student.'; discountError.classList.add('show'); return; }
+
+  var payload = {
+    name: name, description: fDiscDesc.value.trim() || null, discount_type: fDiscType.value, value: value,
+    component_id: fDiscComponent.value || null, scope_type: scope,
+    class: scope === 'class' ? fDiscClass.value : null,
+    student_master_id: scope === 'student' ? state.discFormStudent.id : null,
+    is_active: fDiscActive.checked, effective_from: fDiscFrom.value || todayStr(), effective_to: fDiscTo.value || null
+  };
+  var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+  var res = activeDiscount ? await supabaseClient.from('fee_discounts').update(payload).eq('id', activeDiscount.id) : await supabaseClient.from('fee_discounts').insert(payload);
+  btn.disabled = false; btn.textContent = 'Save discount';
+  if(res.error){ discountError.textContent = res.error.message; discountError.classList.add('show'); return; }
+  toast(activeDiscount ? 'Discount updated.' : 'Discount added.');
+  closeSheet('sheet-discount');
+  resetAndLoadDiscounts();
+});
+
+document.getElementById('discount-delete-btn').addEventListener('click', function(){
+  if(!activeDiscount) return;
+  document.getElementById('delete-title').textContent = 'Delete this discount rule?';
+  document.getElementById('delete-message').textContent = 'Already-applied discounts on past dues are kept for the record; only the rule itself is removed, so it stops being offered going forward.';
+  state.pendingDeleteAction = async function(){
+    var res = await supabaseClient.from('fee_discounts').delete().eq('id', activeDiscount.id);
+    if(res.error){ toast(res.error.message, true); return false; }
+    toast('Discount deleted.');
+    closeSheet('sheet-discount');
+    resetAndLoadDiscounts();
+    return true;
+  };
+  openSheet('sheet-delete');
+});
+
+/* Generic delete sheet wiring */
+document.getElementById('delete-cancel').addEventListener('click', function(){ closeSheet('sheet-delete'); state.pendingDeleteAction = null; });
+document.getElementById('delete-confirm').addEventListener('click', async function(){
+  if(!state.pendingDeleteAction) return;
+  var btn = this; btn.disabled = true; btn.textContent = 'Deleting…';
+  var ok = await state.pendingDeleteAction();
+  btn.disabled = false; btn.textContent = 'Delete';
+  if(ok){ closeSheet('sheet-delete'); state.pendingDeleteAction = null; }
+});
+
+/* =========================================================
+   STUDENTS & DUES
+========================================================= */
+var studentSearchInput = document.getElementById('student-search');
+var studentResultsEl = document.getElementById('student-results');
+var studentChosenEl = document.getElementById('student-chosen');
+
+studentSearchInput.addEventListener('input', function(){
+  clearTimeout(state.searchDebounce.student);
+  var term = studentSearchInput.value.trim();
+  state.searchDebounce.student = setTimeout(function(){
+    if(term.length < 2){ studentResultsEl.classList.remove('show'); studentResultsEl.innerHTML=''; return; }
+    searchStudents(term, function(rows){
+      studentResultsEl.innerHTML = rows.map(function(s){
+        return '<div class="search-result" data-id="' + s.id + '" data-name="' + escapeHtml(s.name) + '" data-class="' + escapeHtml(s.class||'') + '" data-roll="' + (s.roll_no||'') + '">' +
+          '<div><div class="search-result-name">' + escapeHtml(s.name) + '</div><div class="search-result-sub">' + escapeHtml(s.class || '') + (s.roll_no ? ' &bull; Roll ' + s.roll_no : '') + '</div></div></div>';
+      }).join('') || '<div class="placeholder-note"><p>No students found.</p></div>';
+      studentResultsEl.classList.add('show');
+      studentResultsEl.querySelectorAll('.search-result').forEach(function(el){
+        el.addEventListener('click', function(){
+          state.chosenStudent = { id: +el.dataset.id, name: el.dataset.name, class: el.dataset.class, roll_no: el.dataset.roll };
+          document.getElementById('student-chosen-name').textContent = el.dataset.name;
+          document.getElementById('student-chosen-sub').textContent = el.dataset.class + (el.dataset.roll ? ' • Roll ' + el.dataset.roll : '');
+          studentChosenEl.style.display = 'flex';
+          studentResultsEl.classList.remove('show');
+          studentSearchInput.style.display = 'none';
+          loadStudentDues();
+        });
+      });
+    });
+  }, 300);
+});
+document.getElementById('student-change-btn').addEventListener('click', function(){
+  state.chosenStudent = null;
+  studentChosenEl.style.display = 'none';
+  studentSearchInput.style.display = 'block'; studentSearchInput.value = '';
+  document.getElementById('student-dues-wrap').style.display = 'none';
+});
+
+var dueListEl = document.getElementById('due-list');
+var duePlaceholderEl = document.getElementById('due-placeholder');
+
+function loadStudentDues(){
+  document.getElementById('student-dues-wrap').style.display = 'block';
+  dueListEl.innerHTML = '<div class="placeholder-note"><div class="spinner sm"></div><p>Loading dues…</p></div>';
+  supabaseClient.from('fee_due_balances')
+    .select('due_id,component_id,period_label,due_date,gross_amount_due,discount_amount,net_amount_due,amount_paid,balance_due,is_waived,status,fee_components(name)')
+    .eq('student_master_id', state.chosenStudent.id)
+    .order('due_date', { ascending:false })
+    .then(function(res){
+      if(res.error){ dueListEl.innerHTML = ''; toast('Could not load dues: ' + res.error.message, true); return; }
+      state.studentDues = res.data || [];
+      renderStudentDues();
+    });
+}
+function renderStudentDues(){
+  var rows = state.studentDues;
+  var totalBilled = rows.reduce(function(s,r){ return s + Number(r.net_amount_due||0); }, 0);
+  var totalPaid = rows.reduce(function(s,r){ return s + Number(r.amount_paid||0); }, 0);
+  var totalBalance = rows.reduce(function(s,r){ return s + Number(r.balance_due||0); }, 0);
+  document.getElementById('sd-total-due').textContent = money(totalBilled);
+  document.getElementById('sd-total-paid').textContent = money(totalPaid);
+  document.getElementById('sd-total-balance').textContent = money(totalBalance);
+  document.getElementById('due-count').textContent = rows.length + (rows.length === 1 ? ' due' : ' dues');
+  duePlaceholderEl.style.display = rows.length === 0 ? 'flex' : 'none';
+  dueListEl.innerHTML = '';
+  rows.forEach(function(r, i){
+    var card = document.createElement('div');
+    card.className = 'row-card';
+    card.style.animationDelay = Math.min(i, 20) * 0.03 + 's';
+    card.innerHTML =
+      '<div class="row-card-top"><p class="row-title">' + escapeHtml((r.fee_components||{}).name || 'Fee') + '</p>' +
+      '<span class="status-badge ' + r.status + '">' + STATUS_LABEL[r.status] + '</span></div>' +
+      '<div class="row-meta">' + escapeHtml(r.period_label) + ' &bull; due ' + new Date(r.due_date).toLocaleDateString() + '</div>' +
+      '<div class="row-card-top" style="margin-top:10px;"><span class="lr-sub">Balance</span><span class="lr-amt" style="font-size:.95rem;">' + money(r.balance_due) + '</span></div>';
+    card.addEventListener('click', function(){ openDueSheet(r); });
+    dueListEl.appendChild(card);
+  });
+}
+
+/* Due detail sheet */
+var sheetDue = document.getElementById('sheet-due');
+function openDueSheet(r){
+  state.activeDue = r;
+  document.getElementById('due-sheet-title').textContent = (r.fee_components||{}).name || 'Fee';
+  document.getElementById('due-sheet-sub').textContent = r.period_label + ' • due ' + new Date(r.due_date).toLocaleDateString() + ' • ' + state.chosenStudent.name;
+  document.getElementById('due-gross').textContent = money(r.gross_amount_due);
+  document.getElementById('due-discount').textContent = money(r.discount_amount);
+  document.getElementById('due-balance').textContent = money(r.balance_due);
+  var pct = r.gross_amount_due > 0 ? Math.min(100, (r.amount_paid / Math.max(r.net_amount_due, 0.01)) * 100) : 0;
+  document.getElementById('due-progress-fill').style.width = (r.is_waived ? 100 : pct) + '%';
+  document.getElementById('due-waive-btn').textContent = r.is_waived ? 'Un-waive this due' : 'Waive this due';
+  document.getElementById('due-record-payment-btn').style.display = r.is_waived ? 'none' : 'inline-flex';
+  document.getElementById('due-apply-discount-btn').style.display = r.is_waived ? 'none' : 'inline-flex';
+
+  document.getElementById('due-payments-list').innerHTML = '<p class="field-hint">Loading…</p>';
+  document.getElementById('due-discounts-list').innerHTML = '<p class="field-hint">Loading…</p>';
+  openSheet('sheet-due');
+
+  supabaseClient.from('fee_payments').select('id,amount_paid,payment_date,payment_mode,reference_no,remarks').eq('due_id', r.due_id).order('payment_date', { ascending:false }).then(function(res){
+    var el = document.getElementById('due-payments-list');
+    var rows = res.data || [];
+    el.innerHTML = rows.length === 0 ? '<p class="field-hint">No payments recorded yet.</p>' : rows.map(function(p){
+      return '<div class="list-row"><div><div class="lr-name">' + money(p.amount_paid) + '</div><div class="lr-sub">' + new Date(p.payment_date).toLocaleDateString() + ' &bull; ' + escapeHtml(p.payment_mode) + (p.reference_no ? ' &bull; ' + escapeHtml(p.reference_no) : '') + '</div></div></div>';
+    }).join('');
+  });
+  supabaseClient.from('fee_due_discounts').select('id,amount,description,discount_id').eq('due_id', r.due_id).order('created_at', { ascending:false }).then(function(res){
+    var el = document.getElementById('due-discounts-list');
+    var rows = res.data || [];
+    el.innerHTML = rows.length === 0 ? '<p class="field-hint">No discounts applied yet.</p>' : rows.map(function(d){
+      return '<div class="list-row"><div><div class="lr-name">' + escapeHtml(d.description || 'Discount') + '</div></div><div class="lr-amt" style="color:var(--success);">-' + money(d.amount) + '</div></div>';
+    }).join('');
+  });
+}
+document.getElementById('due-close-btn').addEventListener('click', function(){ closeSheet('sheet-due'); });
+
+/* Record payment */
+var sheetPayment = document.getElementById('sheet-payment');
+document.getElementById('due-record-payment-btn').addEventListener('click', function(){
+  var r = state.activeDue; if(!r) return;
+  document.getElementById('payment-sheet-sub').textContent = (r.fee_components||{}).name + ' • ' + r.period_label + ' • balance ' + money(r.balance_due);
+  document.getElementById('f-pay-amount').value = r.balance_due > 0 ? r.balance_due : '';
+  document.getElementById('f-pay-date').value = todayStr();
+  document.getElementById('f-pay-mode').value = 'cash';
+  document.getElementById('f-pay-ref').value = '';
+  document.getElementById('f-pay-remarks').value = '';
+  document.getElementById('payment-form-error').classList.remove('show');
+  openSheet('sheet-payment');
+});
+document.getElementById('payment-cancel').addEventListener('click', function(){ closeSheet('sheet-payment'); });
+document.getElementById('payment-save').addEventListener('click', async function(){
+  var r = state.activeDue; if(!r) return;
+  var errEl = document.getElementById('payment-form-error');
+  errEl.classList.remove('show');
+  var amount = parseFloat(document.getElementById('f-pay-amount').value);
+  if(isNaN(amount) || amount <= 0){ errEl.textContent = 'Please enter a valid amount.'; errEl.classList.add('show'); return; }
+
+  var btn = this; btn.disabled = true; btn.textContent = 'Recording…';
+  var userRes = await supabaseClient.auth.getUser();
+  var payload = {
+    due_id: r.due_id, amount_paid: amount,
+    payment_date: document.getElementById('f-pay-date').value || todayStr(),
+    payment_mode: document.getElementById('f-pay-mode').value,
+    reference_no: document.getElementById('f-pay-ref').value.trim() || null,
+    remarks: document.getElementById('f-pay-remarks').value.trim() || null,
+    recorded_by: userRes.data.user.id
+  };
+  var res = await supabaseClient.from('fee_payments').insert(payload);
+  btn.disabled = false; btn.textContent = 'Record payment';
+  if(res.error){ errEl.textContent = res.error.message; errEl.classList.add('show'); return; }
+  toast('Payment recorded.');
+  closeSheet('sheet-payment');
+  closeSheet('sheet-due');
+  loadStudentDues();
+  tabDirty.dashboard = true; tabDirty.payments = true;
+});
+
+/* Apply discount */
+var sheetApplyDiscount = document.getElementById('sheet-apply-discount');
+document.getElementById('due-apply-discount-btn').addEventListener('click', function(){
+  var r = state.activeDue; if(!r) return;
+  var ruleSelect = document.getElementById('f-apply-disc-rule');
+  document.getElementById('f-apply-disc-amount').value = '';
+  document.getElementById('f-apply-disc-reason').value = '';
+  document.getElementById('apply-discount-error').classList.remove('show');
+  ruleSelect.innerHTML = '<option value="">— One-off amount instead —</option>';
+  supabaseClient.from('fee_discounts')
+    .select('id,name,discount_type,value,component_id,scope_type,class,student_master_id')
+    .eq('is_active', true)
+    .or('component_id.is.null,component_id.eq.' + r.component_id)
+    .then(function(res){
+      var rows = (res.data || []).filter(function(d){
+        if(d.scope_type === 'school') return true;
+        if(d.scope_type === 'class') return d.class === state.chosenStudent.class;
+        if(d.scope_type === 'student') return d.student_master_id === state.chosenStudent.id;
+        return false;
+      });
+      rows.forEach(function(d){
+        var label = d.name + ' (' + (d.discount_type === 'percentage' ? d.value + '%' : money(d.value)) + ')';
+        var opt = document.createElement('option'); opt.value = d.id;
+        opt.dataset.type = d.discount_type; opt.dataset.value = d.value; opt.textContent = label;
+        ruleSelect.appendChild(opt);
+      });
+    });
+  openSheet('sheet-apply-discount');
+});
+document.getElementById('f-apply-disc-rule').addEventListener('change', function(){
+  var isRule = !!this.value;
+  document.getElementById('f-apply-disc-amount-field').style.display = isRule ? 'none' : 'block';
+  document.getElementById('f-apply-disc-reason-field').style.display = isRule ? 'none' : 'block';
+});
+document.getElementById('apply-discount-cancel').addEventListener('click', function(){ closeSheet('sheet-apply-discount'); });
+document.getElementById('apply-discount-save').addEventListener('click', async function(){
+  var r = state.activeDue; if(!r) return;
+  var errEl = document.getElementById('apply-discount-error');
+  errEl.classList.remove('show');
+  var ruleSelect = document.getElementById('f-apply-disc-rule');
+  var btn = this; btn.disabled = true; btn.textContent = 'Applying…';
+
+  try{
+    if(ruleSelect.value){
+      var opt = ruleSelect.options[ruleSelect.selectedIndex];
+      var discType = opt.dataset.type, discValue = parseFloat(opt.dataset.value);
+      var amount = discType === 'percentage' ? (r.gross_amount_due * discValue / 100) : discValue;
+      amount = Math.min(amount, r.gross_amount_due);
+      var userRes = await supabaseClient.auth.getUser();
+      var ins = await supabaseClient.from('fee_due_discounts').insert({
+        due_id: r.due_id, discount_id: +ruleSelect.value, description: opt.textContent, amount: amount, created_by: userRes.data.user.id
+      });
+      if(ins.error) throw new Error(ins.error.message);
+    }else{
+      var amt = parseFloat(document.getElementById('f-apply-disc-amount').value);
+      if(isNaN(amt) || amt <= 0){ throw new Error('Please enter a valid amount.'); }
+      var reason = document.getElementById('f-apply-disc-reason').value.trim() || null;
+      var rpcRes = await supabaseClient.rpc('apply_fee_due_discount', { p_due_id: r.due_id, p_amount: amt, p_description: reason });
+      if(rpcRes.error) throw new Error(rpcRes.error.message);
+    }
+    toast('Discount applied.');
+    closeSheet('sheet-apply-discount');
+    closeSheet('sheet-due');
+    loadStudentDues();
+    tabDirty.dashboard = true;
+  }catch(err){
+    errEl.textContent = err.message || 'Something went wrong.';
+    errEl.classList.add('show');
+  }
+  btn.disabled = false; btn.textContent = 'Apply';
+});
+
+/* Waive / un-waive */
+var sheetWaive = document.getElementById('sheet-waive');
+document.getElementById('due-waive-btn').addEventListener('click', function(){
+  var r = state.activeDue; if(!r) return;
+  document.getElementById('f-waive-reason').value = '';
+  document.getElementById('waive-error').classList.remove('show');
+  if(r.is_waived){
+    document.querySelector('#sheet-waive h3').textContent = 'Un-waive this due?';
+    document.querySelector('#sheet-waive .sheet-desc').textContent = 'The balance will become payable again.';
+    document.getElementById('f-waive-reason').parentElement.style.display = 'none';
+  }else{
+    document.querySelector('#sheet-waive h3').textContent = 'Waive this due?';
+    document.querySelector('#sheet-waive .sheet-desc').textContent = 'The student will owe nothing further on this due. This can be undone later.';
+    document.getElementById('f-waive-reason').parentElement.style.display = 'block';
+  }
+  openSheet('sheet-waive');
+});
+document.getElementById('waive-cancel').addEventListener('click', function(){ closeSheet('sheet-waive'); });
+document.getElementById('waive-confirm').addEventListener('click', async function(){
+  var r = state.activeDue; if(!r) return;
+  var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+  var payload;
+  if(r.is_waived){
+    payload = { is_waived: false, waived_reason: null, waived_by: null, waived_at: null };
+  }else{
+    var userRes = await supabaseClient.auth.getUser();
+    payload = { is_waived: true, waived_reason: document.getElementById('f-waive-reason').value.trim() || null, waived_by: userRes.data.user.id, waived_at: new Date().toISOString() };
+  }
+  var res = await supabaseClient.from('fee_dues').update(payload).eq('id', r.due_id);
+  btn.disabled = false; btn.textContent = 'Waive due';
+  if(res.error){ document.getElementById('waive-error').textContent = res.error.message; document.getElementById('waive-error').classList.add('show'); return; }
+  toast(r.is_waived ? 'Due un-waived.' : 'Due waived.');
+  closeSheet('sheet-waive');
+  closeSheet('sheet-due');
+  loadStudentDues();
+  tabDirty.dashboard = true;
+});
+
+/* =========================================================
+   PAYMENTS (global history)
+========================================================= */
+var paymentListEl = document.getElementById('payment-list');
+var paymentPlaceholderEl = document.getElementById('payment-placeholder');
+var paymentSentinelEl = document.getElementById('payment-sentinel');
+
+function buildPaymentQuery(){
+  var q = supabaseClient.from('fee_payments')
+    .select('id,amount_paid,payment_date,payment_mode,reference_no,remarks,due_id,fee_dues!inner(period_label,student_master_id,fee_components(name),students_master!inner(name,class))');
+  var term = state.paymentPerson.trim();
+  if(term) q = q.ilike('fee_dues.students_master.name', '%' + term.replace(/[%,()]/g,'') + '%');
+  if(state.paymentFrom) q = q.gte('payment_date', state.paymentFrom);
+  if(state.paymentTo) q = q.lte('payment_date', state.paymentTo);
+  return q.order('payment_date', { ascending:false });
+}
+function loadNextPaymentPage(){
+  if(state.paymentLoading || state.paymentExhausted) return;
+  state.paymentLoading = true;
+  paymentSentinelEl.classList.remove('hidden');
+  var from = state.paymentPage * PAGE_SIZE, to = from + PAGE_SIZE - 1;
+  buildPaymentQuery().range(from, to).then(function(res){
+    state.paymentLoading = false;
+    paymentSentinelEl.classList.add('hidden');
+    if(res.error){ toast('Could not load payments: ' + res.error.message, true); return; }
+    var rows = res.data || [];
+    rows.forEach(function(p){
+      var fd = p.fee_dues || {}; var sm = fd.students_master || {};
+      var row = document.createElement('div');
+      row.className = 'list-row';
+      row.innerHTML = '<div><div class="lr-name">' + escapeHtml(sm.name || 'Unknown') + ' <span class="role-chip">' + escapeHtml(sm.class || '') + '</span></div>' +
+        '<div class="lr-sub">' + escapeHtml((fd.fee_components||{}).name || '') + ' &bull; ' + escapeHtml(fd.period_label || '') + ' &bull; ' + new Date(p.payment_date).toLocaleDateString() + ' &bull; ' + escapeHtml(p.payment_mode) + '</div></div>' +
+        '<div class="lr-amt" style="color:var(--success);">' + money(p.amount_paid) + '</div>';
+      paymentListEl.appendChild(row);
+    });
+    state.paymentPage += 1;
+    if(rows.length < PAGE_SIZE) state.paymentExhausted = true;
+    paymentPlaceholderEl.style.display = (state.paymentPage === 1 && rows.length === 0) ? 'flex' : 'none';
+  });
+}
+function resetAndLoadPayments(){
+  state.paymentPage = 0; state.paymentExhausted = false;
+  paymentListEl.innerHTML = ''; paymentPlaceholderEl.style.display = 'none';
+  loadNextPaymentPage();
+}
+var paymentIo = new IntersectionObserver(function(entries){ entries.forEach(function(e){ if(e.isIntersecting) loadNextPaymentPage(); }); }, { rootMargin: '200px' });
+paymentIo.observe(paymentSentinelEl);
+
+document.getElementById('payment-person-search').addEventListener('input', function(e){
+  clearTimeout(state.searchDebounce.payment);
+  state.searchDebounce.payment = setTimeout(function(){ state.paymentPerson = e.target.value; resetAndLoadPayments(); }, 350);
+});
+document.getElementById('payment-from').addEventListener('change', function(e){ state.paymentFrom = e.target.value; resetAndLoadPayments(); });
+document.getElementById('payment-to').addEventListener('change', function(e){ state.paymentTo = e.target.value; resetAndLoadPayments(); });
+document.getElementById('payment-clear').addEventListener('click', function(){
+  document.getElementById('payment-person-search').value = '';
+  document.getElementById('payment-from').value = '';
+  document.getElementById('payment-to').value = '';
+  state.paymentPerson = ''; state.paymentFrom = ''; state.paymentTo = '';
+  resetAndLoadPayments();
+});
+
+/* =========================================================
+   STAFF ACCESS (fee_admins) — true admins only
+========================================================= */
+var staffListEl = document.getElementById('staff-list');
+var staffPlaceholderEl = document.getElementById('staff-placeholder');
+var staffCountChip = document.getElementById('staff-count');
+
+function resetAndLoadStaff(){
+  staffListEl.innerHTML = ''; staffPlaceholderEl.style.display = 'none';
+  staffCountChip.textContent = 'Loading…';
+  supabaseClient.from('fee_admins').select('id,name,created_at').order('name').then(function(res){
+    if(res.error){ toast('Could not load fee admins: ' + res.error.message, true); return; }
+    state.staffList = res.data || [];
+    renderStaffList();
+  });
+}
+function renderStaffList(){
+  var rows = state.staffList;
+  staffCountChip.textContent = rows.length + (rows.length === 1 ? ' fee admin' : ' fee admins');
+  staffPlaceholderEl.style.display = rows.length === 0 ? 'flex' : 'none';
+  staffListEl.innerHTML = '';
+  rows.forEach(function(r, i){
+    var card = document.createElement('div');
+    card.className = 'row-card'; card.style.cursor = 'default';
+    card.style.animationDelay = Math.min(i, 20) * 0.03 + 's';
+    card.innerHTML =
+      '<div class="row-card-top"><p class="row-title">' + escapeHtml(r.name) + '</p>' +
+      '<span class="chip teal">Since ' + new Date(r.created_at).toLocaleDateString() + '</span></div>';
+    var btnWrap = document.createElement('div');
+    btnWrap.style.marginTop = '10px';
+    var revokeBtn = document.createElement('button');
+    revokeBtn.className = 'btn btn-ghost btn-sm'; revokeBtn.type = 'button'; revokeBtn.textContent = 'Revoke access';
+    revokeBtn.style.color = 'var(--danger)';
+    revokeBtn.addEventListener('click', function(){ openRevokeSheet(r); });
+    btnWrap.appendChild(revokeBtn);
+    card.appendChild(btnWrap);
+    staffListEl.appendChild(card);
+  });
+}
+
+var staffSearchInput = document.getElementById('staff-search');
+var staffSearchResultsEl = document.getElementById('staff-search-results');
+staffSearchInput.addEventListener('input', function(){
+  clearTimeout(state.searchDebounce.staff);
+  var term = staffSearchInput.value.trim();
+  state.searchDebounce.staff = setTimeout(function(){
+    if(term.length < 2){ staffSearchResultsEl.classList.remove('show'); staffSearchResultsEl.innerHTML=''; return; }
+    var likeTerm = '%' + term.replace(/[%,()]/g,'') + '%';
+    Promise.all([
+      supabaseClient.from('teachers').select('id,name,email').ilike('name', likeTerm).limit(6),
+      supabaseClient.from('admins').select('id').limit(0), // admins table has no name column in this schema
+      supabaseClient.from('storekeepers').select('id,name,email').ilike('name', likeTerm).limit(6)
+    ]).then(function(results){
+      var existing = state.staffList.map(function(f){ return f.id; });
+      var people = [];
+      (results[0].data || []).forEach(function(p){ people.push({ id:p.id, name:p.name, role:'Teacher' }); });
+      (results[2].data || []).forEach(function(p){ people.push({ id:p.id, name:p.name, role:'Storekeeper' }); });
+      people = people.filter(function(p){ return existing.indexOf(p.id) === -1; });
+      staffSearchResultsEl.innerHTML = people.map(function(p){
+        return '<div class="search-result" data-id="' + p.id + '" data-name="' + escapeHtml(p.name) + '"><div><div class="search-result-name">' + escapeHtml(p.name) + '</div><div class="search-result-sub">' + p.role + '</div></div><span class="role-chip">Grant access</span></div>';
+      }).join('') || '<div class="placeholder-note"><p>No matching staff found. They may already have access, or aren\u2019t registered as a teacher/storekeeper yet.</p></div>';
+      staffSearchResultsEl.classList.add('show');
+      staffSearchResultsEl.querySelectorAll('.search-result').forEach(function(el){
+        el.addEventListener('click', function(){ grantFeeAdmin(el.dataset.id, el.dataset.name); });
+      });
+    });
+  }, 300);
+});
+
+async function grantFeeAdmin(id, name){
+  var errEl = document.getElementById('staff-add-error');
+  errEl.classList.remove('show');
+  var res = await supabaseClient.from('fee_admins').insert({ id: id, name: name });
+  if(res.error){ errEl.textContent = res.error.message; errEl.classList.add('show'); return; }
+  toast(name + ' now has fee admin access.');
+  staffSearchInput.value = ''; staffSearchResultsEl.classList.remove('show'); staffSearchResultsEl.innerHTML = '';
+  resetAndLoadStaff();
+}
+
+var sheetRevoke = document.getElementById('sheet-revoke');
+function openRevokeSheet(r){
+  state.pendingRevokeId = r.id;
+  document.getElementById('revoke-message').textContent = r.name + ' will lose access to the fee management module immediately.';
+  openSheet('sheet-revoke');
+}
+document.getElementById('revoke-cancel').addEventListener('click', function(){ closeSheet('sheet-revoke'); state.pendingRevokeId = null; });
+document.getElementById('revoke-confirm').addEventListener('click', async function(){
+  if(!state.pendingRevokeId) return;
+  var btn = this; btn.disabled = true; btn.textContent = 'Revoking…';
+  var res = await supabaseClient.from('fee_admins').delete().eq('id', state.pendingRevokeId);
+  btn.disabled = false; btn.textContent = 'Revoke';
+  if(res.error){ toast(res.error.message, true); return; }
+  toast('Access revoked.');
+  closeSheet('sheet-revoke');
+  state.pendingRevokeId = null;
+  resetAndLoadStaff();
+});
+
+/* Wire up "Set an amount" / "Add discount" entry points that live inline in views */
+document.addEventListener('click', function(e){
+  if(e.target && e.target.id === 'structure-add-trigger') openAddStructureSheet();
+});
+
+/* Insert a "Set an amount" button into the structures toolbar once, and an
+   "Add discount rule" affordance note (the discounts tab uses the shared FAB). */
+(function injectStructureAddButton(){
+  var toolbar = document.querySelector('#view-structures .toolbar');
+  var btn = document.createElement('button');
+  btn.className = 'btn btn-primary'; btn.type = 'button'; btn.id = 'structure-add-trigger';
+  btn.textContent = 'Set an amount';
+  btn.style.alignSelf = 'flex-start';
+  toolbar.appendChild(btn);
+})();
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('app').classList.add('ready'); }
+function showDenied(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('denied').classList.add('show'); }
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var privResult = await supabaseClient.rpc('has_fee_admin_privileges');
+    var allowed = !!(privResult && privResult.data === true);
+    if(!allowed){ showDenied(); return; }
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+
+    var feeAdminResult = await supabaseClient.rpc('is_fee_admin');
+    state.isFeeAdmin = !!(feeAdminResult && feeAdminResult.data === true);
+
+    document.getElementById('header-role-sub').textContent = (state.isAdmin ? 'Admin' : 'Fee Admin') + ' \u2022 Finance';
+    if(state.isAdmin) document.getElementById('staff-tab-btn').hidden = false;
+
+    showApp();
+    loadDashboard();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
