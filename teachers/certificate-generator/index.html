@@ -399,6 +399,7 @@ var SUPABASE_URL, SUPABASE_ANON_KEY;
     }
     SUPABASE_URL = cached.data.supabase_url;
     SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+    INSTITUTION_INFO = cached.data;
   })();
 
   async function wipeInstitutionData(){
@@ -411,7 +412,7 @@ var SUPABASE_URL, SUPABASE_ANON_KEY;
 
 var AUTH_REDIRECT = 'https://educational-saas.github.io/';
 var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
-var DEFAULT_LOGO_URL = 'https://educational-saas.github.io/gsms-logo.png';
+var DEFAULT_LOGO_URL = INSTITUTION_INFO.logo_transparent_url || INSTITUTION_INFO.logo_url || 'https://educational-saas.github.io/gsms-logo.png';
 
 var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -1137,7 +1138,7 @@ var certData = {
   recipientName: '',
   recipients: [],
   body: 'for outstanding performance and dedication throughout the academic year',
-  school: 'Gopal Sharma Memorial School',
+  school: INSTITUTION_INFO.full_name || INSTITUTION_INFO.short_name || 'School Name',
   dateStr: '',
   certNo: '',
   signatories: [ { name:'Dr. Nagpal Singh', post:'Academic Director' } ],
