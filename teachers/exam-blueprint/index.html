@@ -1263,6 +1263,7 @@ var SUPABASE_URL, SUPABASE_ANON_KEY;
     }
     SUPABASE_URL = cached.data.supabase_url;
     SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+    INSTITUTION_INFO = cached.data;
   })();
 
   async function wipeInstitutionData(){
@@ -1275,7 +1276,8 @@ var SUPABASE_URL, SUPABASE_ANON_KEY;
 
 var AUTH_REDIRECT = 'https://educational-saas.github.io/';
 var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
-var LOGO_URL = 'https://sourabhsuneja.github.io/gsms-logo.png';
+var LOGO_URL = INSTITUTION_INFO.logo_transparent_url || INSTITUTION_INFO.logo_url || 'https://sourabhsuneja.github.io/gsms-logo.png';
+var SCHOOL_NAME = INSTITUTION_INFO.full_name || INSTITUTION_INFO.short_name || 'School Name';
 
 var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -2238,7 +2240,7 @@ function buildPrintSheetHtml(selectedFields){
   var r = lastBrowseResults;
   var html =
     '<div class="p-head"><div class="p-brand"><img src="' + LOGO_URL + '" alt="">' +
-    '<div><div class="p-school">Gopal Sharma Memorial School</div><div class="p-title">Exam Blueprint</div></div></div>' +
+    '<div><div class="p-school">' + escapeHtml(SCHOOL_NAME) + '</div><div class="p-title">Exam Blueprint</div></div></div>' +
     '<div class="p-right"><div>Class ' + escapeHtml(r.class) + '</div><div class="p-range">' + escapeHtml(r.exam) + '</div></div></div>';
 
   r.entries.forEach(function(p){
