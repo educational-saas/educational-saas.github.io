@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report Card Generator</title>
+<style>
+  :root{
+    --blue-dark:#0070AA;
+    --blue-mid:#2E74B5;
+    --shade-1:#D9EAF7;
+    --shade-2:#E6F0F7;
+    --shade-3:#EDF5FA;
+    --ink:#000;
+    --panel-bg:#f4f6f8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:"Times New Roman", Times, serif;
+    background:var(--panel-bg);
+    margin:0; padding:0; color:var(--ink);
+  }
+
+  /* ---------- Control panel (screen only) ---------- */
+  #controls{
+    max-width:900px; margin:0 auto; padding:24px 20px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  #controls h1{font-size:20px; margin:0 0 4px;}
+  #controls p.sub{color:#555; font-size:13px; margin:0 0 18px;}
+  .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:14px;}
+  select, button{
+    font-family: Arial, Helvetica, sans-serif; font-size:14px;
+    padding:9px 14px; border-radius:6px; border:1px solid #c7d2db;
+    background:#fff;
+  }
+  select{min-width:220px;}
+  button{
+    background:var(--blue-dark); color:#fff; border:none; cursor:pointer; font-weight:600;
+  }
+  button:hover{background:#005d8c;}
+  button:disabled{opacity:.5; cursor:not-allowed;}
+  button.secondary{background:#fff; color:var(--blue-dark); border:1px solid var(--blue-dark);}
+  button.secondary:hover{background:#eef6fb;}
+  #status{font-size:13px; color:#555; margin-top:4px; white-space:pre-line;}
+  #status.err{color:#a4201c; font-weight:600;}
+  #cardsArea{max-width:900px; margin:0 auto; padding:0 20px 60px;}
+
+  /* ---------- Exam selection panel (screen only) ---------- */
+  .examSelectPanel{
+    margin-bottom:14px; padding:12px 14px; background:#fff;
+    border:1px solid #c7d2db; border-radius:6px;
+  }
+  .examSelectPanel .merge-label{margin:0 0 8px;}
+  .examSelectChecklist{display:flex; flex-wrap:wrap; gap:10px 16px;}
+  .examSelectChk-item{
+    font-size:13px; display:flex; align-items:center; gap:6px; cursor:pointer;
+    background:var(--shade-3); border:1px solid #d9e1e8; border-radius:6px;
+    padding:6px 10px; user-select:none;
+  }
+  .examSelectChk-item input{cursor:pointer; width:15px; height:15px; flex:none;}
+  .examSelect-hint{font-size:12px; color:#777; margin:8px 0 0;}
+  @media (max-width:600px){
+    .examSelectChecklist{gap:8px;}
+    .examSelectChk-item{font-size:12.5px; padding:5px 8px;}
+  }
+
+  /* ---------- Exam merge panel (screen only) ---------- */
+  .merge-panel{
+    margin-bottom:14px; padding:12px 14px; background:#fff;
+    border:1px solid #c7d2db; border-radius:6px;
+  }
+  .merge-label{font-size:13px; color:#333; margin:0 0 8px; font-weight:600;}
+  .examChecklist{display:flex; flex-wrap:wrap; gap:10px 16px; margin-bottom:10px;}
+  .examChk-item{font-size:13px; display:flex; align-items:center; gap:5px; cursor:pointer;}
+  .merge-hint{font-size:12px; color:#777; margin:0 0 8px;}
+  .mergeGroupsList{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .mergeChip{
+    display:flex; align-items:center; gap:8px; background:var(--shade-1);
+    border:1px solid var(--blue-mid); border-radius:14px; padding:5px 10px; font-size:12.5px;
+  }
+  .mergeChip button{background:none; border:none; color:var(--blue-dark); font-weight:700; cursor:pointer; padding:0; font-size:12px;}
+
+  /* ---------- Gate screens (login / access denied / loading) ---------- */
+  #gate{
+    max-width:480px; margin:80px auto; padding:28px 26px;
+    font-family: Arial, Helvetica, sans-serif;
+    background:#fff; border:1px solid #d9e1e8; border-radius:10px;
+    text-align:center;
+  }
+  #gate h2{margin:0 0 10px; font-size:18px; color:var(--blue-dark);}
+  #gate p{margin:0 0 6px; font-size:14px; color:#444;}
+  #gate.denied h2{color:#a4201c;}
+  .spinner{
+    width:26px; height:26px; margin:0 auto 14px;
+    border:3px solid #d9e1e8; border-top-color:var(--blue-dark);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- Report card ---------- */
+  .page{
+    width:210mm;
+    min-height:297mm;
+    margin:0 auto 24px;
+    background:#fff;
+    border:1.5pt solid #000;
+    padding:9mm 10mm;
+    box-shadow:0 2px 10px rgba(0,0,0,.18);
+    display:flex; flex-direction:column;
+  }
+  .hdr{text-align:center; margin-bottom:3mm;}
+  .hdr img{height:30mm; margin-bottom:3mm;}
+  .hdr .t1{color:var(--blue-dark); font-weight:bold; font-size:15pt; margin:0;}
+  .hdr .t2{font-weight:bold; font-size:13pt; margin:1mm 0 0;}
+  .hdr .t3{font-weight:bold; font-size:11pt; margin:0;}
+
+  table{width:100%; border-collapse:collapse; font-size:10pt;}
+  .idtable td{border:1pt solid #000; padding:2mm 3mm; font-weight:bold;}
+  .idtable{margin-bottom:3mm;}
+  .idtable .lbl{width:18%;}
+  .idtable .val{width:32%; font-weight:normal;}
+
+  .marks-table{margin-bottom:3mm;}
+  .marks-table th, .marks-table td{
+    border:1pt solid #000; padding:1.6mm 2mm; text-align:center;
+  }
+  .marks-table th{font-size:9.5pt;}
+  .marks-table td.subject, .marks-table th.subject{text-align:left; font-weight:bold;}
+  .shade1{background:var(--shade-1);}
+  .shade2{background:var(--shade-2);}
+  .shade3{background:var(--shade-3);}
+  .grand td{font-weight:bold; background:var(--shade-2);}
+  .status-cell{font-style:italic;}
+
+  .section-title{
+    color:var(--blue-mid); font-weight:bold; text-align:center;
+    font-size:12pt; margin:2mm 0 2mm;
+  }
+  .pronounce{font-size:9.5pt; font-weight:bold; margin:7mm 0 auto; display: none;}
+  .signrow{display:flex; justify-content:space-around; margin-top:auto; padding-top:10mm; font-size:9.5pt; font-weight:bold;}
+
+  /* ---------- Print ---------- */
+  @media print{
+    #controls, #gate, #status-bar{display:none !important;}
+    body{background:#fff;}
+    #cardsArea{padding:0; margin:0; max-width:none;}
+    .page{
+      box-shadow:none; margin:0; border:1.5pt solid #000;
+      width:210mm; height:297mm; min-height:0;
+      page-break-after:always;
+    }
+    .page:last-child{page-break-after:auto;}
+    @page{ size:A4; margin:5mm; }
+  }
+.weightage-note{font-size:8pt; font-style:italic; margin:0.5mm 0 3mm; text-align:left;}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="spinner"></div>
+  <h2>Checking access…</h2>
+  <p>Please wait.</p>
+</div>
+
+<div id="controls" style="display:none;">
+  <h1>Report Card Generator</h1>
+  <p class="sub">Select a class to pull its students' marks from Supabase and generate print-ready report cards.</p>
+  <div class="row">
+    <select id="classSelect"><option value="">Select class…</option></select>
+    <button id="genBtn" disabled>Generate Report Cards</button>
+    <button id="printBtn" class="secondary" disabled>Print / Save as PDF</button>
+  </div>
+  <div id="examSelectArea" style="display:none;"></div>
+  <div id="examMergeArea" style="display:none;"></div>
+  <div id="status"></div>
+</div>
+
+<div id="cardsArea"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+var SUPABASE_URL, SUPABASE_ANON_KEY, INSTITUTION_INFO;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+    INSTITUTION_INFO = cached.data;
+  })();
+const AUTH_REDIRECT = 'https://educational-saas.github.io/';
+const LOGO_URL = INSTITUTION_INFO.logo_transparent_url || INSTITUTION_INFO.logo_url;
+
+// Assumption: no "session" column exists anywhere in the schema, so this is a
+// fixed constant. Edit this when the academic session changes.
+const SESSION = "2026-27";
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const gateEl = document.getElementById('gate');
+const controlsEl = document.getElementById('controls');
+const classSelect = document.getElementById('classSelect');
+const genBtn = document.getElementById('genBtn');
+const printBtn = document.getElementById('printBtn');
+const statusEl = document.getElementById('status');
+const cardsArea = document.getElementById('cardsArea');
+const examMergeAreaEl = document.getElementById('examMergeArea');
+const examSelectAreaEl = document.getElementById('examSelectArea');
+
+// Exam-merge state for the currently selected class.
+let currentExams = [];           // exams loaded for currentClassForExams, in exam order
+let currentClassForExams = null; // which class currentExams belongs to
+let mergeGroups = [];            // array of arrays of exam names the admin chose to merge
+
+// Exam-selection state: which exams (by name) should be included when
+// generating report cards for the currently selected class. Defaults to
+// "all exams selected" whenever a fresh set of exams is loaded.
+let selectedExamNames = new Set();
+
+function setStatus(msg, isErr){
+  statusEl.textContent = msg || '';
+  statusEl.classList.toggle('err', !!isErr);
+}
+
+function showGate(mode, message){
+  gateEl.style.display = 'block';
+  controlsEl.style.display = 'none';
+  if(mode === 'denied'){
+    gateEl.classList.add('denied');
+    gateEl.innerHTML = `<h2>Access Denied</h2><p>${message || 'This tool is restricted to school admins.'}</p>`;
+  } else if(mode === 'error'){
+    gateEl.classList.add('denied');
+    gateEl.innerHTML = `<h2>Something went wrong</h2><p>${message || 'Please try again.'}</p>`;
+  }
+}
+
+// jsonb columns normally arrive already parsed via the Supabase client, but
+// handle the case where a value arrives as a JSON-encoded string too.
+function parseJsonMaybe(val){
+  if(val == null) return val;
+  if(typeof val === 'object') return val;
+  try{ return JSON.parse(val); } catch(e){ return null; }
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function displayExamName(name){
+  return name.replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+}
+
+// ---------------- Auth / admin gate ----------------
+async function init(){
+  try{
+    const { data:{ session }, error: sessErr } = await sb.auth.getSession();
+    if(sessErr) throw sessErr;
+    if(!session){
+      window.location.href = AUTH_REDIRECT + '?redirect=' + encodeURIComponent(window.location.href);
+      return;
+    }
+    const { data: isAdmin, error: adminErr } = await sb.rpc('is_admin');
+    if(adminErr) throw adminErr;
+    if(!isAdmin){
+      showGate('denied');
+      return;
+    }
+    gateEl.style.display = 'none';
+    controlsEl.style.display = 'block';
+    await loadClasses();
+  } catch(e){
+    console.error(e);
+    showGate('error', e.message || 'Could not verify access.');
+  }
+}
+
+// ---------------- Data loading ----------------
+async function loadClasses(){
+  setStatus('Loading classes…');
+  const { data, error } = await sb.from('classes').select('name');
+  if(error){ setStatus('Failed to load classes: ' + error.message, true); return; }
+  const names = (data || []).map(r => r.name).sort((a,b) => {
+    const na = Number(a), nb = Number(b);
+    if(!isNaN(na) && !isNaN(nb)) return na - nb;
+    return String(a).localeCompare(String(b));
+  });
+  names.forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    classSelect.appendChild(opt);
+  });
+  setStatus('');
+}
+
+async function fetchExamsForClass(className){
+  const { data: examRows, error: examErr } = await sb
+    .from('exam_classes')
+    .select('exam:exams(name, mm, components, added_at)')
+    .eq('class', className);
+  if(examErr) throw examErr;
+  return (examRows || [])
+    .map(r => r.exam)
+    .filter(Boolean)
+    .sort((a,b) => new Date(a.added_at) - new Date(b.added_at))
+    .map(e => ({ ...e, components: parseJsonMaybe(e.components) || [] }));
+}
+
+// ---------------- Exam selection UI ----------------
+// Renders a checkbox list of every exam mapped to the currently selected
+// class, letting the admin decide which ones should be included when the
+// report cards are generated. All checkboxes are checked (selected) by
+// default whenever a class's exams are (re)loaded.
+function renderExamSelectUI(){
+  if(!currentExams.length){
+    examSelectAreaEl.style.display = 'none';
+    examSelectAreaEl.innerHTML = '';
+    return;
+  }
+  const itemsHtml = currentExams.map(e => {
+    const checked = selectedExamNames.has(e.name) ? 'checked' : '';
+    return `<label class="examSelectChk-item"><input type="checkbox" class="examSelectChk" value="${escapeHtml(e.name)}" ${checked}> ${escapeHtml(e.name)}</label>`;
+  }).join('');
+
+  examSelectAreaEl.style.display = 'block';
+  examSelectAreaEl.innerHTML = `
+    <div class="examSelectPanel">
+      <p class="merge-label">Exams to include in report cards:</p>
+      <div class="examSelectChecklist">${itemsHtml}</div>
+      <p class="examSelect-hint">Unchecked exams are left out of report card generation entirely.</p>
+    </div>`;
+}
+
+examSelectAreaEl.addEventListener('change', (e) => {
+  if(e.target && e.target.classList.contains('examSelectChk')){
+    const name = e.target.value;
+    if(e.target.checked){
+      selectedExamNames.add(name);
+    } else {
+      selectedExamNames.delete(name);
+    }
+  }
+});
+
+// ---------------- Exam merge UI ----------------
+async function loadExamsForMergeUI(className){
+  setStatus('Loading exams for ' + className + '…');
+  try{
+    const exams = await fetchExamsForClass(className);
+    currentExams = exams;
+    currentClassForExams = className;
+    selectedExamNames = new Set(exams.map(e => e.name)); // all selected by default
+    renderExamSelectUI();
+    renderMergeUI();
+    if(exams.length === 0){
+      setStatus('No exams are mapped to ' + className + ' yet.', true);
+      genBtn.disabled = true;
+    } else {
+      setStatus('');
+      genBtn.disabled = false;
+    }
+  } catch(e){
+    console.error(e);
+    setStatus('Failed to load exams: ' + (e.message || e), true);
+    genBtn.disabled = true;
+  }
+}
+
+function renderMergeUI(){
+  if(!currentExams.length){
+    examMergeAreaEl.style.display = 'none';
+    examMergeAreaEl.innerHTML = '';
+    return;
+  }
+  const groupedNames = new Set(mergeGroups.flat());
+  const available = currentExams.filter(e => !groupedNames.has(e.name));
+
+  const checklistHtml = available.length
+    ? available.map(e => `<label class="examChk-item"><input type="checkbox" class="examMergeChk" value="${escapeHtml(e.name)}"> ${escapeHtml(e.name)}</label>`).join('')
+    : '<p class="merge-hint">All exams are currently merged.</p>';
+
+  const mergeBtnHtml = available.length >= 2
+    ? `<div class="row"><button type="button" id="mergeSelectedBtn" class="secondary">Merge Selected</button></div>`
+    : '';
+
+  const groupsHtml = mergeGroups.length
+    ? `<div class="mergeGroupsList">${mergeGroups.map((g, gi) =>
+        `<div class="mergeChip"><span>Merged: ${g.map(n => escapeHtml(n)).join(' + ')}</span><button type="button" class="removeMergeBtn" data-idx="${gi}">✕</button></div>`
+      ).join('')}</div>`
+    : '';
+
+  examMergeAreaEl.style.display = 'block';
+  examMergeAreaEl.innerHTML = `
+    <div class="merge-panel">
+      <p class="merge-label">Exams for this class — select two or more to merge into one table:</p>
+      <div class="examChecklist">${checklistHtml}</div>
+      ${mergeBtnHtml}
+      ${groupsHtml}
+    </div>`;
+}
+
+examMergeAreaEl.addEventListener('click', (e) => {
+  if(e.target && e.target.id === 'mergeSelectedBtn'){
+    const checked = Array.from(document.querySelectorAll('.examMergeChk:checked')).map(cb => cb.value);
+    if(checked.length < 2){
+      setStatus('Select at least two exams to merge.', true);
+      return;
+    }
+    mergeGroups.push(checked);
+    setStatus('');
+    renderMergeUI();
+  } else if(e.target && e.target.classList.contains('removeMergeBtn')){
+    const idx = Number(e.target.dataset.idx);
+    mergeGroups.splice(idx, 1);
+    renderMergeUI();
+  }
+});
+
+classSelect.addEventListener('change', () => {
+  mergeGroups = [];
+  currentExams = [];
+  currentClassForExams = null;
+  selectedExamNames = new Set();
+  examMergeAreaEl.style.display = 'none';
+  examMergeAreaEl.innerHTML = '';
+  examSelectAreaEl.style.display = 'none';
+  examSelectAreaEl.innerHTML = '';
+  printBtn.disabled = true;
+  cardsArea.innerHTML = '';
+
+  if(!classSelect.value){
+    genBtn.disabled = true;
+    setStatus('');
+    return;
+  }
+  genBtn.disabled = true;
+  loadExamsForMergeUI(classSelect.value);
+});
+
+// Resolves the admin's merge choices into the ordered list of "render
+// groups" — each entry is an array of 1+ exam objects that should share a
+// single table. Exams not chosen for merging stay as their own 1-item group,
+// so non-merged output is produced by the exact same code path as before.
+function computeRenderGroups(exams, mergeGroups){
+  const byName = new Map(exams.map(e => [e.name, e]));
+  const used = new Set();
+  const mergedGroups = [];
+  const standaloneGroups = [];
+  exams.forEach(e => {
+    if(used.has(e.name)) return;
+    const mg = mergeGroups.find(g => g.includes(e.name));
+    if(mg){
+      const groupExams = mg.map(n => byName.get(n)).filter(Boolean);
+      groupExams.forEach(ex => used.add(ex.name));
+      mergedGroups.push(groupExams);
+    } else {
+      used.add(e.name);
+      standaloneGroups.push([e]);
+    }
+  });
+  // Merged-exam tables are shown first, followed by standalone exam tables;
+  // relative order within each of the two buckets follows exam order as before.
+  return mergedGroups.concat(standaloneGroups);
+}
+
+genBtn.addEventListener('click', async () => {
+  const className = classSelect.value;
+  if(!className) return;
+  genBtn.disabled = true;
+  printBtn.disabled = true;
+  cardsArea.innerHTML = '';
+  setStatus('Fetching data for ' + className + '…');
+
+  try{
+    // 1. Exams mapped to this class, in the order they were created.
+    //    Reuse what the merge panel already fetched when possible, to avoid
+    //    an extra round-trip; fetch fresh if it's stale for any reason.
+    let exams;
+    if(currentClassForExams === className && currentExams.length){
+      exams = currentExams;
+    } else {
+      exams = await fetchExamsForClass(className);
+      currentExams = exams;
+      currentClassForExams = className;
+      selectedExamNames = new Set(exams.map(e => e.name)); // all selected by default
+      renderExamSelectUI();
+    }
+
+    if(exams.length === 0){
+      setStatus('No exams are mapped to ' + className + ' yet.', true);
+      genBtn.disabled = false;
+      return;
+    }
+
+    // 1b. Filter out any exams the admin unchecked in the exam-selection
+    //     checklist. Only the selected exams are used from this point on —
+    //     everything downstream (marks lookup, merge resolution, rendering)
+    //     operates on this filtered list, so excluded exams never reach
+    //     report card generation.
+    const selectedExams = exams.filter(e => selectedExamNames.has(e.name));
+    if(selectedExams.length === 0){
+      setStatus('Select at least one exam to include in the report cards.', true);
+      genBtn.disabled = false;
+      return;
+    }
+
+    // 2. Subjects mapped to this class, ordered by display_order.
+    const { data: csRows, error: csErr } = await sb
+      .from('class_subjects')
+      .select('subject, subjects(display_order)')
+      .eq('class', className);
+    if(csErr) throw csErr;
+    const subjects = (csRows || [])
+      .sort((a,b) => (a.subjects?.display_order ?? 0) - (b.subjects?.display_order ?? 0))
+      .map(r => r.subject);
+
+    if(subjects.length === 0){
+      setStatus('No subjects are mapped to ' + className + ' yet.', true);
+      genBtn.disabled = false;
+      return;
+    }
+
+    // 3. Students in this class.
+    const { data: students, error: stuErr } = await sb
+      .from('students_master')
+      .select('id, roll_no, sr_no, name')
+      .eq('class', className)
+      .order('roll_no', { ascending: true, nullsFirst: false });
+    if(stuErr) throw stuErr;
+
+    if(!students || students.length === 0){
+      setStatus('No students found in ' + className + '.', true);
+      genBtn.disabled = false;
+      return;
+    }
+
+    // 4. Marks for this class, for the selected exams only.
+    const examNames = selectedExams.map(e => e.name);
+    const { data: marks, error: marksErr } = await sb
+      .from('marks')
+      .select('student_id, exam_name, subject, status, marks_obtained, component_marks')
+      .eq('class', className)
+      .in('exam_name', examNames);
+    if(marksErr) throw marksErr;
+
+    const marksMap = new Map();
+    (marks || []).forEach(m => {
+      marksMap.set(m.student_id + '__' + m.exam_name + '__' + m.subject, m);
+    });
+
+    // 5. Resolve the admin's merge selections (if any) into render groups,
+    //    using only the selected exams.
+    const examGroups = computeRenderGroups(selectedExams, mergeGroups);
+
+    cardsArea.innerHTML = students
+      .map(s => renderReportCard(s, className, examGroups, subjects, marksMap))
+      .join('');
+
+    setStatus(`Generated ${students.length} report card(s) for ${className}.`);
+    printBtn.disabled = false;
+  } catch(e){
+    console.error(e);
+    setStatus('Failed to generate report cards: ' + (e.message || e), true);
+  } finally {
+    genBtn.disabled = false;
+  }
+});
+
+printBtn.addEventListener('click', () => window.print());
+
+// ---------------- Rendering ----------------
+// Unchanged: renders a single, non-merged exam exactly as before.
+function renderExamSection(exam, subjects, student, marksMap, showTitle){
+  const components = exam.components; // [{mm, name}, ...]
+  const colTotals = components.map(() => 0);
+  let grandObtained = 0;
+  const grandMax = subjects.length * exam.mm;
+  let anyObtained = false;
+
+  const rows = subjects.map(subj => {
+    const m = marksMap.get(student.id + '__' + exam.name + '__' + subj);
+    let cellsHtml;
+    if(!m){
+      cellsHtml = components.map(() => '<td></td>').join('') + '<td></td>';
+    } else if(m.status !== 'P'){
+      const label = m.status === 'AB' ? 'Ab' : m.status; // L / ML shown as-is
+      cellsHtml = components.map(() => `<td class="status-cell">${label}</td>`).join('')
+        + `<td class="status-cell">${label}</td>`;
+    } else {
+      const cm = parseJsonMaybe(m.component_marks) || {};
+      const compCells = components.map((c, i) => {
+        const v = cm[c.name];
+        if(v !== undefined && v !== null && v !== ''){
+          colTotals[i] += Number(v);
+          return `<td>${v}</td>`;
+        }
+        return '<td></td>';
+      }).join('');
+      let totalCell = '<td></td>';
+      if(m.marks_obtained !== null && m.marks_obtained !== undefined){
+        const total = Number(m.marks_obtained);
+        grandObtained += total;
+        anyObtained = true;
+        totalCell = `<td>${total}</td>`;
+      }
+      cellsHtml = compCells + totalCell;
+    }
+    return `<tr><td class="subject">${escapeHtml(subj)}</td>${cellsHtml}</tr>`;
+  }).join('');
+
+  const colSpan = components.length + 1;
+  const titleHtml = showTitle
+    ? `<p class="section-title">${escapeHtml(displayExamName(exam.name)).toUpperCase()}</p>`
+    : '';
+
+  return `
+    ${titleHtml}
+    <table class="marks-table">
+      <tr>
+        <th class="subject shade1" rowspan="3">Subject</th>
+        <th class="shade1" colspan="${colSpan}">${escapeHtml(displayExamName(exam.name))}</th>
+      </tr>
+      <tr>
+        ${components.map(c => `<th class="shade2">${escapeHtml(c.name)}</th>`).join('')}
+        <th class="shade2">Total</th>
+      </tr>
+      <tr>
+        ${components.map(c => `<th class="shade3">${c.mm}</th>`).join('')}
+        <th class="shade3">${exam.mm}</th>
+      </tr>
+      ${rows}
+      <tr class="grand">
+        <td>GRAND TOTAL</td>
+        ${colTotals.map((t, i) => `<td>${t} / ${subjects.length * components[i].mm}</td>`).join('')}
+        <td>${anyObtained ? grandObtained : ''} / ${grandMax}</td>
+      </tr>
+    </table>`;
+}
+
+// New: renders two or more exams merged into a single table. Each exam gets
+// its own column header (spanning its own components), and there is one
+// combined Total column on the right that adds up every component of every
+// merged exam — the grand-total row does the same, per the merge feature.
+function renderMergedExamSection(group, subjects, student, marksMap, showTitle){
+  const totalMM = group.reduce((sum, ex) => sum + ex.mm, 0);
+  const grandMax = subjects.length * totalMM;
+  const colTotals = group.map(ex => ex.components.map(() => 0)); // per exam, per component
+  // Per-exam "Total" column totals (only meaningful/shown for exams with >1 component).
+  const examTotals = group.map(() => 0);
+  const examHasObtained = group.map(() => false);
+  let grandObtained = 0;
+  let anyObtained = false;
+
+  const rows = subjects.map(subj => {
+    let rowCellsHtml = '';
+    let rowTotal = 0;
+    let rowHasObtained = false;
+
+    group.forEach((ex, gi) => {
+      const hasMultiComp = ex.components.length > 1;
+      const m = marksMap.get(student.id + '__' + ex.name + '__' + subj);
+      if(!m){
+        rowCellsHtml += ex.components.map(() => '<td></td>').join('');
+        if(hasMultiComp) rowCellsHtml += '<td></td>';
+      } else if(m.status !== 'P'){
+        const label = m.status === 'AB' ? 'Ab' : m.status; // L / ML shown as-is
+        rowCellsHtml += ex.components.map(() => `<td class="status-cell">${label}</td>`).join('');
+        if(hasMultiComp) rowCellsHtml += `<td class="status-cell">${label}</td>`;
+      } else {
+        const cm = parseJsonMaybe(m.component_marks) || {};
+        rowCellsHtml += ex.components.map((c, ci) => {
+          const v = cm[c.name];
+          if(v !== undefined && v !== null && v !== ''){
+            colTotals[gi][ci] += Number(v);
+            return `<td>${v}</td>`;
+          }
+          return '<td></td>';
+        }).join('');
+        if(m.marks_obtained !== null && m.marks_obtained !== undefined){
+          const examTotal = Number(m.marks_obtained);
+          rowTotal += examTotal;
+          rowHasObtained = true;
+          if(hasMultiComp){
+            examTotals[gi] += examTotal;
+            examHasObtained[gi] = true;
+            rowCellsHtml += `<td>${examTotal}</td>`;
+          }
+        } else if(hasMultiComp){
+          rowCellsHtml += '<td></td>';
+        }
+      }
+    });
+
+    let totalCell;
+    if(rowHasObtained){
+      grandObtained += rowTotal;
+      anyObtained = true;
+      totalCell = `<td>${rowTotal}</td>`;
+    } else {
+      totalCell = '<td></td>';
+    }
+    return `<tr><td class="subject">${escapeHtml(subj)}</td>${rowCellsHtml}${totalCell}</tr>`;
+  }).join('');
+
+  const examNameHeaders = group
+    .map(ex => `<th class="shade1" colspan="${ex.components.length + (ex.components.length > 1 ? 1 : 0)}">${escapeHtml(displayExamName(ex.name))}</th>`)
+    .join('');
+  const compNameHeaders = group
+    .map(ex => ex.components.map(c => `<th class="shade2">${escapeHtml(c.name)}</th>`).join('')
+      + (ex.components.length > 1 ? '<th class="shade2">Total</th>' : ''))
+    .join('');
+  const compMmHeaders = group
+    .map(ex => ex.components.map(c => `<th class="shade3">${c.mm}</th>`).join('')
+      + (ex.components.length > 1 ? `<th class="shade3">${ex.mm}</th>` : ''))
+    .join('');
+  const grandRowCells = group
+    .map((ex, gi) => colTotals[gi]
+      .map((t, ci) => `<td>${t} / ${subjects.length * ex.components[ci].mm}</td>`)
+      .join('')
+      + (ex.components.length > 1
+          ? `<td>${examHasObtained[gi] ? examTotals[gi] : ''} / ${subjects.length * ex.mm}</td>`
+          : ''))
+    .join('');
+
+  const groupTitle = group.map(ex => displayExamName(ex.name)).join(' + ');
+  const titleHtml = showTitle
+    ? `<p class="section-title">${escapeHtml(groupTitle).toUpperCase()}</p>`
+    : '';
+
+  return `
+    ${titleHtml}
+    <table class="marks-table">
+      <tr>
+        <th class="subject shade1" rowspan="3">Subject</th>
+        ${examNameHeaders}
+        <th class="shade1" rowspan="3">Total</th>
+      </tr>
+      <tr>
+        ${compNameHeaders}
+      </tr>
+      <tr>
+        ${compMmHeaders}
+      </tr>
+      ${rows}
+      <tr class="grand">
+        <td>GRAND TOTAL</td>
+        ${grandRowCells}
+        <td>${anyObtained ? grandObtained : ''} / ${grandMax}</td>
+      </tr>
+    </table>`;
+}
+
+function renderReportCard(student, className, examGroups, subjects, marksMap){
+  const hideWeightageNote = ['Nursery', 'LKG', 'UKG'].includes(className);
+  const examSectionsHtml = examGroups
+    .map((group, idx) => group.length === 1
+      ? renderExamSection(group[0], subjects, student, marksMap, idx > 0)
+      : renderMergedExamSection(group, subjects, student, marksMap, idx > 0))
+    .join('');
+
+  return `
+  <div class="page">
+    <div class="hdr">
+      <img src="${LOGO_URL}" alt="School Logo">
+      <p class="t1">APPLIED LEARNING ASSESSMENT ${SESSION}</p>
+      <p class="t2">MARKSHEET</p>
+      <p class="t3">CLASS ${escapeHtml(String(className)).toUpperCase()} &nbsp;|&nbsp; SESSION ${SESSION}</p>
+    </div>
+
+    <table class="idtable">
+      <tr>
+        <td class="lbl">Student Name</td><td class="val">${escapeHtml(student.name)}</td>
+        <td class="lbl">Roll No.</td><td class="val">${student.roll_no ?? ''}</td>
+      </tr>
+    </table>
+
+    ${examSectionsHtml}
+
+    ${hideWeightageNote ? '' : '<p class="weightage-note">Skill Weightage: Each skill = 20 points: 12 from Written Assessment + 8 from Research Assessment</p>'}
+    <p class="pronounce">General Pronouncement: ________________________________</p>
+    <div class="signrow">
+      <span>Academic Director</span><span>Coordinator</span><span>Class Teacher</span>
+    </div>
+  </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
