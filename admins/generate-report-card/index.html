@@ -121,6 +121,15 @@
   .idtable .lbl{width:18%;}
   .idtable .val{width:32%; font-weight:normal;}
 
+  .summary-table{width:100%; border-collapse:collapse; font-size:10pt; margin:0 0 4mm;}
+  .summary-table td{border:1pt solid #000; padding:1.6mm 2mm; font-weight:bold; text-align:center;}
+  .summary-table td.val{font-weight:normal;}
+  .summary-table .lbl{width:25%; background:var(--shade-2);}
+  .summary-table .val{width:25%;}
+  @media print{
+  .summary-table{page-break-inside:avoid;}
+  }
+
   .marks-table{margin-bottom:3mm;}
   .marks-table th, .marks-table td{
     border:1pt solid #000; padding:1.6mm 2mm; text-align:center;
@@ -251,6 +260,30 @@ function parseJsonMaybe(val){
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function computeGrade(pct){
+  if(pct >= 91) return 'A1';
+  if(pct >= 81) return 'A2';
+  if(pct >= 71) return 'B1';
+  if(pct >= 61) return 'B2';
+  if(pct >= 51) return 'C1';
+  if(pct >= 41) return 'C2';
+  if(pct >= 33) return 'D';
+  return 'E';
+}
+
+function renderSummaryTable(obtained, max, anyObtained){
+  const pct = anyObtained && max > 0 ? (obtained / max) * 100 : null;
+  const pctDisplay = pct !== null ? pct.toFixed(2) + '%' : '-';
+  const gradeDisplay = pct !== null ? computeGrade(pct) : '-';
+  return `
+    <table class="summary-table">
+      <tr>
+        <td class="lbl">Percentage</td><td class="val">${pctDisplay}</td>
+        <td class="lbl">Grade</td><td class="val">${gradeDisplay}</td>
+      </tr>
+    </table>`;
 }
 
 function displayExamName(name){
@@ -640,7 +673,8 @@ function renderExamSection(exam, subjects, student, marksMap, showTitle){
         ${colTotals.map((t, i) => `<td>${t} / ${subjects.length * components[i].mm}</td>`).join('')}
         <td>${anyObtained ? grandObtained : ''} / ${grandMax}</td>
       </tr>
-    </table>`;
+    </table>
+    ${renderSummaryTable(grandObtained, grandMax, anyObtained)}`;
 }
 
 // New: renders two or more exams merged into a single table. Each exam gets
@@ -753,7 +787,8 @@ function renderMergedExamSection(group, subjects, student, marksMap, showTitle){
         ${grandRowCells}
         <td>${anyObtained ? grandObtained : ''} / ${grandMax}</td>
       </tr>
-    </table>`;
+    </table>
+    ${renderSummaryTable(grandObtained, grandMax, anyObtained)}`;
 }
 
 function renderReportCard(student, className, examGroups, subjects, marksMap){
