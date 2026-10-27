@@ -1170,6 +1170,13 @@ adminOnly: true
     }
     SUPABASE_URL = cached.data.supabase_url;
     SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+
+    // Non-blocking: re-validates against the registry only if the cached entry is
+    // past its 24h TTL (getInstitutionInfo's own readCache() handles that check).
+    // Fire-and-forget — never blocks this synchronous gate, never throws.
+    import('https://educational-saas.github.io/commons/control-plane.js')
+      .then(function(m){ m.getInstitutionInfo(institutionId); })
+      .catch(function(){});
   })();
 
   async function wipeInstitutionData(){
