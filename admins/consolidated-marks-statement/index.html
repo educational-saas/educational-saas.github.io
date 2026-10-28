@@ -326,10 +326,7 @@
      GLOBAL CONFIGURATION -- replace these before deploying
      ============================================================ -->
 <script>
-   // ---- School identity ----
-   const SCHOOL_NAME = INSTITUTION_INFO.full_name || INSTITUTION_INFO.short_name || 'School Name';
-   const SCHOOL_SESSION = "Session 2026-27";
-
+   
    // ---- Supabase project credentials ----
    var SUPABASE_URL, SUPABASE_ANON_KEY, INSTITUTION_INFO;
   (function(){
@@ -345,6 +342,10 @@
     SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
     INSTITUTION_INFO = cached.data;
   })();
+
+   // ---- School identity ----
+   const SCHOOL_NAME = INSTITUTION_INFO.full_name || INSTITUTION_INFO.short_name || 'School Name';
+   const SCHOOL_SESSION = "Session 2026-27";
 
    // Where to send a user who isn't logged in / isn't an admin
    const DASHBOARD_URL = "https://educational-saas.github.io";
