@@ -233,17 +233,18 @@
         return;
       }
 
+      // token_hash-based verification is its own request shape: {token_hash,
+      // type} only. Adding `email` here pushes the request down Supabase's
+      // email+code (6-digit OTP) verification path instead, which then
+      // reports back "expired or invalid" regardless of whether the hash
+      // itself is actually fine — that was the real bug.
       var verifyRes = await supabase.auth.verifyOtp({
-        email: payload.email,
         token_hash: payload.token_hash,
-        // Use the verify type GoTrue itself reports for this hash (falls
-        // back to 'email', the correct type for a token_hash-based verify —
-        // 'magiclink' is for the 6-digit-code flow and will wrongly report
-        // an otherwise-fresh token as expired/invalid).
         type: payload.verification_type || 'email',
       });
 
       if (verifyRes.error || !verifyRes.data || !verifyRes.data.session) {
+        console.error('verifyOtp failed:', verifyRes.error);
         showError('Your sign-in link has expired. Please scan your QR code again.', { retry: run });
         return;
       }
