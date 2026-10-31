@@ -823,7 +823,7 @@
 /* =========================================================
    SUPABASE SETUP
 ========================================================= */
-  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  var SUPABASE_URL, SUPABASE_ANON_KEY, INSTITUTION_ID;
   (function(){
     var institutionId = localStorage.getItem('gsms_last_institution_id');
     var cached = null;
@@ -835,6 +835,7 @@
     }
     SUPABASE_URL = cached.data.supabase_url;
     SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+    INSTITUTION_ID = institutionId;
   })();
 
   async function wipeInstitutionData(){
@@ -1713,7 +1714,7 @@ var QR_INSTITUTION_LOGO_URL = 'https://educational-saas.github.io/gsms-logo.png'
 var QR_RENDER_SIZE = 900; // generous pixel size so printed codes stay crisp
 
 function buildStudentLoginUrl(token){
-  return QR_LOGIN_BASE_URL + '#token=' + encodeURIComponent(token);
+  return QR_LOGIN_BASE_URL + '#token=' + encodeURIComponent(token) + '&i_id=' + encodeURIComponent(INSTITUTION_ID);
 }
 
 function buildQrStylingOptions(token, includeLogo){
