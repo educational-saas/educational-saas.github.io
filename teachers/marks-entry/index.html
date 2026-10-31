@@ -467,6 +467,10 @@
                 <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
                 Download PDF
               </button>
+              <button class="btn btn-ghost btn-sm" id="btn-download-csv" type="button">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/></svg>
+                Download CSV
+              </button>
             </div>
           </div>
           <p class="hint" style="font-size:.78rem;color:var(--ink-500);margin:-4px 0 10px;">In the print dialog, choose <strong>Save as PDF</strong> as the destination. On phones, use Share / Save to Files.</p>
@@ -1648,6 +1652,64 @@ document.getElementById('btn-download-pdf').addEventListener('click', async func
   try{ await triggerStatementPrint(); }
   catch(e){ console.error(e); toast('Could not open the print dialog.', true); }
   finally{ btn.disabled = false; btn.innerHTML = original; }
+});
+
+/* =========================================================
+   CSV GENERATION (marks statement) — mirrors the same columns
+   used in buildStatementPrintSheet(), built from state.view.rows.
+========================================================= */
+function escapeCsvField(val){
+  var s = val == null ? '' : String(val);
+  if(/[",\n]/.test(s)){ s = '"' + s.replace(/"/g, '""') + '"'; }
+  return s;
+}
+
+function buildStatementCsv(){
+  var examObj = state.view.examObj;
+  var hasComponents = !!(examObj.components && examObj.components.length);
+  var rows = state.view.rows;
+
+  var headCols = ['Roll', 'Name'];
+  if(hasComponents) examObj.components.forEach(function(c){ headCols.push(c.name); });
+  headCols.push('Total', '%', 'Remark');
+
+  var lines = [headCols.map(escapeCsvField).join(',')];
+
+  rows.forEach(function(r){
+    var r_ = remarkFor(r.status, r.marksObtained, examObj.mm);
+    var cells = [r.student.roll_no != null ? r.student.roll_no : '', r.student.name];
+    if(hasComponents){
+      examObj.components.forEach(function(c){
+        var v = r.componentMarks && r.componentMarks[c.name] != null ? r.componentMarks[c.name] : (r.status === 'P' ? '' : STATUS_LABELS[r.status]);
+        cells.push(v);
+      });
+    }
+    cells.push(r.status === 'P' ? (r.marksObtained != null ? r.marksObtained : '') : STATUS_LABELS[r.status]);
+    cells.push(r_.pct != null ? Math.round(r_.pct) : '');
+    cells.push(r_.label);
+    lines.push(cells.map(escapeCsvField).join(','));
+  });
+
+  return '\uFEFF' + lines.join('\r\n'); // BOM so Excel renders Devanagari names correctly
+}
+
+function downloadStatementCsv(){
+  var csvContent = buildStatementCsv();
+  var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = statementPdfFileTitle() + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+
+document.getElementById('btn-download-csv').addEventListener('click', function(){
+  if(!state.view.rows || !state.view.rows.length){ toast('Load a statement first.', true); return; }
+  downloadStatementCsv();
+  toast('CSV downloaded.');
 });
 
 /* =========================================================
