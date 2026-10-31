@@ -142,20 +142,34 @@
     };
   }
 
+  // Parsed once, from the URL, on first load — and reused on every retry.
+  // We strip the hash from the visible URL right after this first read (see
+  // below) so it doesn't linger in browser history, but that means a retry
+  // can't just re-read location.hash a second time: it has to reuse this
+  // cached copy instead, or "Try again" would itself fail with a bogus
+  // "link looks incomplete" error.
+  var cachedParsed = null;
+
   async function run(){
-    var parsed = parseHashParams();
+    var parsed = cachedParsed;
 
-    if (!parsed.token || !parsed.iId) {
-      showError('This sign-in link looks incomplete. Please scan your QR code again, or ask your teacher for a new one.');
-      return;
+    if (!parsed) {
+      parsed = parseHashParams();
+
+      if (!parsed.token || !parsed.iId) {
+        showError('This sign-in link looks incomplete. Please scan your QR code again, or ask your teacher for a new one.');
+        return;
+      }
+
+      cachedParsed = parsed;
+
+      // Clear the token from the visible URL/history as soon as we've read
+      // it, so it doesn't linger in browser history or get accidentally
+      // shared via a screenshot of the address bar on a shared device.
+      try {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      } catch (e) { /* non-fatal */ }
     }
-
-    // Clear the token from the visible URL/history as soon as we've read it,
-    // so it doesn't linger in browser history or get accidentally shared via
-    // a screenshot of the address bar on a shared device.
-    try {
-      history.replaceState(null, '', window.location.pathname + window.location.search);
-    } catch (e) { /* non-fatal */ }
 
     var institutionInfo, supabaseUrl, supabaseAnonKey;
     try {
@@ -222,7 +236,11 @@
       var verifyRes = await supabase.auth.verifyOtp({
         email: payload.email,
         token_hash: payload.token_hash,
-        type: 'magiclink',
+        // Use the verify type GoTrue itself reports for this hash (falls
+        // back to 'email', the correct type for a token_hash-based verify —
+        // 'magiclink' is for the 6-digit-code flow and will wrongly report
+        // an otherwise-fresh token as expired/invalid).
+        type: payload.verification_type || 'email',
       });
 
       if (verifyRes.error || !verifyRes.data || !verifyRes.data.session) {
