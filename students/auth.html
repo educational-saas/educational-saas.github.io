@@ -1217,6 +1217,55 @@
     startQrScanner();
   });
 
+  /* ---------- silent auto-sign-in for a returning, already-signed-in student ---------- */
+  // Runs before any sign-in UI is shown: if we remember an institution ID,
+  // that institution still resolves, there's already a live Supabase
+  // session for it, and is_student() confirms this session belongs to a
+  // student, skip straight to the dashboard — no choice screen, no steps.
+  async function tryAutoSignIn(){
+    var remembered = getRememberedInstitution();
+    if (!remembered) return false;
+
+    var info = null;
+    try{
+      info = await getInstitutionInfo(remembered);
+    }catch(e){
+      info = null;
+    }
+    if (!info || !info.supabase_url || !info.supabase_anon_key) return false;
+
+    var client = createClient(info.supabase_url, info.supabase_anon_key, {
+      auth: { experimental: { passkey: true } }
+    });
+
+    var sess;
+    try{
+      sess = await client.auth.getSession();
+    }catch(e){
+      return false;
+    }
+    var session = sess && sess.data && sess.data.session;
+    if (!session || !session.user) return false;
+
+    var result;
+    try{
+      result = await client.rpc('is_student');
+    }catch(e){
+      return false;
+    }
+    if (result.error || result.data !== true) return false;
+
+    // Keep this client/institution around in case anything downstream needs it.
+    institutionId = remembered;
+    institutionValid = true;
+    sb = client;
+    setHeaderInstitution(info);
+
+    showStateSuccess('Welcome back! Taking you to your dashboard…');
+    window.location.href = DASHBOARD_URL;
+    return true;
+  }
+
   /* =====================================================================
      INIT — decide which flow to show on load.
   ===================================================================== */
@@ -1230,11 +1279,21 @@
       return;
     }
 
-    // No link params — show the unified choice/email/QR-scan flow.
-    stateArea.classList.add('hidden');
-    flowArea.classList.remove('hidden');
-    statusText.textContent = 'Choose how you\'d like to sign in';
-    showStep('choice');
+    // No link params — first check silently whether this is an
+    // already-signed-in student, before showing any sign-in UI.
+    flowArea.classList.add('hidden');
+    stateArea.classList.remove('hidden');
+    showLoading('Checking your session…');
+
+    tryAutoSignIn().then(function(redirected){
+      if (redirected) return; // already navigating to the dashboard
+
+      // Not an already-signed-in student — show the unified choice/email/QR-scan flow.
+      stateArea.classList.add('hidden');
+      flowArea.classList.remove('hidden');
+      statusText.textContent = 'Choose how you\'d like to sign in';
+      showStep('choice');
+    });
   })();
 </script>
 </body>
