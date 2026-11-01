@@ -267,10 +267,7 @@
   .scan-stage.hidden{display:none;}
   #qrCanvas, #qrUploadCanvas{display:none;}
   .scan-actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
-  .file-upload-btn{position:relative; overflow:hidden;}
-  .file-upload-btn input[type="file"]{
-    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
-  }
+  .file-upload-btn{cursor:pointer;}
 
   /* ===================== OTP step ===================== */
   .otp-target{font-weight:800; color:var(--ink-900); transition:color .3s var(--ease);}
@@ -384,11 +381,11 @@
         <canvas id="qrUploadCanvas"></canvas>
 
         <div class="scan-actions">
-          <button class="btn btn-ghost file-upload-btn" type="button">
+          <label class="btn btn-ghost file-upload-btn" for="qrFileInput">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
             <span class="btn-label">Upload a photo instead</span>
-            <input type="file" accept="image/*" id="qrFileInput">
-          </button>
+          </label>
+          <input type="file" accept="image/*" id="qrFileInput" class="hidden">
         </div>
 
         <div class="status-box" id="qr-status"></div>
@@ -1175,63 +1172,89 @@
     qrScanRAF = requestAnimationFrame(scanFrame);
   }
 
-  qrFileInput.addEventListener('change', async function(){
+  function onUploadFailed(message){
+    setStatus(qrStatusEl, 'error', message);
+    if (steps.qr.classList.contains('active')) startQrScanner();
+  }
+
+  qrFileInput.addEventListener('change', function(){
     var file = qrFileInput.files && qrFileInput.files[0];
+    qrFileInput.value = ''; // reset now so picking the same file again still fires 'change'
     if (!file) return;
     clearStatus(qrStatusEl);
+    setStatus(qrStatusEl, 'success', 'Reading your photo…');
 
     // The live camera loop writes to `qrCanvas` on every animation frame. If it's
-    // still running while we try to read an uploaded photo from that same canvas,
-    // a camera frame can land in between our draw and our read and wipe out the
-    // photo before jsQR ever sees it. Stop it first, and decode on a separate
-    // canvas/context regardless, so the two paths can never race each other.
+    // still running while we try to read an uploaded photo, a camera frame can
+    // land in between our draw and our read and wipe out the photo before jsQR
+    // ever sees it. Stop it first, and decode on a separate canvas/context
+    // regardless, so the two paths can never race each other.
     stopQrScanner();
 
-    try{
-      await loadJsQR();
-    }catch(e){
-      setStatus(qrStatusEl, 'error', 'Couldn\'t load the scanner. Please try again.');
-      return;
+    // Hard safety net: whatever goes wrong below — a webview quirk, a CDN
+    // hiccup, anything — the user gets a message and a working scanner back
+    // within a few seconds. This path must never go silent again.
+    var settled = false;
+    var safetyTimer = setTimeout(function(){
+      if (settled) return;
+      settled = true;
+      onUploadFailed('That took too long. Please try again, or use the camera instead.');
+    }, 8000);
+    function settle(fn){
+      if (settled) return;
+      settled = true;
+      clearTimeout(safetyTimer);
+      fn();
     }
 
-    try{
-      var imgUrl = URL.createObjectURL(file);
-      var img = new Image();
-      img.onload = function(){
-        var w = img.naturalWidth, h = img.naturalHeight;
-        if (!w || !h){
-          URL.revokeObjectURL(imgUrl);
-          qrFileInput.value = '';
-          setStatus(qrStatusEl, 'error', 'That file couldn\'t be read as an image. Please try another photo.');
-          return;
-        }
-        var MAX = 2000;
-        if (w > MAX || h > MAX){
-          var scale = MAX / Math.max(w, h);
-          w = Math.round(w * scale); h = Math.round(h * scale);
-        }
-        qrUploadCanvas.width = w; qrUploadCanvas.height = h;
-        qrUploadCtx.drawImage(img, 0, 0, w, h);
-        URL.revokeObjectURL(imgUrl);
-        var imageData = qrUploadCtx.getImageData(0, 0, w, h);
-        var code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
-        qrFileInput.value = '';
-        if (code && code.data){
-          handleDecodedQr(code.data);
-        } else {
-          setStatus(qrStatusEl, 'error', 'We couldn\'t find a QR code in that photo. Try a clearer, well-lit picture.');
-          if (steps.qr.classList.contains('active')) startQrScanner();
-        }
+    loadJsQR().then(function(){
+      // FileReader + a data: URL is used instead of URL.createObjectURL, because
+      // createObjectURL feeding an <img> is known to silently fail — neither
+      // onload nor onerror ever fires — in several Android WebViews and
+      // in-app browsers (e.g. embedded chat-app browsers). FileReader does not
+      // have that failure mode.
+      var reader = new FileReader();
+      reader.onerror = function(){
+        settle(function(){ onUploadFailed('That file couldn\'t be read. Please try another photo.'); });
       };
-      img.onerror = function(){
-        setStatus(qrStatusEl, 'error', 'That file couldn\'t be read as an image. Please try another photo.');
-        if (steps.qr.classList.contains('active')) startQrScanner();
+      reader.onload = function(){
+        var img = new Image();
+        img.onerror = function(){
+          settle(function(){ onUploadFailed('That file couldn\'t be read as an image. Please try another photo.'); });
+        };
+        img.onload = function(){
+          settle(function(){
+            var w = img.naturalWidth, h = img.naturalHeight;
+            if (!w || !h){
+              onUploadFailed('That file couldn\'t be read as an image. Please try another photo.');
+              return;
+            }
+            var MAX = 2000;
+            if (w > MAX || h > MAX){
+              var scale = MAX / Math.max(w, h);
+              w = Math.round(w * scale); h = Math.round(h * scale);
+            }
+            try{
+              qrUploadCanvas.width = w; qrUploadCanvas.height = h;
+              qrUploadCtx.drawImage(img, 0, 0, w, h);
+              var imageData = qrUploadCtx.getImageData(0, 0, w, h);
+              var code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+              if (code && code.data){
+                handleDecodedQr(code.data);
+              } else {
+                onUploadFailed('We couldn\'t find a QR code in that photo. Try a clearer, well-lit picture.');
+              }
+            }catch(e){
+              onUploadFailed('Something went wrong reading that photo. Please try again.');
+            }
+          });
+        };
+        img.src = reader.result; // data: URL
       };
-      img.src = imgUrl;
-    }catch(e){
-      setStatus(qrStatusEl, 'error', 'Something went wrong reading that photo. Please try again.');
-      if (steps.qr.classList.contains('active')) startQrScanner();
-    }
+      reader.readAsDataURL(file);
+    }).catch(function(){
+      settle(function(){ onUploadFailed('Couldn\'t load the scanner. Please try again.'); });
+    });
   });
 
   document.getElementById('choice-qr-btn').addEventListener('click', function(){
