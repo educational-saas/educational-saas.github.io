@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <title>Student Sign-in</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
     color-scheme: light;
     --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
     --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
-    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --ink-300:#93a0a1; --white:#ffffff;
     --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10); --border-card: rgba(13,56,65,.08);
     --status-present:#4fc98a; --status-present-dark:#2f8f61;
     --status-absent:#f2555a; --status-absent-dark:#c23b41;
@@ -22,31 +22,65 @@
     --track: color-mix(in srgb, var(--ink-900) 9%, transparent);
     --r-lg:26px; --r-md:18px; --r-sm:12px; --ease:cubic-bezier(.22,1,.36,1);
     --font-display:'Fraunces',Georgia,serif; --font-body:'Manrope',system-ui,sans-serif;
+
+    /* ---- extended tokens for the auth flows (email/OTP/QR) ---- */
+    --input-border: #e2e7e6;
+    --input-bg: var(--cream);
+    --input-bg-focus: var(--white);
+    --focus-ring: rgba(34,125,139,.16);
+    --btn-disabled-bg: #c3cdcd;
+    --otp-expired-bg: #f2f2f0;
+    --otp-expired-border: #e5e5e2;
+    --status-err-bg: rgba(242,85,90,.10);
+    --status-ok-bg: rgba(79,201,138,.12);
+    --scan-mask: rgba(13,56,65,.55);
   }
   html[data-theme="dark"]{
     color-scheme: dark;
     --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
     --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
-    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --ink-300:#748688; --white:#182425;
     --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12); --border-card: rgba(255,255,255,.10);
     --status-present:#49d696; --status-present-dark:#8be9c4;
     --status-absent:#ff6b70; --status-absent-dark:#ffb0b2;
     --status-leave:#ffc65c; --status-leave-dark:#ffe2a8;
     --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
     --track: color-mix(in srgb, var(--white) 14%, transparent);
+
+    --input-border: #2b3a3c;
+    --input-bg: #10191b;
+    --input-bg-focus: #162325;
+    --focus-ring: rgba(95,208,222,.24);
+    --btn-disabled-bg: #3a4749;
+    --otp-expired-bg: #131c1e;
+    --otp-expired-border: #24302f;
+    --status-err-bg: rgba(255,107,112,.12);
+    --status-ok-bg: rgba(73,214,150,.12);
+    --scan-mask: rgba(0,0,0,.6);
   }
   @media (prefers-color-scheme: dark){
     html:not([data-theme="light"]){
       color-scheme: dark;
       --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
       --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
-      --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+      --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --ink-300:#748688; --white:#182425;
       --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12); --border-card: rgba(255,255,255,.10);
       --status-present:#49d696; --status-present-dark:#8be9c4;
       --status-absent:#ff6b70; --status-absent-dark:#ffb0b2;
       --status-leave:#ffc65c; --status-leave-dark:#ffe2a8;
       --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
       --track: color-mix(in srgb, var(--white) 14%, transparent);
+
+      --input-border: #2b3a3c;
+      --input-bg: #10191b;
+      --input-bg-focus: #162325;
+      --focus-ring: rgba(95,208,222,.24);
+      --btn-disabled-bg: #3a4749;
+      --otp-expired-bg: #131c1e;
+      --otp-expired-border: #24302f;
+      --status-err-bg: rgba(255,107,112,.12);
+      --status-ok-bg: rgba(73,214,150,.12);
+      --scan-mask: rgba(0,0,0,.6);
     }
   }
   *{box-sizing:border-box;}
@@ -61,13 +95,15 @@
   .card{
     background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border-card);
     box-shadow:0 6px 0 var(--edge-shadow-soft);padding:28px 24px;text-align:center;
+    opacity:0; transform:translateY(10px); animation:rise .5s var(--ease) forwards;
   }
+  @keyframes rise{ to{opacity:1; transform:translateY(0);} }
   .logo{
     width:56px;height:56px;border-radius:50%;object-fit:cover;margin:0 auto 14px;display:block;
     border:1px solid var(--border-card);background:var(--panel-tint);
   }
-  .section-title{font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 6px;color:var(--ink-900);}
-  .section-sub{font-size:13px;color:var(--ink-500);margin:0;font-weight:600;line-height:1.5;}
+  .section-title{font-family:var(--font-display);font-weight:700;font-size:19px;margin:0 0 6px;color:var(--ink-900); transition:color .3s var(--ease);}
+  .section-sub{font-size:13px;color:var(--ink-500);margin:0;font-weight:600;line-height:1.5; transition:color .3s var(--ease);}
   .state-msg{padding:30px 6px 6px;font-weight:700;color:var(--ink-500);font-size:14.5px;}
   .state-msg.err{color:var(--status-absent-dark);}
   .state-msg.ok{color:var(--status-present-dark);}
@@ -82,25 +118,419 @@
   @keyframes spin{to{transform:rotate(360deg);}}
   .hidden{display:none !important;}
   @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+
+  /* ===================== shared step machinery ===================== */
+  .step{display:none; text-align:left;}
+  .step.active{display:block;}
+  .step.center-step{text-align:center;}
+
+  .back-nav{
+    display:inline-flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer;
+    font-family:inherit; font-size:12.5px; font-weight:700; color:var(--ink-500); padding:0 0 14px; margin:0;
+    transition:color .2s var(--ease);
+  }
+  .back-nav:hover{color:var(--teal-700);}
+  .back-nav svg{width:13px;height:13px;stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+
+  .eyebrow{
+    display:inline-block; margin:0 0 10px; font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--teal-700); background:var(--teal-100); padding:5px 12px; border-radius:999px;
+    transition:background-color .3s var(--ease), color .3s var(--ease);
+  }
+  .step h1{font-family:var(--font-display); font-weight:700; font-size:20px; margin:0 0 7px; line-height:1.3; color:var(--ink-900); transition:color .3s var(--ease);}
+  .step .desc{margin:0 0 20px; font-size:13.5px; color:var(--ink-500); line-height:1.55; font-weight:600; transition:color .3s var(--ease);}
+  .step .desc strong{color:var(--ink-900); font-weight:800;}
+
+  label{display:block; font-size:12px; font-weight:800; color:var(--ink-900); margin-bottom:7px; transition:color .3s var(--ease);}
+  input[type="email"], input[type="text"]{
+    width:100%; padding:13px 14px; font-size:16px; font-family:inherit;
+    border:1.5px solid var(--input-border); border-radius:var(--r-sm); background:var(--input-bg);
+    color:var(--ink-900); transition:border-color .2s var(--ease), box-shadow .2s var(--ease), background-color .2s var(--ease), color .2s var(--ease);
+  }
+  input[type="email"]:focus, input[type="text"]:focus{outline:none; border-color:var(--teal-600); box-shadow:0 0 0 4px var(--focus-ring); background:var(--input-bg-focus);}
+
+  .btn{
+    width:100%; margin-top:16px; padding:13px 16px; border:none; border-radius:999px;
+    background:var(--teal-700); color:#fff; font-family:inherit; font-weight:800; font-size:14.5px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px;
+    transition:background .2s var(--ease), transform .15s var(--ease), box-shadow .2s var(--ease);
+    box-shadow:0 5px 0 var(--teal-900);
+  }
+  html[data-theme="dark"] .btn{color:#06181a;}
+  .btn:hover:not(:disabled){background:var(--teal-800); transform:translateY(-1px);}
+  .btn:active:not(:disabled){transform:translateY(2px); box-shadow:0 3px 0 var(--teal-900);}
+  .btn:disabled{background:var(--btn-disabled-bg); box-shadow:none; cursor:not-allowed;}
+
+  .btn-ghost{
+    background:transparent; color:var(--teal-700); box-shadow:none; border:1.5px solid var(--input-border);
+  }
+  .btn-ghost:hover:not(:disabled){background:var(--teal-100); transform:none;}
+  .btn-ghost:active:not(:disabled){transform:none; box-shadow:none;}
+
+  .btn svg.btn-icon{width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+
+  .btn .spinner-inline{
+    width:15px; height:15px; border-radius:50%; margin:0;
+    border:2.4px solid rgba(255,255,255,.4); border-top-color:#fff;
+    animation:spin .7s linear infinite; display:none;
+  }
+  html[data-theme="dark"] .btn .spinner-inline{border:2.4px solid rgba(6,24,26,.35); border-top-color:#06181a;}
+  .btn-ghost .spinner-inline{border:2.4px solid var(--teal-100); border-top-color:var(--teal-700);}
+  .btn.loading .spinner-inline{display:inline-block;}
+  .btn.loading .btn-label{opacity:.85;}
+  .btn.loading .btn-icon{display:none;}
+
+  .divider{display:flex; align-items:center; gap:12px; margin:20px 0 0; user-select:none;}
+  .divider::before, .divider::after{content:""; flex:1; height:1px; background:var(--input-border); transition:background-color .3s var(--ease);}
+  .divider span{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-300); transition:color .3s var(--ease);}
+
+  .text-link-btn{
+    display:block; width:100%; text-align:center; margin-top:16px; font-size:12.5px; font-weight:700; color:var(--ink-500);
+    background:none; border:none; font-family:inherit; cursor:pointer; padding:4px; transition:color .2s var(--ease);
+  }
+  .text-link-btn:hover{color:var(--teal-700);}
+
+  .status-box{
+    display:none; align-items:flex-start; gap:8px; font-size:13px; font-weight:600; line-height:1.5;
+    padding:11px 13px; border-radius:12px; margin-top:14px; text-align:left;
+  }
+  .status-box.show{display:flex;}
+  .status-box svg{width:15px; height:15px; flex-shrink:0; margin-top:2px;}
+  .status-box.error{background:var(--status-err-bg); color:var(--status-absent-dark);}
+  .status-box.error svg{stroke:var(--status-absent-dark);}
+  .status-box.success{background:var(--status-ok-bg); color:var(--status-present-dark);}
+  .status-box.success svg{stroke:var(--status-present-dark);}
+
+  .icon-circle{
+    width:54px; height:54px; border-radius:50%; margin:0 auto 16px; display:flex; align-items:center; justify-content:center;
+    background:var(--gold-100); transition:background-color .3s var(--ease);
+  }
+  .icon-circle svg{width:25px; height:25px; stroke:var(--gold-600); transition:stroke .3s var(--ease);}
+  .icon-circle.teal{background:var(--teal-100);}
+  .icon-circle.teal svg{stroke:var(--teal-700);}
+
+  .uid-note{
+    margin-top:16px; font-size:11px; color:var(--ink-300); word-break:break-all;
+    background:var(--cream); padding:9px 11px; border-radius:10px; font-weight:600;
+    transition:background-color .3s var(--ease), color .3s var(--ease);
+  }
+
+  /* ===================== choice step ===================== */
+  .choice-grid{display:flex; flex-direction:column; gap:12px; margin-top:4px;}
+  .choice-option{
+    display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+    background:var(--cream); border:1.5px solid var(--border-card); border-radius:var(--r-md);
+    padding:16px; cursor:pointer; font-family:inherit; color:inherit;
+    transition:border-color .2s var(--ease), background-color .2s var(--ease), transform .15s var(--ease), box-shadow .2s var(--ease);
+  }
+  .choice-option:hover{border-color:var(--teal-600); transform:translateY(-1px); box-shadow:0 6px 16px -8px var(--edge-shadow);}
+  .choice-option:active{transform:translateY(0);}
+  .choice-option .opt-icon{
+    width:46px; height:46px; border-radius:14px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:var(--teal-100);
+  }
+  .choice-option .opt-icon svg{width:23px; height:23px; stroke:var(--teal-700); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .choice-option.gold .opt-icon{background:var(--gold-100);}
+  .choice-option.gold .opt-icon svg{stroke:var(--gold-600);}
+  .choice-option .opt-text{flex:1; min-width:0;}
+  .choice-option .opt-title{font-family:var(--font-display); font-weight:700; font-size:15.5px; color:var(--ink-900); margin:0 0 2px;}
+  .choice-option .opt-sub{font-size:12px; color:var(--ink-500); font-weight:600; margin:0; line-height:1.4;}
+  .choice-option .opt-arrow{width:16px; height:16px; stroke:var(--ink-300); stroke-width:2.4; flex-shrink:0; fill:none; stroke-linecap:round; stroke-linejoin:round;}
+
+  /* ===================== QR scan step ===================== */
+  .scan-stage{
+    position:relative; width:100%; aspect-ratio:1/1; border-radius:var(--r-md); overflow:hidden;
+    background:#000; margin-bottom:4px;
+  }
+  .scan-stage video{width:100%; height:100%; object-fit:cover; display:block;}
+  .scan-overlay{position:absolute; inset:0; pointer-events:none;}
+  .scan-overlay .mask{position:absolute; inset:0; background:var(--scan-mask); -webkit-mask:radial-gradient(circle at center, transparent 0 38%, #000 39%); mask:radial-gradient(circle at center, transparent 0 38%, #000 39%);}
+  .scan-frame{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:64%; aspect-ratio:1/1; border-radius:18px;
+  }
+  .scan-frame .corner{position:absolute; width:26px; height:26px; border:3.5px solid var(--gold-400); border-radius:6px;}
+  .scan-frame .c-tl{top:-3px; left:-3px; border-right:none; border-bottom:none;}
+  .scan-frame .c-tr{top:-3px; right:-3px; border-left:none; border-bottom:none;}
+  .scan-frame .c-bl{bottom:-3px; left:-3px; border-right:none; border-top:none;}
+  .scan-frame .c-br{bottom:-3px; right:-3px; border-left:none; border-top:none;}
+  .scan-frame .scan-line{
+    position:absolute; left:4%; right:4%; height:2.5px; top:0;
+    background:linear-gradient(90deg, transparent, var(--gold-400), transparent);
+    animation:scan-sweep 2.2s ease-in-out infinite;
+  }
+  @keyframes scan-sweep{ 0%{top:4%;} 50%{top:92%;} 100%{top:4%;} }
+  .scan-hint{
+    position:absolute; bottom:10px; left:0; right:0; text-align:center; font-size:11.5px; font-weight:700;
+    color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+  .scan-stage.hidden{display:none;}
+  #qrCanvas{display:none;}
+  .scan-actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
+  .file-upload-btn{position:relative; overflow:hidden;}
+  .file-upload-btn input[type="file"]{
+    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+  }
+
+  /* ===================== OTP step ===================== */
+  .otp-target{font-weight:800; color:var(--ink-900); transition:color .3s var(--ease);}
+  .otp-boxes{display:flex; gap:7px; justify-content:space-between; margin-bottom:8px;}
+  .otp-boxes input{
+    width:15.5%; aspect-ratio:1/1; text-align:center; font-size:1.3rem; font-weight:800;
+    font-family:var(--font-display); border:1.5px solid var(--input-border); border-radius:12px; background:var(--input-bg);
+    color:var(--ink-900); transition:border-color .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+  }
+  .otp-boxes input:focus{outline:none; border-color:var(--teal-600); box-shadow:0 0 0 4px var(--focus-ring); background:var(--input-bg-focus);}
+  .otp-boxes.shake{animation:shake .4s;}
+  @keyframes shake{
+    10%,90%{transform:translateX(-2px);} 20%,80%{transform:translateX(4px);}
+    30%,50%,70%{transform:translateX(-7px);} 40%,60%{transform:translateX(7px);}
+  }
+  .otp-boxes.expired input{background:var(--otp-expired-bg); border-color:var(--otp-expired-border); color:var(--ink-300);}
+
+  .meta-row{display:flex; align-items:center; justify-content:space-between; margin:14px 0 4px; font-size:12.5px;}
+  .timer-pill{
+    display:inline-flex; align-items:center; gap:6px; font-weight:800; color:var(--teal-700);
+    background:var(--teal-100); padding:5px 11px; border-radius:999px; font-variant-numeric:tabular-nums;
+    transition:background-color .3s var(--ease), color .3s var(--ease);
+  }
+  .timer-pill svg{width:12px; height:12px; stroke:var(--teal-700); transition:stroke .3s var(--ease);}
+  .timer-pill.expiring{color:var(--status-absent-dark); background:var(--status-err-bg);}
+  .timer-pill.expiring svg{stroke:var(--status-absent-dark);}
+
+  .resend-btn{
+    background:none; border:none; padding:0; font-family:inherit; font-size:12.5px; font-weight:800;
+    color:var(--gold-600); cursor:pointer;
+  }
+  .resend-btn:disabled{color:var(--ink-300); cursor:not-allowed;}
+  .resend-btn:not(:disabled):hover{text-decoration:underline;}
+
+  .passkey-actions{display:flex; flex-direction:column; gap:10px; margin-top:4px;}
+  .passkey-actions .btn{margin-top:0;}
+  #passkey-signin-btn{display:none;}
+  #passkey-signin-btn.available{display:flex;}
+
+  @media (max-width:360px){
+    .card{padding:24px 18px;}
+  }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <div class="card">
+  <div class="card" id="authCard">
+
     <img class="logo hidden" id="institutionLogo" alt="">
     <h2 class="section-title" id="institutionName">Student Sign-in</h2>
     <p class="section-sub" id="statusText">Reading your QR code…</p>
+
+    <!-- ===================== QR-LINK AUTO FLOW (unchanged behaviour) ===================== -->
     <div id="stateArea">
       <div class="state-msg" id="loadingState"><div class="spinner"></div>Signing you in…</div>
     </div>
+
+    <!-- ===================== UNIFIED SIGN-IN FLOW (shown when no link params) ===================== -->
+    <div id="flowArea" class="hidden">
+
+      <!-- STEP: choose QR or email -->
+      <div class="step" id="step-choice">
+        <h1>Welcome!</h1>
+        <p class="desc">How would you like to sign in?</p>
+        <div class="choice-grid">
+          <button class="choice-option" type="button" id="choice-qr-btn">
+            <span class="opt-icon">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><path d="M14 14h3v3h-3zM20 14v3M17 20h3"/></svg>
+            </span>
+            <span class="opt-text">
+              <p class="opt-title">Scan a QR code</p>
+              <p class="opt-sub">Use the code your teacher gave you</p>
+            </span>
+            <svg class="opt-arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="choice-option gold" type="button" id="choice-email-btn">
+            <span class="opt-icon">
+              <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.2"/><path d="m4 7 8 6 8-6"/></svg>
+            </span>
+            <span class="opt-text">
+              <p class="opt-title">Sign in with email</p>
+              <p class="opt-sub">New here? We'll set up your account</p>
+            </span>
+            <svg class="opt-arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP: QR scan / upload -->
+      <div class="step" id="step-qr">
+        <button class="back-nav" type="button" data-back-to="choice">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Back
+        </button>
+        <h1>Scan your QR code</h1>
+        <p class="desc">Point your camera at the QR code, or upload a photo of it.</p>
+
+        <div class="scan-stage" id="scanStage">
+          <video id="qrVideo" playsinline muted autoplay></video>
+          <div class="scan-overlay">
+            <div class="mask"></div>
+            <div class="scan-frame">
+              <span class="corner c-tl"></span><span class="corner c-tr"></span>
+              <span class="corner c-bl"></span><span class="corner c-br"></span>
+              <span class="scan-line"></span>
+            </div>
+            <p class="scan-hint">Line up the QR code inside the box</p>
+          </div>
+        </div>
+        <canvas id="qrCanvas"></canvas>
+
+        <div class="scan-actions">
+          <button class="btn btn-ghost file-upload-btn" type="button">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            <span class="btn-label">Upload a photo instead</span>
+            <input type="file" accept="image/*" id="qrFileInput">
+          </button>
+        </div>
+
+        <div class="status-box" id="qr-status"></div>
+      </div>
+
+      <!-- STEP: institution ID (email path, multi-tenant gate) -->
+      <div class="step" id="step-institution">
+        <button class="back-nav" type="button" data-back-to="choice">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Back
+        </button>
+        <span class="eyebrow">Email sign-in</span>
+        <h1>What's your school's ID?</h1>
+        <p class="desc">Ask your teacher or school admin for your institution ID if you don't know it.</p>
+
+        <form id="institution-form" novalidate>
+          <label for="institution-input">Institution ID</label>
+          <input type="text" id="institution-input" name="institution" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 45" autocomplete="off" required>
+          <button class="btn" type="submit" id="institution-continue-btn">
+            <span class="spinner-inline"></span>
+            <span class="btn-label">Continue</span>
+          </button>
+        </form>
+
+        <div class="status-box" id="institution-status"></div>
+      </div>
+
+      <!-- STEP: checking existing session -->
+      <div class="step center-step" id="step-checking">
+        <div class="spinner" style="margin-top:10px;"></div>
+        <h1>Checking your session…</h1>
+        <p class="desc">One moment while we verify who's signing in.</p>
+      </div>
+
+      <!-- STEP: email entry -->
+      <div class="step" id="step-email">
+        <button class="back-nav" type="button" id="change-institution-btn">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Change school ID
+        </button>
+        <span class="eyebrow">Email sign-in</span>
+        <h1>Enter your email</h1>
+        <p class="desc">We'll send a 6-digit code to your email — no password needed. First time? Your account will be created automatically.</p>
+
+        <form id="email-form" novalidate>
+          <label for="email-input">Email address</label>
+          <input type="email" id="email-input" name="email" placeholder="yourname@gmail.com" autocomplete="email" required>
+          <button class="btn" type="submit" id="send-btn">
+            <span class="spinner-inline"></span>
+            <span class="btn-label">Send code</span>
+          </button>
+        </form>
+
+        <div class="status-box" id="email-status"></div>
+
+        <div class="divider"><span>or</span></div>
+
+        <button class="btn btn-ghost" type="button" id="passkey-signin-btn">
+          <span class="spinner-inline"></span>
+          <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 0v9m0-5h3m-3 3h2"/><path d="M15.5 8.5 21 3m-4.2 4.2L19.2 9.6"/></svg>
+          <span class="btn-label">Sign in with a passkey</span>
+        </button>
+      </div>
+
+      <!-- STEP: OTP -->
+      <div class="step" id="step-otp">
+        <button class="back-nav" type="button" id="change-email-btn">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Change email
+        </button>
+        <span class="eyebrow">Verify it's you</span>
+        <h1>Enter your code</h1>
+        <p class="desc">We sent a 6-digit code to <span class="otp-target" id="otp-target-email"></span>.</p>
+
+        <div class="otp-boxes" id="otp-boxes">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 6">
+        </div>
+
+        <div class="meta-row">
+          <span class="timer-pill" id="expiry-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            <span id="expiry-time">5:00</span>
+          </span>
+          <button class="resend-btn" id="resend-btn" type="button" disabled>Resend in 60s</button>
+        </div>
+
+        <button class="btn" type="button" id="verify-btn" style="margin-top:18px;">
+          <span class="spinner-inline"></span>
+          <span class="btn-label">Verify &amp; continue</span>
+        </button>
+
+        <div class="status-box" id="otp-status"></div>
+      </div>
+
+      <!-- STEP: offer to add a passkey -->
+      <div class="step center-step" id="step-add-passkey">
+        <div class="icon-circle teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 0v9m0-5h3m-3 3h2"/><path d="M15.5 8.5 21 3m-4.2 4.2L19.2 9.6"/></svg>
+        </div>
+        <h1>Sign in faster next time</h1>
+        <p class="desc">Add a passkey now and you'll be able to sign in with your device's fingerprint, face, or screen lock — no code required.</p>
+
+        <div class="passkey-actions">
+          <button class="btn" type="button" id="add-passkey-btn">
+            <span class="spinner-inline"></span>
+            <span class="btn-label">Add a passkey</span>
+          </button>
+          <button class="btn btn-ghost" type="button" id="skip-passkey-btn">Skip for now</button>
+        </div>
+
+        <div class="status-box" id="add-passkey-status"></div>
+      </div>
+
+      <!-- STEP: redirecting -->
+      <div class="step center-step" id="step-redirecting">
+        <div class="icon-circle teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <h1>You're in!</h1>
+        <p class="desc">Taking you to your dashboard…</p>
+      </div>
+
+      <!-- STEP: pending approval -->
+      <div class="step center-step" id="step-pending">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        </div>
+        <h1>Almost there!</h1>
+        <p class="desc">You're verified and signed in, but your school still needs to approve your account. Please check back soon, or ask your teacher.</p>
+        <div class="uid-note" id="pending-uid"></div>
+        <button class="btn btn-ghost" id="signout-btn" type="button" style="margin-top:16px;">Sign out</button>
+      </div>
+
+    </div>
+    <!-- /flowArea -->
+
   </div>
 </div>
 
 <script type="module">
-  import {
-    getInstitutionInfo,
-  } from 'https://educational-saas.github.io/commons/control-plane.js';
+  import { getInstitutionInfo } from 'https://educational-saas.github.io/commons/control-plane.js';
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 
   "use strict";
@@ -108,155 +538,704 @@
   var DASHBOARD_URL = 'https://educational-saas.github.io/students/';
   var SIGNIN_URL = 'https://educational-saas.github.io/';
 
+  var OTP_TTL_SECONDS = 300;          // 5 minutes — must match Supabase Dashboard > Auth > Email OTP expiry
+  var RESEND_COOLDOWN_SECONDS = 60;
+  var NO_ACCOUNT_MIN_DELAY_MS = 650;  // anti-enumeration floor, mirrors teacher-auth.html
+
+  var LAST_INSTITUTION_KEY = 'gsms_last_institution_id';
+  function rememberInstitution(id){ try{ localStorage.setItem(LAST_INSTITUTION_KEY, String(id)); }catch(e){} }
+  function forgetInstitution(){ try{ localStorage.removeItem(LAST_INSTITUTION_KEY); }catch(e){} }
+  function getRememberedInstitution(){ try{ return localStorage.getItem(LAST_INSTITUTION_KEY); }catch(e){ return null; } }
+
+  /* ---------- shared chrome ---------- */
   var stateArea = document.getElementById('stateArea');
+  var flowArea = document.getElementById('flowArea');
   var statusText = document.getElementById('statusText');
-  var institutionName = document.getElementById('institutionName');
-  var institutionLogo = document.getElementById('institutionLogo');
+  var institutionNameEl = document.getElementById('institutionName');
+  var institutionLogoEl = document.getElementById('institutionLogo');
+
+  function setHeaderInstitution(info){
+    var displayName = info && (info.full_name || info.short_name);
+    if (displayName) institutionNameEl.textContent = displayName;
+    var logo = info && (info.logo_transparent_url || info.logo_url);
+    if (logo){
+      institutionLogoEl.src = logo;
+      institutionLogoEl.alt = displayName || '';
+      institutionLogoEl.classList.remove('hidden');
+    }
+  }
 
   function showLoading(msg){
     statusText.textContent = msg || 'Signing you in…';
     stateArea.innerHTML = '<div class="state-msg" id="loadingState"><div class="spinner"></div>'
       + (msg || 'Signing you in…') + '</div>';
   }
-
-  function showError(msg, opts){
+  function showStateError(msg, opts){
     opts = opts || {};
     stateArea.innerHTML = '<div class="state-msg err">' + msg
       + (opts.retry ? '<br><button class="retry-btn" id="retryBtn">Try again</button>' : '')
       + '</div>';
-    if (opts.retry) {
-      document.getElementById('retryBtn').addEventListener('click', opts.retry);
-    }
+    if (opts.retry) document.getElementById('retryBtn').addEventListener('click', opts.retry);
   }
-
-  function showSuccess(msg){
+  function showStateSuccess(msg){
     stateArea.innerHTML = '<div class="state-msg ok"><div class="spinner"></div>' + msg + '</div>';
   }
 
+  /* =====================================================================
+     PART 1 — existing QR-link auto sign-in flow (unchanged logic).
+     If the page is opened with #token=...&i_id=... (from a scanned/physical
+     QR code that already points straight here), this runs exactly as the
+     original student-auth.html did, with no UI choices shown at all.
+  ===================================================================== */
   function parseHashParams(){
     var hash = window.location.hash.replace(/^#/, '');
     var params = new URLSearchParams(hash);
-    return {
-      token: params.get('token'),
-      iId: params.get('i_id'),
-    };
+    return { token: params.get('token'), iId: params.get('i_id') };
   }
 
-  // Parsed once, from the URL, on first load — and reused on every retry.
-  // We strip the hash from the visible URL right after this first read (see
-  // below) so it doesn't linger in browser history, but that means a retry
-  // can't just re-read location.hash a second time: it has to reuse this
-  // cached copy instead, or "Try again" would itself fail with a bogus
-  // "link looks incomplete" error.
   var cachedParsed = null;
 
-  async function run(){
-    var parsed = cachedParsed;
+  async function runQrLinkFlow(preParsed){
+    var parsed = preParsed || cachedParsed;
 
-    if (!parsed) {
+    if (!parsed){
       parsed = parseHashParams();
-
-      if (!parsed.token || !parsed.iId) {
-        showError('This sign-in link looks incomplete. Please scan your QR code again, or ask your teacher for a new one.');
+      if (!parsed.token || !parsed.iId){
+        showStateError('This sign-in link looks incomplete. Please scan your QR code again, or ask your teacher for a new one.');
         return;
       }
-
       cachedParsed = parsed;
-
-      // Clear the token from the visible URL/history as soon as we've read
-      // it, so it doesn't linger in browser history or get accidentally
-      // shared via a screenshot of the address bar on a shared device.
-      try {
+      try{
         history.replaceState(null, '', window.location.pathname + window.location.search);
-      } catch (e) { /* non-fatal */ }
+      }catch(e){ /* non-fatal */ }
     }
 
     var institutionInfo, supabaseUrl, supabaseAnonKey;
-    try {
+    try{
       showLoading('Finding your school…');
       institutionInfo = await getInstitutionInfo(parsed.iId);
       supabaseUrl = institutionInfo.supabase_url;
       supabaseAnonKey = institutionInfo.supabase_anon_key;
       if (!supabaseUrl || !supabaseAnonKey) throw new Error('Incomplete institution record.');
 
-      var displayName = institutionInfo.full_name || institutionInfo.short_name;
-      if (displayName) institutionName.textContent = displayName;
-      var logo = institutionInfo.logo_transparent_url || institutionInfo.logo_url;
-      if (logo) {
-        institutionLogo.src = logo;
-        institutionLogo.alt = displayName || '';
-        institutionLogo.classList.remove('hidden');
-      }
-
-      // So in-app pages (which read 'gsms_last_institution_id') work after we
-      // hand off to the dashboard.
-      try { localStorage.setItem('gsms_last_institution_id', String(parsed.iId)); } catch (e) {}
-    } catch (e) {
-      showError('We couldn\'t find your school. Please scan your QR code again.', { retry: run });
+      setHeaderInstitution(institutionInfo);
+      try{ localStorage.setItem(LAST_INSTITUTION_KEY, String(parsed.iId)); }catch(e){}
+    }catch(e){
+      showStateError('We couldn\'t find your school. Please scan your QR code again.', { retry: function(){ runQrLinkFlow(parsed); } });
       return;
     }
 
-    var supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    var sbQr = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
     });
 
-    // Already signed in on this device as this same student? Skip straight
-    // to the dashboard instead of re-running the whole exchange.
-    try {
-      var existing = await supabase.auth.getSession();
-      if (existing && existing.data && existing.data.session) {
-        showSuccess('Welcome back! Taking you to your dashboard…');
+    try{
+      var existing = await sbQr.auth.getSession();
+      if (existing && existing.data && existing.data.session){
+        showStateSuccess('Welcome back! Taking you to your dashboard…');
         window.location.href = DASHBOARD_URL;
         return;
       }
-    } catch (e) { /* fall through to normal sign-in */ }
+    }catch(e){ /* fall through to normal sign-in */ }
 
-    try {
+    try{
       showLoading('Signing you in…');
 
       var functionsUrl = supabaseUrl.replace(/\/$/, '') + '/functions/v1/qr-login';
       var res = await fetch(functionsUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseAnonKey,
-        },
+        headers: { 'Content-Type': 'application/json', 'apikey': supabaseAnonKey },
         body: JSON.stringify({ token: parsed.token }),
       });
 
       var payload = null;
-      try { payload = await res.json(); } catch (e) {}
+      try{ payload = await res.json(); }catch(e){}
 
-      if (!res.ok || !payload || !payload.token_hash || !payload.email) {
+      if (!res.ok || !payload || !payload.token_hash || !payload.email){
         var message = (payload && payload.error) || 'We couldn\'t sign you in right now.';
-        showError(message + ' Please ask your teacher for help.', { retry: run });
+        showStateError(message + ' Please ask your teacher for help.', { retry: function(){ runQrLinkFlow(parsed); } });
         return;
       }
 
-      // token_hash-based verification is its own request shape: {token_hash,
-      // type} only. Adding `email` here pushes the request down Supabase's
-      // email+code (6-digit OTP) verification path instead, which then
-      // reports back "expired or invalid" regardless of whether the hash
-      // itself is actually fine — that was the real bug.
-      var verifyRes = await supabase.auth.verifyOtp({
+      var verifyRes = await sbQr.auth.verifyOtp({
         token_hash: payload.token_hash,
         type: payload.verification_type || 'email',
       });
 
-      if (verifyRes.error || !verifyRes.data || !verifyRes.data.session) {
+      if (verifyRes.error || !verifyRes.data || !verifyRes.data.session){
         console.error('verifyOtp failed:', verifyRes.error);
-        showError('Your sign-in link has expired. Please scan your QR code again.', { retry: run });
+        showStateError('Your sign-in link has expired. Please scan your QR code again.', { retry: function(){ runQrLinkFlow(parsed); } });
         return;
       }
 
-      showSuccess('You\'re signed in! Taking you to your dashboard…');
+      showStateSuccess('You\'re signed in! Taking you to your dashboard…');
       window.location.href = DASHBOARD_URL;
-    } catch (e) {
-      showError('Something went wrong. Please try again.', { retry: run });
+    }catch(e){
+      showStateError('Something went wrong. Please try again.', { retry: function(){ runQrLinkFlow(parsed); } });
     }
   }
 
-  run();
+  /* =====================================================================
+     PART 2 — unified in-page flow, shown when the page is opened with no
+     link parameters: choice between "scan/upload a QR code" and
+     "sign in with email" (self sign-up, mirroring teacher-auth.html).
+  ===================================================================== */
+
+  var steps = {
+    choice: document.getElementById('step-choice'),
+    qr: document.getElementById('step-qr'),
+    institution: document.getElementById('step-institution'),
+    checking: document.getElementById('step-checking'),
+    email: document.getElementById('step-email'),
+    otp: document.getElementById('step-otp'),
+    addPasskey: document.getElementById('step-add-passkey'),
+    redirecting: document.getElementById('step-redirecting'),
+    pending: document.getElementById('step-pending'),
+  };
+
+  function showStep(name){
+    Object.keys(steps).forEach(function(k){ steps[k].classList.remove('active'); });
+    steps[name].classList.add('active');
+  }
+
+  function setStatus(el, type, message){
+    el.className = 'status-box show ' + type;
+    var icon = type === 'error'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    el.innerHTML = icon + '<span>' + message + '</span>';
+  }
+  function clearStatus(el){ el.className = 'status-box'; el.innerHTML = ''; }
+  function setLoading(btn, isLoading){
+    btn.disabled = isLoading;
+    btn.classList.toggle('loading', isLoading);
+  }
+
+  /* ---------- multi-tenant Supabase client (email/OTP path) ---------- */
+  var sb = null;
+  var institutionId = null;
+  var institutionValid = false;
+
+  var institutionForm = document.getElementById('institution-form');
+  var institutionInput = document.getElementById('institution-input');
+  var institutionContinueBtn = document.getElementById('institution-continue-btn');
+  var institutionStatus = document.getElementById('institution-status');
+  var changeInstitutionBtn = document.getElementById('change-institution-btn');
+
+  var emailForm = document.getElementById('email-form');
+  var emailInput = document.getElementById('email-input');
+  var sendBtn = document.getElementById('send-btn');
+  var emailStatus = document.getElementById('email-status');
+
+  var otpTargetEmail = document.getElementById('otp-target-email');
+  var otpBoxesWrap = document.getElementById('otp-boxes');
+  var otpInputs = Array.prototype.slice.call(otpBoxesWrap.querySelectorAll('input'));
+  var verifyBtn = document.getElementById('verify-btn');
+  var otpStatus = document.getElementById('otp-status');
+  var resendBtn = document.getElementById('resend-btn');
+  var changeEmailBtn = document.getElementById('change-email-btn');
+  var expiryPill = document.getElementById('expiry-pill');
+  var expiryTime = document.getElementById('expiry-time');
+  var signoutBtn = document.getElementById('signout-btn');
+  var pendingUid = document.getElementById('pending-uid');
+
+  var passkeySigninBtn = document.getElementById('passkey-signin-btn');
+  var addPasskeyBtn = document.getElementById('add-passkey-btn');
+  var skipPasskeyBtn = document.getElementById('skip-passkey-btn');
+  var addPasskeyStatus = document.getElementById('add-passkey-status');
+
+  var currentEmail = '';
+  var expiryInterval = null;
+  var resendInterval = null;
+  var pendingRouteUser = null;
+
+  var REDIRECTS = { student: DASHBOARD_URL };
+
+  /* ---------- countdown timers (identical cadence to teacher-auth.html) ---------- */
+  function startExpiryTimer(){
+    clearInterval(expiryInterval);
+    var remaining = OTP_TTL_SECONDS;
+    expiryPill.classList.remove('expiring');
+    otpBoxesWrap.classList.remove('expired');
+    updateExpiryDisplay(remaining);
+
+    expiryInterval = setInterval(function(){
+      remaining--;
+      updateExpiryDisplay(remaining);
+      if (remaining <= 30) expiryPill.classList.add('expiring');
+      if (remaining <= 0){
+        clearInterval(expiryInterval);
+        otpBoxesWrap.classList.add('expired');
+        otpInputs.forEach(function(i){ i.disabled = true; });
+        setStatus(otpStatus, 'error', 'This code has expired. Please request a new one.');
+      }
+    }, 1000);
+  }
+  function updateExpiryDisplay(seconds){
+    var m = Math.max(0, Math.floor(seconds / 60));
+    var s = Math.max(0, seconds % 60);
+    expiryTime.textContent = m + ':' + String(s).padStart(2, '0');
+  }
+  function startResendCooldown(){
+    clearInterval(resendInterval);
+    var remaining = RESEND_COOLDOWN_SECONDS;
+    resendBtn.disabled = true;
+    resendBtn.textContent = 'Resend in ' + remaining + 's';
+
+    resendInterval = setInterval(function(){
+      remaining--;
+      if (remaining <= 0){
+        clearInterval(resendInterval);
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend code';
+      } else {
+        resendBtn.textContent = 'Resend in ' + remaining + 's';
+      }
+    }, 1000);
+  }
+
+  institutionInput.addEventListener('input', function(){
+    institutionInput.value = institutionInput.value.replace(/[^0-9]/g, '');
+  });
+
+  otpInputs.forEach(function(input, idx){
+    input.addEventListener('input', function(){
+      input.value = input.value.replace(/[^0-9]/g, '').slice(0, 1);
+      if (input.value && idx < otpInputs.length - 1) otpInputs[idx + 1].focus();
+      if (otpInputs.every(function(i){ return i.value; })) verifyCode();
+    });
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Backspace' && !input.value && idx > 0) otpInputs[idx - 1].focus();
+      if (e.key === 'Enter') verifyCode();
+    });
+    input.addEventListener('paste', function(e){
+      e.preventDefault();
+      var digits = (e.clipboardData.getData('text').match(/[0-9]/g) || []).slice(0, 6);
+      digits.forEach(function(d, i){ if (otpInputs[i]) otpInputs[i].value = d; });
+      var next = otpInputs[Math.min(digits.length, otpInputs.length - 1)];
+      if (next) next.focus();
+      if (digits.length === 6) verifyCode();
+    });
+  });
+
+  function resetOtpBoxes(){
+    otpInputs.forEach(function(i){ i.value = ''; i.disabled = false; });
+    otpBoxesWrap.classList.remove('expired', 'shake');
+    otpInputs[0].focus();
+  }
+
+  /* ---------- institution resolution (control plane) ---------- */
+  async function resolveInstitutionAndProceed(id){
+    showStep('checking');
+    institutionId = id;
+    institutionValid = false;
+    sb = null;
+
+    var info = null;
+    try{
+      info = await getInstitutionInfo(id);
+    }catch(e){
+      info = null; // invalid ID and a reachability problem must look identical
+    }
+
+    if (info && info.supabase_url && info.supabase_anon_key){
+      institutionValid = true;
+      rememberInstitution(id);
+      setHeaderInstitution(info);
+      sb = createClient(info.supabase_url, info.supabase_anon_key, {
+        auth: { experimental: { passkey: true } }
+      });
+
+      var sess = await sb.auth.getSession();
+      var session = sess && sess.data && sess.data.session;
+      if (session && session.user){
+        await routeSignedInUser(session.user);
+        return;
+      }
+    }
+
+    // Never reveal institution validity at this stage — proceed to the same email step either way.
+    showStep('email');
+    emailInput.focus();
+  }
+
+  async function sendCode(email, isResend){
+    clearStatus(emailStatus);
+    clearStatus(otpStatus);
+    if (!isResend) setLoading(sendBtn, true);
+
+    if (!institutionValid || !sb){
+      await new Promise(function(resolve){ setTimeout(resolve, NO_ACCOUNT_MIN_DELAY_MS); });
+      if (!isResend) setLoading(sendBtn, false);
+      setStatus(
+        isResend ? otpStatus : emailStatus,
+        'error',
+        'No account could be found for this school. Please check the ID with your teacher and try again.'
+      );
+      return false;
+    }
+
+    var result = await sb.auth.signInWithOtp({
+      email: email,
+      options: { shouldCreateUser: true }
+    });
+    var error = result.error;
+
+    if (!isResend) setLoading(sendBtn, false);
+
+    if (error){
+      setStatus(isResend ? otpStatus : emailStatus, 'error', error.message || 'Could not send the code. Please try again.');
+      return false;
+    }
+
+    currentEmail = email;
+    otpTargetEmail.textContent = email;
+    showStep('otp');
+    resetOtpBoxes();
+    startExpiryTimer();
+    startResendCooldown();
+    if (isResend) setStatus(otpStatus, 'success', 'A new code has been sent.');
+    return true;
+  }
+
+  async function verifyCode(){
+    if (!institutionValid || !sb) return;
+    var token = otpInputs.map(function(i){ return i.value; }).join('');
+    if (token.length !== 6) return;
+    clearStatus(otpStatus);
+    setLoading(verifyBtn, true);
+    otpInputs.forEach(function(i){ i.disabled = true; });
+
+    var result = await sb.auth.verifyOtp({ email: currentEmail, token: token, type: 'email' });
+    var data = result.data, error = result.error;
+
+    setLoading(verifyBtn, false);
+
+    if (error){
+      otpInputs.forEach(function(i){ i.disabled = false; });
+      otpBoxesWrap.classList.add('shake');
+      setTimeout(function(){ otpBoxesWrap.classList.remove('shake'); }, 400);
+      setStatus(otpStatus, 'error', 'That code didn\'t work. Check it and try again.');
+      resetOtpBoxes();
+      return;
+    }
+
+    clearInterval(expiryInterval);
+    clearInterval(resendInterval);
+
+    if (webauthnSupported){
+      pendingRouteUser = data.user;
+      clearStatus(addPasskeyStatus);
+      showStep('addPasskey');
+      return;
+    }
+
+    await routeSignedInUser(data.user);
+  }
+
+  async function routeSignedInUser(user){
+    showStep('redirecting');
+    var result = await sb.rpc('get_my_role');
+    var role = result.data, error = result.error;
+
+    if (!error && role && REDIRECTS[role]){
+      window.location.href = REDIRECTS[role];
+      return;
+    }
+
+    if (!error && role === 'pending'){
+      pendingUid.textContent = 'Account ID: ' + user.id;
+      showStep('pending');
+      return;
+    }
+
+    await sb.auth.signOut();
+    showStep('email');
+    emailInput.focus();
+  }
+
+  /* ---------- passkeys ---------- */
+  var webauthnSupported = typeof window.PublicKeyCredential !== 'undefined';
+  if (webauthnSupported) passkeySigninBtn.classList.add('available');
+
+  passkeySigninBtn.addEventListener('click', async function(){
+    clearStatus(emailStatus);
+    if (!institutionValid || !sb){
+      await new Promise(function(resolve){ setTimeout(resolve, NO_ACCOUNT_MIN_DELAY_MS); });
+      setStatus(emailStatus, 'error', 'No account could be found for this school. Please check the ID with your teacher and try again.');
+      return;
+    }
+    setLoading(passkeySigninBtn, true);
+    var result = await sb.auth.signInWithPasskey();
+    setLoading(passkeySigninBtn, false);
+    if (result.error){
+      setStatus(emailStatus, 'error', result.error.message || 'Passkey sign-in didn\'t work. Please sign in with your email instead.');
+      return;
+    }
+    await routeSignedInUser(result.data.user);
+  });
+
+  addPasskeyBtn.addEventListener('click', async function(){
+    clearStatus(addPasskeyStatus);
+    setLoading(addPasskeyBtn, true);
+    var result = await sb.auth.registerPasskey();
+    setLoading(addPasskeyBtn, false);
+    if (result.error){
+      setStatus(addPasskeyStatus, 'error', result.error.message || 'Could not add a passkey on this device. You can try again later.');
+      return;
+    }
+    setStatus(addPasskeyStatus, 'success', 'Passkey added! You can use it to sign in next time.');
+    setTimeout(function(){ routeSignedInUser(pendingRouteUser); }, 1100);
+  });
+
+  skipPasskeyBtn.addEventListener('click', function(){ routeSignedInUser(pendingRouteUser); });
+
+  /* ---------- choice step wiring ---------- */
+  document.getElementById('choice-email-btn').addEventListener('click', function(){
+    clearStatus(institutionStatus);
+    var remembered = getRememberedInstitution();
+    if (remembered){
+      institutionInput.value = remembered;
+      resolveInstitutionAndProceed(remembered);
+    } else {
+      showStep('institution');
+      institutionInput.focus();
+    }
+  });
+
+  document.querySelectorAll('[data-back-to="choice"]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      stopQrScanner();
+      clearInterval(expiryInterval);
+      clearInterval(resendInterval);
+      showStep('choice');
+    });
+  });
+
+  institutionForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var id = institutionInput.value.trim();
+    if (!/^[0-9]+$/.test(id)){
+      setStatus(institutionStatus, 'error', 'Please enter a numeric institution ID.');
+      return;
+    }
+    clearStatus(institutionStatus);
+    setLoading(institutionContinueBtn, true);
+    resolveInstitutionAndProceed(id).finally(function(){ setLoading(institutionContinueBtn, false); });
+  });
+
+  changeInstitutionBtn.addEventListener('click', function(){
+    clearInterval(expiryInterval);
+    clearInterval(resendInterval);
+    clearStatus(emailStatus);
+    institutionValid = false;
+    sb = null;
+    forgetInstitution();
+    showStep('institution');
+    institutionInput.value = '';
+    institutionInput.focus();
+  });
+
+  emailForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var email = emailInput.value.trim();
+    if (!email) return;
+    sendCode(email, false);
+  });
+
+  verifyBtn.addEventListener('click', verifyCode);
+
+  resendBtn.addEventListener('click', function(){
+    if (resendBtn.disabled) return;
+    sendCode(currentEmail, true);
+  });
+
+  changeEmailBtn.addEventListener('click', function(){
+    clearInterval(expiryInterval);
+    clearInterval(resendInterval);
+    clearStatus(otpStatus);
+    showStep('email');
+    emailInput.focus();
+  });
+
+  signoutBtn.addEventListener('click', async function(){
+    if (sb) await sb.auth.signOut();
+    showStep('email');
+    emailInput.value = '';
+  });
+
+  /* =====================================================================
+     PART 3 — QR scan / upload UI (jsQR), feeding the SAME QR-login
+     function used by the auto-flow (runQrLinkFlow), so the actual
+     auth/workflow logic is identical whichever way a student arrives.
+  ===================================================================== */
+  var jsQRLoaded = null;
+  function loadJsQR(){
+    if (window.jsQR) return Promise.resolve();
+    if (jsQRLoaded) return jsQRLoaded;
+    jsQRLoaded = new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+      s.onload = resolve;
+      s.onerror = function(){ reject(new Error('Could not load the QR scanner library.')); };
+      document.head.appendChild(s);
+    });
+    return jsQRLoaded;
+  }
+
+  var qrVideo = document.getElementById('qrVideo');
+  var qrCanvas = document.getElementById('qrCanvas');
+  var qrCtx = qrCanvas.getContext('2d', { willReadFrequently: true });
+  var qrFileInput = document.getElementById('qrFileInput');
+  var qrStatusEl = document.getElementById('qr-status');
+  var qrStream = null;
+  var qrScanRAF = null;
+  var qrScanningActive = false;
+
+  function extractTokenAndIId(decodedText){
+    // Our QR codes encode a full URL pointing back to this page with
+    // #token=...&i_id=... — but tolerate a bare hash/fragment too, in case
+    // a QR was generated with just the fragment.
+    var hashPart = null;
+    try{
+      var u = new URL(decodedText);
+      hashPart = u.hash ? u.hash.replace(/^#/, '') : '';
+    }catch(e){
+      hashPart = decodedText.indexOf('#') !== -1
+        ? decodedText.slice(decodedText.indexOf('#') + 1)
+        : decodedText;
+    }
+    var params = new URLSearchParams(hashPart);
+    var token = params.get('token');
+    var iId = params.get('i_id');
+    if (token && iId) return { token: token, iId: iId };
+    return null;
+  }
+
+  function handleDecodedQr(decodedText){
+    var parsed = extractTokenAndIId(decodedText);
+    if (!parsed){
+      setStatus(qrStatusEl, 'error', 'That doesn\'t look like a valid student QR code. Please try again.');
+      return false;
+    }
+    stopQrScanner();
+    clearStatus(qrStatusEl);
+    flowArea.classList.add('hidden');
+    stateArea.classList.remove('hidden');
+    runQrLinkFlow(parsed);
+    return true;
+  }
+
+  async function startQrScanner(){
+    clearStatus(qrStatusEl);
+    try{
+      await loadJsQR();
+    }catch(e){
+      setStatus(qrStatusEl, 'error', 'Couldn\'t load the scanner. You can still upload a photo of the QR code below.');
+      return;
+    }
+
+    try{
+      qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      qrVideo.srcObject = qrStream;
+      await qrVideo.play();
+      qrScanningActive = true;
+      requestAnimationFrame(scanFrame);
+    }catch(e){
+      setStatus(qrStatusEl, 'error', 'Couldn\'t access the camera. You can upload a photo of the QR code instead.');
+    }
+  }
+
+  function stopQrScanner(){
+    qrScanningActive = false;
+    if (qrScanRAF) cancelAnimationFrame(qrScanRAF);
+    if (qrStream){
+      qrStream.getTracks().forEach(function(t){ t.stop(); });
+      qrStream = null;
+    }
+  }
+
+  function scanFrame(){
+    if (!qrScanningActive) return;
+    if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA && qrVideo.videoWidth){
+      qrCanvas.width = qrVideo.videoWidth;
+      qrCanvas.height = qrVideo.videoHeight;
+      qrCtx.drawImage(qrVideo, 0, 0, qrCanvas.width, qrCanvas.height);
+      var imageData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+      var code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data){
+        if (handleDecodedQr(code.data)) return;
+      }
+    }
+    qrScanRAF = requestAnimationFrame(scanFrame);
+  }
+
+  qrFileInput.addEventListener('change', async function(){
+    var file = qrFileInput.files && qrFileInput.files[0];
+    if (!file) return;
+    clearStatus(qrStatusEl);
+    try{
+      await loadJsQR();
+    }catch(e){
+      setStatus(qrStatusEl, 'error', 'Couldn\'t load the scanner. Please try again.');
+      return;
+    }
+
+    try{
+      var imgUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var MAX = 1600;
+        if (w > MAX || h > MAX){
+          var scale = MAX / Math.max(w, h);
+          w = Math.round(w * scale); h = Math.round(h * scale);
+        }
+        qrCanvas.width = w; qrCanvas.height = h;
+        qrCtx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(imgUrl);
+        var imageData = qrCtx.getImageData(0, 0, w, h);
+        var code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+        qrFileInput.value = '';
+        if (code && code.data){
+          handleDecodedQr(code.data);
+        } else {
+          setStatus(qrStatusEl, 'error', 'We couldn\'t find a QR code in that photo. Try a clearer, well-lit picture.');
+        }
+      };
+      img.onerror = function(){
+        setStatus(qrStatusEl, 'error', 'That file couldn\'t be read as an image. Please try another photo.');
+      };
+      img.src = imgUrl;
+    }catch(e){
+      setStatus(qrStatusEl, 'error', 'Something went wrong reading that photo. Please try again.');
+    }
+  });
+
+  document.getElementById('choice-qr-btn').addEventListener('click', function(){
+    showStep('qr');
+    startQrScanner();
+  });
+
+  /* =====================================================================
+     INIT — decide which flow to show on load.
+  ===================================================================== */
+  (function init(){
+    var parsed = parseHashParams();
+    if (parsed.token && parsed.iId){
+      // Existing QR-link auto sign-in — behaves exactly as before, no choices shown.
+      flowArea.classList.add('hidden');
+      stateArea.classList.remove('hidden');
+      runQrLinkFlow(parsed);
+      return;
+    }
+
+    // No link params — show the unified choice/email/QR-scan flow.
+    stateArea.classList.add('hidden');
+    flowArea.classList.remove('hidden');
+    statusText.textContent = 'Choose how you\'d like to sign in';
+    showStep('choice');
+  })();
 </script>
 </body>
 </html>
