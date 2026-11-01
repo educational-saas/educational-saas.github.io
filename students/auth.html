@@ -265,7 +265,7 @@
     color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.5);
   }
   .scan-stage.hidden{display:none;}
-  #qrCanvas{display:none;}
+  #qrCanvas, #qrUploadCanvas{display:none;}
   .scan-actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
   .file-upload-btn{position:relative; overflow:hidden;}
   .file-upload-btn input[type="file"]{
@@ -381,6 +381,7 @@
           </div>
         </div>
         <canvas id="qrCanvas"></canvas>
+        <canvas id="qrUploadCanvas"></canvas>
 
         <div class="scan-actions">
           <button class="btn btn-ghost file-upload-btn" type="button">
@@ -1086,6 +1087,10 @@
   var qrVideo = document.getElementById('qrVideo');
   var qrCanvas = document.getElementById('qrCanvas');
   var qrCtx = qrCanvas.getContext('2d', { willReadFrequently: true });
+  // Uploaded photos are decoded on their own canvas/context — never the one the
+  // live camera loop is writing to every frame, so the two can't clobber each other.
+  var qrUploadCanvas = document.getElementById('qrUploadCanvas');
+  var qrUploadCtx = qrUploadCanvas.getContext('2d', { willReadFrequently: true });
   var qrFileInput = document.getElementById('qrFileInput');
   var qrStatusEl = document.getElementById('qr-status');
   var qrStream = null;
@@ -1174,6 +1179,14 @@
     var file = qrFileInput.files && qrFileInput.files[0];
     if (!file) return;
     clearStatus(qrStatusEl);
+
+    // The live camera loop writes to `qrCanvas` on every animation frame. If it's
+    // still running while we try to read an uploaded photo from that same canvas,
+    // a camera frame can land in between our draw and our read and wipe out the
+    // photo before jsQR ever sees it. Stop it first, and decode on a separate
+    // canvas/context regardless, so the two paths can never race each other.
+    stopQrScanner();
+
     try{
       await loadJsQR();
     }catch(e){
@@ -1186,29 +1199,38 @@
       var img = new Image();
       img.onload = function(){
         var w = img.naturalWidth, h = img.naturalHeight;
-        var MAX = 1600;
+        if (!w || !h){
+          URL.revokeObjectURL(imgUrl);
+          qrFileInput.value = '';
+          setStatus(qrStatusEl, 'error', 'That file couldn\'t be read as an image. Please try another photo.');
+          return;
+        }
+        var MAX = 2000;
         if (w > MAX || h > MAX){
           var scale = MAX / Math.max(w, h);
           w = Math.round(w * scale); h = Math.round(h * scale);
         }
-        qrCanvas.width = w; qrCanvas.height = h;
-        qrCtx.drawImage(img, 0, 0, w, h);
+        qrUploadCanvas.width = w; qrUploadCanvas.height = h;
+        qrUploadCtx.drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(imgUrl);
-        var imageData = qrCtx.getImageData(0, 0, w, h);
+        var imageData = qrUploadCtx.getImageData(0, 0, w, h);
         var code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
         qrFileInput.value = '';
         if (code && code.data){
           handleDecodedQr(code.data);
         } else {
           setStatus(qrStatusEl, 'error', 'We couldn\'t find a QR code in that photo. Try a clearer, well-lit picture.');
+          if (steps.qr.classList.contains('active')) startQrScanner();
         }
       };
       img.onerror = function(){
         setStatus(qrStatusEl, 'error', 'That file couldn\'t be read as an image. Please try another photo.');
+        if (steps.qr.classList.contains('active')) startQrScanner();
       };
       img.src = imgUrl;
     }catch(e){
       setStatus(qrStatusEl, 'error', 'Something went wrong reading that photo. Please try again.');
+      if (steps.qr.classList.contains('active')) startQrScanner();
     }
   });
 
