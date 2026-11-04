@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Timetable | My GSMS</title>
+<meta name="description" content="Teacher &amp; class timetable and substitution planner for Gopal Sharma Memorial School.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://mygsms.in/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg: rgba(47,143,91,.1);
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492; --success-bg: rgba(87,212,146,.12);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900);
+    font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease); }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  .app-header{ position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); padding:calc(env(safe-area-inset-top) + 14px) 18px 14px; transition:background-color .35s var(--ease), border-color .35s var(--ease); }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1080px; margin:0 auto 14px; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease); }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{ font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease); }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-600); }
+  .header-sub.admin-badge{ color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0; }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{ width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease); }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  .tabs{ max-width:1080px; margin:0 auto; display:flex; gap:6px; background:var(--white); border:1.5px solid var(--border-card); border-radius:999px; padding:5px; overflow-x:auto; }
+  .tab-btn{ flex:1; border:none; background:transparent; color:var(--ink-500); font-weight:700; font-size:.84rem; padding:10px 8px; border-radius:999px; cursor:pointer; transition:background-color .25s var(--ease), color .25s var(--ease); white-space:nowrap; }
+  .tab-btn.active{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); box-shadow:0 10px 22px -12px rgba(13,56,65,.5); }
+  html[data-theme="dark"] .tab-btn.active{ color:var(--teal-900); }
+
+  main.dash{ flex:1; width:100%; max-width:1080px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px); }
+  .panel{ display:none; flex-direction:column; gap:16px; }
+  .panel.active{ display:flex; }
+
+  .card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); transition:border-color .3s var(--ease), background-color .3s var(--ease); }
+  .card-title{ font-family:'Fraunces',serif; font-weight:600; font-size:1rem; margin:0 0 14px; color:var(--ink-900); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .chip{ font-size:.72rem; font-weight:700; letter-spacing:.02em; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+  .chip.level-low{ color:var(--danger); background:var(--danger-bg); }
+  .chip.level-mid{ color:var(--gold-600); background:var(--bg-tint-gold); }
+  .chip.level-high{ color:var(--teal-700); background:var(--bg-tint-teal); }
+  .chip.level-done{ color:var(--success); background:var(--success-bg); }
+
+  .field{ margin-bottom:14px; } .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:480px){ .row2{ grid-template-columns:1fr; } }
+
+  input[type="date"], input[type="text"], select, textarea{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500;
+    outline:none; transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  input[type="date"]:focus, input[type="text"]:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+  select{ appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6f70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px; padding-right:36px;
+  }
+  select:disabled, input:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .btn{ padding:13px 18px; border-radius:14px; border:none; font-family:'Manrope',sans-serif; font-weight:700; font-size:.88rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active{ transform:scale(.97); } .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-teal{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); }
+  html[data-theme="dark"] .btn-teal{ color:var(--teal-900); }
+  .btn-block{ width:100%; } .btn-sm{ padding:8px 14px; font-size:.78rem; border-radius:10px; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; } .btn-row .btn{ flex:1; min-width:120px; }
+
+  .placeholder-note{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500); }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+  .hint{ font-size:.78rem; color:var(--ink-500); margin:0; }
+  .last-modified{ font-size:.76rem; color:var(--ink-500); margin-top:12px; text-align:right; }
+
+  /* ---------- Day chips ---------- */
+  .day-chip-row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .day-chip{ border:1.5px solid var(--border-card); background:var(--cream); color:var(--ink-500); font-weight:700; font-size:.76rem; padding:8px 13px; border-radius:999px; cursor:pointer; transition:all .2s var(--ease); }
+  .day-chip.active{ background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:var(--white); border-color:transparent; }
+  html[data-theme="dark"] .day-chip.active{ color:var(--teal-900); }
+  .day-chip.has-entry::after{ content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--gold-500); margin-left:6px; vertical-align:middle; }
+
+  /* ---------- Autosuggest ---------- */
+  .autosuggest{ position:relative; }
+  .autosuggest-list{ position:absolute; left:0; right:0; top:calc(100% + 4px); background:var(--white); border:1.5px solid var(--border-card); border-radius:var(--r-sm); box-shadow:var(--shadow-card-hover); max-height:220px; overflow-y:auto; z-index:20; display:none; }
+  .autosuggest-list.show{ display:block; }
+  .autosuggest-item{ padding:10px 14px; font-size:.86rem; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .autosuggest-item:hover, .autosuggest-item.highlight{ background:var(--bg-tint-gold); }
+  .autosuggest-item .tag{ font-size:.66rem; font-weight:700; text-transform:uppercase; color:var(--ink-500); letter-spacing:.04em; }
+  .autosuggest-item.new .tag{ color:var(--gold-600); }
+  .combo-input{ padding-right:40px !important; }
+  .combo-toggle{ position:absolute; right:4px; top:4px; bottom:4px; width:34px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer; color:var(--ink-500); border-radius:10px; transition:background-color .2s var(--ease); }
+  .combo-toggle:hover{ background:var(--bg-tint-gold); }
+  .combo-toggle svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s var(--ease); }
+  .autosuggest-list.show ~ .combo-toggle svg, .combo-toggle.open svg{ transform:rotate(180deg); }
+
+  /* ---------- Timetable grid ---------- */
+  .grid-scroll{ overflow-x:auto; border-radius:var(--r-sm); border:1px solid var(--border-card); }
+  table.ttgrid{ border-collapse:collapse; width:100%; min-width:620px; background:var(--white); }
+  table.ttgrid th, table.ttgrid td{ border:1px solid var(--border-card); padding:0; text-align:center; }
+  table.ttgrid th{ background:var(--bg-tint-teal); color:var(--teal-700); font-size:.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:10px 6px; position:sticky; top:0; }
+  table.ttgrid th.period-col-head, table.ttgrid td.period-col{ background:var(--cream); color:var(--ink-500); font-size:.74rem; font-weight:700; width:84px; min-width:84px; padding:8px 6px; }
+  table.ttgrid td.period-col .ptime{ display:block; font-weight:500; font-size:.64rem; color:var(--ink-500); margin-top:2px; }
+  .ttcell{ min-height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:8px 6px; cursor:default; transition:background-color .2s var(--ease); min-width:92px; }
+  .ttcell.editable{ cursor:pointer; }
+  .ttcell.editable:hover{ background:var(--bg-tint-gold); }
+  .ttcell .cell-subject{ font-size:.82rem; font-weight:700; color:var(--ink-900); line-height:1.25; }
+  .ttcell .cell-teacher{ font-size:.70rem; color:var(--teal-700); font-weight:600; line-height:1.2; }
+  .ttcell.empty .cell-subject{ color:var(--ink-500); font-weight:500; font-style:italic; font-size:.76rem; }
+  .ttcell.subbed{ background:var(--bg-tint-gold); }
+  .ttcell.subbed .cell-teacher{ color:var(--gold-600); }
+  .ttcell.subbed .cell-teacher::before{ content:'↻ '; }
+
+  /* ---------- Sheet (bottom modal) ---------- */
+  .sheet-backdrop{ position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease); }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{ position:fixed; left:0; right:0; bottom:0; z-index:101; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); max-width:560px; margin:0 auto; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35); transform:translateY(100%); transition:transform .3s var(--ease); max-height:88svh; overflow-y:auto; }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); z-index: 5; }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p.sheet-desc{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; } .sheet-actions .btn{ flex:1; }
+
+  /* ---------- Toast ---------- */
+  #toast-wrap{ position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast{ background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw; }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+
+  .absence-pill-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .absence-pill{ border:1.5px solid var(--border-card); background:var(--white); border-radius:999px; padding:9px 14px; font-size:.82rem; font-weight:600; cursor:pointer; transition:all .2s var(--ease); display:flex; align-items:center; gap:7px; }
+  .absence-pill.active{ border-color:var(--danger); background:var(--danger-bg); color:var(--danger); }
+  .sub-row{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-sm); padding:12px 14px; margin-bottom:10px; opacity:0; animation:rise .4s var(--ease) forwards; }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .sub-row-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+  .sub-row-title{ font-size:.86rem; font-weight:700; color:var(--ink-900); }
+  .sub-row-meta{ font-size:.72rem; color:var(--ink-500); }
+  .sub-row.is-me{ border-color:var(--gold-500); box-shadow:0 0 0 2px var(--bg-tint-gold) inset; }
+  .sub-row-class-line{ font-size:.84rem; color:var(--ink-900); margin-top:7px; padding-top:7px; border-top:1px dashed var(--border-card); }
+  .sub-row-class-line:first-of-type{ border-top:none; padding-top:0; }
+  .sub-row-note{ font-size:.76rem; color:var(--ink-500); margin:3px 0 0; font-style:italic; }
+  .you-chip{ font-size:.64rem; font-weight:800; letter-spacing:.03em; color:var(--teal-900); background:var(--gold-400); padding:2px 8px; border-radius:999px; vertical-align:middle; margin-left:6px; }
+  .subs-info-card p{ margin:0; }
+
+  #print-sheet{ display:none; }
+  @page{ size:A4 landscape; margin:12mm 12mm 16mm; @bottom-center{ content:"Gopal Sharma Memorial School — Timetable  |  Page " counter(page) " of " counter(pages); font:8pt Helvetica,Arial,sans-serif; color:#5f6f70; } }
+  @media print{
+    html{ color-scheme: light !important; }
+    html,body{ background:#fff !important; color:#1c2626 !important; }
+    #gate,#app,.sheet-backdrop,#toast-wrap{ display:none !important; }
+    #print-sheet{ display:block; font-family:'Noto Sans','Noto Sans Devanagari',Helvetica,Arial,sans-serif; color:#1c2626; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .p-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; background:#0d3841; color:#fff; padding:12px 16px; border-radius:6px; margin-bottom:14px; }
+    .p-brand{ display:flex; align-items:center; gap:12px; }
+    .p-brand img{ width:42px; height:42px; object-fit:contain; }
+    .p-school{ font-family:Georgia,'Times New Roman',serif; font-weight:700; font-size:15pt; }
+    .p-title{ font-size:9.5pt; color:#ffd685; margin-top:2px; }
+    .p-right{ text-align:right; font-size:9.5pt; }
+    .p-right .p-range{ color:#ffd685; font-size:8.6pt; margin-top:2px; }
+    table.p-grid{ width:100%; border-collapse:collapse; margin-bottom:10px; }
+    table.p-grid th, table.p-grid td{ border:1px solid #c9d6d8; padding:6px 5px; font-size:8.6pt; text-align:center; }
+    table.p-grid th{ background:#124f59; color:#fff; font-weight:700; }
+    table.p-grid td.p-period-col{ background:#f3efe4; font-weight:700; width:64px; }
+    table.p-grid td .p-subj{ font-weight:700; color:#124f59; display:block; }
+    table.p-grid td .p-teach{ color:#5f6f70; font-size:7.8pt; display:block; margin-top:1px; }
+    table.p-grid td.p-empty{ color:#aab4b4; font-style:italic; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Timetable</p>
+          <p class="header-sub" id="role-badge">View &bull; Plan &bull; Substitute</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-class-btn" type="button">Class View</button>
+      <button class="tab-btn" id="tab-teacher-btn" type="button">Teacher View</button>
+      <button class="tab-btn" id="tab-subs-btn" type="button">Substitutions</button>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- ============ PANEL: CLASS VIEW ============ -->
+    <section class="panel active" id="panel-class">
+      <div class="card">
+        <p class="card-title">Pick a class</p>
+        <div class="field">
+          <label for="class-select">Class</label>
+          <select id="class-select"><option value="">Select class…</option></select>
+        </div>
+      </div>
+
+      <div id="class-grid-wrap" style="display:none;">
+        <div class="card">
+          <p class="card-title">
+            <span id="class-grid-title">Timetable</span>
+            <span style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-ghost btn-sm" id="class-share-text" type="button">Share text</button>
+              <button class="btn btn-primary btn-sm" id="class-share-pdf" type="button">Share PDF</button>
+            </span>
+          </p>
+          <div class="grid-scroll"><table class="ttgrid" id="class-grid"></table></div>
+          <p class="hint" style="margin-top:10px;" id="class-manager-hint"></p>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="class-placeholder">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3.5 9h17"/></svg>
+        <p>Choose a class above to see its full weekly timetable at a glance.</p>
+      </div>
+    </section>
+
+    <!-- ============ PANEL: TEACHER VIEW ============ -->
+    <section class="panel" id="panel-teacher">
+      <div class="card">
+        <p class="card-title">Pick a teacher</p>
+        <div class="field">
+          <label for="teacher-search">Teacher name</label>
+          <div class="autosuggest">
+            <input type="text" class="combo-input" id="teacher-search" placeholder="Start typing a name, or tap the arrow to browse…" autocomplete="off">
+            <button type="button" class="combo-toggle" id="teacher-search-toggle" aria-label="Browse all teachers">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="autosuggest-list" id="teacher-search-list"></div>
+          </div>
+          <p class="hint" style="margin-top:7px;">Type to search, or tap the arrow to pick from the full list.</p>
+        </div>
+      </div>
+
+      <div id="teacher-grid-wrap" style="display:none;">
+        <div class="card">
+          <p class="card-title">
+            <span id="teacher-grid-title">Timetable</span>
+            <span style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-ghost btn-sm" id="teacher-share-text" type="button">Share text</button>
+              <button class="btn btn-primary btn-sm" id="teacher-share-pdf" type="button">Share PDF</button>
+            </span>
+          </p>
+          <div class="grid-scroll"><table class="ttgrid" id="teacher-grid"></table></div>
+          <p class="hint" style="margin-top:10px;" id="teacher-manager-hint"></p>
+        </div>
+      </div>
+
+      <div class="placeholder-note" id="teacher-placeholder">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        <p>Search a teacher's name to see their full weekly schedule across all classes.</p>
+      </div>
+    </section>
+
+    <!-- ============ PANEL: SUBSTITUTIONS ============ -->
+    <section class="panel" id="panel-subs">
+      <div class="card">
+        <p class="card-title">Pick a date</p>
+        <div class="field">
+          <label for="subs-date">Date</label>
+          <input type="date" id="subs-date">
+        </div>
+        <p class="hint" id="subs-day-hint"></p>
+      </div>
+
+      <div class="card subs-info-card">
+        <p class="card-title">Viewing only <span class="chip">Read-only</span></p>
+        <p class="hint">This tab is for a quick, single-glance lookup of who is covering what — assigning substitutions happens on a separate page. A substitute can be merged across more than one class in the same period (e.g. one teacher covering two classes at once during a staff shortfall) — merged classes are grouped together below.</p>
+      </div>
+
+      <div class="card" id="subs-filter-card" style="display:none;">
+        <p class="card-title">Filters</p>
+        <div class="row2">
+          <div class="field">
+            <label for="subs-filter-absent">Absent teacher</label>
+            <select id="subs-filter-absent"><option value="">All</option></select>
+          </div>
+          <div class="field">
+            <label for="subs-filter-sub">Substitute teacher</label>
+            <select id="subs-filter-sub"><option value="">All</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="subs-browse-card" style="display:none;">
+        <p class="card-title">
+          <span>Substitutions on this date</span>
+          <button class="btn btn-ghost btn-sm" id="subs-share-text" type="button">Share text</button>
+        </p>
+        <div id="subs-browse-list"></div>
+      </div>
+
+      <div class="placeholder-note" id="subs-placeholder">
+        <svg viewBox="0 0 24 24"><path d="M16 3h5v5M21 3l-7 7"/><path d="M8 21H3v-5M3 21l7-7"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+        <p>Pick a date to view that day's substitutions.</p>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<div id="print-sheet" aria-hidden="true"></div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p class="sheet-desc">You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirm sheet -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Confirm action">
+    <div class="sheet-handle"></div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p class="sheet-desc" id="confirm-message">This action cannot be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Slot editor sheet (used by both Class View and Teacher View) -->
+<div class="sheet-backdrop" id="sheet-slot">
+  <div class="sheet" role="dialog" aria-label="Edit period">
+    <div class="sheet-handle"></div>
+    <h3 id="slot-sheet-title">Edit period</h3>
+    <p class="sheet-desc" id="slot-sheet-sub"></p>
+
+    <div class="field" id="slot-class-field" style="display:none;">
+      <label for="slot-class">Class</label>
+      <select id="slot-class"></select>
+    </div>
+
+    <div class="field">
+      <label for="slot-subject">Subject</label>
+      <div class="autosuggest">
+        <input type="text" id="slot-subject" placeholder="e.g. Mathematics" autocomplete="off">
+        <div class="autosuggest-list" id="slot-subject-list"></div>
+      </div>
+    </div>
+
+    <div class="field" id="slot-teacher-field">
+      <label for="slot-teacher">Teacher</label>
+      <div class="autosuggest">
+        <input type="text" id="slot-teacher" placeholder="e.g. Niharika Sharma" autocomplete="off">
+        <div class="autosuggest-list" id="slot-teacher-list"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Also apply to these days</label>
+      <div class="day-chip-row" id="slot-day-chips"></div>
+      <p class="hint" style="margin-top:8px;">The day you tapped is always included. Select more days to save this same subject &amp; teacher there too — untouched days keep whatever they already have.</p>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-danger" id="slot-clear-btn" type="button">Clear this period</button>
+      <button class="btn btn-primary" id="slot-save-btn" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+    INSTITUTION_INFO = cached.data;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var LOGO_URL = INSTITUTION_INFO.logo_transparent_url || INSTITUTION_INFO.logo_url || 'https://sourabhsuneja.github.io/gsms-logo.png';
+var SCHOOL_NAME = INSTITUTION_INFO.full_name || INSTITUTION_INFO.short_name || 'School Name';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var DAY_LABELS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+var DAY_FULL   = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+var SCHOOL_DAYS = [1,2,3,4,5,6]; // Mon–Sat; change here if the school has a 5-day week
+
+var state = {
+  user: null,
+  teacherName: '',
+  isAdmin: false,
+  isManager: false,
+  periods: [],                 // [{period_number,label,start_time,end_time,display_order}]
+  classes: [],                 // ['6','7',...]
+  peopleDirectory: [],         // [{id,teacher_id,display_name,is_registered}]
+  subjectsDirectory: [],       // [{id,subject,display_name,is_master}]
+  classRows: [],                // current class-view rows from timetable_periods_view
+  teacherRows: [],               // current teacher-view rows
+  selectedClass: '',
+  selectedTeacherPersonId: null,
+  selectedTeacherName: '',
+  selectedTeacherRef: null,
+  slotContext: null,            // what the open slot-editor sheet is editing
+  myClassTeacherOf: null,        // class name this user is the class teacher of, if any
+  myTimetablePersonId: null      // this user's own id in timetable_people, if they appear there
+};
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 2800);
+}
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   SHEETS
+========================================================= */
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+var sheetConfirm = document.getElementById('sheet-confirm');
+var confirmCallback = null;
+function askConfirm(title, message, onConfirm){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  confirmCallback = onConfirm;
+  sheetConfirm.classList.add('show');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); confirmCallback = null; });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm){ sheetConfirm.classList.remove('show'); confirmCallback = null; } });
+document.getElementById('confirm-ok').addEventListener('click', function(){
+  var cb = confirmCallback; sheetConfirm.classList.remove('show'); confirmCallback = null; if(cb) cb();
+});
+
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+/* =========================================================
+   TABS
+========================================================= */
+var tabs = {
+  class: { btn: document.getElementById('tab-class-btn'), panel: document.getElementById('panel-class') },
+  teacher: { btn: document.getElementById('tab-teacher-btn'), panel: document.getElementById('panel-teacher') },
+  subs: { btn: document.getElementById('tab-subs-btn'), panel: document.getElementById('panel-subs') }
+};
+function setTab(which){
+  Object.keys(tabs).forEach(function(key){
+    var isActive = key === which;
+    tabs[key].btn.classList.toggle('active', isActive);
+    tabs[key].panel.classList.toggle('active', isActive);
+  });
+}
+tabs.class.btn.addEventListener('click', function(){ setTab('class'); });
+tabs.teacher.btn.addEventListener('click', function(){ setTab('teacher'); });
+tabs.subs.btn.addEventListener('click', function(){ setTab('subs'); });
+
+/* =========================================================
+   AUTOSUGGEST (generic, reusable widget)
+========================================================= */
+function wireAutosuggest(inputEl, listEl, getItems, onPick){
+  // getItems(query) -> [{label, sub, isNew}]
+  var currentItems = [];
+  var highlightIdx = -1;
+
+  function render(query){
+    currentItems = getItems(query);
+    if(currentItems.length === 0){ listEl.classList.remove('show'); listEl.innerHTML=''; return; }
+    listEl.innerHTML = currentItems.map(function(it, i){
+      return '<div class="autosuggest-item' + (it.isNew ? ' new' : '') + '" data-idx="'+i+'">' +
+        '<span>' + escapeHtml(it.label) + '</span>' +
+        '<span class="tag">' + (it.isNew ? 'Add new' : (it.sub || '')) + '</span></div>';
+    }).join('');
+    listEl.classList.add('show');
+    highlightIdx = -1;
+  }
+
+  inputEl.addEventListener('input', function(){ render(inputEl.value.trim()); });
+  inputEl.addEventListener('focus', function(){ render(inputEl.value.trim()); });
+  inputEl.addEventListener('blur', function(){ setTimeout(function(){ listEl.classList.remove('show'); }, 150); });
+  inputEl.addEventListener('keydown', function(e){
+    if(!listEl.classList.contains('show')) return;
+    if(e.key === 'ArrowDown'){ e.preventDefault(); highlightIdx = Math.min(highlightIdx+1, currentItems.length-1); updateHighlight(); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); highlightIdx = Math.max(highlightIdx-1, 0); updateHighlight(); }
+    else if(e.key === 'Enter'){ e.preventDefault(); var it = currentItems[highlightIdx] || currentItems[0]; if(it){ pick(it); } }
+    else if(e.key === 'Escape'){ listEl.classList.remove('show'); }
+  });
+  function updateHighlight(){
+    Array.prototype.forEach.call(listEl.children, function(el, i){ el.classList.toggle('highlight', i===highlightIdx); });
+  }
+  listEl.addEventListener('mousedown', function(e){
+    var row = e.target.closest('.autosuggest-item');
+    if(!row) return;
+    pick(currentItems[parseInt(row.dataset.idx,10)]);
+  });
+  function pick(it){
+    inputEl.value = it.label;
+    listEl.classList.remove('show');
+    onPick(it);
+  }
+  // Exposed so a separate "browse" control (e.g. a dropdown-arrow button)
+  // can force the list open with a given query, independent of focus/typing.
+  return {
+    open: function(query){ render(query === undefined ? inputEl.value.trim() : query); },
+    close: function(){ listEl.classList.remove('show'); }
+  };
+}
+
+function peopleSuggestItems(query, opts){
+  opts = opts || {};
+  var limit = opts.limit || 8;
+  var allowNew = opts.allowNew !== false;
+  var q = query.toLowerCase();
+  var matches = state.peopleDirectory.filter(function(p){ return !q || p.display_name.toLowerCase().indexOf(q) !== -1; })
+    .slice(0, limit)
+    .map(function(p){ return { label: p.display_name, sub: p.is_registered ? 'Registered' : 'Custom', isNew:false, ref:p }; });
+  var exact = state.peopleDirectory.some(function(p){ return p.display_name.toLowerCase() === q; });
+  if(allowNew && query && !exact){ matches.push({ label: query, isNew:true, ref:null }); }
+  return matches;
+}
+// Fuller, view-only variant for the Teacher View combo picker: shows every
+// directory entry (not just the first 8) so the dropdown-arrow "browse"
+// mode is genuinely a full list, and omits the "Add new" option when the
+// signed-in user doesn't manage timetables (they can't act on it anyway).
+function teacherViewSuggestItems(query){
+  return peopleSuggestItems(query, { limit: 200, allowNew: state.isManager });
+}
+function subjectSuggestItems(query){
+  var q = query.toLowerCase();
+  var matches = state.subjectsDirectory.filter(function(s){ return !q || s.display_name.toLowerCase().indexOf(q) !== -1; })
+    .slice(0, 8)
+    .map(function(s){ return { label: s.display_name, sub: s.is_master ? 'Subject list' : 'Custom', isNew:false, ref:s }; });
+  var exact = state.subjectsDirectory.some(function(s){ return s.display_name.toLowerCase() === q; });
+  if(query && !exact){ matches.push({ label: query, isNew:true, ref:null }); }
+  return matches;
+}
+
+/* =========================================================
+   GRID RENDERING (shared by Class View & Teacher View)
+   mode: 'class' -> columns are days, rows are periods, cell shows subject+teacher
+   mode: 'teacher' -> columns are days, rows are periods, cell shows subject+class
+========================================================= */
+function buildGridSkeleton(tableEl, rowLabelHead){
+  var thead = '<thead><tr><th class="period-col-head">' + rowLabelHead + '</th>' +
+    SCHOOL_DAYS.map(function(d){ return '<th>' + DAY_LABELS[d] + '</th>'; }).join('') + '</tr></thead>';
+  tableEl.innerHTML = thead + '<tbody></tbody>';
+}
+
+function renderGrid(tableEl, rows, mode, editable, onCellClick){
+  var tbody = tableEl.querySelector('tbody');
+  tbody.innerHTML = '';
+  var byDayPeriod = {};
+  rows.forEach(function(r){ byDayPeriod[r.day_of_week + '_' + r.period_number] = r; });
+
+  state.periods.forEach(function(per){
+    var tr = document.createElement('tr');
+    var timeStr = (per.start_time && per.end_time) ? (per.start_time.slice(0,5) + '–' + per.end_time.slice(0,5)) : '';
+    tr.innerHTML = '<td class="period-col">' + escapeHtml(per.label) + (timeStr ? '<span class="ptime">'+timeStr+'</span>' : '') + '</td>';
+
+    SCHOOL_DAYS.forEach(function(d){
+      var td = document.createElement('td');
+      var r = byDayPeriod[d + '_' + per.period_number];
+      var cell = document.createElement('div');
+      cell.className = 'ttcell' + (editable ? ' editable' : '') + (r ? '' : ' empty');
+      if(r){
+        var line2 = mode === 'class' ? r.teacher_name : r.class;
+        cell.innerHTML = '<span class="cell-subject">' + escapeHtml(r.subject_name) + '</span>' +
+          '<span class="cell-teacher">' + escapeHtml(line2) + '</span>';
+      } else {
+        cell.innerHTML = '<span class="cell-subject">' + (editable ? '+ Add' : 'Free') + '</span>';
+      }
+      if(editable){
+        cell.addEventListener('click', function(){ onCellClick(d, per.period_number, r || null); });
+      }
+      td.appendChild(cell);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+/* =========================================================
+   CLASS VIEW
+========================================================= */
+var classSelect = document.getElementById('class-select');
+buildGridSkeleton(document.getElementById('class-grid'), 'Period');
+
+function populateClassDropdown(){
+  classSelect.innerHTML = '<option value="">Select class…</option>' +
+    state.classes.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+}
+
+classSelect.addEventListener('change', function(){
+  state.selectedClass = classSelect.value;
+  if(!state.selectedClass){
+    document.getElementById('class-grid-wrap').style.display = 'none';
+    document.getElementById('class-placeholder').style.display = 'flex';
+    return;
+  }
+  loadClassTimetable();
+});
+
+function loadClassTimetable(){
+  supabaseClient.from('timetable_periods_view').select('*').eq('class', state.selectedClass)
+    .then(function(res){
+      if(res.error){ toast('Could not load timetable: ' + res.error.message, true); return; }
+      state.classRows = res.data || [];
+      document.getElementById('class-placeholder').style.display = 'none';
+      document.getElementById('class-grid-wrap').style.display = 'block';
+      var isMyClass = state.myClassTeacherOf && state.selectedClass === state.myClassTeacherOf;
+      document.getElementById('class-grid-title').textContent = 'Class ' + state.selectedClass + ' — weekly timetable' + (isMyClass ? ' (your class)' : '');
+      document.getElementById('class-manager-hint').textContent = state.isManager ? 'Tap any period to add, change or clear it.' : '';
+      renderGrid(document.getElementById('class-grid'), state.classRows, 'class', state.isManager, function(day, periodNum, existing){
+        openSlotEditor({ mode:'class', class: state.selectedClass, day: day, periodNumber: periodNum, existing: existing });
+      });
+    });
+}
+
+/* =========================================================
+   TEACHER VIEW
+========================================================= */
+var teacherSearchInput = document.getElementById('teacher-search');
+var teacherSearchList = document.getElementById('teacher-search-list');
+buildGridSkeleton(document.getElementById('teacher-grid'), 'Period');
+
+var teacherSearchCombo = wireAutosuggest(teacherSearchInput, teacherSearchList, teacherViewSuggestItems, function(it){
+  if(!it.ref){
+    // Brand-new freehand name with no directory entry at all yet — only
+    // useful if we're about to create periods for them, which requires
+    // edit rights (the grid below is otherwise just "nothing to view").
+    if(!state.isManager){ toast('No timetable found for that name yet.', true); return; }
+    state.selectedTeacherRef = { id: null, teacher_id: null, display_name: it.label, is_registered: false };
+  } else {
+    state.selectedTeacherRef = it.ref;
+  }
+  state.selectedTeacherPersonId = state.selectedTeacherRef.id; // may be null until first save
+  state.selectedTeacherName = state.selectedTeacherRef.display_name;
+  loadTeacherTimetable();
+});
+
+// Combo dropdown-arrow: lets someone browse the full teacher directory and
+// pick with a tap, instead of having to know a name to start typing it —
+// "ease of searching and lookups" also means ease of browsing.
+document.getElementById('teacher-search-toggle').addEventListener('mousedown', function(e){
+  e.preventDefault(); // keep focus on the input instead of the button, so blur doesn't race the open() below
+  if(teacherSearchList.classList.contains('show')){
+    teacherSearchCombo.close();
+  } else {
+    teacherSearchInput.focus();
+    teacherSearchCombo.open(teacherSearchInput.value.trim());
+  }
+});
+
+function loadTeacherTimetable(){
+  // A registered teacher or earlier custom name who simply has no periods
+  // yet has no directory id either — skip the query and show the empty,
+  // still-editable grid rather than querying teacher_person_id = null.
+  var query = state.selectedTeacherPersonId
+    ? supabaseClient.from('timetable_periods_view').select('*').eq('teacher_person_id', state.selectedTeacherPersonId)
+    : Promise.resolve({ data: [] });
+
+  query.then(function(res){
+      if(res.error){ toast('Could not load timetable: ' + res.error.message, true); return; }
+      state.teacherRows = res.data || [];
+      document.getElementById('teacher-placeholder').style.display = 'none';
+      document.getElementById('teacher-grid-wrap').style.display = 'block';
+      var isSelf = state.myTimetablePersonId && state.selectedTeacherPersonId === state.myTimetablePersonId;
+      document.getElementById('teacher-grid-title').textContent = state.selectedTeacherName + ' — weekly timetable' + (isSelf ? ' (you)' : '');
+      document.getElementById('teacher-manager-hint').textContent = state.isManager ? 'Tap any period to add, change or clear it.' : '';
+      renderGrid(document.getElementById('teacher-grid'), state.teacherRows, 'teacher', state.isManager, function(day, periodNum, existing){
+        openSlotEditor({ mode:'teacher', teacherRef: state.selectedTeacherRef, teacherName: state.selectedTeacherName, day: day, periodNumber: periodNum, existing: existing });
+      });
+    });
+}
+
+/* =========================================================
+   SLOT EDITOR SHEET (shared)
+========================================================= */
+var sheetSlot = document.getElementById('sheet-slot');
+var slotClassField = document.getElementById('slot-class-field');
+var slotClassSelect = document.getElementById('slot-class');
+var slotSubjectInput = document.getElementById('slot-subject');
+var slotSubjectList = document.getElementById('slot-subject-list');
+var slotTeacherField = document.getElementById('slot-teacher-field');
+var slotTeacherInput = document.getElementById('slot-teacher');
+var slotTeacherList = document.getElementById('slot-teacher-list');
+var slotDayChips = document.getElementById('slot-day-chips');
+
+var pickedSubjectRef = null; // {subject|null, custom_name|null} resolved on pick/typing
+var pickedTeacherRef = null;
+
+wireAutosuggest(slotSubjectInput, slotSubjectList, subjectSuggestItems, function(it){ pickedSubjectRef = it; });
+wireAutosuggest(slotTeacherInput, slotTeacherList, peopleSuggestItems, function(it){ pickedTeacherRef = it; });
+
+function openSlotEditor(ctx){
+  if(!state.isManager){
+    toast('Only admins and timetable in-charges can edit the timetable.', true);
+    return;
+  }
+  state.slotContext = ctx;
+
+  var title, sub;
+  if(ctx.mode === 'class'){
+    slotClassField.style.display = 'none';
+    slotTeacherField.style.display = 'block';
+    title = 'Class ' + ctx.class + ' • ' + DAY_FULL[ctx.day];
+    sub = periodLabelFor(ctx.periodNumber) + ' — pick the subject and teacher for this slot.';
+  } else {
+    slotClassField.style.display = 'block';
+    slotTeacherField.style.display = 'none';
+    slotClassSelect.innerHTML = state.classes.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+    if(ctx.existing){ slotClassSelect.value = ctx.existing.class; }
+    title = ctx.teacherName + ' • ' + DAY_FULL[ctx.day];
+    sub = periodLabelFor(ctx.periodNumber) + ' — pick the class and subject for this slot.';
+  }
+  document.getElementById('slot-sheet-title').textContent = title;
+  document.getElementById('slot-sheet-sub').textContent = sub;
+
+  slotSubjectInput.value = ctx.existing ? ctx.existing.subject_name : '';
+  pickedSubjectRef = ctx.existing ? { label: ctx.existing.subject_name, ref: { subject: ctx.existing.subject_master_name, display_name: ctx.existing.subject_name } } : null;
+
+  slotTeacherInput.value = ctx.existing ? ctx.existing.teacher_name : '';
+  pickedTeacherRef = ctx.existing ? { label: ctx.existing.teacher_name, ref: { teacher_id: ctx.existing.teacher_user_id, display_name: ctx.existing.teacher_name } } : null;
+
+  // Day chips: the tapped day is pre-selected & locked-looking; others optional.
+  slotDayChips.innerHTML = SCHOOL_DAYS.map(function(d){
+    var rowsForDay = ctx.mode === 'class' ? state.classRows : state.teacherRows;
+    var hasEntry = rowsForDay.some(function(r){ return r.day_of_week === d && r.period_number === ctx.periodNumber; });
+    return '<button type="button" class="day-chip' + (d === ctx.day ? ' active' : '') + (hasEntry ? ' has-entry' : '') + '" data-day="'+d+'">' + DAY_LABELS[d] + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(slotDayChips.children, function(chip){
+    chip.addEventListener('click', function(){ chip.classList.toggle('active'); });
+  });
+
+  document.getElementById('slot-clear-btn').style.display = ctx.existing ? 'inline-flex' : 'none';
+  sheetSlot.classList.add('show');
+}
+sheetSlot.addEventListener('click', function(e){ if(e.target === sheetSlot){ sheetSlot.classList.remove('show'); } });
+
+function periodLabelFor(periodNumber){
+  var p = state.periods.find(function(x){ return x.period_number === periodNumber; });
+  return p ? p.label : ('Period ' + periodNumber);
+}
+
+document.getElementById('slot-clear-btn').addEventListener('click', function(){
+  var ctx = state.slotContext;
+  askConfirm('Clear this period?', 'This removes the entry for ' + DAY_FULL[ctx.day] + ', ' + periodLabelFor(ctx.periodNumber) + '. It can be re-added any time.', function(){
+    var cls = ctx.mode === 'class' ? ctx.class : (ctx.existing ? ctx.existing.class : null);
+    if(!cls){ toast('Nothing to clear.', true); return; }
+    supabaseClient.from('timetable_periods').delete()
+      .eq('class', cls).eq('day_of_week', ctx.day).eq('period_number', ctx.periodNumber)
+      .then(function(res){
+        if(res.error){ toast('Could not clear: ' + res.error.message, true); return; }
+        toast('Period cleared.');
+        sheetSlot.classList.remove('show');
+        refreshDirectoriesAndCurrentView();
+      });
+  });
+});
+
+document.getElementById('slot-save-btn').addEventListener('click', function(){
+  var ctx = state.slotContext;
+  if(!slotSubjectInput.value.trim()){ toast('Please enter a subject.', true); return; }
+
+  var cls = ctx.mode === 'class' ? ctx.class : slotClassSelect.value;
+  if(!cls){ toast('Please select a class.', true); return; }
+
+  var teacherParams;
+  if(ctx.mode === 'class'){
+    if(!slotTeacherInput.value.trim()){ toast('Please enter a teacher.', true); return; }
+    teacherParams = resolveTeacherParams(slotTeacherInput.value.trim(), pickedTeacherRef);
+  } else {
+    // Teacher view: the teacher is fixed to whoever is open in the grid.
+    // Use the ref captured when they were picked/opened — it already
+    // carries either a real teacher_id or the custom display name, and
+    // doesn't depend on a directory row existing yet.
+    var ref = ctx.teacherRef;
+    if(ref && ref.teacher_id){ teacherParams = { p_teacher_id: ref.teacher_id, p_teacher_custom_name: null }; }
+    else { teacherParams = { p_teacher_id: null, p_teacher_custom_name: (ref ? ref.display_name : ctx.teacherName) }; }
+  }
+
+  var subjectParams = resolveSubjectParams(slotSubjectInput.value.trim(), pickedSubjectRef);
+
+  var daysToSave = [ctx.day];
+  Array.prototype.forEach.call(slotDayChips.children, function(chip){
+    var d = parseInt(chip.dataset.day, 10);
+    if(chip.classList.contains('active') && daysToSave.indexOf(d) === -1){ daysToSave.push(d); }
+  });
+
+  var btn = document.getElementById('slot-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  var calls = daysToSave.map(function(d){
+    return supabaseClient.rpc('upsert_timetable_slot', {
+      p_class: cls,
+      p_day_of_week: d,
+      p_period_number: ctx.periodNumber,
+      p_teacher_id: teacherParams.p_teacher_id,
+      p_teacher_custom_name: teacherParams.p_teacher_custom_name,
+      p_subject: subjectParams.p_subject,
+      p_subject_custom_name: subjectParams.p_subject_custom_name
+    });
+  });
+
+  Promise.all(calls).then(function(results){
+    btn.disabled = false; btn.textContent = 'Save';
+    var failed = results.filter(function(r){ return r.error; });
+    if(failed.length){ toast('Save failed: ' + failed[0].error.message, true); return; }
+    toast('Timetable updated (' + daysToSave.length + ' day' + (daysToSave.length>1?'s':'') + ').');
+    sheetSlot.classList.remove('show');
+    refreshDirectoriesAndCurrentView();
+  });
+});
+
+function resolveTeacherParams(typedName, picked){
+  if(picked && picked.ref && picked.ref.teacher_id){
+    return { p_teacher_id: picked.ref.teacher_id, p_teacher_custom_name: null };
+  }
+  if(picked && picked.ref && !picked.isNew){
+    // matched an existing custom-name directory entry
+    return { p_teacher_id: null, p_teacher_custom_name: picked.ref.display_name };
+  }
+  return { p_teacher_id: null, p_teacher_custom_name: typedName };
+}
+function resolveSubjectParams(typedName, picked){
+  if(picked && picked.ref && picked.ref.subject){
+    return { p_subject: picked.ref.subject, p_subject_custom_name: null };
+  }
+  if(picked && picked.ref && !picked.isNew){
+    return { p_subject: null, p_subject_custom_name: picked.ref.display_name };
+  }
+  return { p_subject: null, p_subject_custom_name: typedName };
+}
+
+function refreshDirectoriesAndCurrentView(){
+  loadDirectories().then(function(){
+    if(tabs.class.panel.classList.contains('active') && state.selectedClass){ loadClassTimetable(); }
+    if(tabs.teacher.panel.classList.contains('active') && state.selectedTeacherRef){
+      // The teacher being viewed may have just got their first-ever
+      // directory row (or first-ever period) from the save that triggered
+      // this refresh — re-resolve the ref against the refreshed
+      // directory so the id is picked up and the grid reload actually finds it.
+      var ref = state.selectedTeacherRef;
+      var fresh = ref.teacher_id
+        ? state.peopleDirectory.find(function(p){ return p.teacher_id === ref.teacher_id; })
+        : state.peopleDirectory.find(function(p){ return !p.is_registered && p.display_name.toLowerCase() === ref.display_name.toLowerCase(); });
+      if(fresh){ state.selectedTeacherRef = fresh; state.selectedTeacherPersonId = fresh.id; }
+      loadTeacherTimetable();
+    }
+    if(tabs.subs.panel.classList.contains('active')){ loadSubsForDate(); }
+  });
+}
+
+/* =========================================================
+   SHARE: PLAIN TEXT
+========================================================= */
+function gridToPlainText(title, rows, mode){
+  var lines = [SCHOOL_NAME, title, ''];
+  state.periods.forEach(function(per){
+    var dayParts = SCHOOL_DAYS.map(function(d){
+      var r = rows.find(function(x){ return x.day_of_week === d && x.period_number === per.period_number; });
+      if(!r) return DAY_LABELS[d] + ': Free';
+      var who = mode === 'class' ? r.teacher_name : r.class;
+      return DAY_LABELS[d] + ': ' + r.subject_name + ' (' + who + ')';
+    });
+    lines.push(per.label + (per.start_time ? ' (' + per.start_time.slice(0,5) + '–' + per.end_time.slice(0,5) + ')' : ''));
+    dayParts.forEach(function(p){ lines.push('   ' + p); });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function shareOrCopyText(text, filenameHint){
+  if(navigator.share){
+    navigator.share({ title: filenameHint, text: text }).catch(function(){});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(function(){ toast('Copied to clipboard.'); }, function(){ toast('Could not copy automatically — please select and copy manually.', true); });
+  } else {
+    toast('Sharing is not supported on this browser.', true);
+  }
+}
+
+document.getElementById('class-share-text').addEventListener('click', function(){
+  var text = gridToPlainText('Class ' + state.selectedClass + ' — Weekly Timetable', state.classRows, 'class');
+  shareOrCopyText(text, 'Class ' + state.selectedClass + ' Timetable');
+});
+document.getElementById('teacher-share-text').addEventListener('click', function(){
+  var text = gridToPlainText(state.selectedTeacherName + ' — Weekly Timetable', state.teacherRows, 'teacher');
+  shareOrCopyText(text, state.selectedTeacherName + ' Timetable');
+});
+
+/* =========================================================
+   SHARE: PDF (print-based, same approach as exam-syllabus.html)
+========================================================= */
+function buildPrintGrid(title, subtitle, rows, mode){
+  var head = '<div class="p-head"><div class="p-brand"><img src="' + LOGO_URL + '" alt="">' +
+    '<div><div class="p-school">' + SCHOOL_NAME + '</div><div class="p-title">Timetable</div></div></div>' +
+    '<div class="p-right"><div>' + escapeHtml(title) + '</div><div class="p-range">' + escapeHtml(subtitle) + '</div></div></div>';
+
+  var thead = '<thead><tr><th>Period</th>' + SCHOOL_DAYS.map(function(d){ return '<th>' + DAY_LABELS[d] + '</th>'; }).join('') + '</tr></thead>';
+  var tbody = '<tbody>';
+  state.periods.forEach(function(per){
+    tbody += '<tr><td class="p-period-col">' + escapeHtml(per.label) + (per.start_time ? '<br>'+per.start_time.slice(0,5)+'–'+per.end_time.slice(0,5) : '') + '</td>';
+    SCHOOL_DAYS.forEach(function(d){
+      var r = rows.find(function(x){ return x.day_of_week === d && x.period_number === per.period_number; });
+      if(!r){ tbody += '<td class="p-empty">—</td>'; }
+      else {
+        var who = mode === 'class' ? r.teacher_name : r.class;
+        tbody += '<td><span class="p-subj">' + escapeHtml(r.subject_name) + '</span><span class="p-teach">' + escapeHtml(who) + '</span></td>';
+      }
+    });
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  document.getElementById('print-sheet').innerHTML = head + '<table class="p-grid">' + thead + tbody + '</table>';
+}
+
+function triggerPrint(fileTitle){
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(doPrint); } else { doPrint(); }
+  function doPrint(){
+    var img = document.querySelector('#print-sheet img');
+    function go(){
+      var oldTitle = document.title;
+      document.title = fileTitle;
+      window.addEventListener('afterprint', function restore(){ document.title = oldTitle; window.removeEventListener('afterprint', restore); });
+      window.print();
+    }
+    if(img && !img.complete){ img.onload = img.onerror = go; setTimeout(go, 1500); } else { go(); }
+  }
+}
+
+document.getElementById('class-share-pdf').addEventListener('click', function(){
+  if(!state.classRows.length){ toast('This class has no timetable entries yet.', true); return; }
+  buildPrintGrid('Class ' + state.selectedClass, 'Weekly Timetable', state.classRows, 'class');
+  triggerPrint('Timetable_Class_' + state.selectedClass.replace(/[^a-z0-9]/gi,''));
+});
+document.getElementById('teacher-share-pdf').addEventListener('click', function(){
+  if(!state.teacherRows.length){ toast('This teacher has no timetable entries yet.', true); return; }
+  buildPrintGrid(state.selectedTeacherName, 'Weekly Timetable', state.teacherRows, 'teacher');
+  triggerPrint('Timetable_' + state.selectedTeacherName.replace(/[^a-z0-9]/gi,''));
+});
+
+/* =========================================================
+   SUBSTITUTIONS
+========================================================= */
+var subsDateInput = document.getElementById('subs-date');
+(function setDefaultDate(){
+  var today = new Date();
+  subsDateInput.value = today.toISOString().slice(0,10);
+})();
+subsDateInput.addEventListener('change', loadSubsForDate);
+
+// Read-only lookup: this tab no longer assigns substitutions (a separate
+// page owns that) — it groups and displays the day's substitution rows for
+// a fast single-glance check, with the signed-in teacher highlighted and
+// filterable by absent/substitute teacher. Rows that share a merge_group_id
+// (set by the assign page when one substitute covers more than one class in
+// the same period) are shown together as one merged entry; rows that happen
+// to share the same substitute + period without that tag are grouped the
+// same way as a fallback, so merged coverage is always visible as one unit.
+var subsState = { date: null, dow: null, dayRows: [], subsForDate: [], groups: [] };
+
+function dateToDow(dateStr){
+  // JS getDay(): 0=Sun..6=Sat -> convert to our 1=Mon..7=Sun
+  var d = new Date(dateStr + 'T00:00:00').getDay();
+  return d === 0 ? 7 : d;
+}
+
+function getPersonName(personId){
+  var p = state.peopleDirectory.find(function(x){ return x.id === personId; });
+  return p ? p.display_name : '';
+}
+
+function loadSubsForDate(){
+  var dateStr = subsDateInput.value;
+  if(!dateStr) return;
+  subsState.date = dateStr;
+  subsState.dow = dateToDow(dateStr);
+  document.getElementById('subs-day-hint').textContent = DAY_FULL[subsState.dow] + ' — showing that day\'s periods.';
+  document.getElementById('subs-placeholder').style.display = 'none';
+
+  Promise.all([
+    supabaseClient.from('timetable_periods_view').select('*').eq('day_of_week', subsState.dow),
+    supabaseClient.from('timetable_substitutions').select('*').eq('substitution_date', dateStr)
+  ]).then(function(results){
+    var periodsRes = results[0], subsRes = results[1];
+    if(periodsRes.error){ toast('Could not load periods: ' + periodsRes.error.message, true); return; }
+    if(subsRes.error){ toast('Could not load substitutions: ' + subsRes.error.message, true); return; }
+    subsState.dayRows = periodsRes.data || [];
+    subsState.subsForDate = subsRes.data || [];
+    buildSubsGroups();
+    populateSubsFilters();
+    renderSubsBrowse();
+  });
+}
+
+function buildSubsGroups(){
+  var byKey = {};
+  subsState.subsForDate.forEach(function(s){
+    var r = subsState.dayRows.find(function(x){ return x.id === s.timetable_period_id; });
+    if(!r) return; // the underlying slot was removed/changed since this substitution was recorded
+    var key = s.merge_group_id ? ('g_' + s.merge_group_id) : ('p_' + s.substitute_teacher_person_id + '_' + r.period_number);
+    if(!byKey[key]){ byKey[key] = { substituteId: s.substitute_teacher_person_id, periodNumber: r.period_number, items: [] }; }
+    byKey[key].items.push({ sub: s, period: r });
+  });
+  subsState.groups = Object.keys(byKey).map(function(k){ return byKey[k]; })
+    .sort(function(a,b){ return a.periodNumber - b.periodNumber; });
+}
+
+function populateSubsFilters(){
+  var filterCard = document.getElementById('subs-filter-card');
+  var absentSel = document.getElementById('subs-filter-absent');
+  var subSel = document.getElementById('subs-filter-sub');
+  if(subsState.subsForDate.length === 0){ filterCard.style.display = 'none'; return; }
+  filterCard.style.display = 'block';
+
+  var absentIds = Array.from(new Set(subsState.subsForDate.map(function(s){ return s.absent_teacher_person_id; })))
+    .sort(function(a,b){ return getPersonName(a).localeCompare(getPersonName(b)); });
+  var subIds = Array.from(new Set(subsState.subsForDate.map(function(s){ return s.substitute_teacher_person_id; })))
+    .sort(function(a,b){ return getPersonName(a).localeCompare(getPersonName(b)); });
+
+  var prevAbsent = absentSel.value, prevSub = subSel.value;
+  absentSel.innerHTML = '<option value="">All</option>' + absentIds.map(function(id){ return '<option value="'+id+'">' + escapeHtml(getPersonName(id)) + '</option>'; }).join('');
+  subSel.innerHTML = '<option value="">All</option>' + subIds.map(function(id){ return '<option value="'+id+'">' + escapeHtml(getPersonName(id)) + '</option>'; }).join('');
+  absentSel.value = absentIds.indexOf(parseInt(prevAbsent,10)) !== -1 ? prevAbsent : '';
+  subSel.value = subIds.indexOf(parseInt(prevSub,10)) !== -1 ? prevSub : '';
+}
+document.getElementById('subs-filter-absent').addEventListener('change', renderSubsBrowse);
+document.getElementById('subs-filter-sub').addEventListener('change', renderSubsBrowse);
+
+function filteredSubsGroups(){
+  var absentFilter = document.getElementById('subs-filter-absent').value;
+  var subFilter = document.getElementById('subs-filter-sub').value;
+  return subsState.groups.filter(function(g){
+    if(subFilter && String(g.substituteId) !== subFilter) return false;
+    if(absentFilter && !g.items.some(function(it){ return String(it.sub.absent_teacher_person_id) === absentFilter; })) return false;
+    return true;
+  });
+}
+
+function renderSubsBrowse(){
+  var card = document.getElementById('subs-browse-card');
+  var list = document.getElementById('subs-browse-list');
+  if(subsState.subsForDate.length === 0){ card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  var groups = filteredSubsGroups();
+  if(groups.length === 0){ list.innerHTML = '<p class="hint">No substitutions match these filters.</p>'; return; }
+
+  list.innerHTML = groups.map(function(g){
+    var isMeSub = !!(state.myTimetablePersonId && g.substituteId === state.myTimetablePersonId);
+    var merged = g.items.length > 1;
+    var classLines = g.items.map(function(it){
+      var isMeAbsent = !!(state.myTimetablePersonId && it.sub.absent_teacher_person_id === state.myTimetablePersonId);
+      var absentName = escapeHtml(getPersonName(it.sub.absent_teacher_person_id));
+      return '<div class="sub-row-class-line">' +
+        escapeHtml(it.period.class) + ' • ' + escapeHtml(it.period.subject_name) +
+        ' — usually <strong' + (isMeAbsent ? ' style="color:var(--danger)"' : '') + '>' + absentName + (isMeAbsent ? ' <span class="you-chip">You</span>' : '') + '</strong>' +
+        (it.sub.reason ? '<p class="sub-row-note">Note: ' + escapeHtml(it.sub.reason) + '</p>' : '') +
+        '</div>';
+    }).join('');
+    return '<div class="sub-row' + (isMeSub ? ' is-me' : '') + '">' +
+      '<div class="sub-row-top">' +
+        '<span class="sub-row-title">' + escapeHtml(getPersonName(g.substituteId)) + (isMeSub ? ' <span class="you-chip">You</span>' : '') + '</span>' +
+        '<span class="sub-row-meta">' + periodLabelFor(g.periodNumber) + (merged ? ' <span class="chip level-mid">Merged × ' + g.items.length + ' classes</span>' : '') + '</span>' +
+      '</div>' +
+      classLines +
+    '</div>';
+  }).join('');
+}
+
+document.getElementById('subs-share-text').addEventListener('click', function(){
+  var groups = filteredSubsGroups();
+  var lines = [SCHOOL_NAME, 'Substitutions — ' + subsState.date + ' (' + DAY_FULL[subsState.dow] + ')', ''];
+  if(groups.length === 0){ lines.push('No substitutions recorded.'); }
+  groups.forEach(function(g){
+    var merged = g.items.length > 1;
+    lines.push(periodLabelFor(g.periodNumber) + ' — ' + getPersonName(g.substituteId) + (merged ? ' (merged, covering ' + g.items.length + ' classes)' : ''));
+    g.items.forEach(function(it){
+      lines.push('   ' + it.period.class + ' • ' + it.period.subject_name + ' (for ' + getPersonName(it.sub.absent_teacher_person_id) + ')' + (it.sub.reason ? ' — ' + it.sub.reason : ''));
+    });
+    lines.push('');
+  });
+  shareOrCopyText(lines.join('\n'), 'Substitutions ' + subsState.date);
+});
+
+/* =========================================================
+   AUTH + DATA BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+function loadDirectories(){
+  return Promise.all([
+    supabaseClient.from('periods').select('*').order('display_order', { ascending: true }),
+    supabaseClient.from('classes').select('name').order('name', { ascending: true }),
+    supabaseClient.from('teachers').select('id, name').order('name', { ascending: true }),
+    supabaseClient.from('timetable_people_view').select('*'),
+    supabaseClient.from('subjects').select('name').order('display_order', { ascending: true }),
+    supabaseClient.from('timetable_subjects_view').select('*')
+  ]).then(function(results){
+    state.periods = results[0].data || [];
+    state.classes = (results[1].data || []).map(function(c){ return c.name; });
+
+    // People directory: EVERY registered teacher/admin should autosuggest
+    // immediately, even before they've ever been put on a timetable — plus
+    // every custom name already typed into an earlier entry. Merge the
+    // "teachers" master list with whatever timetable_people already has
+    // (which carries the real directory id once a teacher has been used).
+    var teachersRaw = results[2].data || [];
+    var usedPeople = results[3].data || [];
+    var usedByTeacherId = {};
+    usedPeople.forEach(function(p){ if(p.is_registered){ usedByTeacherId[p.teacher_id] = p; } });
+    var registeredEntries = teachersRaw.map(function(t){
+      return usedByTeacherId[t.id] || { id: null, teacher_id: t.id, display_name: t.name, is_registered: true };
+    });
+    var customEntries = usedPeople.filter(function(p){ return !p.is_registered; });
+    state.peopleDirectory = registeredEntries.concat(customEntries)
+      .sort(function(a,b){ return a.display_name.localeCompare(b.display_name); });
+
+    // Subject directory: same idea — every subject already on the
+    // school's subject list autosuggests immediately, plus every custom
+    // subject name already typed into an earlier entry.
+    var subjectsRaw = results[4].data || [];
+    var usedSubjects = results[5].data || [];
+    var usedByMasterName = {};
+    usedSubjects.forEach(function(s){ if(s.is_master){ usedByMasterName[s.subject] = s; } });
+    var masterEntries = subjectsRaw.map(function(s){
+      return usedByMasterName[s.name] || { id: null, subject: s.name, display_name: s.name, is_master: true };
+    });
+    var customSubjectEntries = usedSubjects.filter(function(s){ return !s.is_master; });
+    state.subjectsDirectory = masterEntries.concat(customSubjectEntries);
+
+    populateClassDropdown();
+  });
+}
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    var userId = session.user.id;
+    var teacherResult = await supabaseClient.from('teachers').select('id, name, email').eq('id', userId).maybeSingle();
+    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data.name;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    state.isAdmin = !!(adminResult && adminResult.data === true);
+    var managerResult = await supabaseClient.rpc('is_timetable_manager');
+    state.isManager = !!(managerResult && managerResult.data === true);
+
+    var badge = document.getElementById('role-badge');
+    if(state.isManager){
+      badge.textContent = (state.isAdmin ? 'Admin' : 'Timetable in-charge') + ' — can edit';
+      badge.classList.add('admin-badge');
+    } else {
+      badge.textContent = state.teacherName.split(' ')[0] + ' • View only';
+    }
+
+    await loadDirectories();
+
+    // Who is this person, timetable-wise? Both lookups are read-only
+    // conveniences for pre-loading the right view — failure here should
+    // never block the app from loading, just skip the pre-selection.
+    try{
+      var classTeacherResult = await supabaseClient.rpc('get_my_class_teacher_class');
+      state.myClassTeacherOf = (classTeacherResult && !classTeacherResult.error) ? classTeacherResult.data : null;
+    }catch(e){ state.myClassTeacherOf = null; }
+
+    try{
+      var myPersonResult = await supabaseClient.rpc('get_my_timetable_person_id');
+      state.myTimetablePersonId = (myPersonResult && !myPersonResult.error) ? myPersonResult.data : null;
+    }catch(e){ state.myTimetablePersonId = null; }
+
+    showApp();
+
+    // Class teacher (regardless of admin status) → their class, pre-loaded.
+    if(state.myClassTeacherOf && state.classes.indexOf(state.myClassTeacherOf) !== -1){
+      classSelect.value = state.myClassTeacherOf;
+      state.selectedClass = state.myClassTeacherOf;
+      loadClassTimetable();
+    }
+
+    // Appears in timetable_people as themself → their own weekly schedule, pre-loaded.
+    if(state.myTimetablePersonId){
+      var mine = state.peopleDirectory.find(function(p){ return p.id === state.myTimetablePersonId; });
+      if(mine){
+        state.selectedTeacherRef = mine;
+        state.selectedTeacherPersonId = mine.id;
+        state.selectedTeacherName = mine.display_name;
+        teacherSearchInput.value = mine.display_name;
+        loadTeacherTimetable();
+      }
+    }
+
+    loadSubsForDate();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
