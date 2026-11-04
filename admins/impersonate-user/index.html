@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Impersonate User</title>
+<meta name="description" content="Admin tool to start a temporary debugging session as another user.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg: rgba(47,143,91,.1);
+    --warn:#b8720f; --warn-bg: rgba(226,148,26,.12);
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492; --success-bg: rgba(87,212,146,.12);
+    --warn:#ffc65c; --warn-bg: rgba(255,198,92,.12);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease); }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{ width:40px; height:40px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+  #denied{ position:fixed; inset:0; z-index:190; display:none; align-items:center; justify-content:center; background:var(--cream); padding:24px; text-align:center; }
+  #denied.show{ display:flex; }
+  .denied-box{ max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .denied-box svg{ width:44px; height:44px; stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .denied-box h2{ font-family:'Fraunces',serif; font-size:1.2rem; margin:0; }
+  .denied-box p{ color:var(--ink-500); font-size:.9rem; margin:0; line-height:1.5; }
+
+  .app-header{ position:sticky; top:0; z-index:40; background:var(--header-bg); border-bottom:1px solid var(--header-border); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); padding:calc(env(safe-area-inset-top) + 14px) 18px 14px; transition:background-color .35s var(--ease), border-color .35s var(--ease); }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer; transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease); }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{ font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease); }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease); position:relative; flex-shrink:0; }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn svg{ width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; position:static; }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1); position:absolute !important;}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5); position:absolute !important;}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  main.dash{ flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px); }
+  .section-heading{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .section-heading h1{ font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0; }
+  .count-chip{ font-size:.72rem; font-weight:700; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+
+  .notice{ display:flex; gap:10px; align-items:flex-start; background:var(--warn-bg); border:1px solid rgba(226,148,26,.3); border-radius:var(--r-sm); padding:12px 14px; margin-bottom:18px; font-size:.82rem; color:var(--ink-900); line-height:1.5; }
+  .notice svg{ width:18px; height:18px; stroke:var(--warn); fill:none; stroke-width:2; flex-shrink:0; margin-top:1px; }
+
+  .search-wrap{ position:relative; margin-bottom:12px; }
+  .search-wrap svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); width:17px; height:17px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+  .search-wrap input{ padding-left:40px; }
+
+  .role-chips{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px; }
+  .role-chip{ font-size:.76rem; font-weight:700; padding:7px 13px; border-radius:999px; border:1.5px solid var(--border-card); background:var(--white); color:var(--ink-500); cursor:pointer; transition:all .2s var(--ease); }
+  .role-chip.active{ background:var(--teal-700); border-color:var(--teal-700); color:#fff; }
+  html[data-theme="dark"] .role-chip.active{ color:var(--teal-900); background:var(--gold-400); border-color:var(--gold-400); }
+
+  input[type="text"], select, textarea{ width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card); background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500; outline:none; transition:border-color .25s var(--ease), box-shadow .25s var(--ease); }
+  textarea{ resize:vertical; min-height:70px; }
+  input[type="text"]:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+
+  #user-list{ display:flex; flex-direction:column; gap:10px; }
+  .user-card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:13px 14px; box-shadow:var(--shadow-card); display:flex; align-items:center; gap:12px; opacity:0; animation:rise .4s var(--ease) forwards; }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .avatar{ width:42px; height:42px; border-radius:50%; flex-shrink:0; background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:600; font-size:1rem; }
+  .avatar.generic{ background:linear-gradient(150deg,var(--ink-500),var(--ink-900)); }
+  .u-info{ min-width:0; flex:1; }
+  .u-name{ font-family:'Fraunces',serif; font-weight:600; font-size:.95rem; margin:0; display:flex; align-items:center; gap:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .u-sub{ font-size:.76rem; color:var(--ink-500); margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .role-tag{ font-size:.62rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:999px; flex-shrink:0; background:var(--bg-tint-teal); color:var(--teal-700); }
+  html[data-theme="dark"] .role-tag{ color:var(--gold-400); background:var(--bg-tint-gold); }
+  .role-tag.admin{ background:var(--gold-400); color:var(--teal-900); }
+
+  .placeholder-note{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500); }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  .btn{ padding:11px 16px; border-radius:14px; border:none; font-weight:700; font-size:.84rem; cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease); display:inline-flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap; }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-sm{ padding:8px 13px; font-size:.78rem; border-radius:10px; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; }
+  .field-hint{ font-size:.74rem; color:var(--ink-500); margin-top:6px; }
+  .field-error{ font-size:.78rem; color:var(--danger); margin-top:10px; display:none; }
+  .field-error.show{ display:block; }
+
+  .sheet-backdrop{ position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4); opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease); overflow-y:auto; }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{ position:fixed; left:0; right:0; bottom:0; z-index:101; background:var(--cream); border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px); max-width:960px; margin:0 auto; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35); transform:translateY(100%); transition:transform .3s var(--ease); max-height:92svh; overflow-y:auto; }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 18px; color:var(--ink-500); font-size:.88rem; line-height:1.5; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  .target-chip{ display:flex; align-items:center; gap:10px; background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-sm); padding:10px 12px; margin-bottom:18px; }
+
+  .link-box{ display:flex; gap:8px; align-items:stretch; margin:14px 0; }
+  .link-box input{ flex:1; font-size:.78rem; font-family:monospace; }
+
+  #toast-wrap{ position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+  .toast{ background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px; border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4); opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw; }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+
+  .activity-row{ display:flex; justify-content:space-between; gap:10px; font-size:.78rem; padding:9px 0; border-bottom:1px solid var(--border-card); color:var(--ink-500); }
+  .activity-row:last-child{ border-bottom:none; }
+  .activity-row b{ color:var(--ink-900); font-weight:700; }
+  .sub-divider{ height:1px; background:var(--border-card); margin:24px 0 14px; }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="denied">
+  <div class="denied-box">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2>Admins only</h2>
+    <p>This page is restricted to school administrators. If you believe this is a mistake, contact your school admin.</p>
+    <button class="btn btn-ghost" id="denied-back" type="button">Back to dashboard</button>
+  </div>
+</div>
+
+<div id="app">
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">Impersonate</p>
+          <p class="header-sub">Admin &bull; Debug Sessions</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="refresh-btn" type="button" aria-label="Refresh" title="Refresh">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash">
+    <div class="notice">
+      <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      <div>Every impersonation attempt is permanently logged (admin, target, time, result). Browsers can't be opened in Incognito mode by a webpage automatically &mdash; use <b>Copy link</b> and paste it into a Private/Incognito window. That's what actually keeps it isolated from your own admin session; opening the link in a normal tab shares your portal session storage, so it will sign your other open tabs into the impersonated account too.</div>
+    </div>
+
+    <div class="section-heading">
+      <h1>Users</h1>
+      <span class="count-chip" id="user-count">0 users</span>
+    </div>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="user-search" placeholder="Search by name or email…" autocomplete="off">
+    </div>
+
+    <div class="role-chips" id="role-chips">
+      <button class="role-chip active" data-role="all" type="button">All</button>
+      <button class="role-chip" data-role="teacher" type="button">Teachers</button>
+      <button class="role-chip" data-role="student" type="button">Students</button>
+      <button class="role-chip" data-role="guardian" type="button">Guardians</button>
+      <button class="role-chip" data-role="storekeeper" type="button">Storekeepers</button>
+      <button class="role-chip" data-role="admin" type="button">Admins</button>
+      <button class="role-chip" data-role="pending" type="button">Pending</button>
+    </div>
+
+    <div id="user-list"></div>
+
+    <div class="placeholder-note" id="user-placeholder" style="display:none;">
+      <svg viewBox="0 0 24 24"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4Z"/></svg>
+      <p>No matching users found.</p>
+    </div>
+
+    <div class="sub-divider"></div>
+    <div class="section-heading">
+      <h1>Recent activity</h1>
+    </div>
+    <div class="card" style="background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:14px 16px; box-shadow:var(--shadow-card);">
+      <div id="activity-list"><p class="field-hint">Loading…</p></div>
+    </div>
+  </main>
+</div>
+
+<!-- Confirm / start impersonation sheet -->
+<div class="sheet-backdrop" id="sheet-confirm">
+  <div class="sheet" role="dialog" aria-label="Start impersonation session">
+    <div class="sheet-handle"></div>
+    <h3>Start a debugging session</h3>
+    <p>You'll see and use the portal exactly as this user. The session is temporary and every action here is logged.</p>
+
+    <div class="target-chip">
+      <div class="avatar" id="confirm-avatar">?</div>
+      <div class="u-info">
+        <p class="u-name" id="confirm-name" style="margin:0;"></p>
+        <p class="u-sub" id="confirm-sub" style="margin:1px 0 0;"></p>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="confirm-reason">Reason (optional, logged)</label>
+      <textarea id="confirm-reason" placeholder="e.g. Debugging a report filed by this user…"></textarea>
+    </div>
+
+    <p class="field-error" id="confirm-error"></p>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="confirm-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="confirm-start" type="button">Start session</button>
+    </div>
+  </div>
+</div>
+
+<!-- Link-ready sheet -->
+<div class="sheet-backdrop" id="sheet-link">
+  <div class="sheet" role="dialog" aria-label="Impersonation link ready">
+    <div class="sheet-handle"></div>
+    <h3>Session ready</h3>
+    <p>This one-time link is valid for a single use and expires quickly. It carries no admin credentials &mdash; only a token that signs in as the selected user.</p>
+
+    <div class="link-box">
+      <input type="text" id="link-output" readonly>
+      <button class="btn btn-ghost btn-sm" id="link-copy" type="button">Copy</button>
+    </div>
+
+    <div class="notice" style="margin-bottom:6px;">
+      <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      <div><b>Use an Incognito/Private window, not a normal tab.</b> This link signs in using the portal's normal storage (so the whole portal works once you're in), which a normal tab shares with any other tabs open on this site. An Incognito window has its own separate storage, so it stays fully apart from your real admin session.</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="link-done" type="button">Done</button>
+      <button class="btn btn-primary" id="link-open-tab" type="button">Open in new tab anyway</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   CONFIG
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+    INSTITUTION_INFO = cached.data;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var IMPERSONATE_FUNCTION_URL = SUPABASE_URL + '/functions/v1/admin-impersonate';
+// The bridge page that exchanges the token for a real session (see
+// impersonate-session.html). Update this path if you host it elsewhere.
+var BRIDGE_PAGE_URL = 'bridge-session.html';
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = {
+  currentUserId: null,
+  accessToken: null,
+  users: [],          // [{id, name, email, role, sub}]
+  searchTerm: '',
+  activeRole: 'all',
+  confirmTarget: null
+};
+
+/* THEME */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* TOAST */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 3200);
+}
+
+/* NAV */
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('denied-back').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('refresh-btn').addEventListener('click', function(){ loadAllData(true); });
+
+/* HELPERS */
+function escapeHtml(str){ var div = document.createElement('div'); div.textContent = str == null ? '' : String(str); return div.innerHTML; }
+function initials(name){
+  if(!name) return '?';
+  var parts = name.trim().split(/\s+/);
+  var first = parts[0] ? parts[0][0] : '';
+  var last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+function roleLabel(role){
+  return { teacher:'Teacher', student:'Student', guardian:'Guardian', storekeeper:'Storekeeper', admin:'Admin', pending:'Pending' }[role] || role;
+}
+
+/* =========================================================
+   LOAD USERS -- combine role tables (admins are assumed to
+   have read access to these via existing RLS policies)
+========================================================= */
+function loadAllData(isRefresh){
+  return Promise.all([
+    supabaseClient.from('teachers').select('id, name, email'),
+    supabaseClient.from('students').select('id, name, class, roll_number'),
+    supabaseClient.from('guardians').select('id, name, email, phone'),
+    supabaseClient.from('storekeepers').select('id, name, email'),
+    supabaseClient.from('admins').select('id'),
+    supabaseClient.from('pending_approvals').select('id, email'),
+    supabaseClient.from('impersonation_audit_log').select('admin_id, target_user_id, target_email, result, reason, created_at').order('created_at', { ascending: false }).limit(10)
+  ]).then(function(results){
+    var teachers = results[0].data || [];
+    var students = results[1].data || [];
+    var guardians = results[2].data || [];
+    var storekeepers = results[3].data || [];
+    var admins = results[4].data || [];
+    var pending = results[5].data || [];
+    var activity = results[6].data || [];
+
+    var teacherById = {};
+    teachers.forEach(function(t){ teacherById[t.id] = t; });
+
+    var combined = [];
+    var seen = {};
+
+    teachers.forEach(function(t){ combined.push({ id:t.id, name:t.name, email:t.email, role:'teacher', sub:t.email }); seen[t.id]=true; });
+    students.forEach(function(s){ combined.push({ id:s.id, name:s.name, email:null, role:'student', sub:(s.class?('Class '+s.class):'') + (s.roll_number?(' · Roll '+s.roll_number):'') }); seen[s.id]=true; });
+    guardians.forEach(function(g){ combined.push({ id:g.id, name:g.name, email:g.email, role:'guardian', sub:g.email }); seen[g.id]=true; });
+    storekeepers.forEach(function(sk){ combined.push({ id:sk.id, name:sk.name, email:sk.email, role:'storekeeper', sub:sk.email }); seen[sk.id]=true; });
+    admins.forEach(function(a){
+      if(seen[a.id]) {
+        // Already listed (e.g. a teacher who is also an admin) -- tag them.
+        var existing = combined.find(function(c){ return c.id === a.id; });
+        if(existing) existing.alsoAdmin = true;
+        return;
+      }
+      var t = teacherById[a.id];
+      combined.push({ id:a.id, name: t ? t.name : 'Admin account', email: t ? t.email : null, role:'admin', sub: t ? t.email : ('ID ' + a.id.slice(0,8) + '…') });
+      seen[a.id]=true;
+    });
+    pending.forEach(function(p){ if(!seen[p.id]){ combined.push({ id:p.id, name:'Pending approval', email:p.email, role:'pending', sub:p.email }); seen[p.id]=true; } });
+
+    combined.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+    state.users = combined;
+
+    renderUserList();
+    renderActivity(activity);
+
+    if(isRefresh) toast('Refreshed.');
+  }).catch(function(err){
+    toast('Could not load users: ' + err.message, true);
+  });
+}
+
+function renderActivity(rows){
+  var box = document.getElementById('activity-list');
+  if(!rows.length){ box.innerHTML = '<p class="field-hint">No impersonation activity yet.</p>'; return; }
+  box.innerHTML = rows.map(function(r){
+    var when = new Date(r.created_at).toLocaleString();
+    var label = r.result === 'started' ? 'started a session as' : ('attempt (' + r.result.replace(/_/g,' ') + ')');
+    return '<div class="activity-row"><span><b>' + escapeHtml(r.admin_id ? r.admin_id.slice(0,8) : '?') + '…</b> ' + escapeHtml(label) + ' ' + escapeHtml(r.target_email || (r.target_user_id ? r.target_user_id.slice(0,8)+'…' : '—')) + '</span><span>' + escapeHtml(when) + '</span></div>';
+  }).join('');
+}
+
+/* =========================================================
+   RENDER USER LIST
+========================================================= */
+function renderUserList(){
+  var list = document.getElementById('user-list');
+  var placeholder = document.getElementById('user-placeholder');
+  var term = state.searchTerm.trim().toLowerCase();
+
+  var filtered = state.users.filter(function(u){
+    if(state.activeRole !== 'all' && u.role !== state.activeRole) return false;
+    if(!term) return true;
+    return (u.name||'').toLowerCase().indexOf(term) !== -1 || (u.email||'').toLowerCase().indexOf(term) !== -1;
+  });
+
+  document.getElementById('user-count').textContent = filtered.length + (filtered.length === 1 ? ' user' : ' users');
+
+  if(filtered.length === 0){
+    list.style.display = 'none';
+    placeholder.style.display = 'flex';
+    return;
+  }
+  placeholder.style.display = 'none';
+  list.style.display = 'flex';
+  list.innerHTML = '';
+
+  filtered.forEach(function(u, i){
+    var card = document.createElement('div');
+    card.className = 'user-card';
+    card.style.animationDelay = (Math.min(i, 20) * 0.02) + 's';
+
+    var avatarHtml = '<div class="avatar' + (u.role==='pending' ? ' generic' : '') + '">' + escapeHtml(initials(u.name)) + '</div>';
+    var roleTagHtml = '<span class="role-tag' + (u.role==='admin'?' admin':'') + '">' + escapeHtml(roleLabel(u.role)) + (u.alsoAdmin && u.role!=='admin' ? ' · Admin' : '') + '</span>';
+
+    card.innerHTML =
+      avatarHtml +
+      '<div class="u-info">' +
+        '<p class="u-name">' + escapeHtml(u.name || 'Unnamed') + roleTagHtml + '</p>' +
+        '<p class="u-sub">' + escapeHtml(u.sub || '') + '</p>' +
+      '</div>' +
+      '<button class="btn btn-ghost btn-sm" type="button">Impersonate</button>';
+
+    card.querySelector('button').addEventListener('click', function(){ openConfirmSheet(u); });
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('user-search').addEventListener('input', function(e){
+  state.searchTerm = e.target.value;
+  renderUserList();
+});
+document.getElementById('role-chips').addEventListener('click', function(e){
+  var btn = e.target.closest('.role-chip');
+  if(!btn) return;
+  document.querySelectorAll('.role-chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  state.activeRole = btn.getAttribute('data-role');
+  renderUserList();
+});
+
+/* =========================================================
+   CONFIRM SHEET
+========================================================= */
+var sheetConfirm = document.getElementById('sheet-confirm');
+
+function openConfirmSheet(u){
+  state.confirmTarget = u;
+  document.getElementById('confirm-avatar').textContent = initials(u.name);
+  document.getElementById('confirm-name').textContent = u.name || 'Unnamed';
+  document.getElementById('confirm-sub').textContent = roleLabel(u.role) + (u.sub ? (' · ' + u.sub) : '');
+  document.getElementById('confirm-reason').value = '';
+  var err = document.getElementById('confirm-error');
+  err.classList.remove('show'); err.textContent = '';
+  sheetConfirm.classList.add('show');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function(){ sheetConfirm.classList.remove('show'); });
+sheetConfirm.addEventListener('click', function(e){ if(e.target === sheetConfirm) sheetConfirm.classList.remove('show'); });
+
+document.getElementById('confirm-start').addEventListener('click', function(){
+  var target = state.confirmTarget;
+  if(!target) return;
+  var err = document.getElementById('confirm-error');
+  err.classList.remove('show'); err.textContent = '';
+
+  var btn = document.getElementById('confirm-start');
+  btn.disabled = true; btn.textContent = 'Starting…';
+
+  fetch(IMPERSONATE_FUNCTION_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + state.accessToken
+    },
+    body: JSON.stringify({
+      target_user_id: target.id,
+      reason: document.getElementById('confirm-reason').value
+    })
+  }).then(function(res){
+    return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+  }).then(function(result){
+    btn.disabled = false; btn.textContent = 'Start session';
+    if(!result.ok){
+      err.textContent = result.data.error || 'Could not start session.';
+      err.classList.add('show');
+      return;
+    }
+    sheetConfirm.classList.remove('show');
+    openLinkSheet(result.data.token_hash, result.data.email);
+    loadAllData(false); // refresh activity log
+  }).catch(function(e){
+    btn.disabled = false; btn.textContent = 'Start session';
+    err.textContent = 'Network error: ' + e.message;
+    err.classList.add('show');
+  });
+});
+
+/* =========================================================
+   LINK-READY SHEET
+========================================================= */
+var sheetLink = document.getElementById('sheet-link');
+var currentLink = '';
+
+function openLinkSheet(tokenHash, email){
+  // The token + email travel ONLY in the URL fragment (after #), which
+  // browsers never send to any server -- it never appears in server logs,
+  // proxy logs, or Referer headers.
+  var fragment = '#token_hash=' + encodeURIComponent(tokenHash) + '&email=' + encodeURIComponent(email);
+  currentLink = new URL(BRIDGE_PAGE_URL, window.location.href).toString() + fragment;
+  document.getElementById('link-output').value = currentLink;
+  sheetLink.classList.add('show');
+}
+document.getElementById('link-done').addEventListener('click', function(){ sheetLink.classList.remove('show'); });
+sheetLink.addEventListener('click', function(e){ if(e.target === sheetLink) sheetLink.classList.remove('show'); });
+
+document.getElementById('link-copy').addEventListener('click', function(){
+  navigator.clipboard.writeText(currentLink).then(function(){
+    toast('Link copied. Paste it into an Incognito/Private window.');
+  }).catch(function(){
+    document.getElementById('link-output').select();
+    document.execCommand('copy');
+    toast('Link copied.');
+  });
+});
+
+document.getElementById('link-open-tab').addEventListener('click', function(){
+  // Best-effort only: this opens a REGULAR new tab, not Incognito -- browsers
+  // do not expose any API to force private browsing from a webpage. The
+  // bridge page intentionally uses the portal's normal (shared) storage so
+  // that navigating around the portal works, which means a regular tab DOES
+  // share that storage with every other tab open on this origin -- opening
+  // this way will sign your other open admin tabs into the impersonated
+  // account too, not just "might". Use Copy + an Incognito window instead
+  // unless you specifically understand and accept that trade-off.
+  var ok = window.confirm('This will open in a normal tab, not Incognito. It WILL replace your admin session in any other tabs open on this site. Continue anyway?');
+  if(!ok) return;
+  window.open(currentLink, '_blank', 'noopener');
+  sheetLink.classList.remove('show');
+});
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('app').classList.add('ready'); }
+function showDenied(){ document.getElementById('gate').classList.add('hidden'); document.getElementById('denied').classList.add('show'); }
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    state.currentUserId = session.user.id;
+    state.accessToken = session.access_token;
+
+    var adminResult = await supabaseClient.rpc('is_admin');
+    var isAdmin = !!(adminResult && adminResult.data === true);
+    if(!isAdmin){ showDenied(); return; }
+
+    await loadAllData(false);
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+</body>
+</html>
