@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>File Approvals</title>
+<meta name="description" content="Upload files for approval or review submitted files.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://educational-saas.github.io/gsms-logo.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08); --border-card-hover: rgba(245,166,35,.45);
+    --toggle-bg: rgba(255,255,255,.75); --toggle-border: rgba(13,56,65,.14);
+    --toggle-icon: var(--teal-700); --toggle-shadow: 0 10px 24px -12px rgba(13,56,65,.4);
+    --header-bg: rgba(250,248,243,.85); --header-border: rgba(13,56,65,.08);
+    --danger:#c9432f; --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg: rgba(47,143,91,.1);
+    --warn:#e2941a; --warn-bg: rgba(226,148,26,.12);
+    --r-lg:26px; --r-md:18px; --r-sm:14px;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35);
+    --shadow-card-hover:0 24px 50px -18px rgba(13,56,65,.45);
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.07); --bg-tint-teal: rgba(95,208,222,.10);
+    --border-card: rgba(255,255,255,.08); --border-card-hover: rgba(255,198,92,.4);
+    --toggle-bg: rgba(24,36,37,.85); --toggle-border: rgba(255,255,255,.14);
+    --toggle-icon: var(--gold-400); --toggle-shadow: 0 10px 24px -12px rgba(0,0,0,.6);
+    --header-bg: rgba(9,34,39,.85); --header-border: rgba(255,255,255,.08);
+    --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492; --success-bg: rgba(87,212,146,.12);
+    --warn:#ffc65c; --warn-bg: rgba(255,198,92,.14);
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+    --shadow-card-hover:0 24px 50px -18px rgba(0,0,0,.65);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100svh;
+    background:
+      radial-gradient(1100px 700px at 82% -10%, var(--bg-tint-gold), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, var(--bg-tint-teal), transparent 60%),
+      var(--cream);
+    color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif;
+    overflow-x:hidden; position:relative;
+    transition:background-color .35s var(--ease), color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection{background:var(--gold-400); color:var(--teal-900);}
+  a{color:inherit;} button{font-family:inherit;}
+
+  #gate{
+    position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    background:var(--cream); transition:opacity .35s var(--ease), visibility .35s var(--ease);
+  }
+  #gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+  .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid var(--border-card); border-top-color:var(--gold-500);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #app{ display:none; min-height:100svh; flex-direction:column; }
+  #app.ready{ display:flex; }
+
+  #denied{
+    position:fixed; inset:0; z-index:190; display:none; align-items:center; justify-content:center;
+    background:var(--cream); padding:24px; text-align:center;
+  }
+  #denied.show{ display:flex; }
+  .denied-box{ max-width:340px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .denied-box svg{ width:44px; height:44px; stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .denied-box h2{ font-family:'Fraunces',serif; font-size:1.2rem; margin:0; }
+  .denied-box p{ color:var(--ink-500); font-size:.9rem; margin:0; line-height:1.5; }
+
+  .app-header{
+    position:sticky; top:0; z-index:40;
+    background:var(--header-bg); border-bottom:1px solid var(--header-border);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    transition:background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .app-header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:960px; margin:0 auto; }
+  .header-brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .back-btn{
+    width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg); border:1.5px solid var(--toggle-border); cursor:pointer;
+    transition:transform .2s var(--ease), background-color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .back-btn:hover{ transform:translateX(-2px); }
+  .back-btn:active{ transform:scale(.95); }
+  .back-btn svg{ width:18px; height:18px; stroke:var(--toggle-icon); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .header-text{ min-width:0; }
+  .header-greeting{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; color:var(--ink-900); margin:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s var(--ease);
+  }
+  .header-sub{ margin:1px 0 0; font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--teal-700); }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--toggle-bg); border:1.5px solid var(--toggle-border); box-shadow:var(--toggle-shadow); cursor:pointer;
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+    transition:background-color .3s var(--ease), border-color .3s var(--ease), transform .2s var(--ease);
+    position:relative; flex-shrink:0;
+  }
+  .icon-btn:hover{ transform:translateY(-2px) scale(1.05); }
+  .icon-btn:active{ transform:translateY(0) scale(.96); }
+  .icon-btn:focus-visible{ outline:3px solid var(--gold-500); outline-offset:3px; }
+  .icon-btn svg{
+    width:19px; height:19px; fill:none; stroke:var(--toggle-icon); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    position:absolute; transition:opacity .3s var(--ease), transform .4s var(--ease);
+  }
+  .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  .icon-moon{opacity:0; transform:rotate(-70deg) scale(.5);}
+  html[data-theme="dark"] .icon-sun{opacity:0; transform:rotate(70deg) scale(.5);}
+  html[data-theme="dark"] .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+
+  main.dash{ flex:1; width:100%; max-width:960px; margin:0 auto; padding:20px 18px calc(env(safe-area-inset-bottom) + 48px); }
+
+  .section-heading{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .section-heading h1{ font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; margin:0; }
+  .count-chip{ font-size:.72rem; font-weight:700; color:var(--teal-700); background:var(--bg-tint-teal); padding:5px 11px; border-radius:999px; white-space:nowrap; }
+
+  .placeholder-note{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 16px; color:var(--ink-500); }
+  .placeholder-note svg{ width:36px; height:36px; stroke:var(--ink-500); fill:none; stroke-width:1.6; }
+  .placeholder-note p{ margin:0; font-size:.88rem; }
+
+  /* ---------- Tabs ---------- */
+  .tabs{ display:flex; gap:8px; margin-bottom:18px; background:var(--border-card); padding:4px; border-radius:14px; }
+  .tab-btn{
+    flex:1; border:none; background:transparent; padding:10px 12px; border-radius:11px;
+    font-weight:700; font-size:.84rem; color:var(--ink-500); cursor:pointer;
+    transition:background-color .25s var(--ease), color .25s var(--ease);
+  }
+  .tab-btn.active{ background:var(--white); color:var(--teal-800); box-shadow:var(--shadow-card); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* ---------- Upload FAB / button ---------- */
+  .upload-btn-row{ margin-bottom:16px; }
+
+  /* ---------- Search ---------- */
+  .search-wrap{ position:relative; margin-bottom:16px; }
+  .search-wrap svg{
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:17px; height:17px; stroke:var(--ink-500); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none;
+  }
+  .search-wrap input{ padding-left:40px; }
+
+  .filter-row{ display:flex; gap:8px; overflow-x:auto; margin-bottom:16px; padding-bottom:2px; }
+  .filter-chip{
+    flex-shrink:0; border:1.5px solid var(--border-card); background:var(--white); color:var(--ink-500);
+    font-size:.78rem; font-weight:700; padding:7px 13px; border-radius:999px; cursor:pointer; white-space:nowrap;
+    transition:border-color .2s var(--ease), color .2s var(--ease), background-color .2s var(--ease);
+  }
+  .filter-chip.active{ border-color:var(--gold-500); color:var(--teal-800); background:var(--gold-100); }
+
+  /* ---------- File list ---------- */
+  #my-file-list, #review-file-list{ display:flex; flex-direction:column; gap:10px; }
+  .file-card{
+    background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md);
+    padding:14px; box-shadow:var(--shadow-card);
+    opacity:0; animation:rise .45s var(--ease) forwards;
+    transition:border-color .2s var(--ease), background-color .3s var(--ease);
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .file-card-top{ display:flex; align-items:flex-start; gap:12px; }
+  .file-icon{
+    width:42px; height:42px; border-radius:14px; flex-shrink:0;
+    background:linear-gradient(150deg,var(--teal-700),var(--teal-900)); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .file-icon svg{ width:20px; height:20px; stroke:#fff; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .file-info{ min-width:0; flex:1; }
+  .file-name{ font-weight:700; font-size:.9rem; margin:0; color:var(--ink-900); word-break:break-word; }
+  .file-meta{ font-size:.76rem; color:var(--ink-500); margin:3px 0 0; }
+  .file-note{ font-size:.82rem; color:var(--ink-900); margin:8px 0 0; background:var(--cream); border-radius:10px; padding:9px 11px; }
+  .file-feedback{ font-size:.82rem; color:var(--danger); margin:8px 0 0; background:var(--danger-bg); border-radius:10px; padding:9px 11px; }
+  .file-feedback b{ display:block; font-size:.68rem; letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px; }
+
+  .status-pill{ font-size:.7rem; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; }
+  .status-pill.pending{ color:var(--warn); background:var(--warn-bg); }
+  .status-pill.approved{ color:var(--success); background:var(--success-bg); }
+  .status-pill.changes_requested{ color:var(--danger); background:var(--danger-bg); }
+
+  .file-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+
+  /* ---------- Cards / forms shared ---------- */
+  .card{ background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); padding:18px; box-shadow:var(--shadow-card); }
+  .field{ margin-bottom:14px; } .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin-bottom:7px; }
+  input[type="text"], select, textarea{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1.5px solid var(--border-card);
+    background:var(--cream); color:var(--ink-900); font-family:'Manrope',sans-serif; font-size:.92rem; font-weight:500;
+    outline:none; transition:border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .3s var(--ease), color .3s var(--ease);
+  }
+  select{ padding-left:14px; }
+  textarea{ resize:vertical; min-height:76px; font-weight:400; }
+  input[type="text"]:focus, select:focus, textarea:focus{ border-color:var(--border-card-hover); box-shadow:0 0 0 4px var(--bg-tint-gold); }
+  .field-hint{ font-size:.74rem; color:var(--ink-500); margin-top:6px; }
+  .field-error{ font-size:.78rem; color:var(--danger); margin-top:12px; display:none; }
+  .field-error.show{ display:block; }
+
+  .file-drop{
+    border:1.5px dashed var(--border-card); border-radius:var(--r-sm); background:var(--cream);
+    padding:20px 14px; text-align:center; cursor:pointer; transition:border-color .2s var(--ease);
+  }
+  .file-drop:hover{ border-color:var(--border-card-hover); }
+  .file-drop svg{ width:26px; height:26px; stroke:var(--ink-500); fill:none; stroke-width:1.6; margin-bottom:6px; }
+  .file-drop p{ margin:0; font-size:.84rem; color:var(--ink-500); }
+  .file-drop .chosen{ color:var(--teal-700); font-weight:700; word-break:break-word; }
+
+  .btn{
+    padding:13px 18px; border-radius:14px; border:none; font-family:'Manrope',sans-serif; font-weight:700; font-size:.88rem;
+    cursor:pointer; transition:transform .2s var(--ease), opacity .2s var(--ease), box-shadow .2s var(--ease);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); box-shadow:0 14px 26px -14px rgba(226,148,26,.55); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); }
+  .btn-danger{ background:var(--danger-bg); color:var(--danger); border:1.5px solid transparent; }
+  .btn-success{ background:var(--success-bg); color:var(--success); border:1.5px solid transparent; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; margin-top:16px; }
+  .btn-row .btn{ flex:1; }
+  .btn-sm{ padding:8px 13px; font-size:.78rem; border-radius:10px; }
+
+  .section-label{ font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-500); margin:0 0 10px; }
+  .sub-divider{ height:1px; background:var(--border-card); margin:20px 0; }
+
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:100; background:rgba(9,34,39,.4);
+    opacity:0; visibility:hidden; transition:opacity .25s var(--ease), visibility .25s var(--ease); overflow-y:auto;
+  }
+  .sheet-backdrop.show{ opacity:1; visibility:visible; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:101; background:var(--cream);
+    border-radius:22px 22px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);
+    max-width:960px; margin:0 auto; box-shadow:0 -20px 50px -20px rgba(0,0,0,.35);
+    transform:translateY(100%); transition:transform .3s var(--ease); max-height:92svh; overflow-y:auto;
+  }
+  .sheet-backdrop.show .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:38px; height:4px; border-radius:99px; background:var(--border-card); margin:0 auto 18px; }
+  .sheet h3{ font-family:'Fraunces',serif; margin:0 0 6px; font-size:1.1rem; }
+  .sheet p{ margin:0 0 20px; color:var(--ink-500); font-size:.88rem; }
+  .sheet-actions{ display:flex; gap:10px; }
+  .sheet-actions .btn{ flex:1; }
+
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 20px); z-index:150;
+    display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none;
+  }
+  .toast{
+    background:var(--teal-900); color:var(--white); font-size:.84rem; font-weight:600; padding:12px 18px;
+    border-radius:999px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(10px); transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:88vw;
+  }
+  html[data-theme="dark"] .toast{ color:var(--teal-900); background:var(--gold-400); }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.error{ background:var(--danger); color:var(--white); }
+
+  .progress-wrap{ height:6px; border-radius:99px; background:var(--border-card); overflow:hidden; margin-top:14px; display:none; }
+  .progress-wrap.show{ display:block; }
+  .progress-bar{ height:100%; width:0%; background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); transition:width .2s linear; }
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="spinner" role="status" aria-label="Loading"></div></div>
+
+<div id="denied">
+  <div class="denied-box">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2>No access</h2>
+    <p>This page is for teachers and admins only. If you believe this is a mistake, contact your school admin.</p>
+    <button class="btn btn-ghost" id="denied-back" type="button">Back to dashboard</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="header-brand">
+        <button class="back-btn" id="back-btn" type="button" aria-label="Back to dashboard" title="Back to dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="header-text">
+          <p class="header-greeting">File Approvals</p>
+          <p class="header-sub" id="header-sub"></p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"/>
+            <path d="M12 2.5v2.4M12 19.1v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="refresh-btn" type="button" aria-label="Refresh" title="Refresh">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        </button>
+        <button class="icon-btn" id="signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="opacity:1; position:static;"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <div class="tabs" id="tabs" style="display:none;">
+      <button class="tab-btn" id="tab-btn-mine" type="button" data-tab="mine">My Uploads</button>
+      <button class="tab-btn" id="tab-btn-review" type="button" data-tab="review">Review Queue</button>
+    </div>
+
+    <!-- ============ MY UPLOADS ============ -->
+    <div class="tab-panel" id="panel-mine">
+      <div class="section-heading">
+        <h1>My Uploads</h1>
+        <span class="count-chip" id="mine-count">0 files</span>
+      </div>
+
+      <div class="upload-btn-row">
+        <button class="btn btn-primary btn-block" id="open-upload-btn" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Upload a file for approval
+        </button>
+      </div>
+
+      <div id="my-file-list"></div>
+
+      <div class="placeholder-note" id="mine-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+        <p id="mine-placeholder-text">You haven't uploaded any files yet.</p>
+      </div>
+    </div>
+
+    <!-- ============ REVIEW QUEUE ============ -->
+    <div class="tab-panel" id="panel-review">
+      <div class="section-heading">
+        <h1>Review Queue</h1>
+        <span class="count-chip" id="review-count">0 files</span>
+      </div>
+
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input style="padding-left: 40px" type="text" id="review-search" placeholder="Search by teacher, class, subject, filename…" autocomplete="off">
+      </div>
+
+      <div class="filter-row" id="review-filters">
+        <button class="filter-chip active" data-status="all" type="button">All</button>
+        <button class="filter-chip" data-status="pending" type="button">Pending</button>
+        <button class="filter-chip" data-status="changes_requested" type="button">Changes requested</button>
+        <button class="filter-chip" data-status="approved" type="button">Approved</button>
+      </div>
+
+      <div id="review-file-list"></div>
+
+      <div class="placeholder-note" id="review-placeholder" style="display:none;">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+        <p id="review-placeholder-text">Nothing here.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Upload / re-upload sheet -->
+<div class="sheet-backdrop" id="sheet-upload">
+  <div class="sheet" role="dialog" aria-label="Upload file">
+    <div class="sheet-handle"></div>
+    <h3 id="upload-sheet-title">Upload a file</h3>
+    <p id="upload-sheet-desc">Choose the class and subject, attach your file, and add a short note for the admin.</p>
+
+    <form id="upload-form">
+      <div class="field">
+        <label for="upload-class">Class</label>
+        <select id="upload-class" required></select>
+      </div>
+      <div class="field">
+        <label for="upload-subject">Subject</label>
+        <select id="upload-subject" required></select>
+      </div>
+      <div class="field">
+        <label>File</label>
+        <div class="file-drop" id="upload-drop">
+          <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+          <p id="upload-drop-text">Tap to choose a file (Word, PDF, photo, video — any format)</p>
+        </div>
+        <input type="file" id="upload-input" style="display:none;">
+        <p class="field-hint">Max recommended size: 200 MB.</p>
+      </div>
+      <div class="field">
+        <label for="upload-note">Note to admin</label>
+        <textarea id="upload-note" placeholder="e.g. Worksheet on Nouns for Grade 2. Kindly approve."></textarea>
+      </div>
+      <p class="field-error" id="upload-error"></p>
+      <div class="progress-wrap" id="upload-progress-wrap"><div class="progress-bar" id="upload-progress-bar"></div></div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="upload-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="upload-submit" type="submit">Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Remove file confirmation -->
+<div class="sheet-backdrop" id="sheet-remove-file">
+  <div class="sheet" role="dialog" aria-label="Remove file confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Remove this file?</h3>
+    <p id="remove-file-message">This will delete the file and its approval status.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="remove-file-cancel">Cancel</button>
+      <button class="btn btn-danger" id="remove-file-confirm">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin review sheet -->
+<div class="sheet-backdrop" id="sheet-review">
+  <div class="sheet" role="dialog" aria-label="Review file">
+    <div class="sheet-handle"></div>
+    <h3 id="review-sheet-title">Review file</h3>
+    <p id="review-sheet-desc">Approve this file, or leave a note describing the changes needed.</p>
+    <div class="field">
+      <label for="review-feedback">Feedback / suggested changes</label>
+      <textarea id="review-feedback" placeholder="Required if requesting changes; optional if approving."></textarea>
+    </div>
+    <p class="field-error" id="review-error"></p>
+    <div class="btn-row">
+      <button class="btn btn-danger" id="review-request-changes" type="button">Request changes</button>
+      <button class="btn btn-success" id="review-approve" type="button">Approve</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-block" id="review-cancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign-out confirmation sheet -->
+<div class="sheet-backdrop" id="sheet-signout">
+  <div class="sheet" role="dialog" aria-label="Sign out confirmation">
+    <div class="sheet-handle"></div>
+    <h3>Sign out?</h3>
+    <p>You'll need to sign in again to access your dashboard.</p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-signout">Cancel</button>
+      <button class="btn btn-danger" id="confirm-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================
+   SUPABASE SETUP
+========================================================= */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+    INSTITUTION_INFO = cached.data;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+var EDGE_FUNCTION_URL = SUPABASE_URL + '/functions/v1/file-manager';
+var MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
+
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var state = {
+  user: null,
+  isTeacher: false,
+  isAdmin: false,
+  classSubjectMap: {},      // { class: [subject, ...] }
+  assignedClasses: [],      // sorted list of classes teacher is assigned to
+  myFiles: [],
+  reviewFiles: [],
+  activeTab: 'mine',
+  reviewSearchTerm: '',
+  reviewStatusFilter: 'all',
+  uploadMode: 'new',        // 'new' | 'reupload'
+  uploadReuploadId: null,
+  uploadFile: null,
+  removeTargetId: null,
+  reviewTarget: null
+};
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try{ localStorage.setItem('gsms-theme', next); }catch(e){}
+});
+
+/* =========================================================
+   TOAST
+========================================================= */
+function toast(msg, isError){
+  var wrap = document.getElementById('toast-wrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 3200);
+}
+
+/* =========================================================
+   NAV / SIGN OUT
+========================================================= */
+document.getElementById('back-btn').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('denied-back').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+document.getElementById('refresh-btn').addEventListener('click', function(){ loadAllData(true); });
+
+var sheetSignout = document.getElementById('sheet-signout');
+document.getElementById('signout-btn').addEventListener('click', function(){ sheetSignout.classList.add('show'); });
+document.getElementById('cancel-signout').addEventListener('click', function(){ sheetSignout.classList.remove('show'); });
+sheetSignout.addEventListener('click', function(e){ if(e.target === sheetSignout){ sheetSignout.classList.remove('show'); } });
+document.getElementById('confirm-signout').addEventListener('click', function(){
+  supabaseClient.auth.signOut().then(async function(){ await wipeInstitutionData(); window.location.href = AUTH_REDIRECT; });
+});
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function escapeHtml(str){
+  var div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+function formatBytes(bytes){
+  if(bytes == null) return '';
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  if(bytes < 1024*1024*1024) return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  return (bytes/(1024*1024*1024)).toFixed(2) + ' GB';
+}
+function formatDate(iso){
+  if(!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' }) +
+    ' · ' + d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+}
+function statusLabel(status){
+  if(status === 'approved') return 'Approved';
+  if(status === 'changes_requested') return 'Changes requested';
+  return 'Pending review';
+}
+async function getAccessToken(){
+  var res = await supabaseClient.auth.getSession();
+  var session = res && res.data ? res.data.session : null;
+  if(!session) throw new Error('Not signed in');
+  return session.access_token;
+}
+async function callEdgeFunction(action, params){
+  var token = await getAccessToken();
+  var body = Object.assign({ action: action }, params || {});
+  var res = await fetch(EDGE_FUNCTION_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token,
+      'apikey': SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify(body)
+  });
+  var data = await res.json().catch(function(){ return {}; });
+  if(!res.ok){ throw new Error(data.error || 'Request failed'); }
+  return data;
+}
+
+/* =========================================================
+   TABS
+========================================================= */
+function setActiveTab(tab){
+  state.activeTab = tab;
+  document.getElementById('panel-mine').classList.toggle('active', tab === 'mine');
+  document.getElementById('panel-review').classList.toggle('active', tab === 'review');
+  var btnMine = document.getElementById('tab-btn-mine');
+  var btnReview = document.getElementById('tab-btn-review');
+  if(btnMine) btnMine.classList.toggle('active', tab === 'mine');
+  if(btnReview) btnReview.classList.toggle('active', tab === 'review');
+}
+document.getElementById('tab-btn-mine').addEventListener('click', function(){ setActiveTab('mine'); });
+document.getElementById('tab-btn-review').addEventListener('click', function(){ setActiveTab('review'); });
+
+/* =========================================================
+   LOAD DATA
+========================================================= */
+function loadAllData(isRefresh){
+  var tasks = [];
+
+  if(state.isTeacher){
+    tasks.push(loadAssignments());
+    tasks.push(loadMyFiles());
+  }
+  if(state.isAdmin){
+    tasks.push(loadReviewFiles());
+  }
+
+  return Promise.all(tasks).then(function(){
+    if(state.isTeacher) renderMyFiles();
+    if(state.isAdmin) renderReviewFiles();
+    if(isRefresh) toast('Refreshed.');
+  }).catch(function(err){
+    toast('Could not load data: ' + err.message, true);
+  });
+}
+
+function loadAssignments(){
+  return supabaseClient
+    .from('class_subject_assignments')
+    .select('class, subject')
+    .eq('teacher_id', state.user.id)
+    .then(function(res){
+      if(res.error) throw res.error;
+      var map = {};
+      (res.data || []).forEach(function(row){
+        if(!map[row.class]) map[row.class] = [];
+        if(map[row.class].indexOf(row.subject) === -1) map[row.class].push(row.subject);
+      });
+      Object.keys(map).forEach(function(c){ map[c].sort(); });
+      state.classSubjectMap = map;
+      state.assignedClasses = Object.keys(map).sort();
+      populateUploadClassSelect();
+    });
+}
+
+function loadMyFiles(){
+  return supabaseClient
+    .from('file_uploads')
+    .select('*')
+    .eq('teacher_id', state.user.id)
+    .order('created_at', { ascending: false })
+    .then(function(res){
+      if(res.error) throw res.error;
+      state.myFiles = res.data || [];
+    });
+}
+
+function loadReviewFiles(){
+  return supabaseClient
+    .from('file_uploads_with_teacher')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .then(function(res){
+      if(res.error) throw res.error;
+      state.reviewFiles = res.data || [];
+    });
+}
+
+/* =========================================================
+   RENDER: MY UPLOADS
+========================================================= */
+function fileIconSvg(){
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+}
+
+function renderMyFiles(){
+  var list = document.getElementById('my-file-list');
+  var placeholder = document.getElementById('mine-placeholder');
+  var countChip = document.getElementById('mine-count');
+  countChip.textContent = state.myFiles.length + (state.myFiles.length === 1 ? ' file' : ' files');
+
+  if(state.myFiles.length === 0){
+    list.style.display = 'none';
+    placeholder.style.display = 'flex';
+    return;
+  }
+  placeholder.style.display = 'none';
+  list.style.display = 'flex';
+  list.innerHTML = '';
+
+  state.myFiles.forEach(function(f, i){
+    var card = document.createElement('div');
+    card.className = 'file-card';
+    card.style.animationDelay = (i * 0.03) + 's';
+    card.innerHTML =
+      '<div class="file-card-top">' +
+        '<div class="file-icon">' + fileIconSvg() + '</div>' +
+        '<div class="file-info">' +
+          '<p class="file-name">' + escapeHtml(f.file_name) + '</p>' +
+          '<p class="file-meta">' + escapeHtml(f.class) + ' &bull; ' + escapeHtml(f.subject) + ' &bull; ' + formatBytes(f.file_size) + '</p>' +
+          '<p class="file-meta">Uploaded ' + formatDate(f.created_at) + '</p>' +
+          (f.note ? '<p class="file-note">' + escapeHtml(f.note) + '</p>' : '') +
+          (f.status === 'changes_requested' && f.admin_feedback
+            ? '<p class="file-feedback"><b>Suggested changes</b>' + escapeHtml(f.admin_feedback) + '</p>' : '') +
+        '</div>' +
+        '<span class="status-pill ' + f.status + '">' + statusLabel(f.status) + '</span>' +
+      '</div>' +
+      '<div class="file-actions">' +
+        '<button class="btn btn-ghost btn-sm" data-act="download">Download</button>' +
+        (f.status !== 'approved' ? '<button class="btn btn-ghost btn-sm" data-act="reupload">Re-upload</button>' : '') +
+        '<button class="btn btn-danger btn-sm" data-act="remove">Remove</button>' +
+      '</div>';
+
+    card.querySelector('[data-act="download"]').addEventListener('click', function(){ downloadFile(f.id, f.file_name); });
+    var reuploadBtn = card.querySelector('[data-act="reupload"]');
+    if(reuploadBtn) reuploadBtn.addEventListener('click', function(){ openUploadSheet('reupload', f); });
+    card.querySelector('[data-act="remove"]').addEventListener('click', function(){ openRemoveFileSheet(f); });
+
+    list.appendChild(card);
+  });
+}
+
+/* =========================================================
+   RENDER: REVIEW QUEUE (admin)
+========================================================= */
+function renderReviewFiles(){
+  var list = document.getElementById('review-file-list');
+  var placeholder = document.getElementById('review-placeholder');
+  var countChip = document.getElementById('review-count');
+
+  var term = state.reviewSearchTerm.trim().toLowerCase();
+  var filtered = state.reviewFiles.filter(function(f){
+    if(state.reviewStatusFilter !== 'all' && f.status !== state.reviewStatusFilter) return false;
+    if(!term) return true;
+    var haystack = [f.file_name, f.class, f.subject, f.teacher_name, f.teacher_email, f.note].join(' ').toLowerCase();
+    return haystack.indexOf(term) !== -1;
+  });
+
+  countChip.textContent = filtered.length + (filtered.length === 1 ? ' file' : ' files');
+
+  if(filtered.length === 0){
+    list.style.display = 'none';
+    placeholder.style.display = 'flex';
+    document.getElementById('review-placeholder-text').textContent =
+      state.reviewFiles.length === 0 ? 'No files have been submitted yet.' : 'No files match your search/filter.';
+    return;
+  }
+  placeholder.style.display = 'none';
+  list.style.display = 'flex';
+  list.innerHTML = '';
+
+  filtered.forEach(function(f, i){
+    var card = document.createElement('div');
+    card.className = 'file-card';
+    card.style.animationDelay = (i * 0.03) + 's';
+    card.innerHTML =
+      '<div class="file-card-top">' +
+        '<div class="file-icon">' + fileIconSvg() + '</div>' +
+        '<div class="file-info">' +
+          '<p class="file-name">' + escapeHtml(f.file_name) + '</p>' +
+          '<p class="file-meta">' + escapeHtml(f.class) + ' &bull; ' + escapeHtml(f.subject) + ' &bull; ' + formatBytes(f.file_size) + '</p>' +
+          '<p class="file-meta">' + escapeHtml(f.teacher_name) + ' (' + escapeHtml(f.teacher_email) + ')</p>' +
+          '<p class="file-meta">Submitted ' + formatDate(f.created_at) + '</p>' +
+          (f.note ? '<p class="file-note">' + escapeHtml(f.note) + '</p>' : '') +
+          (f.admin_feedback ? '<p class="file-feedback"><b>Your feedback</b>' + escapeHtml(f.admin_feedback) + '</p>' : '') +
+        '</div>' +
+        '<span class="status-pill ' + f.status + '">' + statusLabel(f.status) + '</span>' +
+      '</div>' +
+      '<div class="file-actions">' +
+        '<button class="btn btn-ghost btn-sm" data-act="download">Download</button>' +
+        '<button class="btn btn-primary btn-sm" data-act="review">Review</button>' +
+      '</div>';
+
+    card.querySelector('[data-act="download"]').addEventListener('click', function(){ downloadFile(f.id, f.file_name); });
+    card.querySelector('[data-act="review"]').addEventListener('click', function(){ openReviewSheet(f); });
+
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('review-search').addEventListener('input', function(e){
+  state.reviewSearchTerm = e.target.value;
+  renderReviewFiles();
+});
+document.querySelectorAll('#review-filters .filter-chip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('#review-filters .filter-chip').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    state.reviewStatusFilter = chip.getAttribute('data-status');
+    renderReviewFiles();
+  });
+});
+
+/* =========================================================
+   UPLOAD SHEET
+========================================================= */
+var sheetUpload = document.getElementById('sheet-upload');
+var uploadClassSelect = document.getElementById('upload-class');
+var uploadSubjectSelect = document.getElementById('upload-subject');
+var uploadInput = document.getElementById('upload-input');
+var uploadDropText = document.getElementById('upload-drop-text');
+var uploadNote = document.getElementById('upload-note');
+var uploadError = document.getElementById('upload-error');
+
+function populateUploadClassSelect(){
+  uploadClassSelect.innerHTML = '';
+  state.assignedClasses.forEach(function(c){
+    var opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    uploadClassSelect.appendChild(opt);
+  });
+  populateUploadSubjectSelect();
+}
+function populateUploadSubjectSelect(){
+  var cls = uploadClassSelect.value;
+  var subjects = state.classSubjectMap[cls] || [];
+  uploadSubjectSelect.innerHTML = '';
+  subjects.forEach(function(s){
+    var opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    uploadSubjectSelect.appendChild(opt);
+  });
+}
+uploadClassSelect.addEventListener('change', populateUploadSubjectSelect);
+
+document.getElementById('upload-drop').addEventListener('click', function(){ uploadInput.click(); });
+uploadInput.addEventListener('change', function(){
+  var f = uploadInput.files[0];
+  state.uploadFile = f || null;
+  uploadDropText.innerHTML = f
+    ? '<span class="chosen">' + escapeHtml(f.name) + '</span> (' + formatBytes(f.size) + ')'
+    : 'Tap to choose a file (Word, PDF, photo, video — any format)';
+});
+
+function openUploadSheet(mode, existingFile){
+  state.uploadMode = mode;
+  state.uploadReuploadId = mode === 'reupload' ? existingFile.id : null;
+  state.uploadFile = null;
+  uploadInput.value = '';
+  uploadError.classList.remove('show');
+  document.getElementById('upload-progress-wrap').classList.remove('show');
+  document.getElementById('upload-progress-bar').style.width = '0%';
+
+  if(state.assignedClasses.length === 0){
+    toast('You are not assigned to any class/subject yet.', true);
+    return;
+  }
+
+  if(mode === 'reupload'){
+    document.getElementById('upload-sheet-title').textContent = 'Re-upload file';
+    document.getElementById('upload-sheet-desc').textContent =
+      'Replace ' + existingFile.file_name + ' with an updated file. It will be queued for approval again.';
+    uploadClassSelect.value = existingFile.class;
+    populateUploadSubjectSelect();
+    uploadSubjectSelect.value = existingFile.subject;
+    uploadClassSelect.disabled = true;
+    uploadSubjectSelect.disabled = true;
+    uploadNote.value = existingFile.note || '';
+    uploadDropText.textContent = 'Tap to choose a file (Word, PDF, photo, video — any format)';
+  }else{
+    document.getElementById('upload-sheet-title').textContent = 'Upload a file';
+    document.getElementById('upload-sheet-desc').textContent =
+      'Choose the class and subject, attach your file, and add a short note for the admin.';
+    uploadClassSelect.disabled = false;
+    uploadSubjectSelect.disabled = false;
+    populateUploadClassSelect();
+    uploadNote.value = '';
+    uploadDropText.textContent = 'Tap to choose a file (Word, PDF, photo, video — any format)';
+  }
+
+  sheetUpload.classList.add('show');
+}
+document.getElementById('open-upload-btn').addEventListener('click', function(){ openUploadSheet('new'); });
+document.getElementById('upload-cancel').addEventListener('click', function(){ sheetUpload.classList.remove('show'); });
+sheetUpload.addEventListener('click', function(e){ if(e.target === sheetUpload) sheetUpload.classList.remove('show'); });
+
+document.getElementById('upload-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  uploadError.classList.remove('show');
+
+  var cls = uploadClassSelect.value;
+  var subject = uploadSubjectSelect.value;
+  var file = state.uploadFile;
+  var note = uploadNote.value.trim();
+
+  if(!cls || !subject){
+    uploadError.textContent = 'Please choose a class and subject.';
+    uploadError.classList.add('show');
+    return;
+  }
+  if(!file){
+    uploadError.textContent = 'Please choose a file to upload.';
+    uploadError.classList.add('show');
+    return;
+  }
+  if(file.size > MAX_FILE_SIZE){
+    uploadError.textContent = 'That file is larger than the 200 MB limit.';
+    uploadError.classList.add('show');
+    return;
+  }
+
+  var submitBtn = document.getElementById('upload-submit');
+  var progressWrap = document.getElementById('upload-progress-wrap');
+  var progressBar = document.getElementById('upload-progress-bar');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Uploading…';
+  progressWrap.classList.add('show');
+  progressBar.style.width = '10%';
+
+  callEdgeFunction('request-upload-url', {
+    class: cls, subject: subject, fileName: file.name, fileType: file.type,
+    fileSize: file.size,
+    reuploadId: state.uploadReuploadId
+  }).then(function(res){
+    progressBar.style.width = '35%';
+    return fetch(res.uploadUrl, {
+      method: 'PUT',
+      headers: res.requiredHeaders,
+      body: file
+    }).then(function(putRes){
+      if(!putRes.ok) throw new Error('Upload to storage failed (' + putRes.status + ')');
+      progressBar.style.width = '75%';
+      return callEdgeFunction('confirm-upload', {
+        class: cls, subject: subject, fileKey: res.fileKey,
+        fileName: file.name, fileType: file.type, fileSize: file.size,
+        note: note, reuploadId: state.uploadReuploadId
+      });
+    });
+  }).then(function(){
+    progressBar.style.width = '100%';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Upload';
+    sheetUpload.classList.remove('show');
+    toast(state.uploadMode === 'reupload' ? 'Re-uploaded — queued for approval again.' : 'Uploaded — queued for approval.');
+    loadMyFiles().then(renderMyFiles);
+  }).catch(function(err){
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Upload';
+    progressWrap.classList.remove('show');
+    uploadError.textContent = err.message || 'Upload failed. Please try again.';
+    uploadError.classList.add('show');
+  });
+});
+
+/* =========================================================
+   REMOVE FILE
+========================================================= */
+var sheetRemoveFile = document.getElementById('sheet-remove-file');
+function openRemoveFileSheet(f){
+  state.removeTargetId = f.id;
+  document.getElementById('remove-file-message').textContent =
+    '"' + f.file_name + '" will be permanently deleted.';
+  sheetRemoveFile.classList.add('show');
+}
+document.getElementById('remove-file-cancel').addEventListener('click', function(){
+  sheetRemoveFile.classList.remove('show');
+  state.removeTargetId = null;
+});
+sheetRemoveFile.addEventListener('click', function(e){
+  if(e.target === sheetRemoveFile){ sheetRemoveFile.classList.remove('show'); state.removeTargetId = null; }
+});
+document.getElementById('remove-file-confirm').addEventListener('click', function(){
+  var id = state.removeTargetId;
+  if(!id) return;
+  var btn = document.getElementById('remove-file-confirm');
+  btn.disabled = true; btn.textContent = 'Removing…';
+
+  callEdgeFunction('delete-file', { fileId: id }).then(function(){
+    btn.disabled = false; btn.textContent = 'Remove';
+    sheetRemoveFile.classList.remove('show');
+    state.removeTargetId = null;
+    toast('File removed.');
+    loadMyFiles().then(renderMyFiles);
+  }).catch(function(err){
+    btn.disabled = false; btn.textContent = 'Remove';
+    toast('Could not remove file: ' + err.message, true);
+  });
+});
+
+/* =========================================================
+   DOWNLOAD (teacher own file, or admin any file)
+========================================================= */
+function downloadFile(fileId, fileName){
+  callEdgeFunction('request-download-url', { fileId: fileId }).then(function(res){
+    var a = document.createElement('a');
+    a.href = res.downloadUrl;
+    a.rel = 'noopener';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }).catch(function(err){
+    toast('Could not open file: ' + err.message, true);
+  });
+}
+
+/* =========================================================
+   ADMIN REVIEW SHEET
+========================================================= */
+var sheetReview = document.getElementById('sheet-review');
+var reviewFeedback = document.getElementById('review-feedback');
+var reviewError = document.getElementById('review-error');
+
+function openReviewSheet(f){
+  state.reviewTarget = f;
+  document.getElementById('review-sheet-title').textContent = f.file_name;
+  document.getElementById('review-sheet-desc').textContent =
+    f.class + ' \u2022 ' + f.subject + ' \u2022 submitted by ' + f.teacher_name;
+  reviewFeedback.value = f.admin_feedback || '';
+  reviewError.classList.remove('show');
+  sheetReview.classList.add('show');
+}
+document.getElementById('review-cancel').addEventListener('click', function(){
+  sheetReview.classList.remove('show');
+  state.reviewTarget = null;
+});
+sheetReview.addEventListener('click', function(e){
+  if(e.target === sheetReview){ sheetReview.classList.remove('show'); state.reviewTarget = null; }
+});
+
+function performReview(status){
+  var f = state.reviewTarget;
+  if(!f) return;
+  var feedback = reviewFeedback.value.trim();
+
+  if(status === 'changes_requested' && !feedback){
+    reviewError.textContent = 'Please describe the changes needed.';
+    reviewError.classList.add('show');
+    return;
+  }
+  reviewError.classList.remove('show');
+
+  var approveBtn = document.getElementById('review-approve');
+  var requestBtn = document.getElementById('review-request-changes');
+  approveBtn.disabled = true; requestBtn.disabled = true;
+
+  supabaseClient
+    .from('file_uploads')
+    .update({
+      status: status,
+      admin_feedback: feedback || null,
+      reviewed_by: state.user.id,
+      reviewed_at: new Date().toISOString()
+    })
+    .eq('id', f.id)
+    .then(function(res){
+      approveBtn.disabled = false; requestBtn.disabled = false;
+      if(res.error){
+        toast('Could not save review: ' + res.error.message, true);
+        return;
+      }
+      sheetReview.classList.remove('show');
+      state.reviewTarget = null;
+      toast(status === 'approved' ? 'File approved.' : 'Changes requested.');
+      loadReviewFiles().then(renderReviewFiles);
+    });
+}
+document.getElementById('review-approve').addEventListener('click', function(){ performReview('approved'); });
+document.getElementById('review-request-changes').addEventListener('click', function(){ performReview('changes_requested'); });
+
+/* =========================================================
+   AUTH + BOOTSTRAP
+========================================================= */
+function showApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+}
+function showDenied(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('denied').classList.add('show');
+}
+function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
+
+(async function initAuth(){
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){ redirectToAuth(); return; }
+
+    state.user = { id: session.user.id };
+
+    var teacherRes = await supabaseClient.from('teachers').select('id').eq('id', session.user.id).maybeSingle();
+    var adminRes = await supabaseClient.rpc('is_admin');
+
+    state.isTeacher = !!(teacherRes && teacherRes.data);
+    state.isAdmin = !!(adminRes && adminRes.data === true);
+
+    if(!state.isTeacher && !state.isAdmin){ showDenied(); return; }
+
+    var tabs = document.getElementById('tabs');
+    var subLabel = [];
+    if(state.isTeacher) subLabel.push('Teacher');
+    if(state.isAdmin) subLabel.push('Admin');
+    document.getElementById('header-sub').textContent = subLabel.join(' & ') + ' \u2022 File Approvals';
+
+    if(state.isTeacher && state.isAdmin){
+      tabs.style.display = 'flex';
+      setActiveTab('mine');
+    }else if(state.isTeacher){
+      tabs.style.display = 'none';
+      document.getElementById('panel-review').classList.remove('active');
+      document.getElementById('panel-mine').classList.add('active');
+    }else{
+      tabs.style.display = 'none';
+      document.getElementById('panel-mine').classList.remove('active');
+      document.getElementById('panel-review').classList.add('active');
+    }
+
+    await loadAllData(false);
+    showApp();
+  }catch(err){
+    console.error('Auth/bootstrap failed:', err);
+    redirectToAuth();
+  }
+})();
+</script>
+
+</body>
+</html>
