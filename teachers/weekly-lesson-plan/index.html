@@ -1603,27 +1603,31 @@ function redirectToAuth(){ window.location.href = AUTH_REDIRECT; }
 
     var userId = session.user.id;
 
-    var teacherResult = await supabaseClient
+     var teacherResult = await supabaseClient
       .from('teachers')
       .select('id, name, email')
       .eq('id', userId)
       .maybeSingle();
 
-    if(teacherResult.error || !teacherResult.data){ redirectToAuth(); return; }
-
-    state.user = { id: userId };
-    state.teacherName = teacherResult.data.name;
+    if(teacherResult.error){ redirectToAuth(); return; }
 
     // Check admin status via RPC
     var adminResult = await supabaseClient.rpc('is_admin');
-    state.isAdmin = !!(adminResult && adminResult.data === true);
+    if(adminResult.error){ redirectToAuth(); return; }
+    state.isAdmin = adminResult.data === true;
+
+    // Block only if the user is neither a known teacher nor an admin
+    if(!teacherResult.data && !state.isAdmin){ redirectToAuth(); return; }
+
+    state.user = { id: userId };
+    state.teacherName = teacherResult.data ? teacherResult.data.name : '';
 
     var badge = document.getElementById('role-badge');
     if(state.isAdmin){
       badge.textContent = 'Admin access — all classes';
       badge.classList.add('admin-badge');
     }else{
-      badge.textContent = state.teacherName.split(' ')[0] + ' • Plan & Manage';
+      badge.textContent = (state.teacherName.split(' ')[0] || 'Teacher') + ' • Plan & Manage';
     }
 
     // Load this teacher's own class-subject assignments
