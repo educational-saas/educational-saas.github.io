@@ -1232,7 +1232,7 @@
         .eq('id', userId)
         .maybeSingle();
 
-      if(teacherResult.error || !teacherResult.data){
+      if(teacherResult.error){
           redirectToAuth();
           return;
       }
@@ -1245,6 +1245,11 @@
         return;
       }
 
+      if(!teacherResult.data && adminResult.data !== true){
+        redirectToAuth();
+        return;
+      }
+
       allowedTools = TOOLS.filter(function(tool){
   return !tool.adminOnly || adminResult.data === true;
 });
@@ -1253,7 +1258,7 @@
 
       updateHeaderSub();
 
-      showApp(teacherResult.data.name);
+      showApp(teacherResult.data ? teacherResult.data.name : '');
     }catch(err){
       console.error('Auth check failed:', err);
       redirectToAuth();
