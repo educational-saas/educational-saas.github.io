@@ -598,10 +598,10 @@ var sheetLink = document.getElementById('sheet-link');
 var currentLink = '';
 
 function openLinkSheet(tokenHash, email){
-  // The token + email travel ONLY in the URL fragment (after #), which
-  // browsers never send to any server -- it never appears in server logs,
-  // proxy logs, or Referer headers.
-  var fragment = '#token_hash=' + encodeURIComponent(tokenHash) + '&email=' + encodeURIComponent(email);
+  var institutionId = localStorage.getItem('gsms_last_institution_id');
+  var fragment = '#token_hash=' + encodeURIComponent(tokenHash) +
+                 '&email=' + encodeURIComponent(email) +
+                 '&institution_id=' + encodeURIComponent(institutionId);
   currentLink = new URL(BRIDGE_PAGE_URL, window.location.href).toString() + fragment;
   document.getElementById('link-output').value = currentLink;
   sheetLink.classList.add('show');
