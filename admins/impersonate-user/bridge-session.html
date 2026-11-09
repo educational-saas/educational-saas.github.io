@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Debug Session | GSMS Tools</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="https://gsms-tools.github.io/gsms-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-700:#1b6b78; --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --gold-500:#f5a623; --gold-600:#e2941a; --gold-400:#ffc65c;
+    --border-card: rgba(13,56,65,.08); --danger:#c9432f; --danger-bg: rgba(201,67,47,.1);
+    --success:#2f8f5b; --success-bg: rgba(47,143,91,.1); --warn-bg: rgba(226,148,26,.14); --warn:#b8720f;
+    --shadow-card:0 18px 40px -22px rgba(13,56,65,.35); --r-md:18px; --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-700:#5fd0de; --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --gold-500:#ffc65c; --gold-600:#ffb648; --gold-400:#ffd685;
+    --border-card: rgba(255,255,255,.08); --danger:#ff6b57; --danger-bg: rgba(255,107,87,.12);
+    --success:#57d492; --success-bg: rgba(87,212,146,.12); --warn-bg: rgba(255,198,92,.14); --warn:#ffc65c;
+    --shadow-card:0 18px 40px -22px rgba(0,0,0,.55);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{ margin:0; min-height:100svh; background:var(--cream); color:var(--ink-900); font-family:'Manrope',system-ui,-apple-system,sans-serif; display:flex; flex-direction:column; }
+
+  .imp-banner{ position:sticky; top:0; z-index:50; background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); padding:calc(env(safe-area-inset-top) + 10px) 16px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:.84rem; font-weight:700; }
+  .imp-banner span.who{ font-family:'Fraunces',serif; }
+  .imp-banner .timer{ font-variant-numeric: tabular-nums; }
+  .imp-banner button{ background:rgba(13,56,65,.12); border:none; color:var(--teal-900); font-weight:800; padding:7px 13px; border-radius:999px; cursor:pointer; font-size:.78rem; }
+
+  main{ flex:1; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .card{ max-width:420px; width:100%; background:var(--white); border:1px solid var(--border-card); border-radius:var(--r-md); box-shadow:var(--shadow-card); padding:26px 24px; text-align:center; }
+  .card h2{ font-family:'Fraunces',serif; margin:0 0 8px; font-size:1.2rem; }
+  .card p{ color:var(--ink-500); font-size:.9rem; line-height:1.55; margin:0 0 18px; }
+  .spinner{ width:34px; height:34px; border-radius:50%; border:3px solid var(--border-card); border-top-color:var(--gold-500); animation:spin .8s linear infinite; margin:0 auto 18px; }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .status-icon{ width:46px; height:46px; margin:0 auto 14px; }
+  .status-icon.ok{ stroke:var(--success); fill:none; stroke-width:1.6; }
+  .status-icon.err{ stroke:var(--danger); fill:none; stroke-width:1.6; }
+  .btn{ padding:12px 20px; border-radius:14px; border:none; font-weight:700; font-size:.88rem; cursor:pointer; background:linear-gradient(150deg,var(--gold-500),var(--gold-600)); color:var(--teal-900); }
+  .btn-ghost{ background:var(--cream); color:var(--ink-900); border:1.5px solid var(--border-card); margin-left:8px; }
+  .notice{ text-align:left; background:var(--warn-bg); border-radius:var(--r-sm); padding:12px 14px; font-size:.78rem; color:var(--ink-900); margin-top:16px; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<div class="imp-banner" id="imp-banner" style="display:none;">
+  <span>Viewing as <span class="who" id="imp-who"></span></span>
+  <span>Time left: <span class="timer" id="imp-timer">—</span></span>
+  <button id="imp-end" type="button">End session</button>
+</div>
+
+<main>
+  <div class="card" id="card-loading">
+    <div class="spinner"></div>
+    <h2>Starting debug session…</h2>
+    <p>Exchanging your one-time token for a session.</p>
+  </div>
+
+  <div class="card" id="card-ready" style="display:none;">
+    <svg class="status-icon ok" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+    <h2>Session active</h2>
+    <p id="ready-detail">You're now signed in as the selected user, in this tab only.</p>
+    <button class="btn" id="go-dashboard">Go to dashboard →</button>
+    <div class="notice">
+      If this is an Incognito/Private window, this session is fully isolated from your normal browsing &mdash; closing the window discards it entirely. It also expires automatically after <span id="expiry-minutes">60</span> minutes, or sooner if you click "End session." (If this is a normal tab rather than Incognito, it shares storage with your other open tabs on this site &mdash; see the warning where you got this link.)
+    </div>
+  </div>
+
+  <div class="card" id="card-error" style="display:none;">
+    <svg class="status-icon err" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+    <h2>Couldn't start session</h2>
+    <p id="error-detail">This link may have already been used, or has expired.</p>
+    <button class="btn btn-ghost" id="close-tab">Close this tab</button>
+  </div>
+
+  <div class="card" id="card-expired" style="display:none;">
+    <svg class="status-icon err" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg>
+    <h2>Session expired</h2>
+    <p>The temporary debug session has ended. Close this tab, or go back to the admin tool to start a new one.</p>
+    <button class="btn btn-ghost" id="close-tab-2">Close this tab</button>
+  </div>
+</main>
+
+<script>
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+
+var AUTH_REDIRECT = 'https://educational-saas.github.io/';
+var DASHBOARD_URL = 'https://educational-saas.github.io/teachers/';
+
+// Session lifetime for this impersonation tab. Keep this short -- there is
+// no reason a debugging session needs to outlive a single testing pass.
+var SESSION_MINUTES = 60;
+
+// IMPORTANT: this client deliberately does NOT override `storage` or
+// `storageKey`. It uses the exact same default (localStorage, under the
+// library's auto-generated per-project key) that every other page in the
+// portal uses when it does `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)`
+// with no auth options -- which is how your dashboard and other pages are
+// built. That means once verifyOtp succeeds here, navigating to any other
+// portal page in THIS tab picks the session up automatically, because
+// they're all reading/writing the same storage key.
+//
+// This only stays safe because real isolation here comes from the browser,
+// not from a storage trick: an actual Incognito/Private window has its own
+// separate storage partition, completely walled off from your normal
+// browsing session, even though both use "the same" default key. If this
+// page is instead opened in a normal (non-Incognito) new tab, it WILL share
+// localStorage with your other open tabs on this origin -- see the warning
+// on the "open in new tab anyway" button on the picker page.
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  }
+});
+
+function show(id){
+  ['card-loading','card-ready','card-error','card-expired'].forEach(function(cid){
+    document.getElementById(cid).style.display = (cid === id) ? 'block' : 'none';
+  });
+}
+
+function parseFragment(){
+  var hash = window.location.hash.replace(/^#/, '');
+  var params = new URLSearchParams(hash);
+  return { token_hash: params.get('token_hash'), email: params.get('email') };
+}
+
+var expiryTimer = null;
+function startExpiryCountdown(){
+  var expiresAt = Date.now() + SESSION_MINUTES * 60 * 1000;
+  sessionStorage.setItem('sb-impersonation-expires-at', String(expiresAt));
+  tickTimer();
+  expiryTimer = setInterval(tickTimer, 1000);
+}
+function tickTimer(){
+  var expiresAt = Number(sessionStorage.getItem('sb-impersonation-expires-at') || 0);
+  var remaining = expiresAt - Date.now();
+  if(remaining <= 0){
+    clearInterval(expiryTimer);
+    endSession(true);
+    return;
+  }
+  var mins = Math.floor(remaining / 60000);
+  var secs = Math.floor((remaining % 60000) / 1000);
+  document.getElementById('imp-timer').textContent = mins + ':' + String(secs).padStart(2, '0');
+}
+
+function endSession(expired){
+  supabaseClient.auth.signOut().catch(function(){});
+  try{ sessionStorage.removeItem('sb-impersonation-expires-at'); }catch(e){}
+  document.getElementById('imp-banner').style.display = 'none';
+  show(expired ? 'card-expired' : 'card-error');
+  if(!expired) document.getElementById('error-detail').textContent = 'Session ended.';
+}
+
+document.getElementById('imp-end').addEventListener('click', function(){ endSession(false); });
+document.getElementById('close-tab').addEventListener('click', function(){ window.close(); });
+document.getElementById('close-tab-2').addEventListener('click', function(){ window.close(); });
+document.getElementById('go-dashboard').addEventListener('click', function(){ window.location.href = DASHBOARD_URL; });
+
+(async function init(){
+  var frag = parseFragment();
+  // Scrub the token out of the visible URL / history immediately so it
+  // doesn't linger in browser history or get shared accidentally.
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+
+  if(!frag.token_hash || !frag.email){
+    show('card-error');
+    document.getElementById('error-detail').textContent = 'No session token found in this link.';
+    return;
+  }
+
+  try{
+    // IMPORTANT: when verifying via token_hash, `email` must NOT also be
+    // passed -- verifyOtp treats {token_hash, type} and {email, token, type}
+    // as two separate, mutually exclusive verification modes, and errors
+    // ("Only the token_hash and type should be provided") if both are sent.
+    var result = await supabaseClient.auth.verifyOtp({
+      type: 'magiclink',
+      token_hash: frag.token_hash
+    });
+
+    if(result.error || !result.data || !result.data.session){
+      show('card-error');
+      document.getElementById('error-detail').textContent = result.error ? result.error.message : 'This link has already been used or has expired.';
+      return;
+    }
+
+    var user = result.data.session.user;
+    document.getElementById('imp-who').textContent = user.email || user.id;
+    document.getElementById('ready-detail').textContent = 'You\'re now signed in as ' + (user.email || user.id) + ', in this tab only.';
+    document.getElementById('expiry-minutes').textContent = String(SESSION_MINUTES);
+    document.getElementById('imp-banner').style.display = 'flex';
+
+    startExpiryCountdown();
+    show('card-ready');
+  }catch(err){
+    show('card-error');
+    document.getElementById('error-detail').textContent = 'Unexpected error: ' + err.message;
+  }
+})();
+</script>
+</body>
+</html>
