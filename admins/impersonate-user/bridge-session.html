@@ -100,20 +100,7 @@
 </main>
 
 <script>
-  var SUPABASE_URL, SUPABASE_ANON_KEY;
-  (function(){
-    var institutionId = localStorage.getItem('gsms_last_institution_id');
-    var cached = null;
-    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
-
-    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
-      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
-      throw new Error('Redirecting to sign-in.');
-    }
-    SUPABASE_URL = cached.data.supabase_url;
-    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
-  })();
-
+  
   async function wipeInstitutionData(){
     try{
       const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
@@ -145,13 +132,7 @@ var SESSION_MINUTES = 60;
 // page is instead opened in a normal (non-Incognito) new tab, it WILL share
 // localStorage with your other open tabs on this origin -- see the warning
 // on the "open in new tab anyway" button on the picker page.
-var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false
-  }
-});
+var supabaseClient = null; // created inside init(), once credentials are fetched
 
 function show(id){
   ['card-loading','card-ready','card-error','card-expired'].forEach(function(cid){
@@ -162,7 +143,11 @@ function show(id){
 function parseFragment(){
   var hash = window.location.hash.replace(/^#/, '');
   var params = new URLSearchParams(hash);
-  return { token_hash: params.get('token_hash'), email: params.get('email') };
+  return {
+    token_hash: params.get('token_hash'),
+    email: params.get('email'),
+    institution_id: params.get('institution_id')
+  };
 }
 
 var expiryTimer = null;
@@ -186,7 +171,7 @@ function tickTimer(){
 }
 
 function endSession(expired){
-  supabaseClient.auth.signOut().catch(function(){});
+  if (supabaseClient) supabaseClient.auth.signOut().catch(function(){});
   try{ sessionStorage.removeItem('sb-impersonation-expires-at'); }catch(e){}
   document.getElementById('imp-banner').style.display = 'none';
   show(expired ? 'card-expired' : 'card-error');
@@ -204,11 +189,27 @@ document.getElementById('go-dashboard').addEventListener('click', function(){ wi
   // doesn't linger in browser history or get shared accidentally.
   history.replaceState(null, '', window.location.pathname + window.location.search);
 
-  if(!frag.token_hash || !frag.email){
+  if(!frag.token_hash || !frag.email || !frag.institution_id){
     show('card-error');
-    document.getElementById('error-detail').textContent = 'No session token found in this link.';
+    document.getElementById('error-detail').textContent = 'This link is missing required session info.';
     return;
   }
+
+  var SUPABASE_URL, SUPABASE_ANON_KEY;
+  try{
+    var { getInstitutionUrl, getInstitutionAnonKey } = await import('https://educational-saas.github.io/commons/control-plane.js');
+    SUPABASE_URL = await getInstitutionUrl(frag.institution_id);
+    SUPABASE_ANON_KEY = await getInstitutionAnonKey(frag.institution_id);
+    if(!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Institution has no registered credentials.');
+  }catch(err){
+    show('card-error');
+    document.getElementById('error-detail').textContent = 'Could not resolve institution: ' + err.message;
+    return;
+  }
+
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
 
   try{
     // IMPORTANT: when verifying via token_hash, `email` must NOT also be
