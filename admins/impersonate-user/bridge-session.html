@@ -195,6 +195,8 @@ document.getElementById('go-dashboard').addEventListener('click', function(){ wi
     return;
   }
 
+  try{ localStorage.setItem('gsms_last_institution_id', frag.institution_id); }catch(e){}
+
   var SUPABASE_URL, SUPABASE_ANON_KEY;
   try{
     var { getInstitutionUrl, getInstitutionAnonKey } = await import('https://educational-saas.github.io/commons/control-plane.js');
