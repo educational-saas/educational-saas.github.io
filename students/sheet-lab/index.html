@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Sheet Lab 🧮 — Learn Spreadsheets!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+
+    --plum:var(--ink-900);
+    --ink-soft:var(--ink-500);
+    --purple: var(--fun-purple);
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    /* ---------- Sheet Lab specific tokens ---------- */
+    --grid-line: rgba(13,56,65,.14);
+    --grid-line-soft: rgba(13,56,65,.08);
+    --head-bg: var(--teal-100);
+    --head-ink: var(--teal-800);
+    --cell-bg: var(--white);
+    --cell-sel: rgba(34,125,139,.14);
+    --cell-active-ring: var(--teal-700);
+    --error-ink: var(--fun-red);
+    --link-ink: var(--teal-700);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:12px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+
+    --teal-900:#092227;
+    --teal-800:#8fe1ec;
+    --teal-700:#5fd0de;
+    --teal-600:#7fdbe6;
+    --teal-100:#173338;
+    --gold-600:#ffb648;
+    --gold-500:#ffc65c;
+    --gold-400:#ffd685;
+    --gold-100:#2b2110;
+    --cream:#0d1517;
+    --ink-900:#eef3f2;
+    --ink-500:#a4b6b7;
+    --white:#182425;
+
+    --bg-tint-gold: rgba(255,182,72,.08);
+    --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10);
+
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5);
+    --edge-shadow-soft: rgba(0,0,0,.35);
+
+    --grid-line: rgba(255,255,255,.14);
+    --grid-line-soft: rgba(255,255,255,.08);
+    --head-bg: var(--teal-100);
+    --head-ink: var(--teal-700);
+    --cell-bg: var(--white);
+    --cell-sel: rgba(127,219,230,.16);
+    --cell-active-ring: var(--teal-600);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    min-height:100%;
+    font-family:var(--font-body);
+    color:var(--plum);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 45%, var(--bg-tint-gold) 100%);
+    display:flex;flex-direction:column;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  button, input, select{font-family:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:3px solid var(--teal-600);outline-offset:2px;}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px;gap:10px;flex-wrap:wrap;
+    border-bottom:1px solid var(--border-card);
+  }
+  .brand{
+    display:flex;align-items:center;gap:9px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(18px,2.6vw,24px);color:var(--plum);
+  }
+  .brand .mascot-mini{font-size:1.25em;display:inline-block;}
+  .brand .tagline{
+    font-family:var(--font-body);font-weight:600;font-size:12.5px;color:var(--ink-soft);
+    border-left:2px solid var(--border-card);padding-left:9px;margin-left:2px;
+  }
+  .top-right{display:flex;align-items:center;gap:8px;}
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;border:2px solid var(--white);
+    background:var(--white);font-size:17px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 0 var(--edge-shadow-soft);transition:transform .12s ease;
+  }
+  .icon-btn:hover{transform:translateY(-1px);}
+  .icon-btn:active{transform:translateY(1px);}
+
+  .sheet-name{
+    font-family:var(--font-display);font-weight:600;font-size:15px;
+    border:2px solid transparent;background:transparent;color:var(--plum);
+    border-radius:var(--r-sm);padding:6px 8px;min-width:80px;max-width:180px;
+  }
+  .sheet-name:hover, .sheet-name:focus{border-color:var(--input-border);background:var(--white);}
+
+  /* ---------- toolbar ---------- */
+  .toolbar-wrap{border-bottom:1px solid var(--border-card);background:var(--panel-tint);}
+  .toolbar{
+    display:flex;gap:4px;align-items:center;
+    padding:8px 10px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tgroup{display:flex;gap:4px;align-items:center;padding:0 8px;border-right:2px solid var(--border-card);flex:0 0 auto;}
+  .tgroup:last-child{border-right:none;}
+  .tbtn{
+    min-width:34px;height:34px;border-radius:10px;border:none;background:var(--white);
+    box-shadow:0 2px 0 var(--edge-shadow-soft);font-size:14px;font-weight:800;color:var(--plum);
+    display:flex;align-items:center;justify-content:center;padding:0 8px;white-space:nowrap;
+    transition:transform .1s ease, background .1s ease;
+  }
+  .tbtn:hover{transform:translateY(-1px);}
+  .tbtn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--edge-shadow-soft);}
+  .tbtn.on{background:var(--purple);color:#fff;}
+  .tbtn.wide{padding:0 10px;font-weight:700;}
+  .tsel{
+    height:34px;border-radius:10px;border:2px solid var(--input-border);background:var(--white);
+    color:var(--plum);font-size:12.5px;font-weight:700;padding:0 6px;
+  }
+  .swatch-dot{width:16px;height:16px;border-radius:4px;border:1px solid var(--grid-line);display:block;}
+
+  .popover{
+    position:absolute;z-index:40;background:var(--white);border-radius:var(--r-sm);
+    box-shadow:0 8px 0 var(--edge-shadow-soft), 0 10px 24px rgba(0,0,0,.18);
+    padding:10px;display:none;border:1px solid var(--border-card);
+  }
+  .popover.show{display:block;}
+  .swrow{display:grid;grid-template-columns:repeat(5,26px);gap:6px;}
+  .sw{width:26px;height:26px;border-radius:50%;border:3px solid var(--white);box-shadow:0 0 0 1.5px var(--grid-line);cursor:pointer;}
+  .sw:hover{transform:scale(1.1);}
+  .sw.none{background:var(--white);position:relative;}
+  .sw.none::after{content:"";position:absolute;left:3px;right:3px;top:50%;height:2px;background:var(--fun-red);transform:rotate(-45deg);}
+
+  /* ---------- formula bar ---------- */
+  .formula-bar{
+    display:flex;align-items:center;gap:8px;padding:7px 10px;
+    border-bottom:1px solid var(--border-card);background:var(--cell-bg);
+  }
+  .namebox{
+    font-family:var(--font-body);font-weight:800;font-size:13px;color:var(--head-ink);
+    background:var(--head-bg);border:2px solid transparent;border-radius:8px;
+    width:78px;flex:0 0 auto;padding:6px 4px;text-align:center;
+  }
+  .namebox:focus{border-color:var(--teal-600);}
+  .fx{font-family:var(--font-display);font-style:italic;font-weight:700;color:var(--ink-soft);flex:0 0 auto;font-size:15px;}
+  #formulaInput{
+    flex:1 1 auto;min-width:0;border:2px solid var(--input-border);background:var(--input-bg);
+    border-radius:8px;padding:7px 10px;font-size:14px;color:var(--plum);
+  }
+  #formulaInput:focus{border-color:var(--teal-600);}
+
+  /* ---------- tips strip ---------- */
+  .tips-strip{
+    display:none;align-items:center;gap:10px;padding:9px 14px;
+    background:var(--bubble-tint);border-bottom:1px solid var(--border-card);
+    font-size:13.5px;font-weight:600;color:var(--plum);
+  }
+  .tips-strip.show{display:flex;}
+  .tips-strip .tip-emoji{font-size:18px;flex:0 0 auto;}
+  .tips-strip .tip-text{flex:1 1 auto;}
+  .tips-strip .tip-close{
+    flex:0 0 auto;background:none;border:none;font-size:16px;color:var(--ink-soft);
+    width:26px;height:26px;border-radius:50%;
+  }
+  .tips-strip .tip-close:hover{background:rgba(0,0,0,.06);}
+
+  /* ---------- grid area ---------- */
+  .grid-wrap{
+    flex:1 1 auto;overflow:auto;position:relative;background:var(--cell-bg);
+    -webkit-overflow-scrolling:touch;
+  }
+  table.sheet{border-collapse:separate;border-spacing:0;table-layout:fixed;}
+  table.sheet th, table.sheet td{
+    border-right:1px solid var(--grid-line-soft);border-bottom:1px solid var(--grid-line-soft);
+    padding:0;margin:0;
+  }
+  th.colhead{
+    position:sticky;top:0;z-index:3;background:var(--head-bg);color:var(--head-ink);
+    font-size:12px;font-weight:800;height:28px;width:100px;min-width:100px;
+    text-align:center;user-select:none;
+  }
+  th.corner{
+    position:sticky;top:0;left:0;z-index:5;background:var(--head-bg);width:42px;min-width:42px;
+  }
+  th.rowhead{
+    position:sticky;left:0;z-index:2;background:var(--head-bg);color:var(--head-ink);
+    font-size:11.5px;font-weight:800;width:42px;min-width:42px;text-align:center;user-select:none;
+  }
+  td.cell{
+    width:100px;min-width:100px;height:28px;background:var(--cell-bg);
+    font-size:13px;color:var(--plum);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:0 5px;vertical-align:middle;position:relative;user-select:none;cursor:cell;
+  }
+  td.cell.sel{background:var(--cell-sel);}
+  td.cell.active{box-shadow:inset 0 0 0 2px var(--cell-active-ring);}
+  td.cell.err{color:var(--error-ink);font-weight:700;}
+  #cellEditor{
+    position:absolute;z-index:20;display:none;
+    border:2px solid var(--teal-700);border-radius:2px;background:var(--white);color:var(--plum);
+    font-size:13px;padding:0 4px;outline:none;box-shadow:0 3px 10px rgba(0,0,0,.18);
+  }
+
+  /* ---------- status bar ---------- */
+  .status-bar{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+    padding:8px 14px;border-top:1px solid var(--border-card);background:var(--panel-tint);
+    font-size:12.5px;font-weight:700;color:var(--ink-soft);
+  }
+  .status-bar b{color:var(--plum);font-weight:800;}
+  .status-bar .stat{display:flex;gap:4px;align-items:center;}
+
+  /* ---------- charts panel ---------- */
+  .charts-panel{padding:14px 16px;border-top:1px solid var(--border-card);display:none;flex-direction:column;gap:14px;}
+  .charts-panel.show{display:flex;}
+  .charts-panel h3{
+    font-family:var(--font-display);font-weight:700;font-size:16px;margin:0;color:var(--plum);
+  }
+  .chart-card{
+    background:var(--white);border-radius:var(--r-md);border:1px solid var(--border-card);
+    padding:12px;box-shadow:0 5px 0 var(--edge-shadow-soft);
+  }
+  .chart-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;}
+  .chart-card-head span{font-weight:800;font-size:13.5px;color:var(--plum);}
+  .chart-card svg{width:100%;height:auto;display:block;}
+  .chart-del{background:none;border:none;color:var(--ink-soft);font-size:16px;border-radius:50%;width:26px;height:26px;flex:0 0 auto;}
+  .chart-del:hover{background:rgba(242,85,90,.14);color:var(--error-ink);}
+
+  /* ---------- modals ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:var(--overlay-tint);display:none;
+    align-items:center;justify-content:center;z-index:60;padding:16px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--cream);border-radius:var(--r-lg);padding:22px 22px 20px;
+    max-width:480px;width:100%;max-height:88vh;overflow:auto;
+    box-shadow:0 12px 0 var(--edge-shadow);border:1px solid var(--border-card);
+  }
+  .modal h2{font-family:var(--font-display);font-weight:700;font-size:22px;margin:0 0 6px;color:var(--plum);}
+  .modal p{font-size:14px;line-height:1.5;color:var(--ink-soft);margin:0 0 10px;}
+  .modal .close-x{float:right;background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;}
+  .help-example{
+    background:var(--white);border:1px dashed var(--teal-600);border-radius:10px;
+    padding:8px 10px;margin:8px 0;font-size:13px;
+  }
+  .help-example code{font-weight:800;color:var(--teal-700);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+  .btn-primary,.btn-secondary{
+    font-weight:800;font-size:14px;border:none;border-radius:999px;padding:10px 18px;
+    transition:transform .12s ease;
+  }
+  .btn-primary{background:var(--fun-green);color:#fff;box-shadow:0 4px 0 #399c6c;}
+  .btn-primary:hover{transform:translateY(-1px);}
+  .btn-primary:active{transform:translateY(2px);box-shadow:0 1px 0 #399c6c;}
+  .btn-secondary{background:var(--panel-tint);color:var(--plum);box-shadow:0 4px 0 var(--border-card);}
+  .btn-secondary:hover{transform:translateY(-1px);}
+  .btn-secondary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--border-card);}
+  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+  .field-row label{font-size:12.5px;font-weight:800;color:var(--plum);}
+  .radio-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .radio-row label{
+    display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;color:var(--plum);
+    background:var(--white);border:2px solid var(--input-border);border-radius:999px;padding:6px 12px;
+  }
+  .radio-row input{accent-color:var(--teal-700);}
+  #chartPreviewBox{background:var(--white);border-radius:10px;padding:10px;border:1px solid var(--border-card);min-height:160px;}
+
+  .toast{
+    position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);
+    background:var(--plum);color:var(--cream);font-weight:700;font-size:13.5px;
+    padding:10px 18px;border-radius:999px;z-index:80;opacity:0;pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+
+  @media (max-width:560px){
+    .brand .tagline{display:none;}
+    .sheet-name{max-width:110px;}
+    th.colhead, td.cell{width:84px;min-width:84px;}
+    .status-bar{font-size:11.5px;gap:10px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="brand">
+    <span class="mascot-mini">🧮</span> Sheet Lab
+    <span class="tagline">Learn spreadsheets by doing</span>
+  </div>
+  <div class="top-right">
+    <input class="sheet-name" id="sheetName" value="My Sheet" maxlength="40" aria-label="Sheet name">
+    <button class="icon-btn" id="tipsBtn" title="Tips &amp; help">💡</button>
+    <button class="icon-btn" id="themeBtn" title="Light / dark theme">🌙</button>
+  </div>
+</div>
+
+<div class="toolbar-wrap">
+  <div class="toolbar" id="toolbar">
+    <div class="tgroup">
+      <button class="tbtn" id="undoBtn" title="Undo">↩️</button>
+      <button class="tbtn" id="redoBtn" title="Redo">↪️</button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn" id="boldBtn" title="Bold"><b>B</b></button>
+      <button class="tbtn" id="italicBtn" title="Italic"><i>I</i></button>
+      <button class="tbtn" id="underlineBtn" title="Underline"><u>U</u></button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn" id="alignLeftBtn" title="Align left">⟸</button>
+      <button class="tbtn" id="alignCenterBtn" title="Align center">↔</button>
+      <button class="tbtn" id="alignRightBtn" title="Align right">⟹</button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn" id="sizeDownBtn" title="Smaller text">A−</button>
+      <button class="tbtn" id="sizeUpBtn" title="Bigger text">A+</button>
+    </div>
+    <div class="tgroup" style="position:relative;">
+      <button class="tbtn" id="textColorBtn" title="Text color">🔤<span class="swatch-dot" id="textColorDot" style="margin-left:4px;background:#1c2626;"></span></button>
+      <div class="popover" id="textColorPop"><div class="swrow" id="textColorSw"></div></div>
+    </div>
+    <div class="tgroup" style="position:relative;">
+      <button class="tbtn" id="fillColorBtn" title="Fill color">🖌️<span class="swatch-dot" id="fillColorDot" style="margin-left:4px;background:transparent;"></span></button>
+      <div class="popover" id="fillColorPop"><div class="swrow" id="fillColorSw"></div></div>
+    </div>
+    <div class="tgroup">
+      <select class="tsel" id="numFmtSel" title="Number format">
+        <option value="general">General</option>
+        <option value="number">Number (0.00)</option>
+        <option value="percent">Percent %</option>
+        <option value="currency">Currency $</option>
+      </select>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn wide" id="mergeBtn" title="Merge selected cells">Merge</button>
+      <button class="tbtn wide" id="unmergeBtn" title="Unmerge cell">Unmerge</button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn wide" id="sortAscBtn" title="Sort ascending">Sort A→Z</button>
+      <button class="tbtn wide" id="sortDescBtn" title="Sort descending">Sort Z→A</button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn wide" id="addRowBtn" title="Add row">+Row</button>
+      <button class="tbtn wide" id="addColBtn" title="Add column">+Col</button>
+      <button class="tbtn wide" id="delRowBtn" title="Delete row">−Row</button>
+      <button class="tbtn wide" id="delColBtn" title="Delete column">−Col</button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn wide" id="chartBtn" title="Insert chart">📊 Chart</button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn wide" id="clearBtn" title="Clear cell content">Clear</button>
+    </div>
+    <div class="tgroup">
+      <button class="tbtn wide" id="saveBtn" title="Save sheet">💾 Save</button>
+      <button class="tbtn wide" id="csvBtn" title="Export as CSV">⬇ CSV</button>
+      <button class="tbtn wide" id="newBtn" title="New blank sheet">🆕 New</button>
+    </div>
+  </div>
+</div>
+
+<div class="formula-bar">
+  <input class="namebox" id="nameBox" value="A1" aria-label="Cell address">
+  <span class="fx">fx</span>
+  <input id="formulaInput" placeholder="Type text, a number, or a formula like =SUM(A1:A3)" autocomplete="off" spellcheck="false">
+</div>
+
+<div class="tips-strip" id="tipsStrip">
+  <span class="tip-emoji">💡</span>
+  <span class="tip-text" id="tipText">Click a cell, then start typing. Press Enter to lock it in!</span>
+  <button class="tip-close" id="tipClose" title="Hide tip">✕</button>
+</div>
+
+<div class="grid-wrap" id="gridWrap">
+  <table class="sheet" id="sheetTable"></table>
+  <input id="cellEditor" autocomplete="off" spellcheck="false">
+</div>
+
+<div class="status-bar" id="statusBar">
+  <div class="stat">📍 <b id="statAddr">A1</b></div>
+  <div class="stat">Count: <b id="statCount">0</b></div>
+  <div class="stat">Sum: <b id="statSum">0</b></div>
+  <div class="stat">Average: <b id="statAvg">0</b></div>
+</div>
+
+<div class="charts-panel" id="chartsPanel">
+  <h3>Your charts</h3>
+  <div id="chartsList"></div>
+</div>
+
+<!-- Help / Tips modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <button class="close-x" data-close="helpModal">✕</button>
+    <h2>🧮 Welcome to Sheet Lab!</h2>
+    <p>This is your practice spreadsheet. Here's everything you need to get started:</p>
+    <div class="help-example"><b>Cells</b> — every box has an address, like <code>B3</code> (column B, row 3). Click a cell to select it.</div>
+    <div class="help-example"><b>Type data</b> — click a cell and start typing. Press <code>Enter</code> to save and move down, <code>Tab</code> to move right.</div>
+    <div class="help-example"><b>Formulas</b> — start with <code>=</code> to do math. Try <code>=A1+A2</code> or <code>=SUM(A1:A5)</code>.</div>
+    <div class="help-example">Other handy formulas: <code>=AVERAGE(A1:A5)</code>, <code>=MIN(...)</code>, <code>=MAX(...)</code>, <code>=COUNT(...)</code>, <code>=IF(A1&gt;10,"big","small")</code>, <code>=ROUND(A1,2)</code></div>
+    <div class="help-example"><b>Select a range</b> — click and drag across cells, or click one cell then shift-click another.</div>
+    <div class="help-example"><b>Format</b> — use the toolbar for bold, colors, alignment, merging cells, and number styles.</div>
+    <div class="help-example"><b>Charts</b> — select your data (include a header row!) and tap 📊 Chart.</div>
+    <div class="help-example"><b>Save</b> — tap 💾 Save to keep your sheet on this device, or ⬇ CSV to download it.</div>
+    <div class="modal-actions"><button class="btn-primary" data-close="helpModal">Got it!</button></div>
+  </div>
+</div>
+
+<!-- Chart modal -->
+<div class="modal-overlay" id="chartModal">
+  <div class="modal">
+    <button class="close-x" data-close="chartModal">✕</button>
+    <h2>📊 Insert a chart</h2>
+    <p>Using your selected cells <b id="chartRangeLabel">—</b>. Tip: include a header row so your chart gets nice labels.</p>
+    <div class="field-row">
+      <label>Chart type</label>
+      <div class="radio-row">
+        <label><input type="radio" name="chartType" value="bar" checked> Bar</label>
+        <label><input type="radio" name="chartType" value="line"> Line</label>
+        <label><input type="radio" name="chartType" value="pie"> Pie</label>
+      </div>
+    </div>
+    <div class="field-row">
+      <label>Chart title</label>
+      <input id="chartTitleInput" placeholder="My chart" style="border:2px solid var(--input-border);background:var(--input-bg);border-radius:8px;padding:8px 10px;font-size:14px;color:var(--plum);">
+    </div>
+    <div id="chartPreviewBox"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" data-close="chartModal">Cancel</button>
+      <button class="btn-primary" id="insertChartBtn">Insert chart</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =====================================================================
+   FORMULA ENGINE
+   ===================================================================== */
+function colToLetter(n){
+  n++; let s='';
+  while(n>0){ const rem=(n-1)%26; s=String.fromCharCode(65+rem)+s; n=Math.floor((n-1)/26); }
+  return s;
+}
+function letterToCol(letters){
+  let n=0; letters = letters.toUpperCase();
+  for(let i=0;i<letters.length;i++) n = n*26 + (letters.charCodeAt(i)-64);
+  return n-1;
+}
+function cellRef(r,c){ return colToLetter(c) + (r+1); }
+function parseAddr(a){
+  const m = /^([A-Za-z]+)(\d+)$/.exec(a);
+  if(!m) return null;
+  return {c: letterToCol(m[1]), r: parseInt(m[2],10)-1};
+}
+
+function tokenize(src){
+  const toks = []; let i=0; const n=src.length;
+  while(i<n){
+    const ch = src[i];
+    if(/\s/.test(ch)){ i++; continue; }
+    if(/[0-9.]/.test(ch)){
+      let j=i+1; while(j<n && /[0-9.]/.test(src[j])) j++;
+      toks.push({t:'NUM', v: parseFloat(src.slice(i,j))}); i=j; continue;
+    }
+    if(/[A-Za-z]/.test(ch)){
+      let j=i+1; while(j<n && /[A-Za-z0-9_]/.test(src[j])) j++;
+      toks.push({t:'NAME', v: src.slice(i,j)}); i=j; continue;
+    }
+    if(ch === '"'){
+      let j=i+1; let out='';
+      while(j<n && src[j] !== '"'){ out += src[j]; j++; }
+      toks.push({t:'STR', v: out}); i=j+1; continue;
+    }
+    if(ch === '<' || ch === '>'){
+      if(src[i+1] === '='){ toks.push({t:'OP', v: ch+'='}); i+=2; continue; }
+      if(ch === '<' && src[i+1] === '>'){ toks.push({t:'OP', v:'<>'}); i+=2; continue; }
+      toks.push({t:'OP', v: ch}); i++; continue;
+    }
+    if('+-*/^&=(),:'.includes(ch)){
+      toks.push({t:(ch==='('?'LP': ch===')'?'RP': ch===','?'COMMA': ch===':'?'COLON':'OP'), v: ch});
+      i++; continue;
+    }
+    throw new Error('#ERROR!');
+  }
+  toks.push({t:'EOF', v:null});
+  return toks;
+}
+
+function parseFormula(tokens){
+  let pos = 0;
+  function peek(){ return tokens[pos]; }
+  function next(){ return tokens[pos++]; }
+  function expect(t){ if(peek().t !== t) throw new Error('#ERROR!'); return next(); }
+
+  function parseExpr(){ return parseComparison(); }
+  function parseComparison(){
+    let left = parseConcat();
+    while(peek().t === 'OP' && ['=','<>','<=','>=','<','>'].includes(peek().v)){
+      const op = next().v; left = {type:'bin', op, left, right: parseConcat()};
+    }
+    return left;
+  }
+  function parseConcat(){
+    let left = parseAdditive();
+    while(peek().t === 'OP' && peek().v === '&'){ next(); left = {type:'bin', op:'&', left, right: parseAdditive()}; }
+    return left;
+  }
+  function parseAdditive(){
+    let left = parseTerm();
+    while(peek().t === 'OP' && (peek().v === '+' || peek().v === '-')){
+      const op = next().v; left = {type:'bin', op, left, right: parseTerm()};
+    }
+    return left;
+  }
+  function parseTerm(){
+    let left = parseFactor();
+    while(peek().t === 'OP' && (peek().v === '*' || peek().v === '/')){
+      const op = next().v; left = {type:'bin', op, left, right: parseFactor()};
+    }
+    return left;
+  }
+  function parseFactor(){
+    let left = parseUnary();
+    while(peek().t === 'OP' && peek().v === '^'){ next(); left = {type:'bin', op:'^', left, right: parseUnary()}; }
+    return left;
+  }
+  function parseUnary(){
+    if(peek().t === 'OP' && (peek().v === '-' || peek().v === '+')){
+      const op = next().v; return {type:'unary', op, operand: parseUnary()};
+    }
+    return parsePrimary();
+  }
+  function parsePrimary(){
+    const tok = peek();
+    if(tok.t === 'NUM'){ next(); return {type:'num', v: tok.v}; }
+    if(tok.t === 'STR'){ next(); return {type:'str', v: tok.v}; }
+    if(tok.t === 'LP'){ next(); const e = parseExpr(); expect('RP'); return e; }
+    if(tok.t === 'NAME'){
+      next();
+      const nameUpper = tok.v.toUpperCase();
+      if(peek().t === 'LP'){
+        next();
+        const args = [];
+        if(peek().t !== 'RP'){
+          args.push(parseExpr());
+          while(peek().t === 'COMMA'){ next(); args.push(parseExpr()); }
+        }
+        expect('RP');
+        return {type:'call', name: nameUpper, args};
+      }
+      if(peek().t === 'COLON'){ next(); const endTok = expect('NAME'); return {type:'range', start: tok.v, end: endTok.v}; }
+      if(/^[A-Za-z]+[0-9]+$/.test(tok.v)) return {type:'ref', v: tok.v};
+      if(nameUpper === 'TRUE') return {type:'bool', v:true};
+      if(nameUpper === 'FALSE') return {type:'bool', v:false};
+      return {type:'ref', v: tok.v};
+    }
+    throw new Error('#ERROR!');
+  }
+  const ast = parseExpr();
+  expect('EOF');
+  return ast;
+}
+
+function fToNum(v){
+  if(v && v.__range) v = v.values.length ? v.values[0] : 0;
+  if(v && v.error) throw new Error(v.error);
+  if(typeof v === 'number') return v;
+  if(typeof v === 'boolean') return v ? 1 : 0;
+  if(v === '' || v === null || v === undefined) return 0;
+  const n = parseFloat(v);
+  if(isNaN(n)) throw new Error('#VALUE!');
+  return n;
+}
+function fToStr(v){
+  if(v && v.__range) v = v.values.map(fToStr).join('');
+  if(v && v.error) throw new Error(v.error);
+  if(v === null || v === undefined) return '';
+  if(typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+  return String(v);
+}
+function fFlatten(argVals){
+  const out = [];
+  for(const v of argVals){
+    if(v && v.__range) out.push(...v.values);
+    else out.push(v);
+  }
+  return out;
+}
+function fCompare(l, r, op){
+  if(l && l.__range) l = l.values[0];
+  if(r && r.__range) r = r.values[0];
+  let res;
+  if(typeof l === 'number' || typeof r === 'number'){
+    const ln = fToNum(l), rn = fToNum(r);
+    switch(op){
+      case '=': res = ln===rn; break; case '<>': res = ln!==rn; break;
+      case '<': res = ln<rn; break; case '>': res = ln>rn; break;
+      case '<=': res = ln<=rn; break; case '>=': res = ln>=rn; break;
+    }
+  } else {
+    const ls = fToStr(l), rs = fToStr(r);
+    switch(op){
+      case '=': res = ls===rs; break; case '<>': res = ls!==rs; break;
+      case '<': res = ls<rs; break; case '>': res = ls>rs; break;
+      case '<=': res = ls<=rs; break; case '>=': res = ls>=rs; break;
+    }
+  }
+  return res;
+}
+
+const FUNCTIONS = {
+  SUM: (a) => fFlatten(a).reduce((s,v)=>{ const n=parseFloat(v); return s + (isNaN(n)?0:n); },0),
+  AVERAGE: (a) => { const nums = fFlatten(a).map(v=>parseFloat(v)).filter(v=>!isNaN(v)); if(!nums.length) throw new Error('#DIV/0!'); return nums.reduce((s,v)=>s+v,0)/nums.length; },
+  MIN: (a) => { const nums = fFlatten(a).map(v=>parseFloat(v)).filter(v=>!isNaN(v)); return nums.length? Math.min(...nums) : 0; },
+  MAX: (a) => { const nums = fFlatten(a).map(v=>parseFloat(v)).filter(v=>!isNaN(v)); return nums.length? Math.max(...nums) : 0; },
+  COUNT: (a) => fFlatten(a).filter(v => v!=='' && v!==null && v!==undefined && !isNaN(parseFloat(v))).length,
+  COUNTA: (a) => fFlatten(a).filter(v => v!=='' && v!==null && v!==undefined).length,
+  ROUND: (a) => { const [v,d] = a; const digits = d!==undefined? fToNum(d) : 0; const f = Math.pow(10,digits); return Math.round(fToNum(v)*f)/f; },
+  ABS: (a) => Math.abs(fToNum(a[0])),
+  IF: (a) => { const cond = a[0]; const truthy = (typeof cond === 'boolean') ? cond : fToNum(cond)!==0; return truthy ? a[1] : (a.length>2 ? a[2] : ''); },
+  AND: (a) => fFlatten(a).every(v => (typeof v==='boolean'? v : fToNum(v)!==0)),
+  OR: (a) => fFlatten(a).some(v => (typeof v==='boolean'? v : fToNum(v)!==0)),
+  NOT: (a) => { const v=a[0]; return !((typeof v==='boolean')? v: fToNum(v)!==0); },
+  CONCAT: (a) => fFlatten(a).map(fToStr).join(''),
+  CONCATENATE: (a) => fFlatten(a).map(fToStr).join(''),
+  LEN: (a) => fToStr(a[0]).length,
+  UPPER: (a) => fToStr(a[0]).toUpperCase(),
+  LOWER: (a) => fToStr(a[0]).toLowerCase(),
+  TRIM: (a) => fToStr(a[0]).trim(),
+  MEDIAN: (a) => { const nums = fFlatten(a).map(v=>parseFloat(v)).filter(v=>!isNaN(v)).sort((x,y)=>x-y); if(!nums.length) throw new Error('#DIV/0!'); const mid=Math.floor(nums.length/2); return nums.length%2? nums[mid] : (nums[mid-1]+nums[mid])/2; },
+  SQRT: (a) => { const v = fToNum(a[0]); if(v<0) throw new Error('#NUM!'); return Math.sqrt(v); },
+  POWER: (a) => Math.pow(fToNum(a[0]), fToNum(a[1])),
+};
+
+function evalAst(ast, ctx){
+  switch(ast.type){
+    case 'num': return ast.v;
+    case 'str': return ast.v;
+    case 'bool': return ast.v;
+    case 'ref': {
+      const addr = parseAddr(ast.v);
+      if(!addr) throw new Error('#REF!');
+      return ctx.getCell(addr.r, addr.c);
+    }
+    case 'range': {
+      const a = parseAddr(ast.start), b = parseAddr(ast.end);
+      if(!a || !b) throw new Error('#REF!');
+      const r1=Math.min(a.r,b.r), r2=Math.max(a.r,b.r), c1=Math.min(a.c,b.c), c2=Math.max(a.c,b.c);
+      const out = [];
+      for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) out.push(ctx.getCell(r,c));
+      return {__range:true, values: out};
+    }
+    case 'unary': { const v = fToNum(evalAst(ast.operand, ctx)); return ast.op === '-' ? -v : v; }
+    case 'bin': {
+      const l = evalAst(ast.left, ctx), r = evalAst(ast.right, ctx);
+      if(ast.op === '&') return fToStr(l) + fToStr(r);
+      if(['=','<>','<','>','<=','>='].includes(ast.op)) return fCompare(l, r, ast.op);
+      const ln = fToNum(l), rn = fToNum(r);
+      switch(ast.op){
+        case '+': return ln+rn; case '-': return ln-rn; case '*': return ln*rn;
+        case '/': if(rn===0) throw new Error('#DIV/0!'); return ln/rn;
+        case '^': return Math.pow(ln,rn);
+      }
+      break;
+    }
+    case 'call': {
+      const fn = FUNCTIONS[ast.name];
+      if(!fn) throw new Error('#NAME?');
+      return fn(ast.args.map(a => evalAst(a, ctx)), ctx);
+    }
+  }
+  throw new Error('#ERROR!');
+}
+
+/* =====================================================================
+   APPLICATION STATE
+   ===================================================================== */
+const DEFAULT_ROWS = 20, DEFAULT_COLS = 10, MAX_ROWS = 200, MAX_COLS = 50;
+const COLORS = [
+  {name:'Dark', hex:'#1c2626'}, {name:'Red', hex:'#f2555a'}, {name:'Orange', hex:'#ff9f45'},
+  {name:'Yellow', hex:'#e2941a'}, {name:'Green', hex:'#399c6c'}, {name:'Blue', hex:'#227d8b'},
+  {name:'Purple', hex:'#a679e0'}, {name:'Pink', hex:'#ff8fc0'}, {name:'Teal', hex:'#124f59'}
+];
+const FILLS = [
+  {name:'None', hex:''}, {name:'Red', hex:'#fde3e3'}, {name:'Orange', hex:'#ffe6d0'},
+  {name:'Yellow', hex:'#fdf1dc'}, {name:'Green', hex:'#e0f5ea'}, {name:'Blue', hex:'#e3eef0'},
+  {name:'Purple', hex:'#f1e7fb'}, {name:'Pink', hex:'#ffe9f3'}, {name:'Grey', hex:'#eceeee'}
+];
+const TIPS = [
+  "Click a cell, then start typing. Press Enter to lock it in!",
+  "Try a formula: click a cell and type =SUM(A1:A3), then press Enter.",
+  "Drag across cells (or shift-click) to select a range.",
+  "Use the 🎨 buttons to color text or fill a cell.",
+  "Select two columns with a header row, then tap 📊 Chart.",
+  "Press Delete to clear the content of selected cells."
+];
+
+function blankState(){
+  return {
+    rows: DEFAULT_ROWS, cols: DEFAULT_COLS,
+    cells: {},           // ref -> {raw, fmt}
+    merges: [],           // {r1,c1,r2,c2}
+    charts: []            // {id,title,type,categories,series}
+  };
+}
+let state = blankState();
+let sel = { ar:0, ac:0, er:0, ec:0 };   // anchor r/c, end r/c
+let editing = false;
+let editRef = null;
+let clipboard = null;
+let history = [], future = [];
+let evalCache, evalVisiting;
+let sheetName = 'My Sheet';
+let chartIdSeed = 1;
+
+function snapshot(){
+  return JSON.stringify({rows:state.rows, cols:state.cols, cells:state.cells, merges:state.merges, charts:state.charts});
+}
+function pushHistory(){
+  history.push(snapshot());
+  if(history.length > 60) history.shift();
+  future = [];
+}
+function restoreSnapshot(json){
+  const s = JSON.parse(json);
+  state.rows = s.rows; state.cols = s.cols; state.cells = s.cells; state.merges = s.merges; state.charts = s.charts;
+}
+function undo(){
+  if(!history.length) return;
+  future.push(snapshot());
+  const prev = history.pop();
+  restoreSnapshot(prev);
+  clampSelection();
+  renderAll();
+}
+function redo(){
+  if(!future.length) return;
+  history.push(snapshot());
+  const nxt = future.pop();
+  restoreSnapshot(nxt);
+  clampSelection();
+  renderAll();
+}
+
+function getCellObj(r,c){ return state.cells[cellRef(r,c)]; }
+function getRaw(r,c){ const o = getCellObj(r,c); return o ? (o.raw||'') : ''; }
+function getFmt(r,c){
+  const o = getCellObj(r,c);
+  return Object.assign({b:false,i:false,u:false,align:null,size:14,color:'',bg:'',numFmt:'general'}, o ? o.fmt : {});
+}
+function ensureCell(r,c){
+  const ref = cellRef(r,c);
+  if(!state.cells[ref]) state.cells[ref] = {raw:'', fmt:{}};
+  return state.cells[ref];
+}
+function setRaw(r,c,val){
+  if(val === '' ){
+    const ref = cellRef(r,c);
+    if(state.cells[ref]) state.cells[ref].raw = '';
+    return;
+  }
+  ensureCell(r,c).raw = val;
+}
+function setFmt(r,c,patch){ Object.assign(ensureCell(r,c).fmt, patch); }
+
+function isNumericString(s){ return /^-?\d+(\.\d+)?$/.test(s.trim()); }
+
+function getCellValue(r,c){
+  const ref = cellRef(r,c);
+  if(evalCache.has(ref)) return evalCache.get(ref);
+  if(evalVisiting.has(ref)){ const err = {error:'#CIRC!'}; return err; }
+  evalVisiting.add(ref);
+  let raw = getRaw(r,c);
+  let result;
+  if(raw && raw.charAt(0) === '='){
+    try{
+      const ast = parseFormula(tokenize(raw.slice(1)));
+      let v = evalAst(ast, { getCell: (rr,cc) => getCellValue(rr,cc) });
+      if(v && v.__range) v = v.values.length ? v.values[0] : '';
+      result = v;
+    }catch(e){ result = {error: (e && e.message) || '#ERROR!'}; }
+  } else if(raw === ''){
+    result = '';
+  } else if(isNumericString(raw)){
+    result = parseFloat(raw);
+  } else {
+    result = raw;
+  }
+  evalVisiting.delete(ref);
+  evalCache.set(ref, result);
+  return result;
+}
+function recompute(){ evalCache = new Map(); evalVisiting = new Set(); }
+
+function generalFormat(n){
+  if(Number.isInteger(n)) return String(n);
+  const fixed = parseFloat(n.toFixed(6));
+  return String(fixed);
+}
+function formatValue(v, fmt){
+  if(v && v.error) return {text: v.error, err:true};
+  if(v === '' || v === null || v === undefined) return {text:'', err:false};
+  if(typeof v === 'boolean') return {text: v?'TRUE':'FALSE', err:false};
+  if(typeof v === 'number'){
+    switch(fmt.numFmt){
+      case 'number': return {text: v.toFixed(2), err:false};
+      case 'percent': return {text: (v*100).toFixed(1)+'%', err:false};
+      case 'currency': return {text: '$'+v.toFixed(2), err:false};
+      default: return {text: generalFormat(v), err:false};
+    }
+  }
+  return {text: String(v), err:false};
+}
+
+/* ------------ merges ------------ */
+function findMerge(r,c){
+  for(const m of state.merges){ if(r>=m.r1 && r<=m.r2 && c>=m.c1 && c<=m.c2) return m; }
+  return null;
+}
+function isMergeMaster(r,c,m){ return m.r1===r && m.c1===c; }
+function overlapsMerge(r1,c1,r2,c2){
+  for(const m of state.merges){
+    if(!(m.r2<r1 || m.r1>r2 || m.c2<c1 || m.c1>c2)) return m;
+  }
+  return null;
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+const el = {};
+['sheetTable','gridWrap','cellEditor','nameBox','formulaInput','statAddr','statCount','statSum','statAvg',
+ 'toolbar','tipsStrip','tipText','tipsBtn','tipClose','themeBtn','sheetName','helpModal','chartModal',
+ 'chartRangeLabel','chartTitleInput','chartPreviewBox','insertChartBtn','chartsPanel','chartsList',
+ 'undoBtn','redoBtn','boldBtn','italicBtn','underlineBtn','alignLeftBtn','alignCenterBtn','alignRightBtn',
+ 'sizeDownBtn','sizeUpBtn','textColorBtn','textColorPop','textColorSw','textColorDot',
+ 'fillColorBtn','fillColorPop','fillColorSw','fillColorDot','numFmtSel','mergeBtn','unmergeBtn',
+ 'sortAscBtn','sortDescBtn','addRowBtn','addColBtn','delRowBtn','delColBtn','chartBtn','clearBtn',
+ 'saveBtn','csvBtn','newBtn','toast'
+].forEach(id => el[id] = document.getElementById(id));
+
+function normSel(){
+  return { r1: Math.min(sel.ar,sel.er), c1: Math.min(sel.ac,sel.ec), r2: Math.max(sel.ar,sel.er), c2: Math.max(sel.ac,sel.ec) };
+}
+function clampSelection(){
+  sel.ar = Math.min(sel.ar, state.rows-1); sel.er = Math.min(sel.er, state.rows-1);
+  sel.ac = Math.min(sel.ac, state.cols-1); sel.ec = Math.min(sel.ec, state.cols-1);
+}
+
+let skipCells = new Set();
+let masterAt = new Map();
+function buildMergeIndex(){
+  skipCells = new Set(); masterAt = new Map();
+  for(const m of state.merges){
+    masterAt.set(m.r1+','+m.c1, m);
+    for(let r=m.r1;r<=m.r2;r++) for(let c=m.c1;c<=m.c2;c++){
+      if(!(r===m.r1 && c===m.c1)) skipCells.add(r+','+c);
+    }
+  }
+}
+
+function renderGrid(){
+  buildMergeIndex();
+  const n = normSel();
+  let html = '<thead><tr><th class="corner"></th>';
+  for(let c=0;c<state.cols;c++) html += '<th class="colhead">'+colToLetter(c)+'</th>';
+  html += '</tr></thead><tbody>';
+  for(let r=0;r<state.rows;r++){
+    html += '<tr><th class="rowhead">'+(r+1)+'</th>';
+    for(let c=0;c<state.cols;c++){
+      if(skipCells.has(r+','+c)) continue;
+      const m = masterAt.get(r+','+c);
+      const rowspan = m ? (m.r2-m.r1+1) : 1;
+      const colspan = m ? (m.c2-m.c1+1) : 1;
+      const val = getCellValue(r,c);
+      const fmt = getFmt(r,c);
+      const disp = formatValue(val, fmt);
+      const inSel = r>=n.r1 && r<=n.r2 && c>=n.c1 && c<=n.c2;
+      const isActive = (r===sel.ar && c===sel.ac);
+      let cls = 'cell';
+      if(inSel) cls += ' sel';
+      if(isActive) cls += ' active';
+      if(disp.err) cls += ' err';
+      let style = '';
+      if(fmt.b) style += 'font-weight:800;';
+      if(fmt.i) style += 'font-style:italic;';
+      if(fmt.u) style += 'text-decoration:underline;';
+      if(fmt.align) style += 'text-align:'+fmt.align+';';
+      if(fmt.size) style += 'font-size:'+fmt.size+'px;';
+      if(fmt.color) style += 'color:'+fmt.color+';';
+      if(fmt.bg) style += 'background:'+fmt.bg+';';
+      const attrs = 'data-r="'+r+'" data-c="'+c+'"' + (rowspan>1?' rowspan="'+rowspan+'"':'') + (colspan>1?' colspan="'+colspan+'"':'');
+      html += '<td class="'+cls+'" '+attrs+' style="'+style+'">'+escapeHtml(disp.text)+'</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  el.sheetTable.innerHTML = html;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+
+function renderFormulaBar(){
+  const n = normSel();
+  el.nameBox.value = (n.r1===n.r2 && n.c1===n.c2) ? cellRef(sel.ar,sel.ac) : (cellRef(n.r1,n.c1)+':'+cellRef(n.r2,n.c2));
+  if(!editing) el.formulaInput.value = getRaw(sel.ar, sel.ac);
+  el.statAddr.textContent = el.nameBox.value;
+}
+function renderStatusBar(){
+  const n = normSel();
+  let count=0, sum=0, nums=[];
+  for(let r=n.r1;r<=n.r2;r++) for(let c=n.c1;c<=n.c2;c++){
+    if(skipCells.has(r+','+c)) continue;
+    const v = getCellValue(r,c);
+    if(v !== '' && v !== null && v !== undefined && !(v && v.error)) count++;
+    if(typeof v === 'number'){ sum += v; nums.push(v); }
+  }
+  el.statCount.textContent = count;
+  el.statSum.textContent = generalFormat(sum);
+  el.statAvg.textContent = nums.length ? generalFormat(sum/nums.length) : '0';
+}
+function renderToolbarState(){
+  const fmt = getFmt(sel.ar, sel.ac);
+  el.boldBtn.classList.toggle('on', !!fmt.b);
+  el.italicBtn.classList.toggle('on', !!fmt.i);
+  el.underlineBtn.classList.toggle('on', !!fmt.u);
+  el.alignLeftBtn.classList.toggle('on', fmt.align==='left');
+  el.alignCenterBtn.classList.toggle('on', fmt.align==='center');
+  el.alignRightBtn.classList.toggle('on', fmt.align==='right');
+  el.numFmtSel.value = fmt.numFmt || 'general';
+  el.textColorDot.style.background = fmt.color || '#1c2626';
+  el.fillColorDot.style.background = fmt.bg || 'transparent';
+  const m = findMerge(sel.ar, sel.ac);
+  el.unmergeBtn.style.opacity = m ? '1' : '.45';
+}
+function renderChartsPanel(){
+  el.chartsPanel.classList.toggle('show', state.charts.length > 0);
+  el.chartsList.innerHTML = '';
+  state.charts.forEach(chart => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = '<div class="chart-card-head"><span>'+escapeHtml(chart.title)+'</span><button class="chart-del" data-id="'+chart.id+'" title="Remove chart">🗑️</button></div>';
+    const svgWrap = document.createElement('div');
+    svgWrap.innerHTML = renderChartSVG(chart);
+    card.appendChild(svgWrap);
+    el.chartsList.appendChild(card);
+  });
+  el.chartsList.querySelectorAll('.chart-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pushHistory();
+      state.charts = state.charts.filter(c => String(c.id) !== btn.getAttribute('data-id'));
+      renderChartsPanel();
+      showToast('Chart removed');
+    });
+  });
+}
+
+function renderAll(){
+  recompute();
+  renderGrid();
+  renderFormulaBar();
+  renderStatusBar();
+  renderToolbarState();
+  renderChartsPanel();
+}
+
+/* =====================================================================
+   SELECTION / EDITING
+   ===================================================================== */
+function selectCell(r,c,extend){
+  r = Math.max(0, Math.min(state.rows-1, r));
+  c = Math.max(0, Math.min(state.cols-1, c));
+  if(extend){ sel.er = r; sel.ec = c; }
+  else { sel.ar = r; sel.ac = c; sel.er = r; sel.ec = c; }
+  renderGrid(); renderFormulaBar(); renderStatusBar(); renderToolbarState();
+}
+function moveActive(dr,dc,extend){
+  if(editing) commitEdit(false);
+  if(extend){ selectCell(sel.er+dr, sel.ec+dc, true); }
+  else { selectCell(sel.ar+dr, sel.ac+dc, false); }
+  scrollActiveIntoView();
+}
+function scrollActiveIntoView(){
+  const td = el.sheetTable.querySelector('td.active');
+  if(td && td.scrollIntoView) td.scrollIntoView({block:'nearest', inline:'nearest'});
+}
+
+function cellRectInWrap(r,c){
+  const td = el.sheetTable.querySelector('td[data-r="'+r+'"][data-c="'+c+'"]');
+  if(!td) return null;
+  const wrapRect = el.gridWrap.getBoundingClientRect();
+  const tdRect = td.getBoundingClientRect();
+  return {
+    left: tdRect.left - wrapRect.left + el.gridWrap.scrollLeft,
+    top: tdRect.top - wrapRect.top + el.gridWrap.scrollTop,
+    width: tdRect.width, height: tdRect.height
+  };
+}
+
+function startEdit(r,c,initialValue){
+  const m = findMerge(r,c);
+  if(m && !(m.r1===r && m.c1===c)){ r = m.r1; c = m.c1; }
+  editing = true; editRef = {r,c};
+  const rect = cellRectInWrap(r,c);
+  const fmt = getFmt(r,c);
+  const val = (initialValue !== undefined) ? initialValue : getRaw(r,c);
+  el.cellEditor.style.display = 'block';
+  if(rect){
+    el.cellEditor.style.left = rect.left+'px';
+    el.cellEditor.style.top = rect.top+'px';
+    el.cellEditor.style.width = Math.max(rect.width, 90)+'px';
+    el.cellEditor.style.height = rect.height+'px';
+  }
+  el.cellEditor.style.fontWeight = fmt.b ? '800':'400';
+  el.cellEditor.style.fontStyle = fmt.i ? 'italic':'normal';
+  el.cellEditor.value = val;
+  el.formulaInput.value = val;
+  el.cellEditor.focus();
+  const len = el.cellEditor.value.length;
+  el.cellEditor.setSelectionRange(len,len);
+}
+function commitEdit(moveDown){
+  if(!editing) return;
+  const {r,c} = editRef;
+  pushHistory();
+  setRaw(r,c, el.cellEditor.value);
+  editing = false; editRef = null;
+  el.cellEditor.style.display = 'none';
+  el.cellEditor.blur();
+  renderAll();
+  if(moveDown) moveActive(1,0,false); else { renderFormulaBar(); }
+}
+function cancelEdit(){
+  editing = false; editRef = null;
+  el.cellEditor.style.display = 'none';
+  el.cellEditor.blur();
+  renderFormulaBar();
+}
+
+function clearSelection(){
+  const n = normSel();
+  pushHistory();
+  for(let r=n.r1;r<=n.r2;r++) for(let c=n.c1;c<=n.c2;c++){ if(!skipCells.has(r+','+c)) setRaw(r,c,''); }
+  renderAll();
+}
+function applyFormatToSelection(patch){
+  const n = normSel();
+  pushHistory();
+  for(let r=n.r1;r<=n.r2;r++) for(let c=n.c1;c<=n.c2;c++){ if(!skipCells.has(r+','+c)) setFmt(r,c,patch); }
+  renderAll();
+}
+function toggleFormatOnSelection(key){
+  const cur = !!getFmt(sel.ar, sel.ac)[key];
+  applyFormatToSelection({[key]: !cur});
+}
+
+/* =====================================================================
+   GRID EVENT HANDLING (pointer events unify mouse + touch)
+   ===================================================================== */
+let dragging = false;
+el.sheetTable.addEventListener('pointerdown', (e) => {
+  const td = e.target.closest('td.cell');
+  if(!td) return;
+  if(editing) commitEdit(false);
+  const r = parseInt(td.getAttribute('data-r'),10), c = parseInt(td.getAttribute('data-c'),10);
+  dragging = true;
+  selectCell(r,c,e.shiftKey);
+  e.preventDefault();
+});
+el.sheetTable.addEventListener('pointermove', (e) => {
+  if(!dragging) return;
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  const td = target && target.closest ? target.closest('td.cell') : null;
+  if(!td) return;
+  const r = parseInt(td.getAttribute('data-r'),10), c = parseInt(td.getAttribute('data-c'),10);
+  selectCell(r,c,true);
+});
+window.addEventListener('pointerup', () => { dragging = false; });
+el.sheetTable.addEventListener('dblclick', (e) => {
+  const td = e.target.closest('td.cell');
+  if(!td) return;
+  const r = parseInt(td.getAttribute('data-r'),10), c = parseInt(td.getAttribute('data-c'),10);
+  startEdit(r,c);
+});
+
+document.addEventListener('keydown', (e) => {
+  const activeTag = document.activeElement && document.activeElement.tagName;
+  const inFormulaBar = document.activeElement === el.formulaInput;
+  const inEditor = document.activeElement === el.cellEditor;
+  const inOtherInput = (activeTag === 'INPUT' || activeTag === 'SELECT') && !inFormulaBar && !inEditor;
+  if(inOtherInput) return;
+
+  if(inEditor || inFormulaBar){
+    if(e.key === 'Enter'){ e.preventDefault(); commitEdit(true); return; }
+    if(e.key === 'Tab'){ e.preventDefault(); commitEdit(false); moveActive(0,1,false); return; }
+    if(e.key === 'Escape'){ e.preventDefault(); cancelEdit(); return; }
+    return; // let native typing happen
+  }
+
+  if(e.key === 'ArrowDown'){ e.preventDefault(); moveActive(1,0,e.shiftKey); return; }
+  if(e.key === 'ArrowUp'){ e.preventDefault(); moveActive(-1,0,e.shiftKey); return; }
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); moveActive(0,-1,e.shiftKey); return; }
+  if(e.key === 'ArrowRight'){ e.preventDefault(); moveActive(0,1,e.shiftKey); return; }
+  if(e.key === 'Tab'){ e.preventDefault(); moveActive(0, e.shiftKey?-1:1, false); return; }
+  if(e.key === 'Enter'){ e.preventDefault(); startEdit(sel.ar, sel.ac); return; }
+  if(e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); clearSelection(); return; }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); return; }
+  if((e.ctrlKey||e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))){ e.preventDefault(); redo(); return; }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='c'){ e.preventDefault(); copySelection(); return; }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='v'){ e.preventDefault(); pasteAtActive(); return; }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='b'){ e.preventDefault(); toggleFormatOnSelection('b'); return; }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='i'){ e.preventDefault(); toggleFormatOnSelection('i'); return; }
+
+  if(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey){
+    startEdit(sel.ar, sel.ac, '');
+    el.cellEditor.value = e.key;
+    el.formulaInput.value = e.key;
+    const len = el.cellEditor.value.length;
+    el.cellEditor.setSelectionRange(len,len);
+  }
+});
+
+/* keep formula bar and floating editor in sync */
+el.cellEditor.addEventListener('input', () => { el.formulaInput.value = el.cellEditor.value; });
+el.formulaInput.addEventListener('focus', () => { if(!editing) startEdit(sel.ar, sel.ac); });
+el.formulaInput.addEventListener('input', () => { if(editing) el.cellEditor.value = el.formulaInput.value; });
+
+el.nameBox.addEventListener('keydown', (e) => {
+  if(e.key !== 'Enter') return;
+  const v = el.nameBox.value.trim().toUpperCase();
+  const range = v.split(':');
+  const a = parseAddr(range[0]);
+  if(!a) { showToast('Type an address like B3'); return; }
+  if(range.length===2){
+    const b = parseAddr(range[1]);
+    if(b){ sel.ar=a.r; sel.ac=a.c; sel.er=b.r; sel.ec=b.c; renderGrid(); renderFormulaBar(); renderStatusBar(); renderToolbarState(); return; }
+  }
+  selectCell(a.r, a.c, false);
+});
+
+/* =====================================================================
+   COPY / PASTE
+   ===================================================================== */
+function copySelection(){
+  const n = normSel();
+  const data = [];
+  for(let r=n.r1;r<=n.r2;r++){
+    const row = [];
+    for(let c=n.c1;c<=n.c2;c++){ row.push({raw:getRaw(r,c), fmt: Object.assign({}, getFmt(r,c))}); }
+    data.push(row);
+  }
+  clipboard = {rows: n.r2-n.r1+1, cols: n.c2-n.c1+1, data};
+  showToast('Copied ('+clipboard.rows+'×'+clipboard.cols+')');
+}
+function pasteAtActive(){
+  if(!clipboard) return;
+  pushHistory();
+  const startR = sel.ar, startC = sel.ac;
+  const neededRows = startR + clipboard.rows;
+  const neededCols = startC + clipboard.cols;
+  if(neededRows > state.rows) state.rows = Math.min(MAX_ROWS, neededRows);
+  if(neededCols > state.cols) state.cols = Math.min(MAX_COLS, neededCols);
+  for(let rr=0; rr<clipboard.rows; rr++){
+    for(let cc=0; cc<clipboard.cols; cc++){
+      const r = startR+rr, c = startC+cc;
+      if(r>=state.rows || c>=state.cols) continue;
+      const src = clipboard.data[rr][cc];
+      setRaw(r,c, src.raw);
+      ensureCell(r,c).fmt = Object.assign({}, src.fmt);
+    }
+  }
+  renderAll();
+  showToast('Pasted');
+}
+
+/* =====================================================================
+   TOOLBAR WIRING
+   ===================================================================== */
+function buildSwatches(container, list, onPick, includeNone){
+  container.innerHTML = '';
+  if(includeNone){
+    const b = document.createElement('button');
+    b.className = 'sw none'; b.title = 'No fill';
+    b.addEventListener('click', () => onPick(''));
+    container.appendChild(b);
+  }
+  list.forEach(cItem => {
+    if(cItem.hex === '' ) return;
+    const b = document.createElement('button');
+    b.className = 'sw'; b.style.background = cItem.hex; b.title = cItem.name;
+    b.addEventListener('click', () => onPick(cItem.hex));
+    container.appendChild(b);
+  });
+}
+buildSwatches(el.textColorSw, COLORS, (hex) => { applyFormatToSelection({color: hex}); closePopovers(); }, false);
+buildSwatches(el.fillColorSw, FILLS, (hex) => { applyFormatToSelection({bg: hex}); closePopovers(); }, true);
+
+function closePopovers(){ el.textColorPop.classList.remove('show'); el.fillColorPop.classList.remove('show'); }
+el.textColorBtn.addEventListener('click', (e) => { e.stopPropagation(); const wasOpen = el.textColorPop.classList.contains('show'); closePopovers(); if(!wasOpen) el.textColorPop.classList.add('show'); });
+el.fillColorBtn.addEventListener('click', (e) => { e.stopPropagation(); const wasOpen = el.fillColorPop.classList.contains('show'); closePopovers(); if(!wasOpen) el.fillColorPop.classList.add('show'); });
+document.addEventListener('click', closePopovers);
+
+el.undoBtn.addEventListener('click', undo);
+el.redoBtn.addEventListener('click', redo);
+el.boldBtn.addEventListener('click', () => toggleFormatOnSelection('b'));
+el.italicBtn.addEventListener('click', () => toggleFormatOnSelection('i'));
+el.underlineBtn.addEventListener('click', () => toggleFormatOnSelection('u'));
+el.alignLeftBtn.addEventListener('click', () => applyFormatToSelection({align:'left'}));
+el.alignCenterBtn.addEventListener('click', () => applyFormatToSelection({align:'center'}));
+el.alignRightBtn.addEventListener('click', () => applyFormatToSelection({align:'right'}));
+el.sizeDownBtn.addEventListener('click', () => { const s = getFmt(sel.ar,sel.ac).size||14; applyFormatToSelection({size: Math.max(10, s-2)}); });
+el.sizeUpBtn.addEventListener('click', () => { const s = getFmt(sel.ar,sel.ac).size||14; applyFormatToSelection({size: Math.min(28, s+2)}); });
+el.numFmtSel.addEventListener('change', () => applyFormatToSelection({numFmt: el.numFmtSel.value}));
+
+el.mergeBtn.addEventListener('click', () => {
+  const n = normSel();
+  if(n.r1===n.r2 && n.c1===n.c2){ showToast('Select more than one cell to merge'); return; }
+  const clash = state.merges.find(m => !(m.r2<n.r1 || m.r1>n.r2 || m.c2<n.c1 || m.c1>n.c2));
+  pushHistory();
+  if(clash) state.merges = state.merges.filter(m => m !== clash);
+  for(let r=n.r1;r<=n.r2;r++) for(let c=n.c1;c<=n.c2;c++){
+    if(r===n.r1 && c===n.c1) continue;
+    setRaw(r,c,'');
+  }
+  state.merges.push({r1:n.r1,c1:n.c1,r2:n.r2,c2:n.c2});
+  sel.ar=n.r1; sel.ac=n.c1; sel.er=n.r1; sel.ec=n.c1;
+  renderAll();
+  showToast('Cells merged');
+});
+el.unmergeBtn.addEventListener('click', () => {
+  const m = findMerge(sel.ar, sel.ac);
+  if(!m){ showToast('This cell is not merged'); return; }
+  pushHistory();
+  state.merges = state.merges.filter(x => x !== m);
+  renderAll();
+  showToast('Unmerged');
+});
+
+el.sortAscBtn.addEventListener('click', () => doSort(true));
+el.sortDescBtn.addEventListener('click', () => doSort(false));
+function doSort(asc){
+  let n = normSel();
+  if(n.r1===n.r2 && n.c1===n.c2){
+    // auto-expand contiguous block in this column
+    let top=n.r1, bot=n.r1;
+    while(top>0 && getRaw(top-1,n.c1)!=='') top--;
+    while(bot<state.rows-1 && getRaw(bot+1,n.c1)!=='') bot++;
+    n = {r1:top, c1:n.c1, r2:bot, c2:n.c1};
+  }
+  if(n.r1===n.r2){ showToast('Select at least two rows to sort'); return; }
+  const keyCol = sel.ar>=n.r1 && sel.ar<=n.r2 ? sel.ac : n.c1;
+  const rowsData = [];
+  for(let r=n.r1;r<=n.r2;r++){
+    const rowCells = [];
+    for(let c=n.c1;c<=n.c2;c++) rowCells.push({raw:getRaw(r,c), fmt:Object.assign({},getFmt(r,c))});
+    const keyVal = getCellValue(r, keyCol);
+    rowsData.push({rowCells, keyVal});
+  }
+  rowsData.sort((a,b) => {
+    const av = a.keyVal, bv = b.keyVal;
+    let cmp;
+    if(typeof av === 'number' && typeof bv === 'number') cmp = av-bv;
+    else cmp = String(av).localeCompare(String(bv));
+    return asc ? cmp : -cmp;
+  });
+  pushHistory();
+  for(let i=0;i<rowsData.length;i++){
+    const r = n.r1+i;
+    for(let c=n.c1;c<=n.c2;c++){
+      const cellData = rowsData[i].rowCells[c-n.c1];
+      setRaw(r,c, cellData.raw);
+      ensureCell(r,c).fmt = cellData.fmt;
+    }
+  }
+  renderAll();
+  showToast('Sorted');
+}
+
+el.addRowBtn.addEventListener('click', () => { if(state.rows>=MAX_ROWS) return; pushHistory(); state.rows++; renderAll(); });
+el.addColBtn.addEventListener('click', () => { if(state.cols>=MAX_COLS) return; pushHistory(); state.cols++; renderAll(); });
+el.delRowBtn.addEventListener('click', () => {
+  if(state.rows<=1) return;
+  pushHistory();
+  const delR = sel.ar;
+  const newCells = {};
+  Object.keys(state.cells).forEach(ref => {
+    const a = parseAddr(ref);
+    if(a.r === delR) return;
+    const nr = a.r > delR ? a.r-1 : a.r;
+    newCells[cellRef(nr, a.c)] = state.cells[ref];
+  });
+  state.cells = newCells;
+  state.merges = state.merges.filter(m => !(m.r1<=delR && m.r2>=delR)).map(m => ({
+    r1: m.r1>delR? m.r1-1:m.r1, r2: m.r2>delR? m.r2-1:m.r2, c1:m.c1, c2:m.c2
+  }));
+  state.rows--;
+  sel.ar = Math.min(sel.ar, state.rows-1); sel.er = sel.ar;
+  renderAll();
+});
+el.delColBtn.addEventListener('click', () => {
+  if(state.cols<=1) return;
+  pushHistory();
+  const delC = sel.ac;
+  const newCells = {};
+  Object.keys(state.cells).forEach(ref => {
+    const a = parseAddr(ref);
+    if(a.c === delC) return;
+    const nc = a.c > delC ? a.c-1 : a.c;
+    newCells[cellRef(a.r, nc)] = state.cells[ref];
+  });
+  state.cells = newCells;
+  state.merges = state.merges.filter(m => !(m.c1<=delC && m.c2>=delC)).map(m => ({
+    c1: m.c1>delC? m.c1-1:m.c1, c2: m.c2>delC? m.c2-1:m.c2, r1:m.r1, r2:m.r2
+  }));
+  state.cols--;
+  sel.ac = Math.min(sel.ac, state.cols-1); sel.ec = sel.ac;
+  renderAll();
+});
+el.clearBtn.addEventListener('click', clearSelection);
+
+/* =====================================================================
+   CHARTS
+   ===================================================================== */
+function isTextLike(v){ return typeof v === 'string' && v.trim()!=='' && isNaN(parseFloat(v)); }
+function toNumSafe(v){ if(v && v.error) return 0; const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function chartValAt(r,c){ return getCellValue(r,c); }
+
+function buildChartData(n){
+  const rows = n.r2-n.r1+1, cols = n.c2-n.c1+1;
+  if(cols === 1){
+    const hasHeader = rows>1 && isTextLike(chartValAt(n.r1,n.c1));
+    const dataStart = hasHeader ? n.r1+1 : n.r1;
+    const name = hasHeader ? fToStr(chartValAt(n.r1,n.c1)) : 'Values';
+    const cats = [], vals = [];
+    for(let r=dataStart;r<=n.r2;r++){ vals.push(toNumSafe(chartValAt(r,n.c1))); cats.push('Row '+(r+1)); }
+    return {categories:cats, series:[{name, values:vals}]};
+  }
+  const hasHeaderRow = rows > 1;
+  const dataStartRow = hasHeaderRow ? n.r1+1 : n.r1;
+  const cats = [];
+  for(let r=dataStartRow;r<=n.r2;r++) cats.push(fToStr(chartValAt(r,n.c1)) || ('Row '+(r+1)));
+  const series = [];
+  for(let c=n.c1+1;c<=n.c2;c++){
+    const name = hasHeaderRow ? (fToStr(chartValAt(n.r1,c)) || ('Series '+(c-n.c1))) : ('Series '+(c-n.c1));
+    const vals = [];
+    for(let r=dataStartRow;r<=n.r2;r++) vals.push(toNumSafe(chartValAt(r,c)));
+    series.push({name, values:vals});
+  }
+  return {categories:cats, series};
+}
+
+const CHART_PALETTE = ['#227d8b','#f5a623','#f2555a','#4fc98a','#a679e0','#4aa8e0','#ff8fc0','#e2941a'];
+
+function renderChartSVG(chart){
+  const W = 560, H = 300, padL = 46, padR = 16, padT = 16, padB = 46;
+  const plotW = W-padL-padR, plotH = H-padT-padB;
+  const cats = chart.categories, series = chart.series;
+  let svg = '';
+  if(chart.type === 'pie'){
+    const s = series[0] || {values:[]};
+    const total = s.values.reduce((a,b)=>a+b,0) || 1;
+    const cx = W/2, cy = H/2 - 8, radius = Math.min(W,H)/2 - 46;
+    let angle = -Math.PI/2;
+    svg += '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" font-family="Manrope, sans-serif">';
+    s.values.forEach((v,i) => {
+      const frac = v/total;
+      const a0 = angle, a1 = angle + frac*Math.PI*2;
+      const x0 = cx + radius*Math.cos(a0), y0 = cy + radius*Math.sin(a0);
+      const x1 = cx + radius*Math.cos(a1), y1 = cy + radius*Math.sin(a1);
+      const large = (a1-a0) > Math.PI ? 1 : 0;
+      const color = CHART_PALETTE[i % CHART_PALETTE.length];
+      svg += '<path d="M'+cx+' '+cy+' L'+x0.toFixed(1)+' '+y0.toFixed(1)+' A'+radius+' '+radius+' 0 '+large+' 1 '+x1.toFixed(1)+' '+y1.toFixed(1)+' Z" fill="'+color+'" stroke="var(--white)" stroke-width="1.5"></path>';
+      angle = a1;
+    });
+    let legendY = H-24;
+    let legendX = 10;
+    cats.forEach((cat,i) => {
+      const color = CHART_PALETTE[i % CHART_PALETTE.length];
+      svg += '<circle cx="'+(legendX+6)+'" cy="'+legendY+'" r="5" fill="'+color+'"></circle>';
+      svg += '<text x="'+(legendX+16)+'" y="'+(legendY+4)+'" font-size="11" fill="var(--plum)">'+escapeHtml(cat)+'</text>';
+      legendX += 18 + (cat.length*6.2);
+      if(legendX > W-60){ legendX = 10; legendY += 16; }
+    });
+    svg += '</svg>';
+    return svg;
+  }
+
+  let maxV = 0, minV = 0;
+  series.forEach(s => s.values.forEach(v => { if(v>maxV) maxV=v; if(v<minV) minV=v; }));
+  if(maxV===0 && minV===0) maxV = 1;
+  const range = maxV-minV || 1;
+  const yFor = (v) => padT + plotH - ((v-minV)/range)*plotH;
+  const n = cats.length || 1;
+
+  svg += '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" font-family="Manrope, sans-serif">';
+  // gridlines + y labels
+  for(let g=0; g<=4; g++){
+    const v = minV + (range*g/4);
+    const y = yFor(v);
+    svg += '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--grid-line-soft)" stroke-width="1"></line>';
+    svg += '<text x="'+(padL-8)+'" y="'+(y+3).toFixed(1)+'" font-size="10" fill="var(--ink-soft)" text-anchor="end">'+generalFormat(parseFloat(v.toFixed(2)))+'</text>';
+  }
+  // x labels
+  cats.forEach((cat,i) => {
+    const x = padL + (plotW/n)*(i+0.5);
+    svg += '<text x="'+x.toFixed(1)+'" y="'+(H-padB+16)+'" font-size="10" fill="var(--ink-soft)" text-anchor="middle">'+escapeHtml(String(cat).slice(0,10))+'</text>';
+  });
+
+  if(chart.type === 'bar'){
+    const groupW = plotW/n;
+    const barW = Math.max(4, (groupW*0.7)/series.length);
+    series.forEach((s,si) => {
+      const color = CHART_PALETTE[si % CHART_PALETTE.length];
+      s.values.forEach((v,i) => {
+        const x = padL + groupW*i + groupW*0.15 + si*barW;
+        const y = yFor(v), y0 = yFor(0);
+        const barY = Math.min(y,y0), barH = Math.abs(y0-y);
+        svg += '<rect x="'+x.toFixed(1)+'" y="'+barY.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(0,barH).toFixed(1)+'" fill="'+color+'" rx="2"></rect>';
+      });
+    });
+  } else {
+    series.forEach((s,si) => {
+      const color = CHART_PALETTE[si % CHART_PALETTE.length];
+      const pts = s.values.map((v,i) => (padL + (plotW/n)*(i+0.5)).toFixed(1)+','+yFor(v).toFixed(1));
+      svg += '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>';
+      s.values.forEach((v,i) => {
+        const x = padL + (plotW/n)*(i+0.5);
+        svg += '<circle cx="'+x.toFixed(1)+'" cy="'+yFor(v).toFixed(1)+'" r="3" fill="'+color+'"></circle>';
+      });
+    });
+  }
+  // legend
+  let lx = padL;
+  series.forEach((s,si) => {
+    const color = CHART_PALETTE[si % CHART_PALETTE.length];
+    svg += '<rect x="'+lx+'" y="'+(H-14)+'" width="9" height="9" fill="'+color+'" rx="2"></rect>';
+    svg += '<text x="'+(lx+13)+'" y="'+(H-6)+'" font-size="10" fill="var(--plum)">'+escapeHtml(s.name)+'</text>';
+    lx += 20 + s.name.length*6;
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+let pendingChartRange = null;
+el.chartBtn.addEventListener('click', () => {
+  const n = normSel();
+  if(n.r1===n.r2 && n.c1===n.c2){ showToast('Select a range of data first'); return; }
+  pendingChartRange = n;
+  el.chartRangeLabel.textContent = cellRef(n.r1,n.c1)+':'+cellRef(n.r2,n.c2);
+  el.chartTitleInput.value = 'My chart';
+  updateChartPreview();
+  el.chartModal.classList.add('show');
+});
+document.querySelectorAll('input[name="chartType"]').forEach(r => r.addEventListener('change', updateChartPreview));
+function currentChartType(){ return document.querySelector('input[name="chartType"]:checked').value; }
+function updateChartPreview(){
+  if(!pendingChartRange) return;
+  const data = buildChartData(pendingChartRange);
+  const chart = {id:0, title: el.chartTitleInput.value||'My chart', type: currentChartType(), categories:data.categories, series:data.series};
+  el.chartPreviewBox.innerHTML = renderChartSVG(chart);
+}
+el.chartTitleInput.addEventListener('input', updateChartPreview);
+el.insertChartBtn.addEventListener('click', () => {
+  if(!pendingChartRange) return;
+  const data = buildChartData(pendingChartRange);
+  pushHistory();
+  state.charts.push({id: chartIdSeed++, title: el.chartTitleInput.value||'My chart', type: currentChartType(), categories:data.categories, series:data.series});
+  closeModal('chartModal');
+  renderChartsPanel();
+  showToast('Chart added below the grid');
+});
+
+/* =====================================================================
+   MODALS / TOAST / TIPS
+   ===================================================================== */
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close'))));
+document.querySelectorAll('.modal-overlay').forEach(ov => ov.addEventListener('click', (e) => { if(e.target===ov) ov.classList.remove('show'); }));
+
+let toastTimer = null;
+function showToast(msg){
+  el.toast.textContent = msg;
+  el.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.toast.classList.remove('show'), 1800);
+}
+
+let tipIndex = 0;
+function showNextTip(){
+  el.tipText.textContent = TIPS[tipIndex % TIPS.length];
+  tipIndex++;
+  el.tipsStrip.classList.add('show');
+}
+el.tipsBtn.addEventListener('click', () => el.helpModal.classList.add('show'));
+el.tipClose.addEventListener('click', () => el.tipsStrip.classList.remove('show'));
+
+/* =====================================================================
+   THEME
+   ===================================================================== */
+function setTheme(mode){
+  if(mode === 'dark'){ document.documentElement.setAttribute('data-theme','dark'); el.themeBtn.textContent = '☀️'; }
+  else { document.documentElement.removeAttribute('data-theme'); el.themeBtn.textContent = '🌙'; }
+  try{ localStorage.setItem('sheetlab_theme', mode); }catch(e){}
+}
+el.themeBtn.addEventListener('click', () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setTheme(isDark ? 'light' : 'dark');
+});
+(function initTheme(){
+  try{
+    const params = new URLSearchParams(window.location.search);
+    const qTheme = params.get('theme');
+    if(qTheme === 'dark' || qTheme === 'light'){ setTheme(qTheme); return; }
+  }catch(e){}
+  try{
+    const saved = localStorage.getItem('sheetlab_theme');
+    if(saved === 'dark' || saved === 'light'){ setTheme(saved); return; }
+  }catch(e){}
+  if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){ setTheme('dark'); return; }
+  setTheme('light');
+})();
+/* allow the parent portal to sync theme into this iframe via postMessage:
+   window.frames[0].postMessage({theme:'dark'}, '*')  */
+window.addEventListener('message', (e) => {
+  if(e && e.data && (e.data.theme === 'dark' || e.data.theme === 'light')) setTheme(e.data.theme);
+});
+
+/* =====================================================================
+   SAVE / LOAD / EXPORT / NEW
+   ===================================================================== */
+function storageKey(){ return 'sheetlab_' + sheetName.trim().toLowerCase().replace(/\s+/g,'_'); }
+el.sheetName.addEventListener('change', () => { sheetName = el.sheetName.value || 'My Sheet'; });
+el.saveBtn.addEventListener('click', () => {
+  try{
+    sheetName = el.sheetName.value || 'My Sheet';
+    localStorage.setItem(storageKey(), JSON.stringify({name:sheetName, state}));
+    localStorage.setItem('sheetlab_last', sheetName);
+    showToast('Saved “'+sheetName+'” on this device');
+  }catch(e){ showToast('Could not save (storage unavailable)'); }
+});
+function tryLoadLast(){
+  try{
+    const last = localStorage.getItem('sheetlab_last');
+    if(!last) return;
+    const raw = localStorage.getItem('sheetlab_' + last.trim().toLowerCase().replace(/\s+/g,'_'));
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    if(parsed && parsed.state){
+      state = Object.assign(blankState(), parsed.state);
+      sheetName = parsed.name || 'My Sheet';
+      el.sheetName.value = sheetName;
+    }
+  }catch(e){}
+}
+el.newBtn.addEventListener('click', () => {
+  if(!confirm('Start a new blank sheet? This clears the current grid (your last save is kept).')) return;
+  state = blankState();
+  sel = {ar:0,ac:0,er:0,ec:0};
+  history = []; future = [];
+  renderAll();
+  showToast('New sheet ready');
+});
+el.csvBtn.addEventListener('click', () => {
+  let rows = [];
+  for(let r=0;r<state.rows;r++){
+    let hasContent = false;
+    const rowVals = [];
+    for(let c=0;c<state.cols;c++){
+      const v = getCellValue(r,c);
+      const disp = formatValue(v, getFmt(r,c));
+      if(disp.text !== '') hasContent = true;
+      let cell = disp.text.replace(/"/g,'""');
+      if(/[",\n]/.test(cell)) cell = '"'+cell+'"';
+      rowVals.push(cell);
+    }
+    if(hasContent || rows.length>0) rows.push(rowVals.join(','));
+  }
+  while(rows.length && rows[rows.length-1].replace(/,/g,'')==='') rows.pop();
+  const csv = rows.join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (sheetName||'sheet').trim().replace(/\s+/g,'_') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  showToast('CSV downloaded');
+});
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+window.addEventListener('resize', () => { if(editing) startEdit(editRef.r, editRef.c, el.cellEditor.value); });
+tryLoadLast();
+renderAll();
+setTimeout(showNextTip, 600);
+setInterval(() => { if(el.tipsStrip.classList.contains('show')) showNextTip(); }, 9000);
+
+})();
+</script>
+</body>
+</html>
