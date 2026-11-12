@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Ganesh Pooja Adventure — Learn the Rituals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --maroon-deep:#2b0f1e;
+    --maroon:#4a1329;
+    --dusk-purple:#3a1f52;
+    --marigold:#ffb238;
+    --marigold-deep:#ff8a1e;
+    --saffron:#ff7a3d;
+    --vermillion:#d63b2f;
+    --temple-gold:#e8b73a;
+    --temple-gold-light:#ffe19a;
+    --leaf-green:#4c8a4a;
+    --leaf-green-deep:#2e5f2c;
+    --cream:#fff4dc;
+    --wood:#7a4a2b;
+    --wood-dark:#5a3319;
+    --ink:#3a1f1a;
+    --white-soft:#fffaf0;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select:none;
+  }
+  h1,h2,h3,.display{ font-family:'Baloo 2', cursive; }
+
+  #app{
+    position:relative;
+    width:100vw; 
+    height:100vh; /* fallback for older browsers */
+    height:100dvh; /* shrinks/grows with the browser's real visible area */
+    min-height:560px;
+    background:
+      radial-gradient(ellipse 120% 60% at 50% 0%, rgba(255,178,56,0.18), transparent 60%),
+      linear-gradient(180deg, #201033 0%, #3a1638 32%, #5a2038 58%, #7a3524 82%, #8f4626 100%);
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    /* FIX: #app now lays out its three sections (hud / stage / tray) as a
+       flex column so they share the real available height instead of
+       stacking past it. Previously .stage-wrap alone claimed
+       calc(100% - 66px) of #app's height, leaving no room for .hud on top
+       of it *and* .tray-wrap below it — the tray (with every draggable
+       item) ended up rendered ~100-150px below the visible viewport and
+       was clipped away by this overflow:hidden, invisible and untouchable. */
+    display:flex;
+    flex-direction:column;
+  }
+
+  .tray-wrap{
+    flex-shrink:0;
+  }
+
+  /* ---------- Ambient sky decor ---------- */
+  .stars{ position:absolute; inset:0 0 55% 0; pointer-events:none; }
+  .star{
+    position:absolute; width:3px; height:3px; background:#fff2c8; border-radius:50%;
+    opacity:.75; animation:twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle{ 0%,100%{opacity:.25; transform:scale(1);} 50%{opacity:1; transform:scale(1.6);} }
+
+  .bunting{
+    position:absolute; top:0; left:0; right:0; height:38px; display:flex; justify-content:space-evenly;
+    padding:0 10px; pointer-events:none; z-index:5;
+  }
+  .flag{
+    width:22px; height:30px;
+    background:linear-gradient(160deg, var(--marigold), var(--vermillion));
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    animation: sway 2.6s ease-in-out infinite;
+    transform-origin: top center;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,.3));
+  }
+  .flag:nth-child(odd){ background:linear-gradient(160deg, var(--leaf-green), var(--marigold-deep)); animation-delay:.4s;}
+  .flag:nth-child(3n){ background:linear-gradient(160deg, var(--temple-gold), var(--saffron)); animation-delay:.8s;}
+  @keyframes sway{ 0%,100%{ transform:rotate(-6deg);} 50%{ transform:rotate(6deg);} }
+
+  /* ---------- HUD ---------- */
+  .hud{
+    position:relative; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:14px 18px 6px;
+    /* FIX: pin this section to its natural content height instead of
+       letting it be squeezed/stretched by the new flex column. */
+    flex:0 0 auto;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+  }
+  .brand-badge{
+    width:40px;height:40px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--temple-gold-light), var(--marigold-deep) 70%);
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+    box-shadow:0 0 0 3px rgba(255,255,255,.15), 0 4px 10px rgba(0,0,0,.35);
+  }
+  .brand h1{
+    margin:0; color:var(--white-soft); font-size:clamp(16px,3vw,24px); font-weight:700;
+    text-shadow:0 2px 6px rgba(0,0,0,.4);
+    letter-spacing:.3px;
+  }
+  .brand p{ margin:0; color:#e9c9d9; font-size:11px; font-weight:600; opacity:.85; }
+
+  .progress-row{ display:flex; align-items:center; gap:6px; }
+  .lamp{
+    width:22px; height:26px; position:relative; opacity:.45; transition:opacity .4s, transform .4s;
+  }
+  .lamp.lit{ opacity:1; transform:translateY(-2px); }
+  .lamp svg{ width:100%; height:100%; }
+  .lamp .flame{ opacity:0; transition:opacity .3s;}
+  .lamp.lit .flame{ opacity:1; animation:flicker 1.1s ease-in-out infinite; }
+
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%; border:none; cursor:pointer;
+    background:rgba(255,255,255,.12); color:#fff; font-size:17px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.3); backdrop-filter:blur(3px);
+    transition:transform .15s, background .2s;
+  }
+  .icon-btn:hover{ background:rgba(255,255,255,.22); transform:scale(1.06); }
+  .icon-btn:active{ transform:scale(.92); }
+  .top-actions{ display:flex; gap:8px; }
+
+  /* ---------- Stage / Altar ---------- */
+  .stage-wrap{
+    position:relative; z-index:6;
+    /* FIX: was `height:calc(100% - 66px)`, a magic-number height computed
+       against #app's full height. That alone consumed almost all of
+       #app's 100vh, before .hud and .tray-wrap even took their own space,
+       guaranteeing overflow. Now it's a flexible middle section that
+       simply fills whatever space is left after .hud and .tray-wrap. */
+    flex:1 1 auto;
+    min-height:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+  }
+
+  .altar-scene{
+    position:relative;
+    width:min(680px, 92vw);
+    /* was a fixed height; now it's a shrinkable flex item so it
+       yields space to the tray instead of pushing it off-screen */
+    flex:1 1 auto;
+    min-height:0;
+    max-height:min(52vh, 400px);
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+
+  .arch{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+  }
+  .arch svg{ width:100%; height:100%; display:block; }
+
+  .rangoli{
+    position:absolute; bottom:2%; left:50%; transform:translateX(-50%);
+    width:52%; aspect-ratio:1/1; z-index:2; opacity:.9; pointer-events:none;
+    animation:spin-slow 40s linear infinite;
+  }
+  @keyframes spin-slow{ to{ transform:translateX(-50%) rotate(360deg);} }
+
+  .chowki{
+    position:absolute; bottom:6%; left:50%; transform:translateX(-50%);
+    width:58%; height:14%; z-index:3;
+    background:linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
+    border-radius:14px 14px 6px 6px;
+    box-shadow:0 10px 18px rgba(0,0,0,.4), inset 0 3px 0 rgba(255,255,255,.15);
+  }
+  .chowki::before{
+    content:''; position:absolute; inset:4px 4px auto 4px; height:8px; border-radius:8px;
+    background:repeating-linear-gradient(90deg, var(--marigold) 0 10px, var(--vermillion) 10px 20px);
+    opacity:.8;
+  }
+
+  .zone{
+    position:absolute; z-index:4;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .zone .ph{ width:100%; height:100%; opacity:.35; }
+  .zone.active-hint{
+    box-shadow:0 0 0 3px rgba(255,225,140,.9), 0 0 22px 8px rgba(255,178,56,.55);
+    animation:pulse-zone 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse-zone{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
+  .zone.hover-ok{ box-shadow:0 0 0 4px rgba(120,255,150,.9), 0 0 26px 10px rgba(120,255,150,.5); }
+  .zone.hover-bad{ box-shadow:0 0 0 4px rgba(255,110,110,.9); }
+  .zone.filled{ animation:pop-in .35s ease; }
+  @keyframes pop-in{ 0%{ transform:scale(.4); } 60%{ transform:scale(1.15);} 100%{ transform:scale(1); } }
+  .zone.shake{ animation:shake .45s; }
+  @keyframes shake{ 20%,60%{transform:translateX(-8px);} 40%,80%{transform:translateX(8px);} 100%{transform:translateX(0);} }
+
+  #zone-idol{ width:34%; height:56%; bottom:10%; }
+  #zone-diya{ width:15%; height:15%; bottom:9%; left:6%; }
+  #zone-incense{ width:11%; height:26%; bottom:14%; right:6%; }
+  #zone-bell{ width:13%; height:15%; top:2%; right:12%; cursor:pointer; }
+  #zone-tilak{ width:9%; height:9%; top:19%; left:50%; transform:translateX(-50%); }
+  #zone-flowers{ width:20%; height:12%; bottom:12%; left:26%; }
+  #zone-durva{ width:16%; height:10%; bottom:12%; right:24%; }
+  #zone-laddoo{ width:13%; height:12%; bottom:26%; left:63%; }
+
+  .ganesha-figure{ width:100%; height:100%; filter:drop-shadow(0 10px 14px rgba(0,0,0,.4)); }
+  .ganesha-figure.idle{ animation: breathe 3.2s ease-in-out infinite; transform-origin:50% 90%; }
+  @keyframes breathe{ 0%,100%{ transform:scale(1) rotate(0deg);} 50%{ transform:scale(1.015) rotate(-0.4deg);} }
+  .ganesha-glow{
+    position:absolute; inset:-6%; border-radius:50%; z-index:0; pointer-events:none;
+    background:radial-gradient(circle, rgba(255,214,120,.55), transparent 65%);
+    opacity:0; transition:opacity .6s;
+  }
+  .ganesha-glow.show{ opacity:1; animation:glow-pulse 2.4s ease-in-out infinite; }
+  @keyframes glow-pulse{ 0%,100%{ opacity:.55;} 50%{ opacity:.9;} }
+
+  .diya-flame{ opacity:0; }
+  .zone.lit .diya-flame{ opacity:1; animation:flicker 1s ease-in-out infinite; }
+  @keyframes flicker{
+    0%,100%{ transform:scaleY(1) scaleX(1) rotate(0deg); }
+    30%{ transform:scaleY(1.15) scaleX(.92) rotate(-3deg); }
+    60%{ transform:scaleY(.92) scaleX(1.06) rotate(2deg); }
+  }
+
+  .smoke{ position:absolute; width:6px; height:6px; border-radius:50%; background:rgba(230,230,230,.55); pointer-events:none; }
+  @keyframes smoke-rise{
+    0%{ transform:translate(0,0) scale(.5); opacity:.55; }
+    100%{ transform:translate(var(--dx,10px), -70px) scale(2.2); opacity:0; }
+  }
+
+  .bell-hang{ transform-origin:50% 0%; }
+  .zone.ringing .bell-hang{ animation:ring 0.5s ease-in-out 3; }
+  @keyframes ring{ 0%,100%{ transform:rotate(0deg);} 25%{ transform:rotate(14deg);} 75%{ transform:rotate(-14deg);} }
+
+  /* ---------- Mascot & message ---------- */
+  .mascot-row{
+    position:relative; z-index:15;
+    display:flex; align-items:flex-end; gap:10px;
+    width:min(680px,92vw); margin:2px auto 4px;
+    flex:0 0 auto;
+  }
+  .mascot{ width:56px; height:48px; flex:0 0 auto; animation:mouse-bounce 2.4s ease-in-out infinite; filter:drop-shadow(0 4px 4px rgba(0,0,0,.35)); }
+  @keyframes mouse-bounce{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-5px);} }
+  .bubble{
+    position:relative; background:var(--white-soft); border-radius:16px; padding:9px 14px;
+    font-weight:700; font-size:clamp(12.5px,2vw,15px); color:var(--maroon);
+    box-shadow:0 4px 10px rgba(0,0,0,.25); flex:1; min-height:20px;
+    animation:bubble-in .3s ease;
+  }
+  .bubble::after{
+    content:''; position:absolute; left:-8px; bottom:10px; border:8px solid transparent; border-right-color:var(--white-soft);
+  }
+  @keyframes bubble-in{ 0%{ opacity:0; transform:translateY(6px) scale(.96);} 100%{ opacity:1; transform:translateY(0) scale(1);} }
+  .bubble.warn{ background:#fff0e0; }
+  .bubble.win{ background:#eafff0; }
+
+  /* ---------- Tray ---------- */
+  .tray-wrap{
+    position:relative; z-index:15; width:100%;
+    padding:6px 10px 12px;
+    display:flex; justify-content:center;
+    /* FIX: keep the tray pinned to its natural height at the bottom of the
+       new flex column instead of being pushed off-screen. */
+    flex:0 0 auto;
+  }
+  .tray{
+    display:flex; gap:14px; align-items:center; justify-content:center;
+    background:rgba(255,244,220,.14);
+    border:1.5px dashed rgba(255,225,150,.55);
+    border-radius:20px; padding:10px 16px; min-height:74px;
+    backdrop-filter:blur(2px);
+    max-width:94vw; overflow-x:auto;
+  }
+  .tray-empty-hint{ color:#f5e3c6; font-weight:700; font-size:13px; opacity:.8; padding:6px 10px;}
+
+  .drag-item{
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    cursor:grab; touch-action:none; padding:4px; border-radius:14px;
+    transition:transform .15s, opacity .2s;
+  }
+  .drag-item:hover{ transform:translateY(-3px) scale(1.05); }
+  .drag-item:active{ cursor:grabbing; }
+  .drag-item svg{ width:52px; height:52px; }
+  .drag-item span{ font-size:11px; font-weight:700; color:var(--white-soft); text-shadow:0 1px 3px rgba(0,0,0,.5); }
+  .drag-item.lifted{ opacity:.25; }
+  .drag-item.selected{ box-shadow:0 0 0 3px var(--marigold), 0 0 16px 4px rgba(255,178,56,.7); background:rgba(255,255,255,.12);}
+
+  .ghost{
+    position:fixed; z-index:999; pointer-events:none; touch-action:none;
+    display:flex; align-items:center; justify-content:center;
+    transform:scale(1.12) rotate(-4deg);
+    filter:drop-shadow(0 8px 10px rgba(0,0,0,.45));
+  }
+  .ghost svg{ width:100%; height:100%; }
+
+  .bell-tap-btn{
+    padding:10px 18px; border-radius:30px; border:none; cursor:pointer;
+    background:linear-gradient(160deg, var(--marigold), var(--vermillion)); color:#fff;
+    font-family:'Baloo 2',cursive; font-size:16px; font-weight:700;
+    box-shadow:0 6px 14px rgba(0,0,0,.35);
+    animation:tap-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes tap-pulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.05);} }
+
+  /* ---------- Falling petals ---------- */
+  .petal{
+    position:fixed; top:-30px; z-index:40; pointer-events:none; font-size:20px;
+    animation-name:fall; animation-timing-function:linear; animation-fill-mode:forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(360deg); }
+  }
+
+  /* ---------- Intro overlay ---------- */
+  .overlay{
+    position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at 50% 20%, #4a1f4a, #1c0d24 75%);
+    padding:20px;
+  }
+  .card{
+    background:linear-gradient(180deg, #fff8ea, #ffedc9);
+    border-radius:26px; padding:32px 28px; max-width:440px; width:100%;
+    text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 0 6px rgba(255,255,255,.25) inset;
+    animation:card-in .5s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes card-in{ 0%{ opacity:0; transform:scale(.8) translateY(30px);} 100%{ opacity:1; transform:scale(1) translateY(0);} }
+  .card .hero-emoji{ font-size:64px; display:block; margin-bottom:6px; animation:mouse-bounce 2.2s ease-in-out infinite; }
+  .card h2{ margin:0 0 6px; font-size:26px; color:var(--maroon); }
+  .card p{ margin:0 0 20px; font-size:14.5px; color:#6b4630; line-height:1.5; font-weight:600; }
+  .start-btn{
+    border:none; cursor:pointer; padding:14px 30px; border-radius:30px;
+    background:linear-gradient(160deg, var(--marigold), var(--vermillion));
+    color:#fff; font-family:'Baloo 2',cursive; font-size:19px; font-weight:700;
+    box-shadow:0 10px 20px rgba(214,59,47,.4);
+    transition:transform .15s;
+  }
+  .start-btn:hover{ transform:translateY(-2px) scale(1.03); }
+  .start-btn:active{ transform:scale(.96); }
+
+  /* ---------- Aarti overlay ---------- */
+  #aarti-overlay{
+    position:fixed; inset:0; z-index:150; display:none;
+    background:radial-gradient(ellipse at 50% 30%, rgba(255,178,56,.25), rgba(20,8,20,.92) 70%);
+    align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:20px;
+  }
+  #aarti-overlay.show{ display:flex; }
+  .aarti-title{ color:var(--temple-gold-light); font-size:clamp(20px,4vw,30px); margin:0 0 6px; text-shadow:0 2px 10px rgba(0,0,0,.6);}
+  .lyric-box{
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,225,150,.4); border-radius:18px;
+    padding:18px 26px; min-width:260px; max-width:90vw; min-height:70px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  }
+  .lyric-hi{ color:#ffe8b8; font-size:clamp(16px,4vw,40px); font-weight:700; }
+  .lyric-tr{ color:#f0d0a0; font-size:clamp(12px,2.2vw,15px); font-style:italic; }
+  .aarti-note{ color:#e7c9d6; font-size:12px; margin-top:14px; max-width:340px; opacity:.85;}
+  .finish-panel{ margin-top:22px; display:none; flex-direction:column; align-items:center; gap:12px;}
+  .finish-panel.show{ display:flex; }
+  .finish-panel h3{ color:#fff; font-size:22px; margin:0; }
+  .replay-btn{
+    border:none; cursor:pointer; padding:12px 24px; border-radius:26px;
+    background:var(--white-soft); color:var(--maroon); font-family:'Baloo 2',cursive; font-weight:700; font-size:15px;
+    box-shadow:0 8px 16px rgba(0,0,0,.35);
+  }
+
+  .sr-only{ position:absolute; width:1px;height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+
+  @media (max-width:640px){
+    .brand h1{ font-size:15px; }
+    .brand p{ display:none; }
+    .altar-scene{ max-height:46vh; }
+    .drag-item svg{ width:44px; height:44px; }
+    #zone-idol{ width:42%; }
+  }
+
+  @media (max-width:640px) and (max-height:640px){
+    .altar-scene{ max-height:34vh; }
+    .mascot{ width:44px; height:38px; }
+    .tray{ min-height:64px; padding:8px 12px; }
+  }
+
+  /* Wide-but-short viewports (Smart TVs, laptops in browser windows with
+   little vertical room): shrink the altar further and tighten spacing
+   so the tray never gets pushed past the visible area. */
+  @media (min-width:900px) and (max-height:800px){
+    .altar-scene{ max-height:38vh; }
+    .hud{ padding:10px 18px 4px; }
+    .mascot-row{ margin:0 auto 2px; }
+    .mascot{ width:44px; height:38px; }
+    .tray{ min-height:64px; padding:8px 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="stars" id="stars"></div>
+  <div class="bunting" id="bunting"></div>
+
+  <div class="hud">
+    <div class="brand">
+      <div class="brand-badge">🐘</div>
+      <div>
+        <h1>Ganesh Pooja Adventure</h1>
+        <p>Get everything ready, step by step</p>
+      </div>
+    </div>
+    <div class="progress-row" id="progressRow" aria-label="Progress"></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="soundToggle" title="Mute / unmute" aria-label="Toggle sound">🔊</button>
+      <button class="icon-btn" id="restartBtn" title="Start over" aria-label="Restart">↺</button>
+    </div>
+  </div>
+
+  <div class="stage-wrap">
+    <div class="mascot-row">
+      <svg class="mascot" viewBox="0 0 100 80" aria-hidden="true">
+        <ellipse cx="55" cy="55" rx="30" ry="20" fill="#b98a5e"/>
+        <circle cx="28" cy="40" r="17" fill="#c99a6c"/>
+        <circle cx="16" cy="27" r="7" fill="#c99a6c"/>
+        <circle cx="16" cy="27" r="4" fill="#7a5636"/>
+        <circle cx="22" cy="38" r="2.2" fill="#2b1a10"/>
+        <ellipse cx="14" cy="44" rx="4" ry="2.4" fill="#e7a9a0"/>
+        <path d="M85 55 Q98 50 96 40" stroke="#b98a5e" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="46" r="1.4" fill="#fff"/>
+      </svg>
+      <div class="bubble" id="bubble">Namaste! I'm Mooshak — I'll help you with Ganesha's pooja today.</div>
+    </div>
+
+    <div class="altar-scene" id="altarScene">
+      <div class="arch" aria-hidden="true">
+        <svg viewBox="0 0 400 380" preserveAspectRatio="xMidYMax meet">
+          <defs>
+            <linearGradient id="archGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e8b73a"/>
+              <stop offset="100%" stop-color="#a9711f"/>
+            </linearGradient>
+          </defs>
+          <path d="M20 380 L20 140 Q20 20 200 20 Q380 20 380 140 L380 380"
+                fill="none" stroke="url(#archGrad)" stroke-width="14" stroke-linecap="round"/>
+          <path d="M45 380 L45 145 Q45 45 200 45 Q355 45 355 145 L355 380"
+                fill="none" stroke="#ffe19a" stroke-width="3" stroke-dasharray="2 10" opacity=".6"/>
+          <circle cx="200" cy="38" r="10" fill="#ffe19a"/>
+        </svg>
+      </div>
+
+      <svg class="rangoli" viewBox="0 0 200 200" aria-hidden="true">
+        <g>
+          <circle cx="100" cy="100" r="94" fill="none" stroke="#ffd76b" stroke-width="2" opacity=".5"/>
+          <g id="petalsRing"></g>
+          <circle cx="100" cy="100" r="30" fill="#ff8a1e" opacity=".85"/>
+          <circle cx="100" cy="100" r="18" fill="#ffe19a" opacity=".9"/>
+          <circle cx="100" cy="100" r="8" fill="#d63b2f"/>
+        </g>
+      </svg>
+
+      <div class="chowki"></div>
+
+      <!-- Idol zone -->
+      <div class="zone" id="zone-idol" data-zone="idol" data-accepts="ganesha">
+        <div class="ganesha-glow" id="ganeshaGlow"></div>
+        <svg class="ph" viewBox="0 0 100 100"><ellipse cx="50" cy="92" rx="38" ry="6" fill="#000" opacity=".25"/><text x="50" y="55" text-anchor="middle" font-size="34" opacity=".5">🛕</text></svg>
+      </div>
+
+      <!-- Diya zone -->
+      <div class="zone" id="zone-diya" data-zone="diya" data-accepts="diya">
+        <svg class="ph" viewBox="0 0 80 60"><text x="40" y="42" text-anchor="middle" font-size="30">🪔</text></svg>
+      </div>
+
+      <!-- Incense zone -->
+      <div class="zone" id="zone-incense" data-zone="incense" data-accepts="incense">
+        <svg class="ph" viewBox="0 0 40 100"><text x="20" y="60" text-anchor="middle" font-size="24">🕯️</text></svg>
+      </div>
+
+      <!-- Bell zone -->
+      <div class="zone" id="zone-bell" data-zone="bell" data-accepts="bell">
+        <svg viewBox="0 0 60 80" class="ph" style="opacity:.9">
+          <g class="bell-hang">
+            <line x1="30" y1="0" x2="30" y2="16" stroke="#8a5a2b" stroke-width="3"/>
+            <path d="M15 18 Q15 40 8 48 Q30 56 52 48 Q45 40 45 18 Z" fill="#e8b73a" stroke="#a9711f" stroke-width="2"/>
+            <circle cx="30" cy="52" r="4" fill="#a9711f"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Offering zones on/around ganesha (hidden until idol placed) -->
+      <div class="zone" id="zone-tilak" data-zone="tilak" data-accepts="tilak" style="display:none;">
+        <svg class="ph" viewBox="0 0 40 40"><circle cx="20" cy="20" r="9" fill="#d63b2f" opacity=".55"/></svg>
+      </div>
+      <div class="zone" id="zone-flowers" data-zone="flowers" data-accepts="flower" style="display:none;">
+        <svg class="ph" viewBox="0 0 60 40"><text x="30" y="30" text-anchor="middle" font-size="22">🌸</text></svg>
+      </div>
+      <div class="zone" id="zone-durva" data-zone="durva" data-accepts="durva" style="display:none;">
+        <svg class="ph" viewBox="0 0 60 40"><text x="30" y="30" text-anchor="middle" font-size="22">🌿</text></svg>
+      </div>
+      <div class="zone" id="zone-laddoo" data-zone="laddoo" data-accepts="laddoo" style="display:none;">
+        <svg class="ph" viewBox="0 0 60 40"><text x="30" y="30" text-anchor="middle" font-size="22">🍬</text></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="tray-wrap">
+    <div class="tray" id="tray"></div>
+  </div>
+</div>
+
+<div id="aarti-overlay">
+  <div class="aarti-title">🪔 Ganesh Aarti 🪔</div>
+  <div class="lyric-box">
+    <div class="lyric-hi" id="lyricHi">जय गणेश जय गणेश</div>
+    <div class="lyric-tr" id="lyricTr">Jai Ganesh, Jai Ganesh…</div>
+  </div>
+  <div class="aarti-note">🔊</div>
+  <div class="finish-panel" id="finishPanel">
+    <h3>🎉 Sadhu Sadhu! Pooja complete! 🎉</h3>
+    <button class="replay-btn" id="replayBtn">Play again 🐭</button>
+  </div>
+  <audio id="aartiAudio">
+    <source src="ganesh-arti.mp3" type="audio/mpeg">
+  </audio>
+</div>
+
+<div class="overlay" id="introOverlay">
+  <div class="card">
+    <span class="hero-emoji">🐘</span>
+    <h2>Ganesh Pooja Adventure</h2>
+    <p>Help get everything ready for Ganesha's pooja! Drag each item to the right spot, in the right order. Mooshak the mouse will guide you if you get stuck. When everything is offered, ring the bell to begin the aarti!</p>
+    <button class="start-btn" id="startBtn">Start Pooja 🙏</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ small helpers ============ */
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $all = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  /* ============ background decor ============ */
+  const starsEl = $('#stars');
+  for(let i=0;i<50;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    starsEl.appendChild(s);
+  }
+  const bunting = $('#bunting');
+  for(let i=0;i<14;i++){
+    const f = document.createElement('div');
+    f.className='flag';
+    f.style.animationDelay = (i*0.1)+'s';
+    bunting.appendChild(f);
+  }
+  const petalsRing = $('#petalsRing');
+  const petalColors = ['#ff8a1e','#ffd76b','#d63b2f','#4c8a4a'];
+  for(let i=0;i<16;i++){
+    const angle = (i/16)*Math.PI*2;
+    const x = 100 + Math.cos(angle)*70;
+    const y = 100 + Math.sin(angle)*70;
+    const el = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    el.setAttribute('cx', x.toFixed(1));
+    el.setAttribute('cy', y.toFixed(1));
+    el.setAttribute('rx','14'); el.setAttribute('ry','7');
+    el.setAttribute('fill', petalColors[i%petalColors.length]);
+    el.setAttribute('opacity','.55');
+    el.setAttribute('transform', `rotate(${(angle*180/Math.PI+90).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})`);
+    petalsRing.appendChild(el);
+  }
+
+  /* ============ Ganesha SVG (built once) ============ */
+  function ganeshaSVG(){
+    return `
+    <svg viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="skinG" cx="40%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ffcf8f"/>
+          <stop offset="100%" stop-color="#e8973f"/>
+        </radialGradient>
+        <linearGradient id="dhotiG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e8503f"/>
+          <stop offset="100%" stop-color="#b52d2a"/>
+        </linearGradient>
+        <linearGradient id="crownG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fff1b8"/>
+          <stop offset="100%" stop-color="#e8b73a"/>
+        </linearGradient>
+      </defs>
+
+      <!-- lotus base -->
+      <g>
+        <ellipse cx="110" cy="222" rx="70" ry="12" fill="#000" opacity=".18"/>
+        <path d="M40 214 Q60 190 90 210 Q110 188 130 210 Q160 190 180 214 Q150 226 110 226 Q70 226 40 214Z" fill="#f3a8c4"/>
+        <path d="M55 210 Q75 196 95 208 Q110 196 125 208 Q145 196 165 210 Q140 216 110 216 Q80 216 55 210Z" fill="#fbd3e2"/>
+      </g>
+
+      <!-- lower body / dhoti -->
+      <ellipse cx="110" cy="190" rx="52" ry="34" fill="url(#dhotiG)"/>
+      <path d="M65 178 Q110 210 155 178" stroke="#ffe19a" stroke-width="3" fill="none" opacity=".8"/>
+
+      <!-- belly -->
+      <ellipse cx="110" cy="150" rx="46" ry="42" fill="url(#skinG)"/>
+      <path d="M84 150 Q110 168 136 150" stroke="#c97a2e" stroke-width="2" fill="none" opacity=".5"/>
+
+      <!-- left hand (upper, small axe) -->
+      <ellipse cx="55" cy="128" rx="14" ry="20" fill="url(#skinG)" transform="rotate(-18 55 128)"/>
+      <!-- right hand offering pose -->
+      <ellipse cx="165" cy="128" rx="14" ry="20" fill="url(#skinG)" transform="rotate(18 165 128)"/>
+
+      <!-- ears -->
+      <ellipse cx="52" cy="88" rx="26" ry="30" fill="#f0a85c" transform="rotate(-12 52 88)"/>
+      <ellipse cx="168" cy="88" rx="26" ry="30" fill="#f0a85c" transform="rotate(12 168 88)"/>
+      <ellipse cx="52" cy="88" rx="16" ry="20" fill="#f7c98a" transform="rotate(-12 52 88)"/>
+      <ellipse cx="168" cy="88" rx="16" ry="20" fill="#f7c98a" transform="rotate(12 168 88)"/>
+
+      <!-- head -->
+      <circle cx="110" cy="92" r="52" fill="url(#skinG)"/>
+
+      <!-- crown -->
+      <path d="M64 66 Q110 24 156 66 Q140 54 110 54 Q80 54 64 66Z" fill="url(#crownG)" stroke="#a9711f" stroke-width="2"/>
+      <circle cx="110" cy="40" r="8" fill="#d63b2f" stroke="#a9711f" stroke-width="2"/>
+
+      <!-- eyes -->
+      <ellipse cx="90" cy="92" rx="6" ry="7" fill="#2b1a10"/>
+      <ellipse cx="130" cy="92" rx="6" ry="7" fill="#2b1a10"/>
+      <circle cx="92" cy="90" r="1.6" fill="#fff"/>
+      <circle cx="132" cy="90" r="1.6" fill="#fff"/>
+
+      <!-- tilak placeholder marker location approx forehead: cx=110 cy=72 -->
+
+      <!-- trunk -->
+      <path d="M104 104 Q92 130 108 148 Q118 158 108 168" stroke="#e8973f" stroke-width="16" fill="none" stroke-linecap="round"/>
+      <path d="M104 104 Q92 130 108 148 Q118 158 108 168" stroke="#c97a2e" stroke-width="16" fill="none" stroke-linecap="round" opacity=".18"/>
+
+      <!-- smile -->
+      <path d="M96 108 Q110 116 100 112" stroke="#7a4a2b" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+      <!-- little mouse companion -->
+      <g transform="translate(150,208)">
+        <ellipse cx="0" cy="0" rx="14" ry="9" fill="#a97c54"/>
+        <circle cx="-11" cy="-6" r="6" fill="#a97c54"/>
+        <circle cx="-15" cy="-11" r="3" fill="#a97c54"/>
+        <circle cx="-7" cy="-11" r="3" fill="#a97c54"/>
+      </g>
+    </svg>`;
+  }
+
+  /* ============ item icon SVGs for tray ============ */
+  const icons = {
+    diya: `<svg viewBox="0 0 80 70"><defs><linearGradient id="diG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffd98a"/><stop offset="100%" stop-color="#c97a2e"/></linearGradient></defs>
+      <path d="M10 46 Q40 66 70 46 Q66 34 40 34 Q14 34 10 46Z" fill="url(#diG)" stroke="#8a5a2b" stroke-width="1.5"/>
+      <ellipse cx="40" cy="34" rx="24" ry="7" fill="#ffe6ad" stroke="#8a5a2b" stroke-width="1.5"/>
+      <path class="flame" d="M40 8 Q46 20 40 28 Q34 20 40 8Z" fill="#ff8a1e"/>
+      <path class="flame" d="M40 14 Q43 20 40 25 Q37 20 40 14Z" fill="#ffe6ad"/>
+    </svg>`,
+    incense: `<svg viewBox="0 0 40 100"><rect x="17" y="40" width="6" height="55" rx="3" fill="#c98a4a"/>
+      <ellipse cx="20" cy="95" rx="16" ry="4" fill="#a9711f"/>
+      <path class="flame" d="M20 38 Q24 30 20 20 Q16 30 20 38Z" fill="#ff8a1e" opacity=".9"/>
+    </svg>`,
+    tilak: `<svg viewBox="0 0 60 60"><ellipse cx="30" cy="46" rx="20" ry="8" fill="#e8b73a" stroke="#a9711f" stroke-width="2"/>
+      <circle cx="30" cy="20" r="12" fill="#d63b2f" stroke="#8f231f" stroke-width="2"/>
+      <circle cx="30" cy="20" r="5" fill="#ff8a72"/>
+    </svg>`,
+    flower: `<svg viewBox="0 0 60 60"><g fill="#ff8a1e"><circle cx="30" cy="16" r="10"/><circle cx="44" cy="30" r="10"/><circle cx="30" cy="44" r="10"/><circle cx="16" cy="30" r="10"/></g><circle cx="30" cy="30" r="9" fill="#ffe19a"/></svg>`,
+    durva: `<svg viewBox="0 0 60 60"><path d="M20 55 Q10 30 22 8" stroke="#3f8a3f" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M30 55 Q30 25 30 5" stroke="#4c8a4a" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M40 55 Q50 30 38 8" stroke="#3f8a3f" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </svg>`,
+    laddoo: `<svg viewBox="0 0 60 60"><defs><radialGradient id="ldG" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#ffdf8a"/><stop offset="100%" stop-color="#e8973f"/></radialGradient></defs>
+      <circle cx="30" cy="32" r="22" fill="url(#ldG)"/>
+      <g fill="#c97a2e"><circle cx="20" cy="24" r="1.6"/><circle cx="38" cy="22" r="1.6"/><circle cx="28" cy="40" r="1.6"/><circle cx="40" cy="36" r="1.6"/><circle cx="18" cy="36" r="1.6"/></g>
+      <circle cx="30" cy="10" r="3" fill="#ffe6ad"/>
+    </svg>`
+  };
+  // mini ganesha icon for the tray — tightly cropped viewBox so it actually fills the slot
+  icons.ganeshaTray = `<svg viewBox="0 0 140 150" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="70" cy="118" rx="40" ry="26" fill="#e8503f"/>
+      <ellipse cx="28" cy="86" rx="20" ry="24" fill="#f0a85c" transform="rotate(-14 28 86)"/>
+      <ellipse cx="112" cy="86" rx="20" ry="24" fill="#f0a85c" transform="rotate(14 112 86)"/>
+      <ellipse cx="28" cy="86" rx="12" ry="16" fill="#f7c98a" transform="rotate(-14 28 86)"/>
+      <ellipse cx="112" cy="86" rx="12" ry="16" fill="#f7c98a" transform="rotate(14 112 86)"/>
+      <circle cx="70" cy="82" r="34" fill="#eea15a"/>
+      <path d="M40 62 Q70 30 100 62 Q88 52 70 52 Q52 52 40 62Z" fill="#e8b73a" stroke="#a9711f" stroke-width="1.5"/>
+      <circle cx="70" cy="42" r="5" fill="#d63b2f"/>
+      <ellipse cx="58" cy="82" rx="4.5" ry="5.5" fill="#2b1a10"/>
+      <ellipse cx="82" cy="82" rx="4.5" ry="5.5" fill="#2b1a10"/>
+      <path d="M67 92 Q60 108 70 120 Q76 126 70 132" stroke="#e8973f" stroke-width="11" fill="none" stroke-linecap="round"/>
+      <path d="M50 96 Q70 104 60 100" stroke="#7a4a2b" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    </svg>`;
+
+  /* ============ audio (synthesized, no external files needed) ============ */
+  let actx = null;
+  function ensureAudio(){
+    // Sound is a nice-to-have — if the browser/preview environment blocks
+    // AudioContext creation for any reason, we swallow the error and simply
+    // continue silently rather than letting it block the rest of the app.
+    try{
+      if(!actx){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC){ state.soundOn = false; return; }
+        actx = new AC();
+      }
+      if(actx.state === 'suspended') actx.resume().catch(()=>{});
+    }catch(err){
+      state.soundOn = false;
+      const btn = document.getElementById('soundToggle');
+      if(btn) btn.textContent = '🔇';
+    }
+  }
+  function tone(freq, start, dur, type='sine', gainPeak=0.18){
+    if(!state.soundOn || !actx) return;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    osc.connect(gain); gain.connect(actx.destination);
+    const t0 = actx.currentTime + start;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(gainPeak, t0 + dur*0.15);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  }
+  function playPop(){ tone(520,0,0.12,'triangle',0.12); }
+  function playSuccess(){ tone(523.25,0,0.18,'sine',0.18); tone(659.25,0.1,0.2,'sine',0.16); tone(783.99,0.2,0.3,'sine',0.15); }
+  function playBoop(){ tone(220,0,0.16,'sine',0.14); tone(196,0.1,0.2,'sine',0.12); }
+  function playBell(){ tone(880,0,0.5,'sine',0.16); tone(1320,0.02,0.6,'sine',0.09); tone(660,0.02,0.7,'sine',0.07); }
+  function playWhoosh(){ tone(140,0,0.35,'sawtooth',0.05); tone(90,0.05,0.4,'sawtooth',0.04); }
+
+  let aartiTimer = null;
+  function startAartiChime(){
+    if(aartiTimer) return;
+    let step = 0;
+    const notes = [523.25,587.33,659.25,587.33,523.25,659.25,783.99,659.25];
+    aartiTimer = setInterval(()=>{
+      if(!state.soundOn) return;
+      tone(notes[step % notes.length], 0, 0.55, 'sine', 0.12);
+      step++;
+    }, 620);
+  }
+  function stopAartiChime(){ clearInterval(aartiTimer); aartiTimer = null; }
+
+  /* ============ state & steps ============ */
+  const state = { stepIndex:0, soundOn:true, selectedItem:null };
+
+  const steps = [
+    { id:'idol', zone:'idol', type:'ganesha', label:'Ganesha idol', icon:icons.ganeshaTray,
+      hint:"First, gently place Ganesha ji on the altar 🛕", success:"Wonderful! Ganesha ji is seated on the altar." },
+    { id:'diya', zone:'diya', type:'diya', label:'Diya', icon:icons.diya,
+      hint:"Now place the diya so we can light it 🪔", success:"The diya is glowing brightly!" },
+    { id:'incense', zone:'incense', type:'incense', label:'Agarbatti', icon:icons.incense,
+      hint:"Light the incense stick — its fragrance welcomes Ganesha 🕯️", success:"Mmm, smells wonderful!" },
+    { id:'tilak', zone:'tilak', type:'tilak', label:'Tilak', icon:icons.tilak,
+      hint:"Apply a tilak on Ganesha's forehead 🔴", success:"A beautiful tilak — Ganesha looks so happy!" },
+    { id:'flowers', zone:'flowers', type:'flower', label:'Flowers', icon:icons.flower,
+      hint:"Ganesha loves flowers — offer some fresh ones 🌺", success:"The flowers look lovely on him!" },
+    { id:'durva', zone:'durva', type:'durva', label:'Durva grass', icon:icons.durva,
+      hint:"Offer durva grass — it's Ganesha's favourite 🌿", success:"Ganesha is very pleased!" },
+    { id:'laddoo', zone:'laddoo', type:'laddoo', label:'Laddoo', icon:icons.laddoo,
+      hint:"Time for something sweet — offer a laddoo 🍬", success:"His favourite treat — Ganesha is delighted!" },
+    { id:'bell', zone:'bell', type:'bell', label:'Bell', icon:null,
+      hint:"Everything is ready! Tap the bell to begin the aarti 🔔", success:"" }
+  ];
+
+  const zoneEls = {};
+  steps.forEach(s => zoneEls[s.zone] = document.getElementById('zone-'+s.zone));
+
+  /* ============ progress lamps ============ */
+  const progressRow = $('#progressRow');
+  steps.forEach((s,i)=>{
+    const lamp = document.createElement('div');
+    lamp.className = 'lamp';
+    lamp.id = 'lamp-'+i;
+    lamp.innerHTML = `<svg viewBox="0 0 22 26"><path d="M2 18 Q11 26 20 18 Q18 12 11 12 Q4 12 2 18Z" fill="#e8b73a"/><path class="flame" d="M11 2 Q14 8 11 12 Q8 8 11 2Z" fill="#ff8a1e"/></svg>`;
+    progressRow.appendChild(lamp);
+  });
+  function updateProgress(){
+    steps.forEach((s,i)=>{
+      $('#lamp-'+i).classList.toggle('lit', i < state.stepIndex);
+    });
+  }
+
+  /* ============ mascot bubble ============ */
+  const bubble = $('#bubble');
+  function say(msg, cls){
+    bubble.classList.remove('warn','win');
+    if(cls) bubble.classList.add(cls);
+    bubble.style.animation = 'none';
+    void bubble.offsetWidth;
+    bubble.style.animation = '';
+    bubble.textContent = msg;
+  }
+
+  /* ============ tray rendering ============ */
+  const tray = $('#tray');
+  function renderTray(){
+    tray.innerHTML = '';
+    const step = steps[state.stepIndex];
+    if(!step){ return; }
+    if(step.id === 'bell'){
+      const btn = document.createElement('button');
+      btn.className = 'bell-tap-btn';
+      btn.textContent = 'Tap the bell 🔔 above!';
+      btn.disabled = true;
+      btn.style.opacity = '.85';
+      btn.style.animation = 'none';
+      tray.appendChild(btn);
+      return;
+    }
+    const item = document.createElement('div');
+    item.className = 'drag-item';
+    item.dataset.type = step.type;
+    item.innerHTML = step.icon + `<span>${step.label}</span>`;
+    item.setAttribute('tabindex','0');
+    item.setAttribute('role','button');
+    item.setAttribute('aria-label', 'Drag '+step.label+' to the correct spot');
+    makeDraggable(item);
+    tray.appendChild(item);
+  }
+
+  /* ============ zone hint highlighting ============ */
+  function refreshActiveHint(){
+    $all('.zone').forEach(z => z.classList.remove('active-hint'));
+    const step = steps[state.stepIndex];
+    if(step && zoneEls[step.zone]) zoneEls[step.zone].classList.add('active-hint');
+  }
+
+  /* ============ drag & drop (pointer events, with tap-to-select fallback) ============ */
+  let ghost = null, dragType = null, dragSourceEl = null, startX=0, startY=0, moved=false;
+
+  function makeDraggable(el){
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        trySelectForKeyboard(el);
+      }
+    });
+  }
+
+  function trySelectForKeyboard(el){
+    // simple keyboard fallback: select item, then focus first zone and press Enter there
+    $all('.drag-item').forEach(i=>i.classList.remove('selected'));
+    el.classList.add('selected');
+    state.selectedItem = { type: el.dataset.type, el };
+    say('Item selected — now tap the glowing spot on the altar!');
+  }
+
+  function onPointerDown(e){
+    ensureAudio();
+    const el = e.currentTarget;
+    if(el.classList.contains('lifted')) return;
+    dragSourceEl = el;
+    dragType = el.dataset.type;
+    startX = e.clientX; startY = e.clientY; moved = false;
+
+    const rect = el.querySelector('svg').getBoundingClientRect();
+    ghost = document.createElement('div');
+    ghost.className = 'ghost';
+    ghost.style.width = rect.width+'px';
+    ghost.style.height = rect.height+'px';
+    ghost.innerHTML = el.querySelector('svg').outerHTML;
+    document.body.appendChild(ghost);
+    positionGhost(e.clientX, e.clientY);
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  }
+
+  function positionGhost(x,y){
+    if(!ghost) return;
+    ghost.style.left = (x - ghost.offsetWidth/2)+'px';
+    ghost.style.top = (y - ghost.offsetHeight/2)+'px';
+  }
+
+  function zoneAtPoint(x,y){
+    if(ghost) ghost.style.display='none';
+    const elAt = document.elementFromPoint(x,y);
+    if(ghost) ghost.style.display='';
+    if(!elAt) return null;
+    return elAt.closest('.zone');
+  }
+
+  function onPointerMove(e){
+    if(Math.abs(e.clientX-startX) > 4 || Math.abs(e.clientY-startY) > 4) moved = true;
+    positionGhost(e.clientX, e.clientY);
+    const z = zoneAtPoint(e.clientX, e.clientY);
+    $all('.zone').forEach(zz => zz.classList.remove('hover-ok','hover-bad'));
+    if(z){
+      const step = steps[state.stepIndex];
+      if(step && z.dataset.zone === step.zone && dragType === step.type) z.classList.add('hover-ok');
+      else z.classList.add('hover-bad');
+    }
+  }
+
+  function onPointerUp(e){
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    $all('.zone').forEach(zz => zz.classList.remove('hover-ok','hover-bad'));
+
+    if(dragSourceEl) dragSourceEl.classList.add('lifted');
+
+    if(!moved){
+      // treat as tap -> select mode
+      if(ghost){ ghost.remove(); ghost=null; }
+      if(dragSourceEl) dragSourceEl.classList.remove('lifted');
+      trySelectForKeyboard(dragSourceEl);
+      return;
+    }
+
+    const z = zoneAtPoint(e.clientX, e.clientY);
+    handleDrop(z, dragType, dragSourceEl);
+    if(ghost){ ghost.remove(); ghost = null; }
+  }
+
+  // click on a zone (covers keyboard-selected item placement + bell click)
+  document.addEventListener('click', (e)=>{
+    const z = e.target.closest('.zone');
+    if(!z) return;
+    const step = steps[state.stepIndex];
+    if(step && step.id === 'bell' && z.dataset.zone === 'bell'){
+      ringBellAndStartAarti();
+      return;
+    }
+    if(state.selectedItem){
+      handleDrop(z, state.selectedItem.type, state.selectedItem.el);
+      state.selectedItem = null;
+    }
+  });
+
+  function bounceBack(sourceEl){
+    if(!sourceEl) return;
+    sourceEl.classList.remove('lifted');
+    sourceEl.classList.add('selected');
+    setTimeout(()=> sourceEl.classList.remove('selected'), 260);
+  }
+
+  function handleDrop(zoneEl, type, sourceEl){
+    const step = steps[state.stepIndex];
+    if(!step || step.id === 'bell'){ bounceBack(sourceEl); return; }
+
+    if(!zoneEl){
+      bounceBack(sourceEl);
+      return;
+    }
+
+    if(zoneEl.dataset.zone === step.zone && type === step.type){
+      completeStep(zoneEl, step, sourceEl);
+    } else {
+      playBoop();
+      zoneEl.classList.remove('shake'); void zoneEl.offsetWidth; zoneEl.classList.add('shake');
+      bounceBack(sourceEl);
+      say(wrongMessage(step, zoneEl, type), 'warn');
+    }
+  }
+
+  function wrongMessage(step, zoneEl, type){
+    const zoneName = zoneEl.dataset.zone;
+    if(zoneName === step.zone){
+      return "Almost! That's not quite the right item for this step — look for the glowing spot's hint.";
+    }
+    const niceNames = { idol:'Ganesha idol', diya:'diya', incense:'incense stick', tilak:'tilak', flowers:'flowers', durva:'durva grass', laddoo:'laddoo', bell:'bell' };
+    return `Not yet! Let's first finish: ${step.hint.replace(/[🛕🪔🕯️🔴🌺🌿🍬🔔]/g,'').trim()}`;
+  }
+
+  /* ============ step completion effects ============ */
+  function completeStep(zoneEl, step, sourceEl){
+    playSuccess();
+    zoneEl.querySelector('.ph')?.remove();
+
+    if(step.id === 'idol'){
+      zoneEl.innerHTML = `<div class="ganesha-glow show" id="ganeshaGlow"></div>` + ganeshaSVG().replace('<svg ', '<svg class="ganesha-figure idle" ');
+      // reveal offering zones now
+      ['zone-tilak','zone-flowers','zone-durva','zone-laddoo'].forEach(id=>{
+        document.getElementById(id).style.display = 'flex';
+      });
+    } else if(step.id === 'diya'){
+      zoneEl.innerHTML = icons.diya;
+      zoneEl.classList.add('lit');
+      playWhoosh();
+    } else if(step.id === 'incense'){
+      zoneEl.innerHTML = icons.incense;
+      playWhoosh();
+      spawnSmoke(zoneEl);
+    } else if(step.id === 'tilak'){
+      zoneEl.innerHTML = `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="8" fill="#d63b2f" stroke="#8f231f" stroke-width="1.5"/></svg>`;
+    } else if(step.id === 'flowers'){
+      zoneEl.innerHTML = `<svg viewBox="0 0 60 40"><text x="30" y="30" text-anchor="middle" font-size="26">🌺</text></svg>`;
+    } else if(step.id === 'durva'){
+      zoneEl.innerHTML = icons.durva;
+    } else if(step.id === 'laddoo'){
+      zoneEl.innerHTML = icons.laddoo;
+    }
+
+    zoneEl.classList.add('filled');
+    if(sourceEl) sourceEl.remove();
+
+    say(step.success, 'win');
+    state.stepIndex++;
+    updateProgress();
+    refreshActiveHint();
+    renderTray();
+
+    const next = steps[state.stepIndex];
+    if(next){
+      setTimeout(()=> say(next.hint), 1100);
+    }
+  }
+
+  function spawnSmoke(zoneEl){
+    let count = 0;
+    const iv = setInterval(()=>{
+      if(count++ > 40) { clearInterval(iv); return; }
+      const s = document.createElement('div');
+      s.className = 'smoke';
+      const rect = zoneEl.getBoundingClientRect();
+      s.style.left = (rect.left + rect.width*0.5) + 'px';
+      s.style.top = (rect.top + rect.height*0.15) + 'px';
+      s.style.setProperty('--dx', (Math.random()*20-10)+'px');
+      s.style.animation = 'smoke-rise 2.2s ease-out forwards';
+      document.body.appendChild(s);
+      setTimeout(()=> s.remove(), 2300);
+    }, 550);
+  }
+
+  /* ============ bell + aarti ============ */
+  const aartiOverlay = $('#aarti-overlay');
+  const aartiAudio = $('#aartiAudio');
+  // ---- Paste each unique line's text ONCE below. Order doesn't matter, just
+// match the labels (L1, L2, ...) to the lines you already sent me. ----
+const lyricText = {
+  L1: { hi: "जय गणेश जय गणेश, जय गणेश देवा,",      tr: "Jai Ganesh Jai Ganesh, Jai Ganesh Deva," },
+  L2: { hi: "माता जाकी पार्वती, पिता महादेवा।",       tr: "Mata Jaaki Parvati, Pita Mahadeva." },
+  L3: { hi: "एक दंत दयावंत, चार भुजा धारी,",         tr: "Ek Dant Dayavant, Chaar Bhuja Dhaari," },
+  L4: { hi: "माथे पर तिलक सोहे, मूसे की सवारी।",      tr: "Maathe Par Tilak Sohe, Moose Ki Sawaari." },
+  L5: { hi: "पान चढ़े फूल चढ़े, और चढ़े मेवा,",       tr: "Paan Chadhe Phool Chadhe, Aur Chadhe Mewa," },
+  L6: { hi: "लड्डुअन का भोग लगे, संत करें सेवा।",     tr: "Ladduan Ka Bhog Lage, Sant Karen Seva." },
+  L7: { hi: "अंधन को आंख देत, कोढ़िन को काया,",       tr: "Andhan Ko Aankh Det, Kodhin Ko Kaaya," },
+  L8: { hi: "बांझन को पुत्र देत, निर्धन को माया।",     tr: "Baanjhan Ko Putra Det, Nirdhan Ko Maaya." },
+  L9: { hi: "'सूर' श्याम शरण आए, सफल कीजे सेवा,",     tr: "'Soor' Shyaam Sharan Aaye, Safal Keeje Seva," },
+  MUSIC: { hi: "🎵", tr: "" }
+};
+
+// ---- Cue sheet built from your timestamps (in seconds). No text here —
+// just says "at second T, show line KEY". ----
+const lyricCues = [
+  { t: 0,   key: 'MUSIC' },
+  { t: 13,  key: 'L1' },
+  { t: 23,  key: 'L2' },
+  { t: 33,  key: 'L1' },
+  { t: 43,  key: 'L2' },
+  { t: 53,  key: 'MUSIC' },
+  { t: 64,  key: 'L3' },
+  { t: 74,  key: 'L4' },
+  { t: 84,  key: 'L3' },
+  { t: 95,  key: 'L4' },
+  { t: 105, key: 'L5' },
+  { t: 115, key: 'L6' },
+  { t: 125, key: 'L1' },
+  { t: 135, key: 'L2' },
+  { t: 145, key: 'MUSIC' },
+  { t: 155, key: 'L7' },
+  { t: 166, key: 'L8' },
+  { t: 177, key: 'L7' },
+  { t: 186, key: 'L8' },
+  { t: 196, key: 'L9' },
+  { t: 206, key: 'L2' },
+  { t: 216, key: 'L1' },
+  { t: 227, key: 'L2' },
+  { t: 237, key: 'L1' },
+  { t: 248, key: 'L2' }
+];
+
+let currentCueIndex = -1;
+let petalTimer = null;
+
+function updateLyricFromTime(){
+  const ct = aartiAudio.currentTime;
+  let idx = 0;
+  for(let i=0;i<lyricCues.length;i++){
+    if(lyricCues[i].t <= ct) idx = i; else break;
+  }
+  if(idx !== currentCueIndex){
+    currentCueIndex = idx;
+    const l = lyricText[lyricCues[idx].key];
+    $('#lyricHi').textContent = l.hi;
+    $('#lyricTr').textContent = l.tr;
+  }
+}
+
+  function ringBellAndStartAarti(){
+    const zone = zoneEls['bell'];
+    zone.classList.add('ringing');
+    playBell();
+    setTimeout(()=> zone.classList.remove('ringing'), 1600);
+    say("Let's begin the aarti! 🔔✨", 'win');
+    setTimeout(startAarti, 900);
+  }
+
+  function startAarti(){
+  aartiOverlay.classList.add('show');
+  currentCueIndex = -1;
+  petalTimer = setInterval(spawnPetal, 260);
+
+  aartiAudio.currentTime = 0;
+  aartiAudio.addEventListener('timeupdate', updateLyricFromTime);
+  aartiAudio.addEventListener('ended', onAartiEnded);
+
+  aartiAudio.play().then(()=>{
+    stopAartiChime();
+  }).catch(()=>{
+    startAartiChime(); // no real audio — beep fallback, lyrics just show cue 0
+  });
+}
+
+function onAartiEnded(){
+  $('#finishPanel').classList.add('show');
+}
+
+  const petalEmojis = ['🌼','🌸','🌺','🪔','✨'];
+  function spawnPetal(){
+    const p = document.createElement('div');
+    p.className = 'petal';
+    p.textContent = petalEmojis[Math.floor(Math.random()*petalEmojis.length)];
+    p.style.left = Math.random()*100+'vw';
+    const dur = 3 + Math.random()*3;
+    p.style.animationDuration = dur+'s';
+    p.style.fontSize = (14+Math.random()*14)+'px';
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), dur*1000+100);
+  }
+
+  function stopAarti(){
+  clearInterval(petalTimer); petalTimer=null;
+  aartiAudio.removeEventListener('timeupdate', updateLyricFromTime);
+  aartiAudio.removeEventListener('ended', onAartiEnded);
+  stopAartiChime();
+  aartiAudio.pause();
+}
+
+  /* ============ controls ============ */
+  $('#soundToggle').addEventListener('click', ()=>{
+    ensureAudio();
+    state.soundOn = !state.soundOn;
+    $('#soundToggle').textContent = state.soundOn ? '🔊' : '🔇';
+    if(!state.soundOn){ aartiAudio.muted = true; } else { aartiAudio.muted = false; }
+  });
+
+  $('#restartBtn').addEventListener('click', resetGame);
+  $('#replayBtn').addEventListener('click', ()=>{
+    aartiOverlay.classList.remove('show');
+    $('#finishPanel').classList.remove('show');
+    stopAarti();
+    resetGame();
+  });
+
+  function resetGame(){
+    state.stepIndex = 0;
+    state.selectedItem = null;
+    // reset zones
+    ['idol','diya','incense','tilak','flowers','durva','laddoo'].forEach(z=>{
+      const el = zoneEls[z];
+      el.classList.remove('filled','lit');
+      const phMap = {
+        idol: '<svg class="ph" viewBox="0 0 100 100"><ellipse cx="50" cy="92" rx="38" ry="6" fill="#000" opacity=".25"/><text x="50" y="55" text-anchor="middle" font-size="34" opacity=".5">🛕</text></svg>',
+        diya: '<svg class="ph" viewBox="0 0 80 60"><text x="40" y="42" text-anchor="middle" font-size="30">🪔</text></svg>',
+        incense: '<svg class="ph" viewBox="0 0 40 100"><text x="20" y="60" text-anchor="middle" font-size="24">🕯️</text></svg>',
+        tilak: '<svg class="ph" viewBox="0 0 40 40"><circle cx="20" cy="20" r="9" fill="#d63b2f" opacity=".55"/></svg>',
+        flowers: '<svg class="ph" viewBox="0 0 60 40"><text x="30" y="30" text-anchor="middle" font-size="22">🌸</text></svg>',
+        durva: '<svg class="ph" viewBox="0 0 60 40"><text x="30" y="30" text-anchor="middle" font-size="22">🌿</text></svg>',
+        laddoo: '<svg class="ph" viewBox="0 0 60 40"><text x="30" y="30" text-anchor="middle" font-size="22">🍬</text></svg>',
+      };
+      el.innerHTML = phMap[z];
+    });
+    ['zone-tilak','zone-flowers','zone-durva','zone-laddoo'].forEach(id=>{
+      document.getElementById(id).style.display = 'none';
+    });
+    updateProgress();
+    refreshActiveHint();
+    renderTray();
+    say("Namaste! I'm Mooshak — let's start fresh. First, place Ganesha ji on the altar 🛕");
+  }
+
+  /* ============ intro / start ============ */
+  $('#startBtn').addEventListener('click', ()=>{
+    // Game setup happens first and unconditionally; audio init is best-effort
+    // and must never be able to prevent the game from starting.
+    $('#introOverlay').style.display = 'none';
+    resetGame();
+    ensureAudio();
+  });
+
+  /* init (pre-start) */
+  updateProgress();
+  refreshActiveHint();
+  renderTray();
+
+})();
+</script>
+</body>
+</html>
