@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Computer Parts Quest 🖥️ — Build &amp; Learn!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- Kid-friendly accents ---------- */
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    --grass:var(--fun-green);
+    --grass-dark:#399c6c;
+    --sun:var(--gold-500);
+    --sun-dark:var(--gold-600);
+    --berry:var(--fun-red);
+    --berry-dark:#d1454a;
+    --stone-locked: var(--teal-100);
+    --stone-locked-ink: var(--ink-500);
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    /* ---------- Computer-parts tokens ---------- */
+    --wall:#eef3f1;
+    --wall-shade:#e2ece9;
+    --desk-top:#dea25a;
+    --desk-top-dark:#b97d2e;
+    --desk-front:#c88a44;
+    --floor:#dfe9e6;
+    --case-color:var(--fun-blue);
+    --case-dark:#3179ad;
+    --screen-bezel:#233240;
+    --screen-glass:#bfe6ff;
+    --screen-glow:#fff8d6;
+    --key-color:var(--fun-purple);
+    --key-dark:#7f52b5;
+    --mouse-color:var(--fun-orange);
+    --mouse-dark:#c9762c;
+    --speaker-color:var(--fun-pink);
+    --speaker-dark:#c95d8c;
+    --slot-empty: color-mix(in srgb, var(--teal-700) 10%, transparent);
+    --slot-empty-line: color-mix(in srgb, var(--teal-700) 40%, transparent);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --grass-dark:#2c8f60; --berry-dark:#c23b41;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+
+    --wall:#152225; --wall-shade:#101b1d;
+    --desk-top:#8a5a2c; --desk-top-dark:#603c17; --desk-front:#6e451f;
+    --floor:#0f1a1c;
+    --screen-bezel:#0c1417; --screen-glass:#294a63; --screen-glow:#4a4322;
+    --slot-empty: color-mix(in srgb, var(--teal-600) 14%, transparent);
+    --slot-empty-line: color-mix(in srgb, var(--teal-600) 45%, transparent);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--sun) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.35);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .bit-drift{position:absolute;opacity:.4;font-size:28px;animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(20deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--ink-900);
+  }
+  .brand .mascot-mini{font-size:1.2em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .star-counter{
+    display:flex;align-items:center;gap:8px;
+    background:var(--white);border:3px solid var(--sun);
+    border-radius:999px;padding:8px 16px;
+    font-weight:800;font-size:17px;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    color:var(--ink-900);transition:transform .18s ease;
+  }
+  .star-counter.bump{animation:bump .4s ease;}
+  @keyframes bump{0%,100%{transform:scale(1);}40%{transform:scale(1.16);}}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- path of stepping stones ---------- */
+  .path-wrap{
+    position:relative;z-index:2;
+    margin:6px auto 10px;max-width:1000px;
+    overflow-x:auto;overflow-y:hidden;
+    padding:14px 18px 22px;
+  }
+  .path{
+    display:flex;align-items:flex-end;gap:14px;min-width:max-content;padding:0 6px;
+    position:relative;
+  }
+  .path::before{
+    content:"";position:absolute;left:0;right:0;top:50%;height:0;
+    border-top:5px dashed var(--border-card);z-index:0;
+  }
+  .stone{
+    position:relative;z-index:1;
+    width:46px;height:46px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:700;font-size:16px;
+    background:var(--stone-locked);color:var(--stone-locked-ink);
+    border:4px solid var(--white);box-shadow:0 4px 0 var(--edge-shadow-soft);
+    flex:0 0 auto;transition:transform .2s ease, background .2s ease;
+  }
+  .stone:nth-child(odd){transform:translateY(-6px);}
+  .stone:nth-child(even){transform:translateY(6px);}
+  .stone.done{background:var(--grass);color:#fff;}
+  .stone.current{background:var(--sun);color:#5a3c00;transform:translateY(-6px) scale(1.18);box-shadow:0 0 0 5px rgba(245,166,35,.35), 0 4px 0 var(--edge-shadow-soft);animation:stonepulse 1.6s ease-in-out infinite;}
+  @keyframes stonepulse{0%,100%{box-shadow:0 0 0 5px rgba(245,166,35,.35),0 4px 0 var(--edge-shadow-soft);}50%{box-shadow:0 0 0 9px rgba(245,166,35,.16),0 4px 0 var(--edge-shadow-soft);}}
+  .stone.trophy{background:linear-gradient(160deg,var(--sun),var(--berry));color:#fff;font-size:22px;}
+
+  /* ---------- main stage ---------- */
+  .stage{
+    position:relative;z-index:2;
+    max-width:1000px;margin:0 auto;padding:10px 18px 60px;
+    display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .mascot-card{
+    background:var(--white);border-radius:var(--r-lg);padding:18px 16px;
+    text-align:center;box-shadow:0 8px 0 var(--edge-shadow-soft);
+    position:sticky;top:14px;border:1px solid var(--border-card);
+  }
+  .mascot-svg-wrap{display:inline-block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .mascot-svg-wrap.happy{animation:jump .6s ease-in-out 2;}
+  @keyframes jump{0%,100%{transform:translateY(0) rotate(0);}30%{transform:translateY(-16px) rotate(-8deg);}60%{transform:translateY(0) rotate(6deg);}}
+  .speech-bubble{
+    margin-top:10px;background:var(--bubble-tint);border-radius:var(--r-md);padding:12px;
+    font-size:15px;font-weight:700;color:var(--ink-900);line-height:1.35;
+    min-height:60px;display:flex;align-items:center;justify-content:center;
+  }
+  .mascot-name{font-family:var(--font-display);font-weight:700;color:var(--fun-purple);font-size:14px;margin-top:6px;}
+  .switch-link{margin-top:10px;background:none;border:none;font-family:var(--font-body);font-weight:700;font-size:12.5px;color:var(--teal-700);cursor:pointer;text-decoration:underline;padding:4px;}
+
+  .stars-box{margin-top:16px;padding-top:14px;border-top:2px dashed var(--border-card);}
+  .stars-box svg{width:70px;height:auto;}
+  .stars-label{font-weight:800;font-size:12.5px;color:var(--ink-500);margin-top:2px;}
+  .stars-total{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--grass-dark);}
+
+  .task-card{
+    background:var(--white);border-radius:var(--r-lg);padding:24px 24px 20px;
+    box-shadow:0 10px 0 var(--edge-shadow-soft);
+    position:relative;overflow:hidden;border:1px solid var(--border-card);
+  }
+  .task-badge{
+    display:inline-block;background:var(--sun);color:#5a3c00;font-weight:800;
+    font-family:var(--font-display);font-size:13px;letter-spacing:.3px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;
+  }
+  .task-title{font-family:var(--font-display);font-weight:700;font-size:clamp(22px,4vw,30px);margin:2px 0 6px;color:var(--ink-900);}
+  .task-instruction{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 14px;color:var(--ink-500);}
+
+  /* ---------- desk assembly stage ---------- */
+  .desk-stage{
+    position:relative;width:100%;max-width:560px;margin:0 auto 14px;
+    aspect-ratio:520/320;border-radius:var(--r-md);overflow:hidden;
+    box-shadow:inset 0 0 0 1px var(--border-card);
+    touch-action:none;
+  }
+  .desk-stage.wobble{animation:wobble .5s ease;}
+  @keyframes wobble{0%,100%{transform:rotate(0);}25%{transform:rotate(-1.4deg);}75%{transform:rotate(1.4deg);}}
+  #deskSvg{width:100%;height:100%;display:block;}
+  .slot-outline{fill:var(--slot-empty);stroke:var(--slot-empty-line);stroke-width:3;stroke-dasharray:8 7;transition:opacity .2s ease;}
+  .slot-outline.target{animation:slotpulse 1.3s ease-in-out infinite;}
+  @keyframes slotpulse{0%,100%{stroke:var(--slot-empty-line);stroke-width:3;}50%{stroke:var(--sun);stroke-width:5;}}
+  .slot-filled{opacity:0;transform:scale(.4);transform-box:fill-box;transform-origin:center;transition:opacity .35s var(--ease), transform .45s cubic-bezier(.34,1.56,.64,1);}
+  .slot-filled.shown{opacity:1;transform:scale(1);}
+  .power-btn-hit{cursor:pointer;}
+  .screen-face{opacity:0;transition:opacity .4s ease;}
+  .screen-face.on{opacity:1;}
+  .screen-glow-rect{opacity:0;transition:opacity .5s ease;}
+  .screen-glow-rect.on{opacity:1;}
+  .tower-led{opacity:.35;}
+  .tower-led.on{opacity:1;animation:ledblink 1.4s ease-in-out infinite;}
+  @keyframes ledblink{0%,100%{opacity:1;}50%{opacity:.45;}}
+
+  /* ---------- tray of draggable parts ---------- */
+  .tray-label{font-weight:800;font-size:13.5px;color:var(--ink-500);margin:4px 0 10px;text-align:center;}
+  .tray{
+    display:flex;justify-content:center;gap:16px;flex-wrap:wrap;
+    min-height:110px;position:relative;margin-bottom:8px;
+  }
+  .part-token{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    cursor:grab;user-select:none;touch-action:none;
+    padding:8px 10px;border-radius:var(--r-sm);
+    background:var(--panel-tint);border:2px solid transparent;
+    transition:transform .18s var(--ease), box-shadow .18s ease, border-color .18s ease;
+    width:92px;
+  }
+  .part-token:hover{transform:translateY(-3px);border-color:var(--sun);}
+  .part-token.dragging{
+    position:fixed;z-index:80;cursor:grabbing;pointer-events:none;
+    box-shadow:0 14px 22px rgba(0,0,0,.22);transform:scale(1.08) rotate(-3deg);
+    transition:none;
+  }
+  .part-token .token-icon{width:60px;height:60px;display:flex;align-items:center;justify-content:center;}
+  .part-token .token-icon svg{max-width:100%;max-height:100%;overflow:visible;}
+  .part-token .token-label{font-weight:800;font-size:12px;color:var(--ink-900);text-align:center;}
+  .part-token.wrong-shake{animation:shake .45s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+  .part-token.settle{animation:settle .3s ease;}
+  @keyframes settle{0%{transform:scale(1.15);}100%{transform:scale(1);}}
+  .part-token.placed{opacity:0;pointer-events:none;transform:scale(.4);}
+
+  .power-row{display:flex;justify-content:center;margin-bottom:6px;}
+  .power-btn{
+    font-family:var(--font-body);font-weight:800;font-size:16px;color:#fff;
+    background:var(--berry);border:none;border-radius:999px;padding:14px 30px;cursor:pointer;
+    box-shadow:0 5px 0 var(--berry-dark);transition:transform .12s ease;
+    display:none;align-items:center;gap:8px;
+  }
+  .power-btn.show{display:inline-flex;}
+  .power-btn:hover{transform:translateY(-2px);}
+  .power-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--berry-dark);}
+
+  .action-row{display:flex;gap:10px;justify-content:center;margin-bottom:6px;flex-wrap:wrap;}
+  .btn-ghost{
+    font-family:var(--font-body);font-weight:800;font-size:14px;color:var(--teal-700);
+    background:var(--panel-tint);border:none;border-radius:999px;padding:10px 18px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn-ghost:hover{transform:translateY(-2px);}
+  .btn-ghost:active{transform:translateY(1px);}
+
+  .hint-msg{margin-top:6px;font-weight:800;font-size:15px;min-height:22px;text-align:center;}
+  .hint-msg.err{color:var(--berry-dark);}
+  .hint-msg.ok{color:var(--grass-dark);}
+
+  /* ---------- confetti ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:90;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:3px;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:fixed;inset:0;background:var(--overlay-tint);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .overlay.show{display:flex;}
+  .overlay-card{
+    background:var(--white);border-radius:var(--r-lg);padding:30px 28px;text-align:center;
+    max-width:460px;width:100%;box-shadow:0 12px 0 var(--edge-shadow);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--border-card);
+  }
+  @keyframes pop{0%{transform:scale(.6);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .celebrate-emoji{font-size:64px;animation:jump .6s ease-in-out 3;display:inline-block;}
+  .celebrate-title{font-family:var(--font-display);font-weight:700;font-size:26px;margin:8px 0 4px;color:var(--ink-900);}
+  .celebrate-msg{font-weight:700;color:var(--ink-500);margin-bottom:18px;}
+
+  .btn-big{background:var(--berry);color:#fff;font-family:var(--font-body);font-weight:800;font-size:19px;border:none;border-radius:999px;padding:16px 34px;box-shadow:0 5px 0 var(--berry-dark);cursor:pointer;transition:transform .12s ease;}
+  .btn-big:hover{transform:translateY(-2px);}
+  .btn-big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--berry-dark);}
+
+  /* ---------- character picker ---------- */
+  .pick-title{font-family:var(--font-display);font-weight:700;font-size:24px;margin:6px 0 2px;color:var(--ink-900);}
+  .pick-sub{font-weight:600;color:var(--ink-500);margin:0 0 6px;font-size:14.5px;}
+  .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 6px;}
+  @media (max-width:480px){.char-grid{grid-template-columns:repeat(2,1fr);}}
+  .char-btn{
+    background:var(--panel-tint);border:3px solid transparent;border-radius:var(--r-md);
+    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease;font-family:var(--font-body);
+    font-weight:700;font-size:12px;color:var(--ink-900);
+  }
+  .char-btn:hover{transform:translateY(-3px);border-color:var(--sun);}
+  .char-btn.selected{border-color:var(--grass);background:var(--bg-tint-teal);}
+
+  /* ---------- final certificate ---------- */
+  .final-overlay .certificate{
+    background:var(--cream);border-radius:var(--r-lg);padding:38px 32px;text-align:center;
+    max-width:520px;width:100%;border:10px solid var(--sun);
+    box-shadow:0 14px 0 var(--edge-shadow);animation:pop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .certificate .trophy-emoji{font-size:70px;}
+  .certificate h2{font-family:var(--font-display);font-weight:700;font-size:27px;color:var(--ink-900);margin:6px 0;}
+  .certificate .cert-name{font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--berry-dark);margin:10px 0;}
+  .certificate p{font-weight:700;color:var(--ink-500);}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} .part-token{transition:none !important;} }
+  @media (max-width:480px){
+    .task-card{padding:18px 16px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="bit-drift" style="top:14%;left:6%;animation-duration:34s;">💾</div>
+  <div class="bit-drift" style="top:26%;left:82%;animation-duration:42s;animation-direction:reverse;">🔌</div>
+  <div class="bit-drift" style="top:58%;left:46%;animation-duration:48s;">💡</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">🤖</span> Computer Parts Quest</div>
+  <div class="top-right">
+    <div class="star-counter" id="starCounterBar">⭐ <span id="grandTotal">0</span></div>
+    <button class="icon-btn" id="switchBtn" title="Change helper">🔁</button>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off">🔊</button>
+  </div>
+</div>
+
+<div class="path-wrap">
+  <div class="path" id="pathTrack"></div>
+</div>
+
+<main class="stage">
+  <div class="mascot-card">
+    <div class="mascot-svg-wrap" id="mascotWrap">
+      <svg id="mascotSvg" viewBox="-40 -40 80 80" width="86" height="86"></svg>
+    </div>
+    <div class="speech-bubble" id="speechBubble">Pick a helper and let's build a computer!</div>
+    <div class="mascot-name" id="mascotName">Choose a Helper</div>
+    <button class="switch-link" id="switchLink">🔁 Change helper</button>
+
+    <div class="stars-box">
+      <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+        <rect x="26" y="16" width="48" height="34" rx="6" fill="#233240" stroke="var(--char-line)" stroke-width="3"/>
+        <rect x="31" y="21" width="38" height="24" rx="3" fill="#bfe6ff"/>
+        <rect x="18" y="54" width="64" height="8" rx="3" fill="#dea25a" stroke="#b97d2e" stroke-width="2"/>
+        <circle cx="50" cy="33" r="3.4" fill="#ffd85c"/>
+      </svg>
+      <div class="stars-label">Build Stars</div>
+      <div class="stars-total">⭐ <span id="sideTotal">0</span></div>
+    </div>
+  </div>
+
+  <div class="task-card" id="taskCard">
+    <div class="task-badge" id="taskBadge">Level 1</div>
+    <h2 class="task-title" id="taskTitle"></h2>
+    <p class="task-instruction" id="taskInstruction"></p>
+
+    <div class="desk-stage" id="deskStage">
+      <svg viewBox="0 0 520 320" id="deskSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <p class="tray-label" id="trayLabel">Drag the right part onto the glowing spot!</p>
+    <div class="tray" id="tray"></div>
+
+    <div class="power-row">
+      <button class="power-btn" id="powerBtn">🔴 Press the Power Button!</button>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-ghost" id="resetBtn">🔄 Reset This Level</button>
+    </div>
+    <div class="hint-msg" id="hintMsg"></div>
+  </div>
+</main>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<div class="overlay" id="celebrateOverlay">
+  <div class="overlay-card">
+    <div class="celebrate-emoji" id="celebrateEmoji">🎉</div>
+    <div class="celebrate-title" id="celebrateTitle">Perfecto!</div>
+    <div class="celebrate-msg" id="celebrateMsg">You placed the part perfectly!</div>
+    <button class="btn-big" id="nextBtn">Next ▶️</button>
+  </div>
+</div>
+
+<div class="overlay show" id="pickOverlay">
+  <div class="overlay-card">
+    <div class="pick-title">Who's building with you?</div>
+    <p class="pick-sub">Tap a helper to start your Computer Parts adventure!</p>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+</div>
+
+<div class="overlay final-overlay" id="finalOverlay">
+  <div class="certificate">
+    <div class="trophy-emoji">🏆</div>
+    <h2>Certificate of Computer Mastery</h2>
+    <div class="cert-name" id="certName">Build Star</div>
+    <p>built a whole computer with <span id="certFriend">a helper</span> and earned <span id="certTotal">0</span> stars! 🌟</p>
+    <p style="font-size:14px;margin-top:16px;">🎊 You are a computer-building superstar! 🎊</p>
+    <button class="btn-big" id="restartBtn" style="margin-top:10px;">Play Again 🔁</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var svgNS = 'http://www.w3.org/2000/svg';
+  var CHAR_LINE = 'var(--char-line)';
+
+  /* ================= MASCOT (ROBOT) ART ================= */
+  function robotFace(){
+    return ''
+      + '<circle cx="-11" cy="-2" r="6" fill="#fff"/><circle cx="-11" cy="-2" r="3" fill="'+CHAR_LINE+'"/>'
+      + '<circle cx="11" cy="-2" r="6" fill="#fff"/><circle cx="11" cy="-2" r="3" fill="'+CHAR_LINE+'"/>'
+      + '<path d="M -9 12 Q 0 19 9 12" stroke="'+CHAR_LINE+'" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  }
+  function robotBody(color){
+    return ''
+      + '<line x1="0" y1="-38" x2="0" y2="-28" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<circle cx="0" cy="-40" r="4.5" fill="var(--sun)" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<rect x="-24" y="-28" width="48" height="42" rx="14" fill="'+color+'" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<rect x="-31" y="-10" width="9" height="20" rx="4" fill="'+color+'" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + '<rect x="22" y="-10" width="9" height="20" rx="4" fill="'+color+'" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + '<circle cx="-27" cy="0" r="2" fill="'+CHAR_LINE+'"/><circle cx="27" cy="0" r="2" fill="'+CHAR_LINE+'"/>'
+      + robotFace();
+  }
+  function svgRoboRed(){ return robotBody('var(--fun-red)'); }
+  function svgRoboBlue(){ return robotBody('var(--fun-blue)'); }
+  function svgRoboGreen(){ return robotBody('var(--fun-green)'); }
+  function svgRoboPurple(){ return robotBody('var(--fun-purple)'); }
+  function svgRoboGold(){ return robotBody('var(--gold-500)'); }
+  function svgRoboPink(){ return robotBody('var(--fun-pink)'); }
+
+  var CHAR_LIST = [
+    {id:'red', name:'Circuit Red', svg:svgRoboRed},
+    {id:'blue', name:'Byte Blue', svg:svgRoboBlue},
+    {id:'green', name:'Pixel Green', svg:svgRoboGreen},
+    {id:'purple', name:'Data Violet', svg:svgRoboPurple},
+    {id:'gold', name:'Spark Gold', svg:svgRoboGold},
+    {id:'pink', name:'Chip Pink', svg:svgRoboPink}
+  ];
+
+  /* ================= PART ART (real computer parts) ================= */
+  /* Each part draws inside its own local viewBox matching its slot's aspect ratio */
+
+  function drawTower(){
+    return ''
+      + '<rect x="4" y="4" width="82" height="170" rx="10" fill="var(--case-color)" stroke="'+CHAR_LINE+'" stroke-width="3.5"/>'
+      + '<rect x="14" y="16" width="62" height="8" rx="3" fill="var(--case-dark)"/>'
+      + '<rect x="14" y="30" width="62" height="8" rx="3" fill="var(--case-dark)"/>'
+      + '<circle class="tower-led" cx="45" cy="60" r="7" fill="#7CFC9A" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<rect x="20" y="80" width="50" height="10" rx="3" fill="var(--case-dark)"/>'
+      + '<rect x="20" y="98" width="50" height="4" rx="2" fill="var(--case-dark)" opacity=".7"/>'
+      + '<rect x="20" y="108" width="50" height="4" rx="2" fill="var(--case-dark)" opacity=".7"/>'
+      + '<rect x="20" y="118" width="50" height="4" rx="2" fill="var(--case-dark)" opacity=".7"/>'
+      + '<rect x="18" y="140" width="20" height="12" rx="3" fill="var(--case-dark)"/>';
+  }
+
+  function drawMonitor(){
+    return ''
+      + '<rect x="16" y="130" width="118" height="12" rx="5" fill="var(--case-dark)" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + '<rect x="62" y="105" width="26" height="28" rx="4" fill="var(--screen-bezel)" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + '<rect x="4" y="0" width="142" height="108" rx="12" fill="var(--screen-bezel)" stroke="'+CHAR_LINE+'" stroke-width="3.5"/>'
+      + '<rect x="14" y="10" width="122" height="88" rx="6" fill="var(--screen-glass)"/>'
+      + '<rect class="screen-glow-rect" x="14" y="10" width="122" height="88" rx="6" fill="var(--screen-glow)"/>'
+      + '<g class="screen-face">'
+      + '<circle cx="55" cy="46" r="7" fill="'+CHAR_LINE+'"/><circle cx="95" cy="46" r="7" fill="'+CHAR_LINE+'"/>'
+      + '<path d="M 50 68 Q 75 86 100 68" stroke="'+CHAR_LINE+'" stroke-width="5" fill="none" stroke-linecap="round"/>'
+      + '</g>';
+  }
+
+  function drawKeyboard(){
+    var keys='';
+    for(var r=0;r<2;r++){
+      for(var c=0;c<9;c++){
+        keys += '<rect x="'+(8+c*14)+'" y="'+(6+r*13)+'" width="11" height="9" rx="2.5" fill="var(--key-dark)"/>';
+      }
+    }
+    keys += '<rect x="30" y="32" width="80" height="10" rx="3" fill="var(--key-dark)"/>';
+    return ''
+      + '<rect x="2" y="2" width="136" height="29" rx="9" fill="var(--key-color)" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + keys;
+  }
+
+  function drawMouse(){
+    return ''
+      + '<path d="M 21 2 C 33 2 40 12 40 22 C 40 30 33 36 21 36 C 9 36 2 30 2 22 C 2 12 9 2 21 2 Z" fill="var(--mouse-color)" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<line x1="21" y1="2" x2="21" y2="16" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + '<rect x="18" y="6" width="6" height="9" rx="3" fill="var(--mouse-dark)"/>';
+  }
+
+  function drawSpeaker(){
+    return ''
+      + '<rect x="2" y="2" width="34" height="79" rx="9" fill="var(--speaker-color)" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<circle cx="19" cy="22" r="10" fill="var(--speaker-dark)" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<circle cx="19" cy="22" r="4" fill="#fff" opacity=".5"/>'
+      + '<circle cx="19" cy="58" r="13" fill="var(--speaker-dark)" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<circle cx="19" cy="58" r="5" fill="#fff" opacity=".5"/>';
+  }
+
+  /* ---------- decoy (silly) tokens ---------- */
+  var DECOYS = [
+    {id:'teddy', name:'Teddy Bear', emoji:'🧸'},
+    {id:'banana', name:'Banana', emoji:'🍌'},
+    {id:'book', name:'Book', emoji:'📚'},
+    {id:'apple', name:'Apple', emoji:'🍎'},
+    {id:'ball', name:'Ball', emoji:'⚽'},
+    {id:'balloon', name:'Balloon', emoji:'🎈'},
+    {id:'fish', name:'Fish', emoji:'🐟'},
+    {id:'sock', name:'Sock', emoji:'🧦'}
+  ];
+
+  /* ================= SLOT LAYOUT (viewBox 0 0 520 320) ================= */
+  var SLOTS = {
+    tower:    {x:5,   y:140, w:45,  h:178},
+    speakerL: {x:65,  y:175, w:38,  h:83},
+    monitor:  {x:155, y:95,  w:150, h:163},
+    speakerR: {x:415, y:175, w:38,  h:83},
+    keyboard: {x:160, y:225, w:140, h:33},
+    mouse:    {x:320, y:222, w:42,  h:36}
+  };
+  var SPEAKER_HIT = {x:60, y:170, w:398, h:92};
+
+  /* ================= LEVELS ================= */
+  var PARTS = [
+    {key:'tower',    name:'CPU Tower', draw:drawTower,    slot:'tower',    title:'The Brainy Tower',   instruction:"Every computer needs a brain! Drag the tower to its spot."},
+    {key:'monitor',  name:'Monitor',   draw:drawMonitor,  slot:'monitor',  title:'A Screen to See',    instruction:"Now let's add a screen so we can see everything!"},
+    {key:'keyboard', name:'Keyboard',  draw:drawKeyboard, slot:'keyboard', title:'Time to Type',       instruction:"Add the keyboard so we can type letters and numbers."},
+    {key:'mouse',    name:'Mouse',     draw:drawMouse,    slot:'mouse',    title:'Click and Point',    instruction:"Drag the mouse in — it helps us click and point!"},
+    {key:'speaker',  name:'Speakers',  draw:drawSpeaker,  slot:'speaker',  title:'Let\u2019s Hear It',  instruction:"Add the speakers so our computer can make sound!"}
+  ];
+  var TOTAL_LEVELS = PARTS.length + 1; // +1 for power-on finale
+
+  var encourage = ["Perfecto! Great connecting! 🔌","Woohoo, nicely built! 🎉","You're a computer-building whiz! 🤖","Snap! Exactly right! 😋","Piece of tech genius! 🌟","Fantastic fit! 🚀"];
+  var tryAgain = ["Not quite — look for the glowing spot! ✨","So close! Try that part again! 🔧","Oops, that's not the right spot! 🤔"];
+  var wrongPart = ["Hmm, that's not a computer part! 😄","Silly! That doesn't plug in! 🧸","Let's find the real computer part!"];
+
+  /* ================= STATE ================= */
+  var state = {
+    levelIndex: 0,
+    grandTotal: 0,
+    muted: false,
+    character: CHAR_LIST[0],
+    placed: {}
+  };
+
+  /* ================= ELEMENTS ================= */
+  var el = {
+    pathTrack: document.getElementById('pathTrack'),
+    grandTotal: document.getElementById('grandTotal'),
+    sideTotal: document.getElementById('sideTotal'),
+    starCounterBar: document.getElementById('starCounterBar'),
+    muteBtn: document.getElementById('muteBtn'),
+    switchBtn: document.getElementById('switchBtn'),
+    switchLink: document.getElementById('switchLink'),
+    mascotWrap: document.getElementById('mascotWrap'),
+    mascotSvg: document.getElementById('mascotSvg'),
+    speechBubble: document.getElementById('speechBubble'),
+    mascotName: document.getElementById('mascotName'),
+    taskBadge: document.getElementById('taskBadge'),
+    taskTitle: document.getElementById('taskTitle'),
+    taskInstruction: document.getElementById('taskInstruction'),
+    deskStage: document.getElementById('deskStage'),
+    deskSvg: document.getElementById('deskSvg'),
+    trayLabel: document.getElementById('trayLabel'),
+    tray: document.getElementById('tray'),
+    powerBtn: document.getElementById('powerBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    hintMsg: document.getElementById('hintMsg'),
+    confettiLayer: document.getElementById('confettiLayer'),
+    celebrateOverlay: document.getElementById('celebrateOverlay'),
+    celebrateEmoji: document.getElementById('celebrateEmoji'),
+    celebrateTitle: document.getElementById('celebrateTitle'),
+    celebrateMsg: document.getElementById('celebrateMsg'),
+    nextBtn: document.getElementById('nextBtn'),
+    pickOverlay: document.getElementById('pickOverlay'),
+    charGrid: document.getElementById('charGrid'),
+    finalOverlay: document.getElementById('finalOverlay'),
+    certFriend: document.getElementById('certFriend'),
+    certTotal: document.getElementById('certTotal'),
+    restartBtn: document.getElementById('restartBtn')
+  };
+
+  /* ================= AUDIO ================= */
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(Ctx) audioCtx = new Ctx();
+    }
+    return audioCtx;
+  }
+  function beep(freq, dur, delay, vol){
+    if(state.muted) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.15, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0+dur+0.02);
+  }
+  function playPick(){ beep(700,0.06,0,0.09); }
+  function playSnap(){ beep(600,0.05,0,0.08); beep(900,0.07,0.05,0.09); }
+  function playSuccess(){ beep(523.25,0.16,0); beep(659.25,0.16,0.12); beep(783.99,0.28,0.24); beep(1046.5,0.3,0.36); }
+  function playOops(){ beep(300,0.18,0,0.09); beep(240,0.22,0.1,0.09); }
+  function playPower(){ beep(200,0.1,0,0.1); beep(400,0.1,0.12,0.1); beep(600,0.1,0.24,0.1); beep(900,0.35,0.36,0.14); }
+  function speak(text){
+    if(state.muted) return;
+    if(!('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.88; u.pitch = 1.05;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  /* ================= CHARACTER PICKER ================= */
+  function buildCharGrid(){
+    el.charGrid.innerHTML = '';
+    CHAR_LIST.forEach(function(c){
+      var b = document.createElement('button');
+      b.className = 'char-btn';
+      b.setAttribute('data-id', c.id);
+      b.innerHTML = '<svg viewBox="-40 -50 80 90" width="58" height="64">'+c.svg()+'</svg><span>'+c.name+'</span>';
+      b.addEventListener('click', function(){
+        playPick();
+        selectCharacter(c);
+        el.pickOverlay.classList.remove('show');
+      });
+      el.charGrid.appendChild(b);
+    });
+  }
+  function selectCharacter(c){
+    state.character = c;
+    el.mascotSvg.setAttribute('viewBox','-40 -50 80 90');
+    el.mascotSvg.innerHTML = c.svg();
+    el.mascotName.textContent = c.name;
+    Array.prototype.forEach.call(el.charGrid.children, function(btn){
+      btn.classList.toggle('selected', btn.getAttribute('data-id') === c.id);
+    });
+    el.speechBubble.textContent = "Let's build a computer together, I'm " + c.name + "!";
+  }
+
+  /* ================= PATH STONES ================= */
+  function buildPath(){
+    el.pathTrack.innerHTML = '';
+    for(var i=0;i<TOTAL_LEVELS;i++){
+      var s = document.createElement('div');
+      s.className = 'stone';
+      s.textContent = (i+1);
+      s.id = 'stone-' + i;
+      el.pathTrack.appendChild(s);
+    }
+    var trophy = document.createElement('div');
+    trophy.className = 'stone trophy';
+    trophy.textContent = '🏆';
+    el.pathTrack.appendChild(trophy);
+  }
+  function updatePathStones(){
+    for(var i=0;i<TOTAL_LEVELS;i++){
+      var s = document.getElementById('stone-' + i);
+      s.classList.remove('done','current');
+      if(i < state.levelIndex) s.classList.add('done');
+      else if(i === state.levelIndex) s.classList.add('current');
+    }
+  }
+
+  /* ================= DESK SVG BUILD ================= */
+  function nestedSvg(id, slot, viewBox, innerMarkup, extraClass){
+    var s = document.createElementNS(svgNS,'svg');
+    s.setAttribute('id', id);
+    s.setAttribute('x', slot.x); s.setAttribute('y', slot.y);
+    s.setAttribute('width', slot.w); s.setAttribute('height', slot.h);
+    s.setAttribute('viewBox', viewBox);
+    s.setAttribute('overflow','visible');
+    if(extraClass) s.setAttribute('class', extraClass);
+    s.innerHTML = innerMarkup;
+    return s;
+  }
+
+  function buildDesk(){
+    var svg = el.deskSvg;
+    svg.innerHTML = '';
+
+    function rect(x,y,w,h,rx,fill){
+      var r = document.createElementNS(svgNS,'rect');
+      r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width',w); r.setAttribute('height',h);
+      if(rx) r.setAttribute('rx',rx);
+      r.setAttribute('fill',fill);
+      return r;
+    }
+
+    svg.appendChild(rect(0,0,520,240,0,'var(--wall)'));
+    svg.appendChild(rect(0,190,520,50,0,'var(--wall-shade)'));
+    svg.appendChild(rect(0,300,520,20,0,'var(--floor)'));
+    svg.appendChild(rect(60,258,400,42,0,'var(--desk-front)'));
+    svg.appendChild(rect(40,240,440,18,3,'var(--desk-top)'));
+    var edge = rect(40,240,440,4,3,'var(--desk-top-dark)'); svg.appendChild(edge);
+
+    // outlines (drawn first, hidden once filled)
+    var order = ['tower','speakerL','monitor','speakerR','keyboard','mouse'];
+    order.forEach(function(key){
+      var slot = SLOTS[key];
+      var o = document.createElementNS(svgNS,'rect');
+      o.setAttribute('id','outline-'+key);
+      o.setAttribute('x',slot.x); o.setAttribute('y',slot.y);
+      o.setAttribute('width',slot.w); o.setAttribute('height',slot.h);
+      o.setAttribute('rx',10);
+      o.setAttribute('class','slot-outline');
+      svg.appendChild(o);
+    });
+
+    // filled graphics (built once, revealed later)
+    svg.appendChild(nestedSvg('filled-tower', SLOTS.tower, '0 0 90 178', drawTower(), 'slot-filled'));
+    svg.appendChild(nestedSvg('filled-monitor', SLOTS.monitor, '0 0 146 142', drawMonitor(), 'slot-filled'));
+    svg.appendChild(nestedSvg('filled-keyboard', SLOTS.keyboard, '0 0 140 33', drawKeyboard(), 'slot-filled'));
+    svg.appendChild(nestedSvg('filled-mouse', SLOTS.mouse, '0 0 42 36', drawMouse(), 'slot-filled'));
+    svg.appendChild(nestedSvg('filled-speakerL', SLOTS.speakerL, '0 0 38 83', drawSpeaker(), 'slot-filled'));
+    svg.appendChild(nestedSvg('filled-speakerR', SLOTS.speakerR, '0 0 38 83', drawSpeaker(), 'slot-filled'));
+  }
+
+  function refreshOutlines(){
+    var order = ['tower','speakerL','monitor','speakerR','keyboard','mouse'];
+    order.forEach(function(key){
+      var o = document.getElementById('outline-'+key);
+      var isPlaced = placedKeyFor(key);
+      o.style.display = isPlaced ? 'none' : '';
+      o.classList.remove('target');
+    });
+    var level = PARTS[state.levelIndex];
+    if(level && level.slot === 'speaker'){
+      var oL = document.getElementById('outline-speakerL');
+      var oR = document.getElementById('outline-speakerR');
+      if(oL) oL.classList.add('target');
+      if(oR) oR.classList.add('target');
+    } else if(level){
+      var o2 = document.getElementById('outline-'+level.slot);
+      if(o2) o2.classList.add('target');
+    }
+  }
+
+  function placedKeyFor(outlineKey){
+    if(outlineKey==='speakerL'||outlineKey==='speakerR') return !!state.placed.speaker;
+    return !!state.placed[outlineKey];
+  }
+
+  function revealPart(key){
+    if(key==='speaker'){
+      var l = document.getElementById('filled-speakerL');
+      var r = document.getElementById('filled-speakerR');
+      l.classList.add('shown'); r.classList.add('shown');
+    } else {
+      var f = document.getElementById('filled-'+key);
+      if(f) f.classList.add('shown');
+    }
+    refreshOutlines();
+  }
+
+  /* ================= TRAY / DRAG LOGIC ================= */
+  function svgPointFromClient(clientX, clientY){
+    var svg = el.deskSvg;
+    var pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    var ctm = svg.getScreenCTM();
+    if(!ctm) return {x:-9999,y:-9999};
+    return pt.matrixTransform(ctm.inverse());
+  }
+
+  function pointInRect(pt, rect, pad){
+    pad = pad || 0;
+    return pt.x >= rect.x-pad && pt.x <= rect.x+rect.w+pad && pt.y >= rect.y-pad && pt.y <= rect.y+rect.h+pad;
+  }
+
+  function buildTray(){
+    var level = PARTS[state.levelIndex];
+    el.tray.innerHTML = '';
+    if(!level) return;
+
+    var tokens = [{type:'part', part:level}];
+    var shuffledDecoys = DECOYS.slice().sort(function(){return Math.random()-0.5;}).slice(0,2);
+    shuffledDecoys.forEach(function(d){ tokens.push({type:'decoy', decoy:d}); });
+    tokens.sort(function(){return Math.random()-0.5;});
+
+    tokens.forEach(function(tok){
+      var div = document.createElement('div');
+      div.className = 'part-token';
+      var iconWrap = document.createElement('div');
+      iconWrap.className = 'token-icon';
+      var label = document.createElement('div');
+      label.className = 'token-label';
+
+      if(tok.type === 'part'){
+        var svgLocal = document.createElementNS(svgNS,'svg');
+        var vb = level.key==='tower' ? '0 0 90 178' : level.key==='monitor' ? '0 0 146 142' : level.key==='keyboard' ? '0 0 140 33' : level.key==='mouse' ? '0 0 42 36' : '0 0 38 83';
+        svgLocal.setAttribute('viewBox', vb);
+        svgLocal.setAttribute('width','56'); svgLocal.setAttribute('height','56');
+        svgLocal.innerHTML = level.draw();
+        iconWrap.appendChild(svgLocal);
+        label.textContent = level.name;
+        div.setAttribute('data-correct','1');
+        div.setAttribute('data-key', level.key);
+      } else {
+        iconWrap.style.fontSize = '40px';
+        iconWrap.textContent = tok.decoy.emoji;
+        label.textContent = tok.decoy.name;
+        div.setAttribute('data-correct','0');
+      }
+
+      div.appendChild(iconWrap);
+      div.appendChild(label);
+      el.tray.appendChild(div);
+      attachDrag(div);
+    });
+  }
+
+  function attachDrag(div){
+    var dragging = false;
+    var startRect, offsetX, offsetY, placeholder;
+
+    function onDown(e){
+      if(div.classList.contains('placed')) return;
+      dragging = true;
+      startRect = div.getBoundingClientRect();
+      offsetX = e.clientX - startRect.left;
+      offsetY = e.clientY - startRect.top;
+
+      placeholder = document.createElement('div');
+      placeholder.style.width = startRect.width+'px';
+      placeholder.style.height = startRect.height+'px';
+      placeholder.style.flex = '0 0 auto';
+      div.parentNode.insertBefore(placeholder, div);
+
+      div.classList.add('dragging');
+      div.style.width = startRect.width+'px';
+      div.style.left = startRect.left+'px';
+      div.style.top = startRect.top+'px';
+      document.body.appendChild(div);
+
+      try{ div.setPointerCapture(e.pointerId); }catch(err){}
+      playPick();
+      e.preventDefault();
+    }
+    function onMove(e){
+      if(!dragging) return;
+      div.style.left = (e.clientX - offsetX) + 'px';
+      div.style.top = (e.clientY - offsetY) + 'px';
+    }
+    function onUp(e){
+      if(!dragging) return;
+      dragging = false;
+      div.classList.remove('dragging');
+
+      var level = PARTS[state.levelIndex];
+      var pt = svgPointFromClient(e.clientX, e.clientY);
+      var isCorrectPart = div.getAttribute('data-correct') === '1';
+      var landedOnTarget = false;
+
+      if(level){
+        if(level.slot === 'speaker'){
+          landedOnTarget = pointInRect(pt, SPEAKER_HIT, 6);
+        } else {
+          var slot = SLOTS[level.slot];
+          landedOnTarget = pointInRect(pt, slot, 10);
+        }
+      }
+
+      if(isCorrectPart && landedOnTarget){
+        succeedPlacement(div, level, placeholder);
+      } else {
+        // spring back to tray
+        var back = placeholder.getBoundingClientRect();
+        div.style.transition = 'left .32s cubic-bezier(.22,1,.36,1), top .32s cubic-bezier(.22,1,.36,1)';
+        div.style.left = back.left + 'px';
+        div.style.top = back.top + 'px';
+        setTimeout(function(){
+          if(placeholder.parentNode) placeholder.parentNode.replaceChild(div, placeholder);
+          div.style.position = '';
+          div.style.left = ''; div.style.top = ''; div.style.width = '';
+          div.style.transition = '';
+          div.classList.add('wrong-shake');
+          setTimeout(function(){ div.classList.remove('wrong-shake'); }, 460);
+        }, 320);
+
+        playOops();
+        el.deskStage.classList.remove('wobble'); void el.deskStage.offsetWidth; el.deskStage.classList.add('wobble');
+        var pool = isCorrectPart ? tryAgain : wrongPart;
+        var msg = pool[Math.floor(Math.random()*pool.length)];
+        el.hintMsg.textContent = msg;
+        el.hintMsg.className = 'hint-msg err';
+        el.speechBubble.textContent = msg;
+      }
+    }
+
+    div.addEventListener('pointerdown', onDown);
+    div.addEventListener('pointermove', onMove);
+    div.addEventListener('pointerup', onUp);
+    div.addEventListener('pointercancel', onUp);
+  }
+
+  function succeedPlacement(div, level, placeholder){
+    playSnap();
+    if(placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+    div.remove();
+
+    state.placed[level.key] = true;
+    revealPart(level.key === 'speaker' ? 'speaker' : level.slot);
+    el.hintMsg.textContent = '';
+    el.hintMsg.className = 'hint-msg';
+
+    setTimeout(function(){ succeed(); }, 250);
+  }
+
+  /* ================= LEVEL / ROUND RENDERING ================= */
+  function renderRound(){
+    updatePathStones();
+    refreshOutlines();
+
+    if(state.levelIndex < PARTS.length){
+      var level = PARTS[state.levelIndex];
+      el.taskBadge.textContent = 'Level ' + (state.levelIndex+1) + ' of ' + TOTAL_LEVELS;
+      el.taskTitle.textContent = level.title;
+      el.taskInstruction.textContent = level.instruction;
+      el.trayLabel.style.display = '';
+      el.trayLabel.textContent = 'Drag the ' + level.name.toLowerCase() + ' onto the glowing spot!';
+      el.tray.style.display = '';
+      el.powerBtn.classList.remove('show');
+      buildTray();
+      el.speechBubble.textContent = 'Find the ' + level.name.toLowerCase() + ' and drag it into place!';
+      setTimeout(function(){ speak('Drag the ' + level.name + ' to its spot.'); }, 300);
+    } else {
+      el.taskBadge.textContent = 'Level ' + TOTAL_LEVELS + ' of ' + TOTAL_LEVELS;
+      el.taskTitle.textContent = 'Power It Up!';
+      el.taskInstruction.textContent = 'Your computer is all built! Press the power button to turn it on.';
+      el.trayLabel.style.display = 'none';
+      el.tray.innerHTML = '';
+      el.tray.style.display = 'none';
+      el.powerBtn.classList.add('show');
+      el.speechBubble.textContent = 'Everything is connected — press the power button!';
+      setTimeout(function(){ speak('Press the power button to turn on the computer.'); }, 300);
+    }
+
+    el.hintMsg.textContent = '';
+    el.hintMsg.className = 'hint-msg';
+    el.mascotWrap.classList.remove('happy');
+  }
+
+  el.resetBtn.addEventListener('click', function(){
+    if(state.levelIndex < PARTS.length){
+      buildTray();
+      el.hintMsg.textContent = '';
+      el.hintMsg.className = 'hint-msg';
+    }
+  });
+
+  el.powerBtn.addEventListener('click', function(){
+    playPower();
+    document.getElementById('screen-face-target');
+    var glow = el.deskSvg.querySelector('#filled-monitor .screen-glow-rect');
+    var face = el.deskSvg.querySelector('#filled-monitor .screen-face');
+    var led = el.deskSvg.querySelector('#filled-tower .tower-led');
+    if(glow) glow.classList.add('on');
+    if(face) face.classList.add('on');
+    if(led) led.classList.add('on');
+    el.powerBtn.disabled = true;
+    el.powerBtn.style.opacity = '.6';
+    setTimeout(function(){ succeed(true); }, 700);
+  });
+
+  /* ================= SUCCESS / CELEBRATION ================= */
+  function succeed(isFinalPower){
+    playSuccess();
+    state.grandTotal += 1;
+    el.grandTotal.textContent = state.grandTotal;
+    el.sideTotal.textContent = state.grandTotal;
+    el.starCounterBar.classList.remove('bump'); void el.starCounterBar.offsetWidth; el.starCounterBar.classList.add('bump');
+    el.mascotWrap.classList.add('happy');
+    burstConfetti();
+
+    var line = isFinalPower ? "It's alive! Amazing work! 🖥️✨" : encourage[Math.floor(Math.random()*encourage.length)];
+    el.speechBubble.textContent = line;
+    el.celebrateEmoji.textContent = ['🎉','🌟','🥳','🖥️','😋','🏅','✨'][Math.floor(Math.random()*7)];
+    el.celebrateTitle.textContent = line;
+    el.celebrateMsg.textContent = isFinalPower
+      ? "You built and powered on a whole computer!"
+      : "Great job placing the " + (PARTS[state.levelIndex] ? PARTS[state.levelIndex].name.toLowerCase() : 'part') + "! Ready for the next part?";
+    el.celebrateOverlay.classList.add('show');
+  }
+
+  el.nextBtn.addEventListener('click', function(){
+    el.celebrateOverlay.classList.remove('show');
+    if(state.levelIndex >= TOTAL_LEVELS-1){
+      showFinal();
+    } else {
+      state.levelIndex += 1;
+      renderRound();
+    }
+  });
+
+  function showFinal(){
+    el.certFriend.textContent = state.character.name;
+    el.certTotal.textContent = state.grandTotal;
+    el.finalOverlay.classList.add('show');
+    burstConfetti(60);
+  }
+
+  el.restartBtn.addEventListener('click', function(){
+    state.levelIndex = 0;
+    state.grandTotal = 0;
+    state.placed = {};
+    el.grandTotal.textContent = 0;
+    el.sideTotal.textContent = 0;
+    el.finalOverlay.classList.remove('show');
+    el.powerBtn.disabled = false;
+    el.powerBtn.style.opacity = '';
+    buildDesk();
+    renderRound();
+  });
+
+  /* ================= CONFETTI ================= */
+  var confettiColors = ['#f2555a','#ffd85c','#4fc98a','#4aa8e0','#a679e0','#ff8fc0'];
+  function burstConfetti(count){
+    count = count || 36;
+    for(var i=0;i<count;i++){
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      var size = 6 + Math.random()*8;
+      p.style.width = size + 'px';
+      p.style.height = (size*0.6) + 'px';
+      p.style.left = (Math.random()*100) + 'vw';
+      p.style.background = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+      var dur = 2.2 + Math.random()*1.6;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random()*0.3) + 's';
+      el.confettiLayer.appendChild(p);
+      (function(node, life){
+        setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, (life+0.5)*1000);
+      })(p, dur);
+    }
+  }
+
+  /* ================= TOP BAR BUTTONS ================= */
+  el.muteBtn.addEventListener('click', function(){
+    state.muted = !state.muted;
+    el.muteBtn.textContent = state.muted ? '🔇' : '🔊';
+    if(state.muted && 'speechSynthesis' in window){ window.speechSynthesis.cancel(); }
+  });
+  function openPicker(){ el.pickOverlay.classList.add('show'); }
+  el.switchBtn.addEventListener('click', openPicker);
+  el.switchLink.addEventListener('click', openPicker);
+
+  /* ================= INIT ================= */
+  buildCharGrid();
+  buildPath();
+  selectCharacter(CHAR_LIST[0]);
+  buildDesk();
+  renderRound();
+
+})();
+</script>
+</body>
+</html>
