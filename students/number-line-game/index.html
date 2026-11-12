@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Line Adventure</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root, html[data-theme="light"] {
+      color-scheme: light;
+
+      /* base palette */
+      --teal-900:#0d2b30;
+      --teal-800:#123c43;
+      --teal-700:#1b6e78;
+      --teal-600:#2f8b96;
+      --teal-100:#e5f4f5;
+      --gold-600:#c9860f;
+      --gold-500:#e2a530;
+      --gold-400:#f0c168;
+      --gold-100:#fbeed7;
+      --cream:#faf8f4;
+      --ink-900:#1a2422;
+      --ink-500:#5f7371;
+      --white:#ffffff;
+
+      --bg-tint-gold: rgba(226,165,48,.10);
+      --bg-tint-teal: rgba(27,110,120,.08);
+      --border-card: rgba(13,43,48,.10);
+      --border-card-hover: rgba(201,134,15,.35);
+
+      --header-bg: rgba(255,255,255,.85);
+      --header-border: rgba(13,43,48,.08);
+
+      --shadow-card: 0 18px 36px -22px rgba(13,43,48,.25);
+      --shadow-card-hover: 0 22px 44px -18px rgba(13,43,48,.30);
+
+      --char-line:#e6e0d2;
+
+      /* semantic */
+      --success:#2e8b57;
+      --error-color:#c0392b;
+      --player-marker: var(--teal-700);
+      --static-marker: var(--ink-500);
+      --target-marker: var(--gold-500);
+      --accent-button-text: var(--teal-900);
+      --scrollbar-thumb: rgba(13,43,48,.25);
+    }
+
+    html[data-theme="dark"]{
+      color-scheme: dark;
+
+      --teal-900:#092227;
+      --teal-800:#8fe1ec;
+      --teal-700:#5fd0de;
+      --teal-600:#7fdbe6;
+      --teal-100:#173338;
+      --gold-600:#ffb648;
+      --gold-500:#ffc65c;
+      --gold-400:#ffd685;
+      --gold-100:#2b2110;
+      --cream:#0d1517;
+      --ink-900:#eef3f2;
+      --ink-500:#a4b6b7;
+      --white:#182425;
+
+      --bg-tint-gold: rgba(255,182,72,.07);
+      --bg-tint-teal: rgba(95,208,222,.10);
+      --border-card: rgba(255,255,255,.08);
+      --border-card-hover: rgba(255,198,92,.4);
+
+      --header-bg: rgba(9,34,39,.85);
+      --header-border: rgba(255,255,255,.08);
+
+      --shadow-card: 0 18px 40px -22px rgba(0,0,0,.55);
+      --shadow-card-hover: 0 24px 50px -18px rgba(0,0,0,.65);
+
+      --char-line:#0d1517;
+
+      --success:#5fd08b;
+      --error-color:#ff6b5e;
+      --player-marker: var(--teal-700);
+      --static-marker: var(--ink-500);
+      --target-marker: var(--gold-500);
+      --accent-button-text: #0d1517;
+      --scrollbar-thumb: rgba(255,255,255,.18);
+    }
+
+    *,*::before,*::after{ box-sizing:border-box; }
+    html{ scroll-behavior:smooth; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--ink-900);
+      min-height: 100vh;
+      padding: 20px;
+      overflow-x: hidden;
+      transition: background .3s ease, color .3s ease;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    .title {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      font-size: 1.4rem;
+      color: var(--ink-900);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      display: none;
+    }
+    .title i { color: var(--gold-500); font-size: 1.1rem; }
+
+    .game-area {
+      background: var(--white);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .score-board {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--char-line);
+    }
+
+    .score-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--ink-500);
+      letter-spacing: .01em;
+    }
+    .score-item i { color: var(--gold-500); font-size: .95rem; }
+
+    .score-value {
+      font-family: 'Fraunces', serif;
+      color: var(--ink-900);
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .question-area {
+      background: linear-gradient(145deg, var(--bg-tint-teal), var(--bg-tint-gold));
+      border: 1px solid var(--border-card);
+      padding: 28px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .question {
+      font-family: 'Fraunces', serif;
+      font-size: 1.4rem;
+      color: var(--ink-900);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .number-line-container {
+      position: relative;
+      padding: 56px 40px 44px;
+      margin: 20px 0;
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+
+    .number-line-container::-webkit-scrollbar { height: 6px; }
+    .number-line-container::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; }
+    .number-line-container::-webkit-scrollbar-track { background: transparent; }
+
+    .number-line {
+      position: relative;
+      height: 3px;
+      background: var(--gold-500);
+      border-radius: 5px;
+      margin: 0 auto;
+      min-width: 600px;
+    }
+
+    .tick {
+      position: absolute;
+      width: 2px;
+      height: 16px;
+      background: var(--gold-500);
+      top: -7px;
+    }
+
+    .tick-label {
+      position: absolute;
+      top: 20px;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+      color: var(--ink-500);
+      font-weight: 600;
+    }
+
+    .marker {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      font-family: 'Fraunces', serif;
+      cursor: pointer;
+      top: -17px;
+      transform: translateX(-50%);
+      box-shadow: var(--shadow-card);
+      transition: transform .2s ease, box-shadow .2s ease;
+      user-select: none;
+      border: 2px solid var(--white);
+    }
+    .marker:hover { transform: translateX(-50%) scale(1.08); box-shadow: var(--shadow-card-hover); }
+    .marker.dragging { cursor: grabbing; transform: translateX(-50%) scale(1.18); z-index: 100; }
+
+    .marker.player { background: var(--player-marker); color: var(--white); }
+    .marker.target { background: var(--target-marker); color: var(--accent-button-text); }
+    .marker.static { background: var(--static-marker); color: var(--white); cursor: default; }
+    .marker.static:hover { transform: translateX(-50%); }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .btn {
+      background: var(--gold-500);
+      color: var(--accent-button-text);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-card);
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+    .btn:hover { background: var(--gold-600); box-shadow: var(--shadow-card-hover); }
+    .btn:active { transform: translateY(1px); }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--ink-900);
+      border: 1px solid var(--border-card);
+      box-shadow: none;
+    }
+    .btn-secondary:hover { background: var(--bg-tint-teal); border-color: var(--border-card-hover); }
+
+    .feedback {
+      text-align: center;
+      font-family: 'Fraunces', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-top: 20px;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .feedback.correct { color: var(--success); }
+    .feedback.incorrect { color: var(--error-color); }
+
+    .animation-celebrate { animation: celebrate .6s ease; }
+    @keyframes celebrate {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.08) rotate(-4deg); }
+      75% { transform: scale(1.08) rotate(4deg); }
+    }
+
+    .confetti {
+      width: 9px;
+      height: 9px;
+      position: absolute;
+      animation: confetti-fall 1s ease-out forwards;
+      z-index: 10000;
+      border-radius: 2px;
+    }
+    @keyframes confetti-fall {
+      to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+
+    .instructions {
+      background: var(--bg-tint-gold);
+      padding: 16px 18px;
+      border-radius: 10px;
+      margin-top: 20px;
+      border-left: 3px solid var(--gold-500);
+    }
+    .instructions h3 {
+      font-family: 'Fraunces', serif;
+      color: var(--ink-900);
+      margin-bottom: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .instructions h3 i { color: var(--gold-600); }
+    .instructions p { color: var(--ink-500); line-height: 1.6; font-size: 0.92rem; }
+
+    @media (max-width: 768px) {
+      body { padding: 14px; }
+      .game-area { padding: 18px; }
+      .question-area { padding: 18px; }
+      .title { font-size: 1.2rem; }
+      .number-line-container { padding: 44px 20px 36px; }
+      .question { font-size: 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">
+      <i class="fas fa-ruler-horizontal"></i>
+      Number Line Adventure
+    </div>
+
+    <div class="game-area">
+      <div class="score-board">
+        <div class="score-item">
+          <i class="fas fa-star"></i>
+          <span>Score <span class="score-value" id="score">0</span></span>
+        </div>
+        <div class="score-item">
+          <i class="fas fa-trophy"></i>
+          <span>Level <span class="score-value" id="level">1</span></span>
+        </div>
+      </div>
+
+      <div class="question-area">
+        <div class="question" id="question">Loading...</div>
+      </div>
+
+      <div class="number-line-container">
+        <div class="number-line" id="numberLine"></div>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="controls">
+        <button class="btn" onclick="checkAnswer()">
+          <i class="fas fa-check"></i>
+          Check Answer
+        </button>
+        <button class="btn btn-secondary" onclick="newQuestion()">
+          <i class="fas fa-forward"></i>
+          Next Question
+        </button>
+        <button class="btn btn-secondary" onclick="showHint()">
+          <i class="fas fa-lightbulb"></i>
+          Hint
+        </button>
+      </div>
+
+      <div class="instructions">
+        <h3><i class="fas fa-info-circle"></i> How to Play</h3>
+        <p id="instructions">Drag the green marker to the correct position on the number line!</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let gameState = {
+        score: 0,
+        level: 1,
+        streak: 0,
+        currentQuestion: null,
+        playerPosition: 0,
+        minNum: -5,
+        maxNum: 5,
+        answered: false
+    };
+
+    const questionTypes = [
+        {
+            type: 'locate',
+            generate: (min, max) => {
+                const target = Math.floor(Math.random() * (max - min + 1)) + min;
+                return {
+                    question: `Find the number ${target} on the number line!`,
+                    answer: target,
+                    instructions: 'Drag the marker to the correct position on the number line!'
+                };
+            }
+        },
+        {
+            type: 'add',
+            generate: (min, max) => {
+                const add = Math.floor(Math.random() * 5) + 1;
+                const start = Math.floor(Math.random() * (max - min - add + 1)) + min;
+                return {
+                    question: `Start at ${start} and add ${add}. Where do you land?`,
+                    answer: start + add,
+                    startPosition: start,
+                    instructions: 'Drag the marker from the starting point to find the answer!'
+                };
+            }
+        },
+        {
+            type: 'subtract',
+            generate: (min, max) => {
+                const subtract = Math.floor(Math.random() * 5) + 1;
+                const start = Math.floor(Math.random() * (max - min - subtract + 1)) + min + subtract;
+                return {
+                    question: `Start at ${start} and subtract ${subtract}. Where do you land?`,
+                    answer: start - subtract,
+                    startPosition: start,
+                    instructions: 'Drag the marker from the starting point to find the answer!'
+                };
+            }
+        },
+        {
+            type: 'between',
+            generate: (min, max) => {
+                const num1 = Math.floor(Math.random() * (max - min - 2)) + min;
+                const num2 = num1 + 2;
+                const answer = num1 + 1;
+                return {
+                    question: `What number is between ${num1} and ${num2}?`,
+                    answer: answer,
+                    instructions: 'Drag the marker to the number between the two shown!'
+                };
+            }
+        },
+        {
+            type: 'distance',
+            generate: (min, max) => {
+                const distance = Math.floor(Math.random() * 4) + 2;
+                if (Math.random() > 0.5) {
+                    const num1 = Math.floor(Math.random() * (max - min - distance + 1)) + min;
+                    const answer = num1 + distance;
+                    return {
+                        question: `What is ${distance} steps to the RIGHT of ${num1}?`,
+                        answer: answer,
+                        startPosition: num1,
+                        instructions: 'Drag the marker to count the steps!'
+                    };
+                } else {
+                    const num1 = Math.floor(Math.random() * (max - min - distance + 1)) + min + distance;
+                    const answer = num1 - distance;
+                    return {
+                        question: `What is ${distance} steps to the LEFT of ${num1}?`,
+                        answer: answer,
+                        startPosition: num1,
+                        instructions: 'Drag the marker to count the steps!'
+                    };
+                }
+            }
+        }
+    ];
+
+    function createNumberLine() {
+        const numberLine = document.getElementById('numberLine');
+        numberLine.innerHTML = '';
+
+        const { minNum, maxNum } = gameState;
+        const range = maxNum - minNum;
+
+        for (let i = minNum; i <= maxNum; i++) {
+            const tick = document.createElement('div');
+            tick.className = 'tick';
+            const position = ((i - minNum) / range) * 100;
+            tick.style.left = `${position}%`;
+
+            const label = document.createElement('div');
+            label.className = 'tick-label';
+            label.textContent = i;
+            label.style.left = `${position}%`;
+
+            numberLine.appendChild(tick);
+            numberLine.appendChild(label);
+        }
+
+        if (gameState.currentQuestion && gameState.currentQuestion.startPosition !== undefined) {
+            const staticMarker = document.createElement('div');
+            staticMarker.className = 'marker static';
+            staticMarker.textContent = gameState.currentQuestion.startPosition;
+            const position = ((gameState.currentQuestion.startPosition - minNum) / range) * 100;
+            staticMarker.style.left = `${position}%`;
+            numberLine.appendChild(staticMarker);
+        }
+
+        const playerMarker = document.createElement('div');
+        playerMarker.className = 'marker player';
+        playerMarker.id = 'playerMarker';
+        playerMarker.textContent = '?';
+
+        const startPos = gameState.currentQuestion?.startPosition ?? minNum;
+        gameState.playerPosition = startPos;
+        const position = ((startPos - minNum) / range) * 100;
+        playerMarker.style.left = `${position}%`;
+
+        playerMarker.addEventListener('mousedown', handlePointerDown);
+        playerMarker.addEventListener('touchstart', handlePointerDown, { passive: false });
+
+        numberLine.appendChild(playerMarker);
+    }
+
+    let isDragging = false;
+
+    function handlePointerDown(e) {
+        isDragging = true;
+        document.getElementById('playerMarker').classList.add('dragging');
+
+        document.addEventListener('mousemove', handlePointerMove);
+        document.addEventListener('mouseup', handlePointerUp);
+        document.addEventListener('touchmove', handlePointerMove, { passive: false });
+        document.addEventListener('touchend', handlePointerUp);
+
+        e.preventDefault();
+    }
+
+    function handlePointerMove(e) {
+        if (!isDragging) return;
+
+        let clientX;
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+            e.preventDefault();
+        } else {
+            clientX = e.clientX;
+        }
+
+        updateMarkerPosition(clientX);
+    }
+
+    function handlePointerUp(e) {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const playerMarker = document.getElementById('playerMarker');
+        if (playerMarker) {
+            playerMarker.classList.remove('dragging');
+        }
+
+        document.removeEventListener('mousemove', handlePointerMove);
+        document.removeEventListener('mouseup', handlePointerUp);
+        document.removeEventListener('touchmove', handlePointerMove);
+        document.removeEventListener('touchend', handlePointerUp);
+
+        snapToNearestTick();
+    }
+
+    function updateMarkerPosition(clientX) {
+        const numberLine = document.getElementById('numberLine');
+        const rect = numberLine.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+        const playerMarker = document.getElementById('playerMarker');
+        playerMarker.style.left = `${percentage}%`;
+    }
+
+    function snapToNearestTick() {
+        const { minNum, maxNum } = gameState;
+        const range = maxNum - minNum;
+        const playerMarker = document.getElementById('playerMarker');
+        const currentLeft = parseFloat(playerMarker.style.left);
+
+        const position = (currentLeft / 100) * range + minNum;
+        const nearest = Math.round(position);
+        gameState.playerPosition = nearest;
+
+        const snappedPosition = ((nearest - minNum) / range) * 100;
+        playerMarker.style.left = `${snappedPosition}%`;
+        playerMarker.textContent = nearest;
+    }
+
+    function newQuestion() {
+        gameState.answered = false;
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('feedback').className = 'feedback';
+
+        const expansion = Math.floor((gameState.level - 1) / 3) * 5;
+        gameState.minNum = -5 - expansion;
+        gameState.maxNum = 5 + expansion;
+
+        const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+        gameState.currentQuestion = questionType.generate(gameState.minNum, gameState.maxNum);
+
+        document.getElementById('question').textContent = gameState.currentQuestion.question;
+        document.getElementById('instructions').textContent = gameState.currentQuestion.instructions;
+
+        createNumberLine();
+    }
+
+    function checkAnswer() {
+        if (gameState.answered) return;
+
+        const feedback = document.getElementById('feedback');
+        const correct = gameState.playerPosition === gameState.currentQuestion.answer;
+
+        gameState.answered = true;
+
+        if (correct) {
+            gameState.score += 10 * gameState.level;
+            gameState.streak++;
+
+            if (gameState.streak % 3 === 0) {
+                gameState.level++;
+                document.getElementById('level').textContent = gameState.level;
+            }
+
+            feedback.innerHTML = '<i class="fas fa-check-circle"></i> Awesome! You got it right!';
+            feedback.className = 'feedback correct animation-celebrate';
+
+            createConfetti();
+
+            setTimeout(() => {
+                newQuestion();
+            }, 2000);
+        } else {
+            gameState.streak = 0;
+            feedback.innerHTML = `<i class="fas fa-times-circle"></i> Not quite! The answer is ${gameState.currentQuestion.answer}`;
+            feedback.className = 'feedback incorrect';
+
+            const { minNum, maxNum } = gameState;
+            const range = maxNum - minNum;
+            const correctPosition = ((gameState.currentQuestion.answer - minNum) / range) * 100;
+
+            const targetMarker = document.createElement('div');
+            targetMarker.className = 'marker target';
+            targetMarker.textContent = gameState.currentQuestion.answer;
+            targetMarker.style.left = `${correctPosition}%`;
+            document.getElementById('numberLine').appendChild(targetMarker);
+        }
+
+        document.getElementById('score').textContent = gameState.score;
+    }
+
+    function showHint() {
+        const { answer, startPosition } = gameState.currentQuestion;
+        const { minNum, maxNum } = gameState;
+
+        let hint = '';
+
+        if (startPosition !== undefined) {
+            const difference = answer - startPosition;
+            hint = `The answer is ${Math.abs(difference)} steps ${difference > 0 ? 'to the right' : 'to the left'} from ${startPosition}`;
+        } else if (answer < (minNum + maxNum) / 2) {
+            hint = `The answer is closer to ${minNum}`;
+        } else {
+            hint = `The answer is closer to ${maxNum}`;
+        }
+
+        alert(hint);
+    }
+
+    function createConfetti() {
+        const cssVars = getComputedStyle(document.documentElement);
+        const colors = [
+            cssVars.getPropertyValue('--gold-500').trim(),
+            cssVars.getPropertyValue('--teal-700').trim(),
+            cssVars.getPropertyValue('--success').trim(),
+            cssVars.getPropertyValue('--gold-400').trim()
+        ];
+
+        for (let i = 0; i < 30; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = (Math.random() * -100) + 'px';
+                confetti.style.width = (Math.random() * 5 + 5) + 'px';
+                confetti.style.height = (Math.random() * 10 + 10) + 'px';
+                confetti.style.opacity = Math.random() * 0.5 + 0.5;
+
+                document.body.appendChild(confetti);
+
+                setTimeout(() => {
+                    confetti.remove();
+                }, 1000);
+            }, Math.random() * 500);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        newQuestion();
+    });
+  </script>
+</body>
+</html>
