@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Circuit Lab ⚡ — Build &amp; Glow!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    color-scheme: light;
+    --teal-900:#0d3841; --teal-800:#124f59; --teal-700:#1b6b78; --teal-600:#227d8b; --teal-100:#e3eef0;
+    --gold-600:#e2941a; --gold-500:#f5a623; --gold-400:#ffc65c; --gold-100:#fdf1dc;
+    --cream:#faf8f3; --ink-900:#1c2626; --ink-500:#5f6f70; --white:#ffffff;
+    --bg-tint-gold: rgba(245,166,35,.10); --bg-tint-teal: rgba(27,107,120,.10); --border-card: rgba(13,56,65,.08);
+    --fun-red:#f2555a; --fun-orange:#ff9f45; --fun-yellow:#ffd85c; --fun-green:#4fc98a; --fun-blue:#4aa8e0; --fun-purple:#a679e0; --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+    --plum:var(--ink-900); --ink-soft:var(--ink-500);
+    --panel-tint: var(--bg-tint-teal); --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14); --edge-shadow-soft: rgba(13,56,65,.08);
+    --r-lg:26px; --r-md:18px; --r-sm:14px; --ease:cubic-bezier(.22,1,.36,1);
+    --font-display:'Fraunces',Georgia,serif; --font-body:'Manrope',system-ui,sans-serif;
+    --mat-line: rgba(13,56,65,.10);
+    --danger-text:#a3272c;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --danger-text:#ff9da1;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:var(--font-body); color:var(--plum);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden; position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{position:absolute;top:-40px;right:6%;width:110px;height:110px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--gold-500) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.30); animation:pulse 4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+  @keyframes jump{0%,100%{transform:translateY(0) rotate(0);}30%{transform:translateY(-14px) rotate(-8deg);}60%{transform:translateY(0) rotate(6deg);}}
+
+  .top-bar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:12px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;font-size:clamp(20px,3vw,28px);color:var(--plum);}
+  .brand .mascot-mini{font-size:1.3em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .icon-btn{width:46px;height:46px;border-radius:50%;border:3px solid var(--white);background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);display:flex;align-items:center;justify-content:center;transition:transform .15s ease;}
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+  .status-pill{display:flex;align-items:center;gap:8px;background:var(--white);border:3px solid var(--gold-500);border-radius:999px;padding:8px 16px;font-weight:800;font-size:15px;box-shadow:0 4px 0 var(--edge-shadow-soft);color:var(--plum);}
+  .status-pill.short{border-color:var(--fun-red);color:var(--danger-text);}
+  .status-pill.on{border-color:var(--fun-green);}
+
+  .stage{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:6px 18px 50px;display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;}
+  @media (max-width:820px){ .stage{grid-template-columns:1fr;} }
+
+  .mascot-card{background:var(--white);border-radius:var(--r-lg);padding:18px 16px;text-align:center;box-shadow:0 8px 0 var(--edge-shadow-soft);position:sticky;top:14px;border:1px solid var(--border-card);}
+  .mascot-svg-wrap{display:inline-block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .mascot-svg-wrap.happy{animation:jump .6s ease-in-out 2;}
+  .mascot-svg-wrap.worried{animation:shake .5s ease-in-out 2;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px) rotate(-4deg);}75%{transform:translateX(6px) rotate(4deg);}}
+  .speech-bubble{margin-top:10px;background:var(--bubble-tint);border-radius:var(--r-md);padding:12px;font-size:14.5px;font-weight:700;color:var(--plum);line-height:1.35;min-height:70px;display:flex;align-items:center;justify-content:center;}
+  .speech-bubble.short{background:rgba(242,85,90,.14);color:var(--danger-text);}
+  .mascot-name{font-family:var(--font-display);font-weight:700;color:var(--teal-700);font-size:14px;margin-top:6px;}
+  .legend{margin-top:14px;padding-top:12px;border-top:2px dashed var(--border-card);text-align:left;font-size:12px;color:var(--ink-soft);font-weight:700;line-height:1.7;}
+  .legend b{color:var(--plum);}
+
+  .panel{background:var(--white);border-radius:var(--r-lg);padding:18px;box-shadow:0 10px 0 var(--edge-shadow-soft);border:1px solid var(--border-card);position:relative;overflow:hidden;}
+  .panel + .panel{margin-top:16px;}
+  .panel-title{font-family:var(--font-display);font-weight:700;font-size:15px;margin:0 0 10px;color:var(--plum);}
+
+  .tray-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .tray-item{background:var(--panel-tint);border:none;border-radius:16px;box-shadow:0 5px 0 var(--edge-shadow-soft);cursor:grab;padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--font-body);font-weight:800;font-size:11px;color:var(--plum);touch-action:none;user-select:none;transition:transform .12s ease, opacity .2s ease;}
+  .tray-item:active{cursor:grabbing;}
+  .tray-item.disabled{opacity:.35;pointer-events:none;}
+  .tray-item svg{width:60px;height:60px;display:block;pointer-events:none;}
+  .tray-hint{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:8px 2px 0;}
+
+  .canvas-wrap{position:relative;border-radius:var(--r-md);overflow:hidden;background:
+    linear-gradient(0deg, transparent 24px, var(--mat-line) 25px) 0 0/100% 25px,
+    linear-gradient(90deg, transparent 24px, var(--mat-line) 25px) 0 0/25px 100%,
+    #fbfaf6;
+    border:2px solid var(--border-card); touch-action:none;}
+  svg.stage-svg{display:block;width:100%;height:auto;touch-action:none;}
+  .trash-zone{position:absolute;right:10px;bottom:10px;background:var(--white);border:3px dashed var(--fun-red);border-radius:16px;padding:8px 12px;font-weight:800;font-size:12px;color:var(--danger-text);display:flex;align-items:center;gap:6px;box-shadow:0 4px 0 var(--edge-shadow-soft);pointer-events:none;opacity:0;transition:opacity .2s ease;}
+  .trash-zone.show{opacity:1;pointer-events:auto;}
+  .trash-zone.hot{background:#ffe1e2;}
+
+  .comp{cursor:grab;}
+  .comp.dragging{cursor:grabbing;}
+  .terminal{cursor:crosshair;}
+  .terminal circle.hit{fill:transparent;}
+  .terminal circle.dot{transition:fill .15s ease, r .15s ease;}
+  .terminal:hover circle.dot{r:8;}
+  .terminal.armed circle.dot{fill:var(--fun-red) !important;r:9;}
+
+  .wire-path{fill:none;stroke:#3a3a3a;stroke-width:5;stroke-linecap:round;cursor:pointer;}
+  .wire-path.selected{stroke:var(--fun-red);stroke-dasharray:6 5;}
+  .wire-hit{fill:none;stroke:transparent;stroke-width:22;cursor:pointer;}
+  .wire-glow{fill:none;stroke:var(--gold-500);stroke-width:2.4;opacity:.85;stroke-linecap:round;}
+
+  .del-btn{cursor:pointer;}
+  .del-btn circle{fill:var(--fun-red);stroke:#fff;stroke-width:2.5;}
+  .del-btn text{fill:#fff;font-size:14px;font-weight:800;font-family:var(--font-body);}
+
+  .drag-ghost{position:fixed;z-index:200;pointer-events:none;transform:translate(-50%,-50%);opacity:.9;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));}
+  .drag-ghost svg{width:64px;height:64px;display:block;}
+
+  .spark-flash{position:fixed;inset:0;background:rgba(242,85,90,.18);z-index:80;pointer-events:none;opacity:0;transition:opacity .1s ease;}
+  .spark-flash.show{opacity:1;}
+
+  .action-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .btn-ghost{font-family:var(--font-body);font-weight:800;font-size:13.5px;color:var(--teal-700);background:var(--panel-tint);border:none;border-radius:999px;padding:10px 16px;cursor:pointer;transition:transform .12s ease;}
+  .btn-ghost:hover{transform:translateY(-2px);}
+  .btn-ghost:active{transform:translateY(1px);}
+
+  .info-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px;}
+  .info-chip{flex:1 1 130px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;font-weight:700;color:var(--ink-soft);}
+  .info-chip b{display:block;font-family:var(--font-display);font-size:16px;color:var(--plum);margin-top:2px;font-weight:700;}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} }
+  @media (max-width:480px){ .panel{padding:14px;} .tray-item svg{width:50px;height:50px;} }
+</style>
+</head>
+<body>
+
+<div class="sky-decor"><div class="sun-decor"></div></div>
+<div class="spark-flash" id="sparkFlash"></div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">⚡</span> Circuit Lab</div>
+  <div class="top-right">
+    <div class="status-pill" id="statusPill">🔌 Build a circuit!</div>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off">🔊</button>
+  </div>
+</div>
+
+<main class="stage">
+  <div class="mascot-card">
+    <div class="mascot-svg-wrap" id="mascotWrap">
+      <svg viewBox="-40 -40 80 80" width="86" height="86" id="mascotSvg"></svg>
+    </div>
+    <div class="speech-bubble" id="speechBubble">Hi! I'm Sparky ⚡ Drag a battery and some bulbs onto the mat to get started!</div>
+    <div class="mascot-name">Sparky says</div>
+    <div class="legend">
+      <div><b>🔴 red wire dot</b> = pick a wire to delete it</div>
+      <div><b>Tap a part</b> = show a ❌ to remove it</div>
+      <div><b>Tap two terminals</b> = connect a wire</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <div class="panel-title">🧰 Parts — drag onto the mat</div>
+      <div class="tray-row" id="trayRow"></div>
+      <div class="tray-hint">Drag a battery and bulbs onto the mat below. Then tap a terminal dot, then another, to connect a wire!</div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <div class="panel-title">🔬 Your Circuit Mat</div>
+      <div class="canvas-wrap" id="canvasWrap">
+        <svg class="stage-svg" id="stageSvg" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glowBlur" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="9" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="softBlur" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="3"/>
+            </filter>
+            <linearGradient id="batteryBody" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3a8fa0"/>
+              <stop offset="100%" stop-color="#1b6b78"/>
+            </linearGradient>
+          </defs>
+          <g id="wiresLayer"></g>
+          <g id="wireGhostLayer"></g>
+          <g id="compsLayer"></g>
+          <g id="fxLayer"></g>
+        </svg>
+        <div class="trash-zone" id="trashZone">🗑️ Drop / tap ❌ to remove</div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-chip">Circuit type<b id="typeChip">—</b></div>
+        <div class="info-chip">Bulbs glowing<b id="litChip">0</b></div>
+        <div class="info-chip">Battery current<b id="currentChip">0.00 A</b></div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-ghost" id="clearWiresBtn">✂️ Clear all wires</button>
+        <button class="btn-ghost" id="resetBtn">🔄 Clear the mat</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     CONSTANTS
+  ============================================================ */
+  var BULB_COLORS = [
+    {id:'red', hex:'#f2555a', name:'Red'},
+    {id:'orange', hex:'#ff9f45', name:'Orange'},
+    {id:'yellow', hex:'#ffd85c', name:'Yellow'},
+    {id:'green', hex:'#4fc98a', name:'Green'},
+    {id:'blue', hex:'#4aa8e0', name:'Blue'},
+    {id:'purple', hex:'#a679e0', name:'Purple'}
+  ];
+  var BULB_TERMS = { a:{x:-19,y:50}, b:{x:19,y:50} };
+  var BATTERY_TERMS = { neg:{x:-60,y:0}, pos:{x:60,y:0} };
+  var CHAR_LINE = '#2a2a2a';
+
+  /* ============================================================
+     STATE
+  ============================================================ */
+  var state = {
+    components: [],   // {id,type:'bulb'|'battery', x,y, color}
+    wires: [],        // {id, from:{compId,terminal}, to:{compId,terminal}}
+    nextId: 1,
+    muted: false,
+    armedTerminal: null, // {compId, terminal}
+    selected: null       // {kind:'comp'|'wire', id}
+  };
+
+  function newId(prefix){ return prefix + (state.nextId++); }
+
+  /* ============================================================
+     DOM REFS
+  ============================================================ */
+  var svg = document.getElementById('stageSvg');
+  var wiresLayer = document.getElementById('wiresLayer');
+  var wireGhostLayer = document.getElementById('wireGhostLayer');
+  var compsLayer = document.getElementById('compsLayer');
+  var fxLayer = document.getElementById('fxLayer');
+  var canvasWrap = document.getElementById('canvasWrap');
+  var trashZone = document.getElementById('trashZone');
+  var trayRow = document.getElementById('trayRow');
+  var statusPill = document.getElementById('statusPill');
+  var speechBubble = document.getElementById('speechBubble');
+  var mascotWrap = document.getElementById('mascotWrap');
+  var mascotSvg = document.getElementById('mascotSvg');
+  var muteBtn = document.getElementById('muteBtn');
+  var typeChip = document.getElementById('typeChip');
+  var litChip = document.getElementById('litChip');
+  var currentChip = document.getElementById('currentChip');
+  var sparkFlash = document.getElementById('sparkFlash');
+
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs){
+    var e = document.createElementNS(NS, tag);
+    if(attrs) for(var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  /* ============================================================
+     AUDIO
+  ============================================================ */
+  var audioCtx = null;
+  function getCtx(){ if(!audioCtx){ var C = window.AudioContext||window.webkitAudioContext; if(C) audioCtx = new C(); } return audioCtx; }
+  function beep(freq, dur, delay, vol, type){
+    if(state.muted) return;
+    var ctx = getCtx(); if(!ctx) return;
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator(); var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.14, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+  }
+  function sndClink(){ beep(700,0.06,0,0.08); beep(1000,0.05,0.04,0.05); }
+  function sndConnect(){ beep(520,0.08,0,0.1); beep(780,0.1,0.06,0.08); }
+  function sndGlowOn(){ beep(440,0.1,0,0.08); beep(660,0.12,0.08,0.08); beep(880,0.18,0.16,0.08); }
+  function sndBuzz(){
+    if(state.muted) return;
+    var ctx = getCtx(); if(!ctx) return;
+    var t0 = ctx.currentTime;
+    var osc = ctx.createOscillator(); var gain = ctx.createGain();
+    osc.type='sawtooth'; osc.frequency.setValueAtTime(90,t0);
+    osc.frequency.exponentialRampToValueAtTime(45, t0+0.35);
+    gain.gain.setValueAtTime(0.13,t0); gain.gain.exponentialRampToValueAtTime(0.001,t0+0.4);
+    osc.connect(gain); gain.connect(ctx.destination); osc.start(t0); osc.stop(t0+0.42);
+  }
+  function sndDelete(){ beep(300,0.07,0,0.08); beep(220,0.08,0.05,0.06); }
+
+  /* ============================================================
+     COORD HELPERS
+  ============================================================ */
+  function clientToSvg(clientX, clientY){
+    var pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    var m = svg.getScreenCTM().inverse();
+    var p = pt.matrixTransform(m);
+    return {x:p.x, y:p.y};
+  }
+  function termOffsets(type){ return type==='battery' ? BATTERY_TERMS : BULB_TERMS; }
+  function termPos(comp, termKey){
+    var o = termOffsets(comp.type)[termKey];
+    return { x: comp.x + o.x, y: comp.y + o.y };
+  }
+  function getComp(id){ return state.components.find(function(c){ return c.id===id; }); }
+
+  /* ============================================================
+     SVG PART BUILDERS
+  ============================================================ */
+  function bulbGroupSVG(color, brightness, dimmed){
+    var b = Math.max(0, Math.min(1, brightness||0));
+    // A bulb only counts as "on" once there's meaningfully real current through it.
+    // Below that threshold it must look unmistakably OFF (dull glass, no glow).
+    var isOn = b > 0.03;
+    // Use sqrt easing so mid-range currents (e.g. bulbs in series) still read as
+    // clearly lit, while the off state stays sharply distinct from any glow.
+    var glowBoost = Math.sqrt(b);
+    var glowR = 22 + glowBoost*32;
+    var glowOpacity = isOn ? (0.32 + 0.6*glowBoost) : 0;
+    var glassFillColor = (isOn && !dimmed) ? color : '#ccd3d4';
+    var glassOpacity = dimmed ? 0.3 : (isOn ? (0.42 + 0.55*glowBoost) : 0.18);
+    return ''
+      + '<circle cx="0" cy="-14" r="'+glowR+'" fill="'+color+'" opacity="'+glowOpacity+'" filter="url(#glowBlur)"></circle>'
+      + '<path d="M -18 44 Q -20 26 -20 10 A 20 20 0 1 1 20 10 Q 20 26 18 44 Z" fill="'+glassFillColor+'" fill-opacity="'+glassOpacity+'" stroke="'+CHAR_LINE+'" stroke-width="2.5"></path>'
+      + '<ellipse cx="-7" cy="-6" rx="6" ry="9" fill="#ffffff" opacity="'+(isOn?0.7:0.3)+'" transform="rotate(-18 -7 -6)"></ellipse>'
+      + '<path class="filament" d="M -8 30 L -8 16 L 8 26 L 8 12" fill="none" stroke="'+(isOn?'#fff4c2':'#9aa1a1')+'" stroke-width="2.4" stroke-linecap="round" filter="'+(isOn?'url(#softBlur)':'none')+'" opacity="'+(isOn?1:0.55)+'"></path>'
+      + '<path d="M -8 30 L -8 16 L 8 26 L 8 12" fill="none" stroke="'+(isOn?'#7a5a00':'#6b7576')+'" stroke-width="1.4" stroke-linecap="round"></path>'
+      + '<rect x="-11" y="42" width="22" height="14" rx="3" fill="#b9bfc2" stroke="'+CHAR_LINE+'" stroke-width="2"></rect>'
+      + '<line x1="-11" y1="46" x2="11" y2="46" stroke="'+CHAR_LINE+'" stroke-width="1.4" opacity=".5"></line>'
+      + '<line x1="-11" y1="50" x2="11" y2="50" stroke="'+CHAR_LINE+'" stroke-width="1.4" opacity=".5"></line>'
+      + leadPath(-11,55,-19,50,'a')
+      + leadPath(11,55,19,50,'b')
+      + terminalMarkup('a', -19, 50)
+      + terminalMarkup('b', 19, 50);
+  }
+  function leadPath(x1,y1,x2,y2,key){
+    return '<path class="lead lead-'+key+'" d="M '+x1+' '+y1+' L '+x2+' '+y2+'" stroke="#555" stroke-width="4" stroke-linecap="round" fill="none"></path>';
+  }
+  function terminalMarkup(termKey, x, y){
+    return '<g class="terminal" data-terminal="'+termKey+'" transform="translate('+x+','+y+')">'
+      + '<circle class="hit" r="16"></circle>'
+      + '<circle class="dot" r="7" fill="#2a2a2a" stroke="#fff" stroke-width="2"></circle>'
+      + '</g>';
+  }
+  function batteryGroupSVG(){
+    return ''
+      + '<rect x="-40" y="-24" width="80" height="48" rx="12" fill="url(#batteryBody)" stroke="'+CHAR_LINE+'" stroke-width="2.5"></rect>'
+      + '<rect x="-32" y="-16" width="64" height="32" rx="7" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-dasharray="3 4"></rect>'
+      + '<text x="-20" y="7" text-anchor="middle" font-family="Fraunces,serif" font-size="24" font-weight="800" fill="#fff">−</text>'
+      + '<text x="20" y="7" text-anchor="middle" font-family="Fraunces,serif" font-size="22" font-weight="800" fill="#ffe9a8">+</text>'
+      + '<path d="M -40 0 L -60 0" stroke="#555" stroke-width="4" stroke-linecap="round"></path>'
+      + '<path d="M 40 0 L 60 0" stroke="#555" stroke-width="4" stroke-linecap="round"></path>'
+      + terminalMarkup('neg', -60, 0)
+      + terminalMarkup('pos', 60, 0);
+  }
+  function trayIconSVG(spec){
+    if(spec.type==='battery'){
+      return '<svg viewBox="-70 -34 140 68"><rect x="-40" y="-24" width="80" height="48" rx="12" fill="url(#g)" stroke="#2a2a2a" stroke-width="2.5"/><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a8fa0"/><stop offset="100%" stop-color="#1b6b78"/></linearGradient></defs><text x="-20" y="7" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">−</text><text x="20" y="7" text-anchor="middle" font-size="22" font-weight="800" fill="#ffe9a8">+</text></svg>';
+    }
+    return '<svg viewBox="-30 -46 60 100">'+bulbGroupSVG(spec.hex, 0.75, false).replace(/<g class="terminal"[^>]*>[\s\S]*?<\/g>/g,'')+'</svg>';
+  }
+
+  /* ============================================================
+     TRAY BUILD
+  ============================================================ */
+  var batteryPlaced = false;
+  function buildTray(){
+    trayRow.innerHTML = '';
+    var battItem = document.createElement('div');
+    battItem.className = 'tray-item' + (batteryPlaced?' disabled':'');
+    battItem.id = 'trayBattery';
+    battItem.innerHTML = trayIconSVG({type:'battery'}) + '<span>Battery</span>';
+    battItem.addEventListener('pointerdown', function(e){ if(batteryPlaced) return; startTrayDrag(e, {type:'battery'}); });
+    trayRow.appendChild(battItem);
+
+    BULB_COLORS.forEach(function(c){
+      var item = document.createElement('div');
+      item.className = 'tray-item';
+      item.innerHTML = trayIconSVG({type:'bulb', hex:c.hex}) + '<span>'+c.name+'</span>';
+      item.addEventListener('pointerdown', function(e){ startTrayDrag(e, {type:'bulb', color:c.hex}); });
+      trayRow.appendChild(item);
+    });
+  }
+
+  function startTrayDrag(evt, spec){
+    evt.preventDefault();
+    var ghost = document.createElement('div');
+    ghost.className = 'drag-ghost';
+    ghost.innerHTML = trayIconSVG(spec.type==='battery'?{type:'battery'}:{type:'bulb', hex:spec.color});
+    document.body.appendChild(ghost);
+    trashZone.classList.add('show');
+    moveGhost(evt);
+    sndClink();
+
+    function moveGhost(e){
+      ghost.style.left = e.clientX+'px';
+      ghost.style.top = e.clientY+'px';
+    }
+    function onMove(e){ moveGhost(e); }
+    function onUp(e){
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      trashZone.classList.remove('show');
+      var rect = canvasWrap.getBoundingClientRect();
+      if(e.clientX>=rect.left && e.clientX<=rect.right && e.clientY>=rect.top && e.clientY<=rect.bottom){
+        var pt = clientToSvg(e.clientX, e.clientY);
+        pt.x = Math.max(50, Math.min(850, pt.x));
+        pt.y = Math.max(60, Math.min(470, pt.y));
+        addComponent(spec.type, spec.color, pt.x, pt.y);
+      }
+      ghost.remove();
+    }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }
+
+  function addComponent(type, color, x, y){
+    var comp = { id: newId(type==='battery'?'batt':'bulb'), type:type, x:x, y:y, color:color||null };
+    state.components.push(comp);
+    if(type==='battery'){ batteryPlaced = true; buildTray(); }
+    sndConnect();
+    fullRender();
+  }
+
+  /* ============================================================
+     RENDER COMPONENTS
+  ============================================================ */
+  var circuitResult = null;
+
+  function fullRender(){
+    circuitResult = computeCircuit();
+    renderComponents();
+    renderWires();
+    renderFlow();
+    renderStatus();
+  }
+
+  function renderComponents(){
+    compsLayer.innerHTML = '';
+    state.components.forEach(function(comp){
+      var g = el('g', {class:'comp', 'data-id':comp.id, transform:'translate('+comp.x+','+comp.y+')'});
+      if(comp.type==='battery'){
+        g.innerHTML = batteryGroupSVG();
+      } else {
+        var brightness = (circuitResult && circuitResult.bulbCurrents[comp.id]) || 0;
+        g.innerHTML = bulbGroupSVG(comp.color, brightness, false);
+      }
+      if(state.selected && state.selected.kind==='comp' && state.selected.id===comp.id){
+        var ring = el('circle', {cx:0, cy: comp.type==='battery'?0:5, r: comp.type==='battery'?52:44, fill:'none', stroke:'var(--fun-red, #f2555a)', 'stroke-width':3, 'stroke-dasharray':'6 5'});
+        g.insertBefore(ring, g.firstChild);
+      }
+      attachCompHandlers(g, comp);
+      compsLayer.appendChild(g);
+
+      if(state.selected && state.selected.kind==='comp' && state.selected.id===comp.id){
+        var delG = makeDeleteButton(comp.x + (comp.type==='battery'?58:26), comp.y - (comp.type==='battery'?38:52), function(){ deleteComponent(comp.id); });
+        compsLayer.appendChild(delG);
+      }
+    });
+  }
+
+  function makeDeleteButton(x,y,onClick){
+    var g = el('g', {class:'del-btn', transform:'translate('+x+','+y+')'});
+    g.innerHTML = '<circle r="13"></circle><text x="0" y="5" text-anchor="middle">✕</text>';
+    g.addEventListener('pointerdown', function(e){ e.stopPropagation(); e.preventDefault(); sndDelete(); onClick(); });
+    return g;
+  }
+
+  function attachCompHandlers(g, comp){
+    var dragging = false, moved = false, offsetX=0, offsetY=0, pointerId=null;
+    g.addEventListener('pointerdown', function(e){
+      if(e.target.closest('.terminal')) return;
+      e.stopPropagation();
+      pointerId = e.pointerId;
+      var pt = clientToSvg(e.clientX, e.clientY);
+      offsetX = pt.x - comp.x; offsetY = pt.y - comp.y;
+      dragging = true; moved = false;
+      g.classList.add('dragging');
+      trashZone.classList.add('show');
+      try{ g.setPointerCapture(pointerId); }catch(err){}
+    });
+    g.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var pt = clientToSvg(e.clientX, e.clientY);
+      comp.x = Math.max(45, Math.min(855, pt.x - offsetX));
+      comp.y = Math.max(55, Math.min(475, pt.y - offsetY));
+      moved = true;
+      g.setAttribute('transform', 'translate('+comp.x+','+comp.y+')');
+      repositionWiresFor(comp.id);
+      var rect = trashZone.getBoundingClientRect();
+      var over = e.clientX>=rect.left-20 && e.clientX<=rect.right+20 && e.clientY>=rect.top-20 && e.clientY<=rect.bottom+20;
+      trashZone.classList.toggle('hot', over);
+    });
+    g.addEventListener('pointerup', function(e){
+      if(!dragging) return;
+      dragging = false;
+      g.classList.remove('dragging');
+      trashZone.classList.remove('show');
+      var rect = trashZone.getBoundingClientRect();
+      var overTrash = e.clientX>=rect.left-20 && e.clientX<=rect.right+20 && e.clientY>=rect.top-20 && e.clientY<=rect.bottom+20;
+      trashZone.classList.remove('hot');
+      if(overTrash){ sndDelete(); deleteComponent(comp.id); return; }
+      if(!moved){
+        selectComp(comp.id);
+      } else {
+        fullRender();
+      }
+    });
+  }
+
+  function selectComp(id){
+    state.selected = (state.selected && state.selected.kind==='comp' && state.selected.id===id) ? null : {kind:'comp', id:id};
+    renderComponents();
+  }
+
+  function deleteComponent(id){
+    var comp = getComp(id);
+    if(!comp) return;
+    state.wires = state.wires.filter(function(w){ return w.from.compId!==id && w.to.compId!==id; });
+    state.components = state.components.filter(function(c){ return c.id!==id; });
+    if(comp.type==='battery'){ batteryPlaced = false; buildTray(); }
+    if(state.selected && state.selected.id===id) state.selected = null;
+    fullRender();
+  }
+
+  /* ============================================================
+     TERMINAL WIRING INTERACTION
+  ============================================================ */
+  compsLayer.addEventListener('pointerdown', function(e){
+    var tg = e.target.closest('.terminal');
+    if(!tg) return;
+    e.stopPropagation();
+    var compG = tg.closest('.comp');
+    var compId = compG.getAttribute('data-id');
+    var termKey = tg.getAttribute('data-terminal');
+    onTerminalTap(compId, termKey, tg);
+  });
+
+  function clearArmed(){
+    var prev = document.querySelectorAll('.terminal.armed');
+    prev.forEach(function(n){ n.classList.remove('armed'); });
+    state.armedTerminal = null;
+    wireGhostLayer.innerHTML = '';
+    svg.removeEventListener('pointermove', onGhostMove);
+  }
+
+  function onGhostMove(e){
+    if(!state.armedTerminal) return;
+    var origin = termPos(getComp(state.armedTerminal.compId), state.armedTerminal.terminal);
+    var pt = clientToSvg(e.clientX, e.clientY);
+    wireGhostLayer.innerHTML = '<path d="'+wireD(origin, pt)+'" fill="none" stroke="var(--gold-500,#f5a623)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 9" opacity="0.9"></path>';
+  }
+
+  function onTerminalTap(compId, termKey, tgEl){
+    sndClink();
+    if(!state.armedTerminal){
+      state.armedTerminal = {compId:compId, terminal:termKey};
+      tgEl.classList.add('armed');
+      svg.addEventListener('pointermove', onGhostMove);
+      return;
+    }
+    if(state.armedTerminal.compId===compId && state.armedTerminal.terminal===termKey){
+      clearArmed();
+      return;
+    }
+    var wire = { id:newId('wire'), from:{compId:state.armedTerminal.compId, terminal:state.armedTerminal.terminal}, to:{compId:compId, terminal:termKey} };
+    state.wires.push(wire);
+    clearArmed();
+    sndConnect();
+    fullRender();
+  }
+
+  svg.addEventListener('pointerdown', function(e){
+    if(e.target===svg || e.target.id==='wiresLayer' || e.target.id==='compsLayer'){
+      clearArmed();
+      if(state.selected){ state.selected=null; renderComponents(); }
+    }
+  });
+
+  /* ============================================================
+     WIRES RENDER
+  ============================================================ */
+  function wireD(p1, p2){
+    var mx = (p1.x+p2.x)/2, my = (p1.y+p2.y)/2;
+    var dx = p2.x-p1.x, dy = p2.y-p1.y;
+    var dist = Math.sqrt(dx*dx+dy*dy);
+    var sag = Math.min(60, 18 + dist*0.18);
+    return 'M '+p1.x+' '+p1.y+' Q '+mx+' '+(my+sag)+' '+p2.x+' '+p2.y;
+  }
+
+  function repositionWiresFor(compId){
+    state.wires.forEach(function(w){
+      if(w.from.compId!==compId && w.to.compId!==compId) return;
+      var p1 = termPos(getComp(w.from.compId), w.from.terminal);
+      var p2 = termPos(getComp(w.to.compId), w.to.terminal);
+      var path = wiresLayer.querySelector('[data-wire-id="'+w.id+'"] .wire-path');
+      var hit = wiresLayer.querySelector('[data-wire-id="'+w.id+'"] .wire-hit');
+      var glow = wiresLayer.querySelector('[data-wire-id="'+w.id+'"] .wire-glow');
+      var d = wireD(p1,p2);
+      if(path) path.setAttribute('d', d);
+      if(hit) hit.setAttribute('d', d);
+      if(glow) glow.setAttribute('d', d);
+    });
+  }
+
+  function renderWires(){
+    wiresLayer.innerHTML = '';
+    state.wires.forEach(function(w){
+      var c1 = getComp(w.from.compId), c2 = getComp(w.to.compId);
+      if(!c1 || !c2) return;
+      var p1 = termPos(c1, w.from.terminal), p2 = termPos(c2, w.to.terminal);
+      var d = wireD(p1,p2);
+      var g = el('g', {'data-wire-id': w.id});
+      var hit = el('path', {class:'wire-hit', d:d});
+      var path = el('path', {class:'wire-path', d:d});
+      if(state.selected && state.selected.kind==='wire' && state.selected.id===w.id){
+        path.classList.add('selected');
+      }
+      g.appendChild(hit); g.appendChild(path);
+      g.addEventListener('pointerdown', function(e){
+        e.stopPropagation();
+        if(state.selected && state.selected.kind==='wire' && state.selected.id===w.id){
+          sndDelete();
+          state.wires = state.wires.filter(function(x){ return x.id!==w.id; });
+          state.selected = null;
+          fullRender();
+        } else {
+          state.selected = {kind:'wire', id:w.id};
+          renderWires();
+        }
+      });
+      wiresLayer.appendChild(g);
+    });
+  }
+
+  document.getElementById('clearWiresBtn').addEventListener('click', function(){
+    if(!state.wires.length) return;
+    sndDelete();
+    state.wires = [];
+    fullRender();
+  });
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    sndDelete();
+    state.components = []; state.wires = []; batteryPlaced=false; state.selected=null;
+    buildTray();
+    fullRender();
+  });
+  muteBtn.addEventListener('click', function(){
+    state.muted = !state.muted;
+    muteBtn.textContent = state.muted ? '🔇' : '🔊';
+  });
+
+  /* ============================================================
+     UNION-FIND
+  ============================================================ */
+  function UF(){ this.parent = {}; }
+  UF.prototype.find = function(x){
+    if(!(x in this.parent)) this.parent[x] = x;
+    if(this.parent[x]!==x) this.parent[x] = this.find(this.parent[x]);
+    return this.parent[x];
+  };
+  UF.prototype.union = function(a,b){
+    var ra=this.find(a), rb=this.find(b);
+    if(ra!==rb) this.parent[ra]=rb;
+  };
+  function tid(compId, term){ return compId+':'+term; }
+
+  /* ============================================================
+     LINEAR SOLVER (Gaussian elimination w/ partial pivot)
+  ============================================================ */
+  function solveLinear(A, b){
+    var n = b.length;
+    if(n===0) return [];
+    var M = A.map(function(row,i){ return row.concat([b[i]]); });
+    for(var col=0; col<n; col++){
+      var piv = col;
+      for(var r=col+1; r<n; r++){ if(Math.abs(M[r][col])>Math.abs(M[piv][col])) piv=r; }
+      var tmp=M[col]; M[col]=M[piv]; M[piv]=tmp;
+      if(Math.abs(M[col][col])<1e-9) continue;
+      for(var r2=0;r2<n;r2++){
+        if(r2===col) continue;
+        var factor = M[r2][col]/M[col][col];
+        for(var c2=col;c2<=n;c2++){ M[r2][c2] -= factor*M[col][c2]; }
+      }
+    }
+    var x = new Array(n).fill(0);
+    for(var i=0;i<n;i++){ x[i] = Math.abs(M[i][i])<1e-9 ? 0 : M[i][n]/M[i][i]; }
+    return x;
+  }
+
+  /* ============================================================
+     CIRCUIT ENGINE
+  ============================================================ */
+  function computeCircuit(){
+    var uf = new UF();
+    state.components.forEach(function(c){
+      var terms = c.type==='battery' ? ['pos','neg'] : ['a','b'];
+      terms.forEach(function(t){ uf.find(tid(c.id,t)); });
+    });
+    state.wires.forEach(function(w){
+      var c1=getComp(w.from.compId), c2=getComp(w.to.compId);
+      if(c1 && c2) uf.union(tid(w.from.compId,w.from.terminal), tid(w.to.compId,w.to.terminal));
+    });
+
+    var battery = state.components.find(function(c){ return c.type==='battery'; });
+    var bulbs = state.components.filter(function(c){ return c.type==='bulb'; });
+
+    var result = { hasBattery: !!battery, short:false, open:false, bulbCurrents:{}, message:'', type:'none', totalCurrent:0, dist:{}, posRoot:null, negRoot:null, edgeDir:{} };
+
+    if(!battery){
+      result.message = bulbs.length ? "Drag a battery onto the mat to power your bulbs!" : "Drag a battery and some bulbs onto the mat to begin!";
+      return result;
+    }
+    if(!bulbs.length){
+      result.message = "Now drag a bulb onto the mat and connect it to the battery!";
+      return result;
+    }
+
+    var posRoot = uf.find(tid(battery.id,'pos'));
+    var negRoot = uf.find(tid(battery.id,'neg'));
+    result.posRoot = posRoot; result.negRoot = negRoot;
+
+    if(posRoot===negRoot){
+      result.short = true;
+      result.message = "⚡ Short circuit! The wires connect straight across the battery with no bulb in the way. Add a bulb between them!";
+      return result;
+    }
+
+    var edges = bulbs.map(function(b){ return {bulb:b, u:uf.find(tid(b.id,'a')), v:uf.find(tid(b.id,'b'))}; });
+    var adj = {};
+    function addAdj(a,bnode,edge){ (adj[a]=adj[a]||[]).push({to:bnode, edge:edge}); (adj[bnode]=adj[bnode]||[]).push({to:a, edge:edge}); }
+    edges.forEach(function(e){ addAdj(e.u, e.v, e); });
+
+    var visited = {}; visited[posRoot]=true;
+    var q = [posRoot];
+    while(q.length){
+      var n = q.shift();
+      (adj[n]||[]).forEach(function(x){ if(!visited[x.to]){ visited[x.to]=true; q.push(x.to); } });
+    }
+
+    if(!visited[negRoot]){
+      result.open = true;
+      result.message = "Almost there! Your circuit isn't a closed loop yet. Connect wires so current can travel from + all the way back to −.";
+      return result;
+    }
+
+    var nodes = Object.keys(visited);
+    var relevantEdges = edges.filter(function(e){ return visited[e.u] && visited[e.v]; });
+    var freeNodes = nodes.filter(function(n){ return n!==posRoot && n!==negRoot; });
+    var idx = {}; freeNodes.forEach(function(n,i){ idx[n]=i; });
+    var n = freeNodes.length;
+    var A = []; for(var i=0;i<n;i++){ A.push(new Array(n).fill(0)); }
+    var bvec = new Array(n).fill(0);
+
+    function fixedV(node){ if(node===posRoot) return 1; if(node===negRoot) return 0; return null; }
+
+    relevantEdges.forEach(function(e){
+      var u=e.u, v=e.v, R=1;
+      var fu=fixedV(u), fv=fixedV(v);
+      if(fu!==null && fv!==null) return;
+      if(fu===null){
+        var iu=idx[u];
+        A[iu][iu]+=1/R;
+        if(fv!==null) bvec[iu]+=(1/R)*fv; else A[iu][idx[v]]-=1/R;
+      }
+      if(fv===null){
+        var iv=idx[v];
+        A[iv][iv]+=1/R;
+        if(fu!==null) bvec[iv]+=(1/R)*fu; else A[iv][idx[u]]-=1/R;
+      }
+    });
+
+    var V = solveLinear(A, bvec);
+    function voltageOf(node){ var f=fixedV(node); if(f!==null) return f; return V[idx[node]]; }
+
+    relevantEdges.forEach(function(e){
+      var I = (voltageOf(e.u) - voltageOf(e.v));
+      result.bulbCurrents[e.bulb.id] = Math.abs(I);
+    });
+    bulbs.forEach(function(b){ if(!(b.id in result.bulbCurrents)) result.bulbCurrents[b.id]=0; });
+
+    var totalOut = 0;
+    (adj[posRoot]||[]).forEach(function(x){ totalOut += Math.abs(voltageOf(posRoot)-voltageOf(x.to)); });
+    result.totalCurrent = totalOut;
+
+    /* --------------------------------------------------------
+       CURRENT-DIRECTION GRAPH
+       Conventional current flows from the battery's + terminal,
+       through the circuit, back to −. To animate that correctly
+       on every wire and bulb we need per-terminal (not merged-root)
+       distances from +, because two terminals joined by a plain
+       wire share a union-find root and can't be told apart that way.
+       A BFS tree from the + terminal over every wire+bulb edge gives
+       each edge a "discovered" direction (parent -> child) that
+       matches the real flow path; any edge left over (e.g. a second
+       wire that closes a loop) is oriented by comparing terminal
+       distances, or by voltage drop for bulbs as a last resort.
+    -------------------------------------------------------- */
+    var termEdges = [];
+    bulbs.forEach(function(bb){
+      termEdges.push({id:'bulb:'+bb.id, a:tid(bb.id,'a'), b:tid(bb.id,'b')});
+    });
+    state.wires.forEach(function(w){
+      var wc1=getComp(w.from.compId), wc2=getComp(w.to.compId);
+      if(!wc1||!wc2) return;
+      termEdges.push({id:'wire:'+w.id, a:tid(w.from.compId,w.from.terminal), b:tid(w.to.compId,w.to.terminal)});
+    });
+    var termAdj = {};
+    function addTermAdj(u,v,edge){ (termAdj[u]=termAdj[u]||[]).push({to:v, edge:edge}); (termAdj[v]=termAdj[v]||[]).push({to:u, edge:edge}); }
+    termEdges.forEach(function(e){ addTermAdj(e.a, e.b, e); });
+
+    var startTerm = tid(battery.id,'pos');
+    var termDist = {}; termDist[startTerm]=0;
+    var edgeDir = {};
+    var visitedTerm = {}; visitedTerm[startTerm]=true;
+    var qterm=[startTerm];
+    while(qterm.length){
+      var curT = qterm.shift();
+      (termAdj[curT]||[]).forEach(function(x){
+        if(!visitedTerm[x.to]){
+          visitedTerm[x.to]=true;
+          termDist[x.to] = termDist[curT]+1;
+          edgeDir[x.edge.id] = {from:curT, to:x.to};
+          qterm.push(x.to);
+        }
+      });
+    }
+    termEdges.forEach(function(e){
+      if(edgeDir[e.id]) return;
+      if(!(e.a in termDist) || !(e.b in termDist)) return;
+      if(termDist[e.a] !== termDist[e.b]){
+        edgeDir[e.id] = termDist[e.a] < termDist[e.b] ? {from:e.a, to:e.b} : {from:e.b, to:e.a};
+      } else {
+        var vA = voltageOf(uf.find(e.a)), vB = voltageOf(uf.find(e.b));
+        edgeDir[e.id] = (vA >= vB) ? {from:e.a, to:e.b} : {from:e.b, to:e.a};
+      }
+    });
+    result.edgeDir = edgeDir;
+
+    var litIds = Object.keys(result.bulbCurrents).filter(function(id){ return result.bulbCurrents[id]>0.02; });
+    if(litIds.length===0){
+      result.open = true;
+      result.message = "Current can't find a full path yet. Check that every bulb has both legs wired into the loop!";
+      return result;
+    }
+    var currs = litIds.map(function(id){ return result.bulbCurrents[id]; });
+    var maxC = Math.max.apply(null, currs), minC = Math.min.apply(null, currs);
+    if(litIds.length===1){
+      result.type='simple';
+      result.message="✅ Closed circuit! Current flows in one loop and your bulb is glowing.";
+    } else if(maxC-minC < 0.04){
+      if(maxC > 0.85){
+        result.type='parallel';
+        result.message="🔀 Parallel circuit! Each bulb has its own path to the battery, so every bulb glows at full brightness.";
+      } else {
+        result.type='series';
+        result.message="➡️ Series circuit! All the bulbs share one loop, so the power is split and each bulb is dimmer.";
+      }
+    } else {
+      result.type='mixed';
+      result.message="🧩 Series-parallel circuit! Some bulbs are on their own path (brighter) and some share a path (dimmer).";
+    }
+
+    var dist = {}; dist[posRoot]=0; var q2=[posRoot];
+    while(q2.length){
+      var cur=q2.shift();
+      (adj[cur]||[]).forEach(function(x){ if(!(x.to in dist)){ dist[x.to]=dist[cur]+1; q2.push(x.to); } });
+    }
+    result.dist = dist;
+    result.uf = uf;
+    return result;
+  }
+
+  /* ============================================================
+     FLOW ANIMATION (dots on energized wires + bulb leads)
+  ============================================================ */
+  function renderFlow(){
+    fxLayer.innerHTML = '';
+    if(!circuitResult || circuitResult.short || circuitResult.open || !circuitResult.hasBattery) return;
+    var uf = circuitResult.uf, dist = circuitResult.dist, edgeDir = circuitResult.edgeDir || {};
+    if(!uf) return;
+
+    var speed = Math.max(0.35, Math.min(2.2, 0.5 + circuitResult.totalCurrent*1.1));
+    var baseDur = 2.6 / speed;
+
+    state.wires.forEach(function(w){
+      var c1=getComp(w.from.compId), c2=getComp(w.to.compId);
+      if(!c1||!c2) return;
+      var r1 = uf.find(tid(w.from.compId,w.from.terminal));
+      var r2 = uf.find(tid(w.to.compId,w.to.terminal));
+      if(!(r1 in dist) || !(r2 in dist)) return;
+      var p1 = termPos(c1, w.from.terminal), p2 = termPos(c2, w.to.terminal);
+      var dir = edgeDir['wire:'+w.id];
+      // dir tells us which physical terminal current reaches first; if that's
+      // the wire's own "from" terminal, dots travel from p1 (its "from") to p2.
+      var goesP1ToP2 = !dir || dir.from === tid(w.from.compId, w.from.terminal);
+      var d = goesP1ToP2 ? wireD(p1,p2) : wireD(p2,p1);
+      addFlowDots(d, baseDur, 3);
+    });
+
+    state.components.filter(function(c){return c.type==='bulb';}).forEach(function(b){
+      var cur = circuitResult.bulbCurrents[b.id] || 0;
+      if(cur<=0.02) return;
+      var pa = termPos(b,'a'), pb = termPos(b,'b');
+      var mid = { x:(pa.x+pb.x)/2, y: pa.y - 34 };
+      var dir = edgeDir['bulb:'+b.id];
+      var forward = !dir || dir.from === tid(b.id,'a');
+      var d = forward
+        ? 'M '+pa.x+' '+pa.y+' L '+mid.x+' '+mid.y+' L '+pb.x+' '+pb.y
+        : 'M '+pb.x+' '+pb.y+' L '+mid.x+' '+mid.y+' L '+pa.x+' '+pa.y;
+      var dur = 2.6 / Math.max(0.35, Math.min(2.2, cur*2));
+      addFlowDots(d, dur, 2);
+    });
+  }
+
+  function addFlowDots(d, dur, count){
+    var path = el('path', {d:d, fill:'none', stroke:'none'});
+    fxLayer.appendChild(path);
+    for(var i=0;i<count;i++){
+      var dot = el('circle', {r:4.2, fill:'var(--gold-500,#f5a623)', stroke:'#a3660c', 'stroke-width':1});
+      var anim = el('animateMotion', {dur:dur+'s', repeatCount:'indefinite', begin:(-(i*dur/count))+'s'});
+      var mpath = el('mpath');
+      var pathId = 'p'+Math.random().toString(36).slice(2,9);
+      path.setAttribute('id', pathId);
+      mpath.setAttribute('href', '#'+pathId);
+      mpath.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+pathId);
+      anim.appendChild(mpath);
+      dot.appendChild(anim);
+      fxLayer.appendChild(dot);
+    }
+  }
+
+  /* ============================================================
+     STATUS / MASCOT / SPARKS
+  ============================================================ */
+  var lastType = null;
+  function renderStatus(){
+    var r = circuitResult;
+    speechBubble.textContent = r.message;
+    speechBubble.classList.toggle('short', r.short);
+    statusPill.classList.remove('short','on');
+    mascotWrap.classList.remove('happy','worried');
+
+    var litCount = 0, cur = 0;
+    if(r.bulbCurrents){
+      Object.keys(r.bulbCurrents).forEach(function(id){ if(r.bulbCurrents[id]>0.02) litCount++; });
+      cur = r.totalCurrent || 0;
+    }
+    litChip.textContent = litCount;
+    currentChip.textContent = cur.toFixed(2) + ' A';
+    typeChip.textContent = ({series:'Series', parallel:'Parallel', mixed:'Mixed', simple:'Simple loop', none:'—'})[r.type] || '—';
+
+    if(r.short){
+      statusPill.classList.add('short');
+      statusPill.textContent = '⚡ Short circuit!';
+      mascotWrap.classList.add('worried');
+      triggerSpark();
+    } else if(litCount>0){
+      statusPill.classList.add('on');
+      statusPill.textContent = '💡 Circuit glowing!';
+      if(lastType!== r.type){ mascotWrap.classList.add('happy'); sndGlowOn(); }
+    } else if(r.open){
+      statusPill.textContent = '🔓 Open circuit';
+    } else {
+      statusPill.textContent = '🔌 Build a circuit!';
+    }
+    lastType = (litCount>0) ? r.type : null;
+  }
+
+  var sparkCooldown = false;
+  function triggerSpark(){
+    if(sparkCooldown) return;
+    sparkCooldown = true;
+    sndBuzz();
+    sparkFlash.classList.add('show');
+    setTimeout(function(){ sparkFlash.classList.remove('show'); }, 140);
+    var battery = state.components.find(function(c){return c.type==='battery';});
+    if(battery){
+      var g = el('g', {transform:'translate('+battery.x+','+battery.y+')'});
+      var bolts = '';
+      for(var i=0;i<5;i++){
+        var ang = Math.random()*Math.PI*2, r1=20+Math.random()*8, r2=44+Math.random()*20;
+        var x1=Math.cos(ang)*r1, y1=Math.sin(ang)*r1, x2=Math.cos(ang)*r2, y2=Math.sin(ang)*r2;
+        var mx=(x1+x2)/2 + (Math.random()-0.5)*14, my=(y1+y2)/2 + (Math.random()-0.5)*14;
+        bolts += '<path d="M '+x1+' '+y1+' L '+mx+' '+my+' L '+x2+' '+y2+'" stroke="#ffd85c" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.95"/>';
+      }
+      g.innerHTML = bolts;
+      fxLayer.appendChild(g);
+      setTimeout(function(){ if(g.parentNode) g.parentNode.removeChild(g); sparkCooldown=false; }, 450);
+    } else { sparkCooldown = false; }
+  }
+
+  /* ============================================================
+     MASCOT (Sparky the bulb)
+  ============================================================ */
+  function sparkySVG(){
+    return ''
+      + '<circle cx="0" cy="-6" r="30" fill="#ffd85c" stroke="'+CHAR_LINE+'" stroke-width="3"></circle>'
+      + '<path d="M -10 20 L -10 30 L 10 30 L 10 20 Z" fill="#b9bfc2" stroke="'+CHAR_LINE+'" stroke-width="2.5"></path>'
+      + '<path d="M -6 -14 L -6 -2 L 6 6 L 6 -6" stroke="#8a5a00" stroke-width="2.4" fill="none" stroke-linecap="round"></path>'
+      + '<circle cx="-11" cy="-9" r="5" fill="#fff"></circle><circle cx="-9" cy="-8" r="2.6" fill="'+CHAR_LINE+'"></circle>'
+      + '<circle cx="11" cy="-9" r="5" fill="#fff"></circle><circle cx="13" cy="-8" r="2.6" fill="'+CHAR_LINE+'"></circle>'
+      + '<path d="M -8 4 Q 0 11 8 4" stroke="'+CHAR_LINE+'" stroke-width="2.6" fill="none" stroke-linecap="round"></path>';
+  }
+  mascotSvg.innerHTML = sparkySVG();
+
+  /* ============================================================
+     INIT
+  ============================================================ */
+  buildTray();
+  fullRender();
+
+})();
+</script>
+</body>
+</html>
