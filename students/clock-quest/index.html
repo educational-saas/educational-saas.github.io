@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Clock Quest ⏰ — Tell &amp; Set the Time!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- Kid-friendly accents ---------- */
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    /* ---------- Clock Quest semantic tokens ---------- */
+    --plum:var(--ink-900);
+    --ink-soft:var(--ink-500);
+    --purple:var(--fun-purple);
+    --grass:var(--fun-green);
+    --grass-dark:#399c6c;
+    --sun:var(--gold-500);
+    --sun-dark:var(--gold-600);
+    --berry:var(--fun-red);
+    --berry-dark:#d1454a;
+    --stone-locked: var(--teal-100);
+    --stone-locked-ink: var(--ink-500);
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    --face-plate: #fffaf0;
+    --hand-hour: var(--teal-900);
+    --hand-minute: var(--berry-dark);
+    --tick-major: var(--teal-800);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --grass-dark:#2c8f60; --berry-dark:#c23b41;
+    --face-plate:#22302f; --hand-hour:#eef3f2; --hand-minute:#ff8f93; --tick-major:#8fe1ec;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--plum);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--sun) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.35);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .clock-drift{position:absolute;opacity:.4;font-size:28px;animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(20deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--plum);
+  }
+  .brand .mascot-mini{font-size:1.3em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .star-counter{
+    display:flex;align-items:center;gap:8px;
+    background:var(--white);border:3px solid var(--sun);
+    border-radius:999px;padding:8px 16px;
+    font-weight:800;font-size:17px;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    color:var(--plum);transition:transform .18s ease;
+  }
+  .star-counter.bump{animation:bump .4s ease;}
+  @keyframes bump{0%,100%{transform:scale(1);}40%{transform:scale(1.16);}}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- path of stepping stones ---------- */
+  .path-wrap{
+    position:relative;z-index:2;
+    margin:6px auto 10px;max-width:1000px;
+    overflow-x:auto;overflow-y:hidden;
+    padding:14px 18px 22px;
+  }
+  .path{
+    display:flex;align-items:flex-end;gap:14px;min-width:max-content;padding:0 6px;
+    position:relative;
+  }
+  .path::before{
+    content:"";position:absolute;left:0;right:0;top:50%;height:0;
+    border-top:5px dashed var(--border-card);z-index:0;
+  }
+  .stone{
+    position:relative;z-index:1;
+    width:46px;height:46px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:700;font-size:16px;
+    background:var(--stone-locked);color:var(--stone-locked-ink);
+    border:4px solid var(--white);box-shadow:0 4px 0 var(--edge-shadow-soft);
+    flex:0 0 auto;transition:transform .2s ease, background .2s ease;
+  }
+  .stone:nth-child(odd){transform:translateY(-6px);}
+  .stone:nth-child(even){transform:translateY(6px);}
+  .stone.done{background:var(--grass);color:#fff;}
+  .stone.current{background:var(--sun);color:#5a3c00;transform:translateY(-6px) scale(1.18);box-shadow:0 0 0 5px rgba(245,166,35,.35), 0 4px 0 var(--edge-shadow-soft);animation:stonepulse 1.6s ease-in-out infinite;}
+  @keyframes stonepulse{0%,100%{box-shadow:0 0 0 5px rgba(245,166,35,.35),0 4px 0 var(--edge-shadow-soft);}50%{box-shadow:0 0 0 9px rgba(245,166,35,.16),0 4px 0 var(--edge-shadow-soft);}}
+  .stone.trophy{background:linear-gradient(160deg,var(--sun),var(--berry));color:#fff;font-size:22px;}
+
+  /* ---------- main stage ---------- */
+  .stage{
+    position:relative;z-index:2;
+    max-width:980px;margin:0 auto;padding:10px 18px 60px;
+    display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .mascot-card{
+    background:var(--white);border-radius:var(--r-lg);padding:18px 16px;
+    text-align:center;box-shadow:0 8px 0 var(--edge-shadow-soft);
+    position:sticky;top:14px;border:1px solid var(--border-card);
+  }
+  .mascot-svg-wrap{display:inline-block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .mascot-svg-wrap.happy{animation:jump .6s ease-in-out 2;}
+  @keyframes jump{0%,100%{transform:translateY(0) rotate(0);}30%{transform:translateY(-16px) rotate(-8deg);}60%{transform:translateY(0) rotate(6deg);}}
+  .speech-bubble{
+    margin-top:10px;background:var(--bubble-tint);border-radius:var(--r-md);padding:12px;
+    font-size:15px;font-weight:700;color:var(--plum);line-height:1.35;
+    min-height:60px;display:flex;align-items:center;justify-content:center;
+  }
+  .mascot-name{font-family:var(--font-display);font-weight:700;color:var(--purple);font-size:14px;margin-top:6px;}
+  .switch-link{margin-top:10px;background:none;border:none;font-family:var(--font-body);font-weight:700;font-size:12.5px;color:var(--teal-700);cursor:pointer;text-decoration:underline;padding:4px;}
+
+  .star-box{margin-top:16px;padding-top:14px;border-top:2px dashed var(--border-card);}
+  .star-box svg{width:76px;height:auto;}
+  .star-label{font-weight:800;font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .star-total{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--grass-dark);}
+
+  .task-card{
+    background:var(--white);border-radius:var(--r-lg);padding:24px 24px 20px;
+    box-shadow:0 10px 0 var(--edge-shadow-soft);
+    position:relative;overflow:hidden;border:1px solid var(--border-card);
+  }
+  .task-badge{
+    display:inline-block;background:var(--sun);color:#5a3c00;font-weight:800;
+    font-family:var(--font-display);font-size:13px;letter-spacing:.3px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;margin-right:6px;
+  }
+  .round-badge{
+    display:inline-block;background:var(--panel-tint);color:var(--teal-700);font-weight:800;
+    font-family:var(--font-body);font-size:12.5px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;
+  }
+  .task-title{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,4vw,32px);margin:2px 0 6px;color:var(--plum);}
+  .task-instruction{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 14px;color:var(--ink-soft);}
+
+  /* ---------- target readout (set mode) ---------- */
+  .target-card{
+    background:var(--input-bg);border:1px solid var(--input-border);
+    border-radius:var(--r-md);padding:14px;text-align:center;margin-bottom:16px;
+  }
+  .target-card .lbl{font-weight:800;font-size:12.5px;color:var(--ink-soft);}
+  .target-card .val{font-family:var(--font-display);font-weight:700;font-size:clamp(22px,4vw,30px);margin-top:2px;color:var(--berry-dark);}
+  .target-card .sub{font-weight:700;font-size:14px;color:var(--ink-soft);margin-top:2px;}
+
+  /* ---------- the learning clock ---------- */
+  .clock-stage{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    margin-bottom:18px;
+  }
+  .clock-stage.wobble svg#learningClock{animation:wobble .5s ease;}
+  @keyframes wobble{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
+  #learningClock{width:min(280px,62vw);height:auto;filter:drop-shadow(0 8px 10px rgba(0,0,0,.12));}
+  #hourHand, #minuteHand{
+    transform-box: view-box;
+    transform-origin: 100px 100px;
+    transition: transform .6s cubic-bezier(.22,1,.36,1);
+  }
+
+  /* ---------- multiple choice (tell mode) ---------- */
+  .mcq-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px;}
+  @media (max-width:480px){ .mcq-grid{grid-template-columns:1fr;} }
+  .mcq-btn{
+    background:var(--white);border:3px solid var(--border-card);border-radius:var(--r-md);
+    box-shadow:0 5px 0 var(--edge-shadow-soft);cursor:pointer;padding:14px 10px;
+    font-family:var(--font-display);font-weight:700;font-size:clamp(16px,3vw,19px);color:var(--plum);
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .mcq-btn:hover{transform:translateY(-3px);border-color:var(--sun);}
+  .mcq-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--edge-shadow-soft);}
+  .mcq-btn.correct{border-color:var(--grass);background:var(--bg-tint-teal);}
+  .mcq-btn.wrong{border-color:var(--berry);background:rgba(242,85,90,.10);}
+  .mcq-btn:disabled{opacity:.55;cursor:default;transform:none;}
+
+  /* ---------- dial rows (set mode) ---------- */
+  .dial-label{font-weight:800;font-size:13.5px;color:var(--ink-soft);margin:0 0 8px;}
+  .dial-row{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 12px;-webkit-overflow-scrolling:touch;}
+  .dial-btn{
+    flex:0 0 auto;background:var(--white);border:3px solid var(--border-card);border-radius:14px;
+    box-shadow:0 4px 0 var(--edge-shadow-soft);cursor:pointer;padding:10px 14px;
+    font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--plum);
+    transition:transform .12s ease, border-color .12s ease;min-width:52px;
+  }
+  .dial-btn:hover{transform:translateY(-2px);}
+  .dial-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--edge-shadow-soft);}
+  .dial-btn.selected{border-color:var(--grass);background:var(--bg-tint-teal);color:var(--grass-dark);}
+
+  .action-row{display:flex;gap:10px;justify-content:center;margin:10px 0 6px;flex-wrap:wrap;}
+  .btn-ghost{
+    font-family:var(--font-body);font-weight:800;font-size:14px;color:var(--teal-700);
+    background:var(--panel-tint);border:none;border-radius:999px;padding:10px 18px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn-ghost:hover{transform:translateY(-2px);}
+  .btn-ghost:active{transform:translateY(1px);}
+  .btn-check{
+    font-family:var(--font-body);font-weight:800;font-size:16px;color:#fff;
+    background:var(--grass-dark);border:none;border-radius:999px;padding:12px 26px;cursor:pointer;
+    box-shadow:0 5px 0 #2c7a53;transition:transform .12s ease;
+  }
+  .btn-check:hover{transform:translateY(-2px);}
+  .btn-check:active{transform:translateY(3px);box-shadow:0 2px 0 #2c7a53;}
+
+  .hint-msg{margin-top:6px;font-weight:800;font-size:15px;min-height:22px;text-align:center;}
+  .hint-msg.err{color:var(--berry-dark);}
+  .hint-msg.ok{color:var(--grass-dark);}
+
+  /* ---------- confetti ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:3px;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:fixed;inset:0;background:var(--overlay-tint);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .overlay.show{display:flex;}
+  .overlay-card{
+    background:var(--white);border-radius:var(--r-lg);padding:30px 28px;text-align:center;
+    max-width:460px;width:100%;box-shadow:0 12px 0 var(--edge-shadow);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--border-card);
+  }
+  @keyframes pop{0%{transform:scale(.6);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .celebrate-emoji{font-size:64px;animation:jump .6s ease-in-out 3;display:inline-block;}
+  .celebrate-title{font-family:var(--font-display);font-weight:700;font-size:26px;margin:8px 0 4px;color:var(--plum);}
+  .celebrate-msg{font-weight:700;color:var(--ink-soft);margin-bottom:18px;}
+
+  .btn-big{background:var(--berry);color:#fff;font-family:var(--font-body);font-weight:800;font-size:19px;border:none;border-radius:999px;padding:16px 34px;box-shadow:0 5px 0 var(--berry-dark);cursor:pointer;transition:transform .12s ease;}
+  .btn-big:hover{transform:translateY(-2px);}
+  .btn-big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--berry-dark);}
+
+  /* ---------- character picker ---------- */
+  .pick-title{font-family:var(--font-display);font-weight:700;font-size:24px;margin:6px 0 2px;color:var(--plum);}
+  .pick-sub{font-weight:600;color:var(--ink-soft);margin:0 0 6px;font-size:14.5px;}
+  .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 6px;}
+  @media (max-width:480px){.char-grid{grid-template-columns:repeat(2,1fr);}}
+  .char-btn{
+    background:var(--panel-tint);border:3px solid transparent;border-radius:var(--r-md);
+    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease;font-family:var(--font-body);
+    font-weight:700;font-size:12px;color:var(--plum);
+  }
+  .char-btn:hover{transform:translateY(-3px);border-color:var(--sun);}
+  .char-btn.selected{border-color:var(--grass);background:var(--bg-tint-teal);}
+
+  /* ---------- final certificate ---------- */
+  .final-overlay .certificate{
+    background:var(--cream);border-radius:var(--r-lg);padding:38px 32px;text-align:center;
+    max-width:520px;width:100%;border:10px solid var(--sun);
+    box-shadow:0 14px 0 var(--edge-shadow);animation:pop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .certificate .trophy-emoji{font-size:70px;}
+  .certificate h2{font-family:var(--font-display);font-weight:700;font-size:27px;color:var(--plum);margin:6px 0;}
+  .certificate .cert-name{font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--berry-dark);margin:10px 0;}
+  .certificate p{font-weight:700;color:var(--ink-soft);}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+  @media (max-width:480px){
+    .task-card{padding:18px 16px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="clock-drift" style="top:14%;left:6%;animation-duration:32s;">⏰</div>
+  <div class="clock-drift" style="top:26%;left:82%;animation-duration:40s;animation-direction:reverse;">🕐</div>
+  <div class="clock-drift" style="top:58%;left:46%;animation-duration:46s;">⏳</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">⏰</span> Clock Quest</div>
+  <div class="top-right">
+    <div class="star-counter" id="starCounterBar">⭐ <span id="grandTotal">0</span></div>
+    <button class="icon-btn" id="switchBtn" title="Change friend">🔁</button>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off">🔊</button>
+  </div>
+</div>
+
+<div class="path-wrap">
+  <div class="path" id="pathTrack"></div>
+</div>
+
+<main class="stage">
+  <div class="mascot-card">
+    <div class="mascot-svg-wrap" id="mascotWrap">
+      <svg id="mascotSvg" viewBox="-40 -40 80 80" width="86" height="86"></svg>
+    </div>
+    <div class="speech-bubble" id="speechBubble">Pick a friend and let's learn to tell time!</div>
+    <div class="mascot-name" id="mascotName">Choose a Friend</div>
+    <button class="switch-link" id="switchLink">🔁 Change friend</button>
+
+    <div class="star-box">
+      <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 78 L15 30 Q15 20 25 20 L75 20 Q85 20 85 30 L85 78 Z" fill="#ffd85c" stroke="var(--char-line)" stroke-width="3"/>
+        <path d="M15 78 L15 30 Q15 20 25 20 L75 20 Q85 20 85 30 L85 78 Z" fill="none" stroke="#e2941a" stroke-width="2" stroke-dasharray="3 4" transform="scale(.88) translate(7,6)"/>
+        <path d="M50 34 L55 46 L68 46 L57 54 L61 67 L50 59 L39 67 L43 54 L32 46 L45 46 Z" fill="#f5a623" stroke="var(--char-line)" stroke-width="2"/>
+      </svg>
+      <div class="star-label">Star Jar</div>
+      <div class="star-total">⭐ <span id="sideTotal">0</span></div>
+    </div>
+  </div>
+
+  <div class="task-card" id="taskCard">
+    <div class="task-badge" id="taskBadge">Level 1</div>
+    <span class="round-badge" id="roundBadge">Round 1 of 3</span>
+    <h2 class="task-title" id="taskTitle"></h2>
+    <p class="task-instruction" id="taskInstruction"></p>
+
+    <div class="target-card" id="targetCard" style="display:none;">
+      <div class="lbl">Set the clock to show</div>
+      <div class="val" id="targetVal"></div>
+      <div class="sub" id="targetSub"></div>
+    </div>
+
+    <div class="clock-stage" id="clockStage">
+      <svg id="learningClock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="96" fill="var(--sun)" opacity=".18"/>
+        <circle cx="100" cy="100" r="90" fill="var(--face-plate)" stroke="var(--char-line)" stroke-width="4"/>
+        <g id="clockTicks"></g>
+        <g id="clockNumbers"></g>
+        <g id="clockFace">
+          <ellipse id="eyeLeft" cx="76" cy="82" rx="6" ry="7" fill="var(--char-line)"/>
+          <ellipse id="eyeRight" cx="124" cy="82" rx="6" ry="7" fill="var(--char-line)"/>
+          <circle cx="62" cy="98" r="7" fill="rgba(242,85,90,.28)"/>
+          <circle cx="138" cy="98" r="7" fill="rgba(242,85,90,.28)"/>
+          <path id="mouthPath" d="M 82 118 Q 100 128 118 118" stroke="var(--char-line)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </g>
+        <g id="hourHand"><rect x="97" y="52" width="6" height="52" rx="3" fill="var(--hand-hour)"/></g>
+        <g id="minuteHand"><rect x="98.5" y="24" width="3" height="80" rx="1.5" fill="var(--hand-minute)"/></g>
+        <circle cx="100" cy="100" r="7" fill="var(--char-line)"/>
+      </svg>
+    </div>
+
+    <div id="mcqSection">
+      <div class="mcq-grid" id="mcqGrid"></div>
+    </div>
+
+    <div id="dialSection" style="display:none;">
+      <p class="dial-label">Hour hand — tap a number:</p>
+      <div class="dial-row" id="hourRow"></div>
+      <p class="dial-label">Minute hand — tap a number:</p>
+      <div class="dial-row" id="minuteRow"></div>
+      <div class="action-row">
+        <button class="btn-ghost" id="resetHandsBtn">🔄 Reset hands</button>
+        <button class="btn-check" id="checkBtn">✅ Check my clock</button>
+      </div>
+    </div>
+
+    <div class="hint-msg" id="hintMsg"></div>
+  </div>
+</main>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<div class="overlay" id="celebrateOverlay">
+  <div class="overlay-card">
+    <div class="celebrate-emoji" id="celebrateEmoji">🎉</div>
+    <div class="celebrate-title" id="celebrateTitle">Tick-tock, well done!</div>
+    <div class="celebrate-msg" id="celebrateMsg">You finished this level!</div>
+    <button class="btn-big" id="nextBtn">Next ▶️</button>
+  </div>
+</div>
+
+<div class="overlay show" id="pickOverlay">
+  <div class="overlay-card">
+    <div class="pick-title">Who will help you today?</div>
+    <p class="pick-sub">Tap a friend to start your Clock Quest adventure!</p>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+</div>
+
+<div class="overlay final-overlay" id="finalOverlay">
+  <div class="certificate">
+    <div class="trophy-emoji">🏆</div>
+    <h2>Certificate of Time Mastery</h2>
+    <div class="cert-name" id="certName">Clock Star</div>
+    <p>learned to tell and set the time with <span id="certFriend">a friend</span> and earned <span id="certTotal">0</span> stars! 🌟</p>
+    <p style="font-size:14px;margin-top:16px;">🎊 You are a time-telling superstar! 🎊</p>
+    <button class="btn-big" id="restartBtn" style="margin-top:10px;">Play Again 🔁</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var CHAR_LINE = 'var(--char-line)';
+
+  function faceParts(){
+    return ''
+      + '<circle cx="-12" cy="-2" r="5.5" fill="#fff"/><circle cx="-10" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + '<circle cx="12" cy="-2" r="5.5" fill="#fff"/><circle cx="14" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + '<path d="M -10 12 Q 0 20 10 12" stroke="'+CHAR_LINE+'" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      + '<ellipse cx="-20" cy="12" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>'
+      + '<ellipse cx="20" cy="12" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>';
+  }
+
+  /* ---------- time-themed friends ---------- */
+  function svgTicky(){
+    return ''
+      + '<rect x="-30" y="-28" width="60" height="56" rx="14" fill="#f2555a" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<circle cx="-18" cy="-30" r="7" fill="#d1454a" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<circle cx="18" cy="-30" r="7" fill="#d1454a" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<circle cx="0" cy="-3" r="17" fill="#fff5e6" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<line x1="0" y1="-3" x2="0" y2="-13" stroke="'+CHAR_LINE+'" stroke-width="2" stroke-linecap="round"/>'
+      + '<line x1="0" y1="-3" x2="8" y2="-3" stroke="'+CHAR_LINE+'" stroke-width="2" stroke-linecap="round"/>'
+      + faceParts();
+  }
+  function svgSunny(){
+    return ''
+      + '<circle cx="0" cy="0" r="30" fill="#ffd85c" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M -34 0 A 34 34 0 0 1 34 0 M -30 -18 A 34 34 0 0 1 30 -18" stroke="#e2941a" stroke-width="4" fill="none" stroke-linecap="round" opacity=".6"/>'
+      + '<text x="0" y="-18" text-anchor="middle" font-size="10" font-weight="800" fill="#8a5a00">⏱</text>'
+      + faceParts();
+  }
+  function svgLuna(){
+    return ''
+      + '<circle cx="0" cy="0" r="32" fill="#a679e0" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M -8 -22 A 22 22 0 1 0 -8 22 A 17 17 0 1 1 -8 -22 Z" fill="#8d5cd1" opacity=".55"/>'
+      + '<circle cx="18" cy="-14" r="2.4" fill="#fff"/><circle cx="22" cy="-4" r="1.6" fill="#fff"/>'
+      + faceParts();
+  }
+  function svgCogsworth(){
+    return ''
+      + '<circle cx="0" cy="0" r="30" fill="#227d8b" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<rect x="-4" y="-34" width="8" height="8" fill="#124f59" stroke="'+CHAR_LINE+'" stroke-width="1.5"/>'
+      + '<rect x="-4" y="26" width="8" height="8" fill="#124f59" stroke="'+CHAR_LINE+'" stroke-width="1.5"/>'
+      + '<rect x="-34" y="-4" width="8" height="8" fill="#124f59" stroke="'+CHAR_LINE+'" stroke-width="1.5"/>'
+      + '<rect x="26" y="-4" width="8" height="8" fill="#124f59" stroke="'+CHAR_LINE+'" stroke-width="1.5"/>'
+      + faceParts();
+  }
+  function svgOllie(){
+    return ''
+      + '<ellipse cx="0" cy="0" r="32" fill="#e2941a" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M -22 -24 L -10 -6 L -30 -6 Z" fill="#c97d10" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M 22 -24 L 10 -6 L 30 -6 Z" fill="#c97d10" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + faceParts();
+  }
+  function svgBella(){
+    return ''
+      + '<circle cx="0" cy="0" r="30" fill="#ff8fc0" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M -14 -22 Q 0 -34 14 -22 L 16 -14 L -16 -14 Z" fill="#e06fa3" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<circle cx="0" cy="-24" r="3" fill="#e06fa3" stroke="'+CHAR_LINE+'" stroke-width="1.5"/>'
+      + faceParts();
+  }
+
+  var CHAR_LIST = [
+    {id:'ticky', name:'Ticky the Alarm', color:'#f2555a', svg:svgTicky},
+    {id:'sunny', name:'Sunny Sundial', color:'#e2941a', svg:svgSunny},
+    {id:'luna', name:'Luna Nightclock', color:'#a679e0', svg:svgLuna},
+    {id:'cogsworth', name:'Cogsworth', color:'#227d8b', svg:svgCogsworth},
+    {id:'ollie', name:'Ollie the Owl', color:'#e2941a', svg:svgOllie},
+    {id:'bella', name:'Bella Cuckoo', color:'#ff8fc0', svg:svgBella}
+  ];
+
+  /* ================= LEVELS ================= */
+  var LEVELS = [
+    {name:'Clock Detective', mode:'tell', minuteType:'oclock', instruction:"Look at the clock. Which time does it show?"},
+    {name:'Set It Right',   mode:'set',  minuteType:'oclock', instruction:"Move the hands to show this time!"},
+    {name:'Halfway There',  mode:'tell', minuteType:'half',   instruction:"This clock shows a half hour. Pick the matching time!"},
+    {name:'Half Past Hero', mode:'set',  minuteType:'half',   instruction:"Set the clock to match the half-past time!"},
+    {name:'Quarter Quest',  mode:'tell', minuteType:'quarter',instruction:"Quarter past or quarter to? Pick the right time!"},
+    {name:'Time Master',    mode:'set',  minuteType:'any5',   instruction:"The trickiest times yet — set the clock exactly!"}
+  ];
+  var ROUNDS_PER_LEVEL = 3;
+
+  /* ================= STATE ================= */
+  var state = {
+    levelIndex: 0,
+    round: 0,
+    totalStars: 0,
+    muted: false,
+    character: CHAR_LIST[0],
+    target: {hour:12, minute:0},
+    selected: {hour:null, minute:null},
+    locked: false
+  };
+
+  var encourage = ["Ka-ring! Perfect time! 🌟","Tick-tock, you nailed it! 🎉","You're a time star! ⭐","Fantastic clock skills! 🥳","Yes! Exactly right! 🙌","Super time-teller! 🚀"];
+  var tryAgain = ["Almost — look again and try! 💪","Not quite — check the hands! 🌈","Keep trying — you can do it! ⏰"];
+
+  /* ================= ELEMENTS ================= */
+  var el = {
+    pathTrack: document.getElementById('pathTrack'),
+    grandTotal: document.getElementById('grandTotal'),
+    sideTotal: document.getElementById('sideTotal'),
+    starCounterBar: document.getElementById('starCounterBar'),
+    muteBtn: document.getElementById('muteBtn'),
+    switchBtn: document.getElementById('switchBtn'),
+    switchLink: document.getElementById('switchLink'),
+    mascotWrap: document.getElementById('mascotWrap'),
+    mascotSvg: document.getElementById('mascotSvg'),
+    speechBubble: document.getElementById('speechBubble'),
+    mascotName: document.getElementById('mascotName'),
+    taskBadge: document.getElementById('taskBadge'),
+    roundBadge: document.getElementById('roundBadge'),
+    taskTitle: document.getElementById('taskTitle'),
+    taskInstruction: document.getElementById('taskInstruction'),
+    targetCard: document.getElementById('targetCard'),
+    targetVal: document.getElementById('targetVal'),
+    targetSub: document.getElementById('targetSub'),
+    clockStage: document.getElementById('clockStage'),
+    hourHand: document.getElementById('hourHand'),
+    minuteHand: document.getElementById('minuteHand'),
+    eyeLeft: document.getElementById('eyeLeft'),
+    eyeRight: document.getElementById('eyeRight'),
+    mouthPath: document.getElementById('mouthPath'),
+    clockTicks: document.getElementById('clockTicks'),
+    clockNumbers: document.getElementById('clockNumbers'),
+    mcqSection: document.getElementById('mcqSection'),
+    mcqGrid: document.getElementById('mcqGrid'),
+    dialSection: document.getElementById('dialSection'),
+    hourRow: document.getElementById('hourRow'),
+    minuteRow: document.getElementById('minuteRow'),
+    resetHandsBtn: document.getElementById('resetHandsBtn'),
+    checkBtn: document.getElementById('checkBtn'),
+    hintMsg: document.getElementById('hintMsg'),
+    confettiLayer: document.getElementById('confettiLayer'),
+    celebrateOverlay: document.getElementById('celebrateOverlay'),
+    celebrateEmoji: document.getElementById('celebrateEmoji'),
+    celebrateTitle: document.getElementById('celebrateTitle'),
+    celebrateMsg: document.getElementById('celebrateMsg'),
+    nextBtn: document.getElementById('nextBtn'),
+    pickOverlay: document.getElementById('pickOverlay'),
+    charGrid: document.getElementById('charGrid'),
+    finalOverlay: document.getElementById('finalOverlay'),
+    certFriend: document.getElementById('certFriend'),
+    certTotal: document.getElementById('certTotal'),
+    restartBtn: document.getElementById('restartBtn')
+  };
+
+  /* ================= AUDIO ================= */
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(Ctx) audioCtx = new Ctx();
+    }
+    return audioCtx;
+  }
+  function beep(freq, dur, delay, vol){
+    if(state.muted) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.15, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0+dur+0.02);
+  }
+  function playTick(){ beep(1000,0.05,0,0.07); }
+  function playSuccess(){ beep(523.25,0.16,0); beep(659.25,0.16,0.12); beep(783.99,0.28,0.24); beep(1046.5,0.3,0.36); }
+  function playOops(){ beep(300,0.18,0,0.09); beep(240,0.22,0.1,0.09); }
+  function speak(text){
+    if(state.muted) return;
+    if(!('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.85; u.pitch = 1.1;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  /* ================= CHARACTER PICKER ================= */
+  function buildCharGrid(){
+    el.charGrid.innerHTML = '';
+    CHAR_LIST.forEach(function(c){
+      var b = document.createElement('button');
+      b.className = 'char-btn';
+      b.setAttribute('data-id', c.id);
+      b.innerHTML = '<svg viewBox="-40 -40 80 80" width="58" height="58">'+c.svg()+'</svg><span>'+c.name+'</span>';
+      b.addEventListener('click', function(){
+        playTick();
+        selectCharacter(c);
+        el.pickOverlay.classList.remove('show');
+      });
+      el.charGrid.appendChild(b);
+    });
+  }
+  function selectCharacter(c){
+    state.character = c;
+    el.mascotSvg.innerHTML = c.svg();
+    el.mascotName.textContent = c.name;
+    Array.prototype.forEach.call(el.charGrid.children, function(btn){
+      btn.classList.toggle('selected', btn.getAttribute('data-id') === c.id);
+    });
+    el.speechBubble.textContent = "Let's learn to tell time together, " + c.name.split(' ')[0] + "-style!";
+  }
+
+  /* ================= PATH STONES ================= */
+  function buildPath(){
+    el.pathTrack.innerHTML = '';
+    LEVELS.forEach(function(t, i){
+      var s = document.createElement('div');
+      s.className = 'stone';
+      s.textContent = (i+1);
+      s.id = 'stone-' + i;
+      el.pathTrack.appendChild(s);
+    });
+    var trophy = document.createElement('div');
+    trophy.className = 'stone trophy';
+    trophy.textContent = '🏆';
+    el.pathTrack.appendChild(trophy);
+  }
+  function updatePathStones(){
+    LEVELS.forEach(function(t, i){
+      var s = document.getElementById('stone-' + i);
+      s.classList.remove('done','current');
+      if(i < state.levelIndex) s.classList.add('done');
+      else if(i === state.levelIndex) s.classList.add('current');
+    });
+  }
+
+  /* ================= CLOCK FACE BUILD ================= */
+  var NS = 'http://www.w3.org/2000/svg';
+  function buildClockDial(){
+    el.clockTicks.innerHTML = '';
+    el.clockNumbers.innerHTML = '';
+    for(var n=1;n<=12;n++){
+      var angleDeg = n*30 - 90;
+      var angleRad = angleDeg * Math.PI/180;
+      var cosA = Math.cos(angleRad), sinA = Math.sin(angleRad);
+
+      var x1 = 100 + 82*cosA, y1 = 100 + 82*sinA;
+      var x2 = 100 + 92*cosA, y2 = 100 + 92*sinA;
+      var tick = document.createElementNS(NS,'line');
+      tick.setAttribute('x1',x1); tick.setAttribute('y1',y1);
+      tick.setAttribute('x2',x2); tick.setAttribute('y2',y2);
+      tick.setAttribute('stroke','var(--tick-major)');
+      tick.setAttribute('stroke-width','4');
+      tick.setAttribute('stroke-linecap','round');
+      el.clockTicks.appendChild(tick);
+
+      var nx = 100 + 68*cosA, ny = 100 + 68*sinA + 6;
+      var txt = document.createElementNS(NS,'text');
+      txt.setAttribute('x',nx); txt.setAttribute('y',ny);
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('font-family',"'Fraunces',Georgia,serif");
+      txt.setAttribute('font-weight','700');
+      txt.setAttribute('font-size','16');
+      txt.setAttribute('fill','var(--plum)');
+      txt.textContent = n;
+      el.clockNumbers.appendChild(txt);
+    }
+  }
+
+  function setClockTime(hour12, minute){
+    var h = hour12 % 12;
+    var hourAngle = (h + minute/60) * 30;
+    var minuteAngle = minute * 6;
+    el.hourHand.style.transform = 'rotate(' + hourAngle + 'deg)';
+    el.minuteHand.style.transform = 'rotate(' + minuteAngle + 'deg)';
+  }
+
+  function setClockExpression(mood){
+    if(mood === 'happy'){
+      el.mouthPath.setAttribute('d','M 78 116 Q 100 138 122 116');
+      el.eyeLeft.setAttribute('ry','3'); el.eyeRight.setAttribute('ry','3');
+    } else if(mood === 'sad'){
+      el.mouthPath.setAttribute('d','M 82 126 Q 100 112 118 126');
+      el.eyeLeft.setAttribute('ry','7'); el.eyeRight.setAttribute('ry','7');
+    } else {
+      el.mouthPath.setAttribute('d','M 82 118 Q 100 128 118 118');
+      el.eyeLeft.setAttribute('ry','7'); el.eyeRight.setAttribute('ry','7');
+    }
+  }
+
+  /* ================= TIME HELPERS ================= */
+  function pad2(n){ return n<10 ? '0'+n : ''+n; }
+  function digitalLabel(hour12, minute){ return hour12 + ':' + pad2(minute); }
+  function randomHour(){ return 1 + Math.floor(Math.random()*12); }
+  function randomMinuteForType(type){
+    if(type === 'oclock') return 0;
+    if(type === 'half') return 30;
+    if(type === 'quarter') return Math.random() < 0.5 ? 15 : 45;
+    var pool = [0,5,10,15,20,25,30,35,40,45,50,55];
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  function wordLabel(hour12, minute){
+    if(minute === 0) return hour12 + " o'clock";
+    if(minute === 30) return "half past " + hour12;
+    if(minute === 15) return "quarter past " + hour12;
+    if(minute === 45){
+      var nextHour = hour12 === 12 ? 1 : hour12 + 1;
+      return "quarter to " + nextHour;
+    }
+    return digitalLabel(hour12, minute);
+  }
+  function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+  function shuffle(arr){
+    for(var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = arr[i]; arr[i]=arr[j]; arr[j]=t;
+    }
+    return arr;
+  }
+
+  /* ================= LEVEL / ROUND RENDERING ================= */
+  function generateTarget(level){
+    var h, m, tries = 0;
+    do{
+      h = randomHour();
+      m = randomMinuteForType(level.minuteType);
+      tries++;
+    } while(tries < 20 && h === state.target.hour && m === state.target.minute);
+    state.target = {hour:h, minute:m};
+  }
+
+  function renderLevel(){
+    state.round = 0;
+    updatePathStones();
+    renderRound();
+  }
+
+  function renderRound(){
+    var level = LEVELS[state.levelIndex];
+    state.locked = false;
+    generateTarget(level);
+    setClockExpression('neutral');
+    el.clockStage.classList.remove('wobble');
+    el.hintMsg.textContent = '';
+    el.hintMsg.className = 'hint-msg';
+    el.mascotWrap.classList.remove('happy');
+
+    el.taskBadge.textContent = 'Level ' + (state.levelIndex+1) + ' of ' + LEVELS.length;
+    el.roundBadge.textContent = 'Round ' + (state.round+1) + ' of ' + ROUNDS_PER_LEVEL;
+    el.taskTitle.textContent = level.name;
+    el.taskInstruction.textContent = level.instruction;
+
+    if(level.mode === 'tell'){
+      el.targetCard.style.display = 'none';
+      el.mcqSection.style.display = 'block';
+      el.dialSection.style.display = 'none';
+      setClockTime(state.target.hour, state.target.minute);
+      buildMcqOptions(level);
+      el.speechBubble.textContent = "What time does the clock show?";
+      setTimeout(function(){ speak("What time does the clock show?"); }, 250);
+    } else {
+      el.targetCard.style.display = 'block';
+      el.mcqSection.style.display = 'none';
+      el.dialSection.style.display = 'block';
+      state.selected = {hour:null, minute:null};
+      setClockTime(12, 0);
+      var label = cap(wordLabel(state.target.hour, state.target.minute));
+      el.targetVal.textContent = label;
+      el.targetSub.textContent = (level.minuteType === 'oclock' || level.minuteType === 'half')
+        ? digitalLabel(state.target.hour, state.target.minute) : '';
+      buildDialRows();
+      el.speechBubble.textContent = "Move the hands to " + label + "!";
+      setTimeout(function(){ speak("Set the clock to " + label); }, 250);
+    }
+  }
+
+  function buildMcqOptions(level){
+    var opts = [{hour:state.target.hour, minute:state.target.minute}];
+    var guard = 0;
+    while(opts.length < 4 && guard < 60){
+      guard++;
+      var h = randomHour();
+      var m = randomMinuteForType(level.minuteType);
+      var dup = opts.some(function(o){ return o.hour === h && o.minute === m; });
+      if(!dup) opts.push({hour:h, minute:m});
+    }
+    shuffle(opts);
+    el.mcqGrid.innerHTML = '';
+    opts.forEach(function(o){
+      var btn = document.createElement('button');
+      btn.className = 'mcq-btn';
+      btn.textContent = cap(wordLabel(o.hour, o.minute));
+      btn.addEventListener('click', function(){ handleMcqAnswer(btn, o); });
+      el.mcqGrid.appendChild(btn);
+    });
+  }
+
+  function handleMcqAnswer(btn, o){
+    if(state.locked) return;
+    var isCorrect = (o.hour === state.target.hour && o.minute === state.target.minute);
+    if(isCorrect){
+      state.locked = true;
+      btn.classList.add('correct');
+      Array.prototype.forEach.call(el.mcqGrid.children, function(b){ b.disabled = true; });
+      correct();
+    } else {
+      btn.classList.add('wrong');
+      btn.disabled = true;
+      wrong();
+    }
+  }
+
+  function buildDialRows(){
+    el.hourRow.innerHTML = '';
+    for(var h=1; h<=12; h++){
+      (function(h){
+        var btn = document.createElement('button');
+        btn.className = 'dial-btn';
+        btn.textContent = h;
+        btn.addEventListener('click', function(){
+          if(state.locked) return;
+          state.selected.hour = h;
+          playTick();
+          Array.prototype.forEach.call(el.hourRow.children, function(b){ b.classList.remove('selected'); });
+          btn.classList.add('selected');
+          setClockTime(h, state.selected.minute || 0);
+        });
+        el.hourRow.appendChild(btn);
+      })(h);
+    }
+    el.minuteRow.innerHTML = '';
+    var minutes = [0,5,10,15,20,25,30,35,40,45,50,55];
+    minutes.forEach(function(m){
+      var btn = document.createElement('button');
+      btn.className = 'dial-btn';
+      btn.textContent = pad2(m);
+      btn.addEventListener('click', function(){
+        if(state.locked) return;
+        state.selected.minute = m;
+        playTick();
+        Array.prototype.forEach.call(el.minuteRow.children, function(b){ b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        setClockTime(state.selected.hour || 12, m);
+      });
+      el.minuteRow.appendChild(btn);
+    });
+  }
+
+  el.resetHandsBtn.addEventListener('click', function(){
+    if(state.locked) return;
+    state.selected = {hour:null, minute:null};
+    setClockTime(12, 0);
+    Array.prototype.forEach.call(el.hourRow.children, function(b){ b.classList.remove('selected'); });
+    Array.prototype.forEach.call(el.minuteRow.children, function(b){ b.classList.remove('selected'); });
+    el.hintMsg.textContent = '';
+    playTick();
+  });
+
+  el.checkBtn.addEventListener('click', function(){
+    if(state.locked) return;
+    if(state.selected.hour === null || state.selected.minute === null){
+      el.hintMsg.textContent = "Pick both an hour and a minute first!";
+      el.hintMsg.className = 'hint-msg err';
+      return;
+    }
+    var isCorrect = (state.selected.hour === state.target.hour && state.selected.minute === state.target.minute);
+    if(isCorrect){
+      state.locked = true;
+      correct();
+    } else {
+      wrong();
+    }
+  });
+
+  /* ================= CORRECT / WRONG ================= */
+  function correct(){
+    playSuccess();
+    setClockExpression('happy');
+    el.mascotWrap.classList.add('happy');
+    addStar(1);
+    el.hintMsg.textContent = "Yes! That's right! 🎉";
+    el.hintMsg.className = 'hint-msg ok';
+    var line = encourage[Math.floor(Math.random()*encourage.length)];
+    el.speechBubble.textContent = line;
+    setTimeout(function(){
+      state.round += 1;
+      if(state.round >= ROUNDS_PER_LEVEL){
+        finishLevel();
+      } else {
+        el.roundBadge.textContent = 'Round ' + (state.round+1) + ' of ' + ROUNDS_PER_LEVEL;
+        renderRound();
+      }
+    }, 1100);
+  }
+
+  function wrong(){
+    playOops();
+    setClockExpression('sad');
+    el.clockStage.classList.remove('wobble'); void el.clockStage.offsetWidth; el.clockStage.classList.add('wobble');
+    var msg = tryAgain[Math.floor(Math.random()*tryAgain.length)];
+    el.hintMsg.textContent = msg;
+    el.hintMsg.className = 'hint-msg err';
+    el.speechBubble.textContent = msg;
+    setTimeout(function(){ setClockExpression('neutral'); }, 900);
+  }
+
+  function addStar(n){
+    state.totalStars += n;
+    el.grandTotal.textContent = state.totalStars;
+    el.sideTotal.textContent = state.totalStars;
+    el.starCounterBar.classList.remove('bump'); void el.starCounterBar.offsetWidth; el.starCounterBar.classList.add('bump');
+  }
+
+  /* ================= LEVEL COMPLETE / FINAL ================= */
+  function finishLevel(){
+    burstConfetti();
+    el.celebrateEmoji.textContent = ['🎉','🌟','🥳','🎈','⏰','🏅','✨'][Math.floor(Math.random()*7)];
+    el.celebrateTitle.textContent = "Tick-tock, level complete!";
+    el.celebrateMsg.textContent = (state.levelIndex === LEVELS.length-1)
+      ? "You mastered every level of Clock Quest!"
+      : "Great job telling and setting the time! Ready for the next level?";
+    el.celebrateOverlay.classList.add('show');
+  }
+
+  el.nextBtn.addEventListener('click', function(){
+    el.celebrateOverlay.classList.remove('show');
+    if(state.levelIndex >= LEVELS.length-1){
+      showFinal();
+    } else {
+      state.levelIndex += 1;
+      renderLevel();
+    }
+  });
+
+  function showFinal(){
+    el.certFriend.textContent = state.character.name;
+    el.certTotal.textContent = state.totalStars;
+    el.finalOverlay.classList.add('show');
+    burstConfetti(60);
+  }
+
+  el.restartBtn.addEventListener('click', function(){
+    state.levelIndex = 0;
+    state.totalStars = 0;
+    el.grandTotal.textContent = 0;
+    el.sideTotal.textContent = 0;
+    el.finalOverlay.classList.remove('show');
+    renderLevel();
+  });
+
+  /* ================= CONFETTI ================= */
+  var confettiColors = ['#f2555a','#ffd85c','#4fc98a','#4aa8e0','#a679e0','#ff8fc0'];
+  function burstConfetti(count){
+    count = count || 36;
+    for(var i=0;i<count;i++){
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      var size = 6 + Math.random()*8;
+      p.style.width = size + 'px';
+      p.style.height = (size*0.6) + 'px';
+      p.style.left = (Math.random()*100) + 'vw';
+      p.style.background = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+      var dur = 2.2 + Math.random()*1.6;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random()*0.3) + 's';
+      el.confettiLayer.appendChild(p);
+      (function(node, life){
+        setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, (life+0.5)*1000);
+      })(p, dur);
+    }
+  }
+
+  /* ================= TOP BAR BUTTONS ================= */
+  el.muteBtn.addEventListener('click', function(){
+    state.muted = !state.muted;
+    el.muteBtn.textContent = state.muted ? '🔇' : '🔊';
+    if(state.muted && 'speechSynthesis' in window){ window.speechSynthesis.cancel(); }
+  });
+  function openPicker(){ el.pickOverlay.classList.add('show'); }
+  el.switchBtn.addEventListener('click', openPicker);
+  el.switchLink.addEventListener('click', openPicker);
+
+  /* ================= INIT ================= */
+  buildCharGrid();
+  buildPath();
+  buildClockDial();
+  selectCharacter(CHAR_LIST[0]);
+  setClockTime(12,0);
+  renderLevel();
+
+})();
+</script>
+</body>
+</html>
