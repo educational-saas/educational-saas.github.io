@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Sound Studio 🎙️ — Record &amp; Remix!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- Kid-friendly accents ---------- */
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    /* ---------- Sound Studio semantic tokens ---------- */
+    --plum:var(--ink-900);
+    --ink-soft:var(--ink-500);
+    --purple:var(--fun-purple);
+    --stone-locked: var(--teal-100);
+    --stone-locked-ink: var(--ink-500);
+    --stone-done: var(--fun-green);
+    --stone-done-dark:#399c6c;
+    --stone-current: var(--gold-500);
+    --danger: var(--fun-red);
+    --danger-dark:#d1454a;
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+    --wave-color: rgba(27,107,120,.55);
+    --wave-color-strong: var(--teal-700);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --stone-done-dark:#2c8f60; --danger-dark:#c23b41;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+    --wave-color: rgba(127,219,230,.5); --wave-color-strong: var(--teal-700);
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--plum);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  button{font-family:inherit;}
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--gold-500) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.35);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .note-drift{position:absolute;opacity:.4;font-size:28px;color:var(--fun-purple);animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(20deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--plum);
+  }
+  .brand .mascot-mini{font-size:1.3em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- path of stepping stones ---------- */
+  .path-wrap{
+    position:relative;z-index:2;
+    margin:6px auto 10px;max-width:1000px;
+    overflow-x:auto;overflow-y:hidden;
+    padding:14px 18px 22px;
+  }
+  .path{
+    display:flex;align-items:flex-end;gap:14px;min-width:max-content;padding:0 6px;
+    position:relative;
+  }
+  .path::before{
+    content:"";position:absolute;left:0;right:0;top:50%;height:0;
+    border-top:5px dashed var(--border-card);z-index:0;
+  }
+  .stone{
+    position:relative;z-index:1;
+    min-width:46px;height:46px;padding:0 10px;border-radius:23px;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    font-family:var(--font-body);font-weight:800;font-size:12.5px;
+    background:var(--stone-locked);color:var(--stone-locked-ink);
+    border:4px solid var(--white);box-shadow:0 4px 0 var(--edge-shadow-soft);
+    flex:0 0 auto;transition:transform .2s ease, background .2s ease, color .2s ease;
+  }
+  .stone:nth-child(odd){transform:translateY(-6px);}
+  .stone:nth-child(even){transform:translateY(6px);}
+  .stone.done{background:var(--stone-done);color:#fff;}
+  .stone.current{background:var(--stone-current);color:#5a3c00;transform:translateY(-6px) scale(1.14);box-shadow:0 0 0 5px rgba(245,166,35,.35), 0 4px 0 var(--edge-shadow-soft);animation:stonepulse 1.6s ease-in-out infinite;}
+  @keyframes stonepulse{0%,100%{box-shadow:0 0 0 5px rgba(245,166,35,.35),0 4px 0 var(--edge-shadow-soft);}50%{box-shadow:0 0 0 9px rgba(245,166,35,.16),0 4px 0 var(--edge-shadow-soft);}}
+  .stone.trophy{background:linear-gradient(160deg,var(--gold-500),var(--fun-red));color:#fff;font-size:19px;padding:0 14px;}
+
+  /* ---------- main stage ---------- */
+  .stage{
+    position:relative;z-index:2;
+    max-width:980px;margin:0 auto;padding:10px 18px 60px;
+    display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .mascot-card{
+    background:var(--white);border-radius:var(--r-lg);padding:18px 16px;
+    text-align:center;box-shadow:0 8px 0 var(--edge-shadow-soft);
+    position:sticky;top:14px;border:1px solid var(--border-card);
+  }
+  .mascot-svg-wrap{display:inline-block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .mascot-svg-wrap.happy{animation:jump .6s ease-in-out 2;}
+  .mascot-svg-wrap.listening{animation:sway 1.1s ease-in-out infinite;}
+  @keyframes jump{0%,100%{transform:translateY(0) rotate(0);}30%{transform:translateY(-16px) rotate(-8deg);}60%{transform:translateY(0) rotate(6deg);}}
+  @keyframes sway{0%,100%{transform:rotate(-4deg);}50%{transform:rotate(4deg);}}
+  .speech-bubble{
+    margin-top:10px;background:var(--bubble-tint);border-radius:var(--r-md);padding:12px;
+    font-size:14.5px;font-weight:700;color:var(--plum);line-height:1.35;
+    min-height:60px;display:flex;align-items:center;justify-content:center;
+    transition:background .2s ease;
+  }
+  .mascot-name{font-family:var(--font-display);font-weight:700;color:var(--purple);font-size:14px;margin-top:6px;}
+
+  .steps-box{margin-top:16px;padding-top:14px;border-top:2px dashed var(--border-card);}
+  .steps-box .lbl{font-weight:800;font-size:12.5px;color:var(--ink-soft);}
+  .steps-box .val{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--stone-done-dark);}
+
+  .task-card{
+    background:var(--white);border-radius:var(--r-lg);padding:24px 24px 20px;
+    box-shadow:0 10px 0 var(--edge-shadow-soft);
+    position:relative;overflow:hidden;border:1px solid var(--border-card);
+  }
+  .task-badge{
+    display:inline-block;background:var(--gold-500);color:#5a3c00;font-weight:800;
+    font-family:var(--font-display);font-size:13px;letter-spacing:.3px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;
+  }
+  .task-title{font-family:var(--font-display);font-weight:700;font-size:clamp(22px,4vw,30px);margin:2px 0 6px;color:var(--plum);}
+  .task-instruction{font-size:15.5px;font-weight:600;line-height:1.5;margin:0 0 14px;color:var(--ink-soft);}
+
+  /* ---------- RECORD STAGE ---------- */
+  #stageRecord{display:none;}
+  .record-zone{display:flex;flex-direction:column;align-items:center;gap:14px;padding:6px 0 4px;}
+  .mic-ring-wrap{position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center;}
+  .mic-ring{position:absolute;inset:0;border-radius:50%;border:4px solid var(--fun-red);opacity:0;transform:scale(.7);}
+  .mic-ring.active{animation:ringPulse 1.6s ease-out infinite;}
+  @keyframes ringPulse{0%{opacity:.55;transform:scale(.72);}100%{opacity:0;transform:scale(1.35);}}
+  .record-btn{
+    position:relative;width:130px;height:130px;border-radius:50%;border:none;cursor:pointer;
+    background:radial-gradient(circle at 35% 30%, #ff8b8f, var(--fun-red) 70%);
+    box-shadow:0 8px 0 var(--danger-dark), 0 10px 24px rgba(242,85,90,.35);
+    display:flex;align-items:center;justify-content:center;transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .record-btn:hover{transform:translateY(-2px);}
+  .record-btn:active{transform:translateY(4px);box-shadow:0 4px 0 var(--danger-dark);}
+  .record-btn.recording{background:radial-gradient(circle at 35% 30%, #ffdca0, var(--gold-500) 70%);box-shadow:0 8px 0 var(--gold-600), 0 10px 24px rgba(245,166,35,.35);}
+  .record-btn svg{width:56px;height:56px;}
+  .record-btn-label{font-weight:800;font-size:15px;color:var(--ink-soft);}
+  .record-timer{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--fun-red);min-height:28px;}
+
+  .distance-meter{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:2px;}
+  .distance-bar-track{width:100%;height:16px;border-radius:999px;background:var(--input-bg);border:1px solid var(--input-border);overflow:hidden;position:relative;}
+  .distance-bar-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--fun-green),var(--gold-500),var(--fun-red));transition:width .12s linear;}
+  .distance-label{font-weight:800;font-size:14px;color:var(--ink-soft);min-height:20px;text-align:center;}
+
+  .upload-zone{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:2px;}
+  .upload-divider{font-weight:800;font-size:12.5px;color:var(--ink-soft);letter-spacing:.5px;text-transform:uppercase;opacity:.7;}
+  .upload-hint{font-size:12px;font-weight:600;color:var(--ink-soft);opacity:.75;}
+
+  .record-preview{width:100%;display:none;flex-direction:column;align-items:center;gap:12px;margin-top:8px;}
+  .record-preview.show{display:flex;}
+  .action-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
+  .btn-ghost{
+    font-family:var(--font-body);font-weight:800;font-size:14px;color:var(--teal-700);
+    background:var(--panel-tint);border:none;border-radius:999px;padding:10px 18px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn-ghost:hover{transform:translateY(-2px);}
+  .btn-ghost:active{transform:translateY(1px);}
+  .btn-ghost:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn-big{background:var(--fun-red);color:#fff;font-family:var(--font-body);font-weight:800;font-size:18px;border:none;border-radius:999px;padding:15px 32px;box-shadow:0 5px 0 var(--danger-dark);cursor:pointer;transition:transform .12s ease;}
+  .btn-big:hover{transform:translateY(-2px);}
+  .btn-big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--danger-dark);}
+  .btn-big:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn-big.green{background:var(--fun-green);box-shadow:0 5px 0 var(--stone-done-dark);}
+  .btn-big.green:active{box-shadow:0 2px 0 var(--stone-done-dark);}
+
+  /* ---------- TOOL STAGE (shared) ---------- */
+  #stageTool{display:none;}
+  .wave-wrap{position:relative;width:100%;height:130px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:var(--r-md);overflow:hidden;margin-bottom:14px;touch-action:none;}
+  .wave-wrap canvas{width:100%;height:100%;display:block;}
+  .playhead-line{position:absolute;top:0;bottom:0;width:2px;background:var(--fun-red);left:0;pointer-events:none;opacity:.85;}
+  .trim-shade{position:absolute;top:0;bottom:0;background:rgba(28,38,38,.45);pointer-events:none;}
+  .trim-handle{
+    position:absolute;top:0;bottom:0;width:22px;margin-left:-11px;cursor:ew-resize;
+    display:flex;align-items:center;justify-content:center;touch-action:none;
+  }
+  .trim-handle .grip{width:10px;height:56px;border-radius:8px;background:var(--gold-500);border:3px solid var(--white);box-shadow:0 3px 0 var(--edge-shadow-soft);}
+  .trim-handle:active .grip{background:var(--fun-red);}
+
+  .transport-row{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;}
+  .play-btn{
+    width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--teal-700);color:#fff;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 var(--teal-900);transition:transform .12s ease;
+  }
+  .play-btn:hover{transform:translateY(-2px);}
+  .play-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--teal-900);}
+  .play-btn svg{width:22px;height:22px;}
+  .duration-label{font-weight:800;font-size:13.5px;color:var(--ink-soft);}
+
+  .tool-controls{display:flex;flex-direction:column;gap:14px;align-items:center;margin-bottom:8px;}
+  .slider-row{width:100%;max-width:420px;display:flex;flex-direction:column;gap:6px;}
+  .slider-row .slabel{display:flex;justify-content:space-between;font-weight:800;font-size:13.5px;color:var(--ink-soft);}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:999px;
+    background:linear-gradient(90deg,var(--fun-green),var(--gold-500));outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--white);
+    border:4px solid var(--teal-700);cursor:pointer;box-shadow:0 3px 0 var(--edge-shadow-soft);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:26px;height:26px;border-radius:50%;background:var(--white);
+    border:4px solid var(--teal-700);cursor:pointer;box-shadow:0 3px 0 var(--edge-shadow-soft);
+  }
+  input[type=range]:disabled{opacity:.5;cursor:not-allowed;}
+
+  .preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;max-width:460px;}
+  @media (max-width:480px){.preset-grid{grid-template-columns:repeat(2,1fr);}}
+  .preset-btn{
+    background:var(--panel-tint);border:3px solid transparent;border-radius:var(--r-md);
+    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease;font-weight:800;font-size:12px;color:var(--plum);
+  }
+  .preset-btn .pemoji{font-size:26px;}
+  .preset-btn:hover{transform:translateY(-3px);}
+  .preset-btn.selected{border-color:var(--fun-green);background:var(--bg-tint-teal);}
+  .preset-btn.none-btn{grid-column:1/-1;}
+  .preset-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+  .step-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
+  .hint-msg{margin-top:10px;font-weight:800;font-size:14.5px;min-height:22px;text-align:center;color:var(--stone-done-dark);}
+
+  /* ---------- confetti ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:3px;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+
+  /* ---------- final stage ---------- */
+  #stageDone{display:none;}
+  .final-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:6px 0;}
+  .trophy-emoji{font-size:68px;animation:jump .6s ease-in-out 3;display:inline-block;}
+  .final-msg{font-weight:700;color:var(--ink-soft);font-size:15px;max-width:420px;}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+  @media (max-width:480px){
+    .task-card{padding:18px 16px 16px;}
+    .mic-ring-wrap{width:150px;height:150px;}
+    .record-btn{width:108px;height:108px;}
+    .record-btn svg{width:46px;height:46px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="note-drift" style="top:14%;left:6%;animation-duration:34s;">♪</div>
+  <div class="note-drift" style="top:26%;left:82%;animation-duration:42s;animation-direction:reverse;">♫</div>
+  <div class="note-drift" style="top:60%;left:46%;animation-duration:48s;">♪</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">🎙️</span> Sound Studio</div>
+  <div class="top-right">
+    <button class="icon-btn" id="muteBtn" title="Sound effects on/off">🔊</button>
+  </div>
+</div>
+
+<div class="path-wrap">
+  <div class="path" id="pathTrack"></div>
+</div>
+
+<main class="stage">
+  <div class="mascot-card">
+    <div class="mascot-svg-wrap" id="mascotWrap">
+      <svg id="mascotSvg" viewBox="-40 -40 80 80" width="86" height="86"></svg>
+    </div>
+    <div class="speech-bubble" id="speechBubble">Hi! I'm Mixy! Let's record your voice and turn it into something awesome!</div>
+    <div class="mascot-name">Mixy the Mic</div>
+
+    <div class="steps-box">
+      <div class="lbl">Tools used</div>
+      <div class="val"><span id="stepsDoneCount">0</span> / 5 ✨</div>
+    </div>
+  </div>
+
+  <div class="task-card" id="taskCard">
+
+    <!-- ===================== RECORD STAGE ===================== -->
+    <div id="stageRecord">
+      <div class="task-badge">Step 1</div>
+      <h2 class="task-title">Record Your Voice</h2>
+      <p class="task-instruction" id="recordInstruction">Tap the big red button and start talking, singing, or telling a story!</p>
+
+      <div class="record-zone">
+        <div class="mic-ring-wrap">
+          <div class="mic-ring" id="micRing1"></div>
+          <div class="mic-ring" id="micRing2" style="animation-delay:.5s;"></div>
+          <button class="record-btn" id="recordBtn" title="Start recording">
+            <svg viewBox="0 0 24 24" fill="none" id="recordIcon">
+              <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" fill="#fff"/>
+              <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="record-btn-label" id="recordBtnLabel">Tap to start recording</div>
+        <div class="record-timer" id="recordTimer"></div>
+
+        <div class="distance-meter" id="distanceMeterWrap" style="display:none;">
+          <div class="distance-bar-track"><div class="distance-bar-fill" id="distanceFill"></div></div>
+          <div class="distance-label" id="distanceLabel">Say something so I can hear you!</div>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-divider">— or —</div>
+          <button class="btn-ghost" id="uploadBtn">⬆️ Upload a Sound File</button>
+          <div class="upload-hint">MP3, WAV, M4A, OGG, FLAC &amp; more</div>
+          <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.flac,.webm,.opus,.wma,.aiff,.aif" style="display:none;">
+        </div>
+
+        <div class="record-preview" id="recordPreview">
+          <div class="wave-wrap" id="rawWaveWrap">
+            <canvas id="rawWaveCanvas"></canvas>
+            <div class="playhead-line" id="rawPlayhead"></div>
+          </div>
+          <div class="transport-row">
+            <button class="play-btn" id="rawPlayBtn" title="Play">
+              <svg viewBox="0 0 24 24" fill="#fff"><path id="rawPlayIcon" d="M8 5v14l11-7z"/></svg>
+            </button>
+            <span class="duration-label" id="rawDurationLabel">0:00</span>
+          </div>
+          <div class="action-row">
+            <button class="btn-ghost" id="reRecordBtn">🔁 Record Again</button>
+            <button class="btn-big" id="continueBtn">Let's Fix It Up ✨</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TOOL STAGE ===================== -->
+    <div id="stageTool">
+      <div class="task-badge" id="toolBadge">Step 2</div>
+      <h2 class="task-title" id="toolTitle">Clean the Sound</h2>
+      <p class="task-instruction" id="toolInstruction">Let's tidy up any background hiss.</p>
+
+      <div class="wave-wrap" id="waveWrap">
+        <canvas id="waveCanvas"></canvas>
+        <div class="playhead-line" id="playhead"></div>
+        <div class="trim-shade" id="trimShadeL" style="left:0;width:0;"></div>
+        <div class="trim-shade" id="trimShadeR" style="right:0;width:0;"></div>
+        <div class="trim-handle" id="trimHandleL" style="display:none;left:0%;"><div class="grip"></div></div>
+        <div class="trim-handle" id="trimHandleR" style="display:none;left:100%;"><div class="grip"></div></div>
+      </div>
+      <div class="transport-row">
+        <button class="play-btn" id="playBtn" title="Play">
+          <svg viewBox="0 0 24 24" fill="#fff"><path id="playIcon" d="M8 5v14l11-7z"/></svg>
+        </button>
+        <span class="duration-label" id="durationLabel">0:00</span>
+      </div>
+
+      <div class="tool-controls" id="toolBody"></div>
+
+      <div class="hint-msg" id="hintMsg"></div>
+      <div class="step-actions">
+        <button class="btn-ghost" id="skipBtn">Skip this step ➡️</button>
+        <button class="btn-big green" id="applyBtn">Apply ✅</button>
+        <button class="btn-ghost" id="redoBtn" style="display:none;">🔁 Try Again</button>
+        <button class="btn-big" id="continueStepBtn" style="display:none;">Continue ➡️</button>
+      </div>
+    </div>
+
+    <!-- ===================== DONE STAGE ===================== -->
+    <div id="stageDone">
+      <div class="final-wrap">
+        <div class="trophy-emoji">🏆</div>
+        <h2 class="task-title">Your Sound Is Ready!</h2>
+        <p class="final-msg" id="finalMsg">You recorded, cleaned, trimmed, and remixed your very own sound clip. Amazing work!</p>
+
+        <div class="wave-wrap" id="doneWaveWrap" style="max-width:460px;">
+          <canvas id="doneWaveCanvas"></canvas>
+          <div class="playhead-line" id="donePlayhead"></div>
+        </div>
+        <div class="transport-row">
+          <button class="play-btn" id="donePlayBtn" title="Play">
+            <svg viewBox="0 0 24 24" fill="#fff"><path id="donePlayIcon" d="M8 5v14l11-7z"/></svg>
+          </button>
+          <span class="duration-label" id="doneDurationLabel">0:00</span>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-big" id="downloadBtn">⬇️ Download My Sound</button>
+        </div>
+        <div class="action-row">
+          <button class="btn-ghost" id="startOverBtn">🔁 Make a New Recording</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= CONSTANTS ================= */
+  var CHAR_LINE = 'var(--char-line)';
+  var TOOL_STEPS = ['clean','trim','gaps','music','volume'];
+  var TOOL_META = {
+    clean:  {badge:'Step 2', title:'Clean the Sound',   instr:"Background hiss and hums can hide in a recording. Slide to clean it up, then hit Apply!"},
+    trim:   {badge:'Step 3', title:'Trim the Clip',     instr:"Drag the two yellow handles to keep just the good part, then tap Cut It!"},
+    gaps:   {badge:'Step 4', title:'Remove Gaps',       instr:"Long silent pauses make clips boring. Slide to squeeze the gaps out!"},
+    music:  {badge:'Step 5', title:'Add Background Music', instr:"Pick a fun music track to play behind your voice, or skip if you like it plain."},
+    volume: {badge:'Step 6', title:'Adjust Volume',     instr:"Too quiet? Too loud? Slide until it sounds just right."}
+  };
+  var MUSIC_PRESETS = [
+    {id:'happy', name:'Happy Hop', emoji:'🎈'},
+    {id:'calm', name:'Calm Cloud', emoji:'☁️'},
+    {id:'space', name:'Space Beep', emoji:'🚀'},
+    {id:'jungle', name:'Jungle Beat', emoji:'🌿'}
+  ];
+  var MASCOT_LINES = {
+    clean: "Let's make your voice crystal clear!",
+    trim: "Snip snip! Keep only the best bit.",
+    gaps: "Let's squeeze out the silent gaps.",
+    music: "Music makes everything more fun!",
+    volume: "Let's get the volume just right."
+  };
+
+  /* ================= STATE ================= */
+  var state = {
+    stepIndex: -1, // -1 = record stage, 0..4 = TOOL_STEPS, 5 = done
+    muted: false,
+    sampleRate: 44100,
+    original: null,
+    working: null,
+    stepEntryWorking: null,
+    musicChoice: null,
+    musicVolume: 0.35,
+    volumeGain: 1.0,
+    denoiseStrength: 0.5,
+    silenceSensitivity: 0.5,
+    trimStart: 0,
+    trimEnd: 1,
+    stepsDone: 0,
+    mediaStream: null,
+    mediaRecorder: null,
+    recordedChunks: [],
+    recTimerHandle: null,
+    recStartTime: 0,
+    distRAF: null,
+    playRAF: null,
+    musicPreviewSrc: null
+  };
+
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new Ctx();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  /* ================= ELEMENTS ================= */
+  var el = {};
+  function $(id){ return document.getElementById(id); }
+
+  /* ================= SOUND EFFECTS ================= */
+  function beep(freq, dur, delay, vol){
+    if(state.muted) return;
+    var ctx = getCtx();
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.15, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+  }
+  function playClink(){ beep(880,0.07,0,0.08); beep(1200,0.06,0.05,0.05); }
+  function playSuccess(){ beep(523.25,0.14,0); beep(659.25,0.14,0.1); beep(783.99,0.24,0.2); }
+  function playOops(){ beep(300,0.16,0,0.08); }
+
+  /* ================= MASCOT SVG ================= */
+  function faceParts(mood){
+    mood = mood || 'idle';
+    var mouth = '<path d="M -10 12 Q 0 20 10 12" stroke="'+CHAR_LINE+'" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    if(mood === 'happy') mouth = '<path d="M -12 10 Q 0 24 12 10" stroke="'+CHAR_LINE+'" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    if(mood === 'worried') mouth = '<path d="M -8 16 Q 0 10 8 16" stroke="'+CHAR_LINE+'" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    return ''
+      + '<circle cx="-12" cy="-2" r="5.5" fill="#fff"/><circle cx="-10" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + '<circle cx="12" cy="-2" r="5.5" fill="#fff"/><circle cx="14" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + mouth
+      + '<ellipse cx="-20" cy="10" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>'
+      + '<ellipse cx="20" cy="10" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>';
+  }
+  function svgMixy(mood){
+    return ''
+      + '<ellipse cx="0" cy="6" rx="16" ry="22" fill="#a679e0" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<rect x="-14" y="-30" width="28" height="30" rx="14" fill="#c6a3ef" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<line x1="-8" y1="-22" x2="8" y2="-22" stroke="'+CHAR_LINE+'" stroke-width="2" opacity=".5"/>'
+      + '<line x1="-8" y1="-16" x2="8" y2="-16" stroke="'+CHAR_LINE+'" stroke-width="2" opacity=".5"/>'
+      + '<line x1="-8" y1="-10" x2="8" y2="-10" stroke="'+CHAR_LINE+'" stroke-width="2" opacity=".5"/>'
+      + '<rect x="-3" y="26" width="6" height="10" fill="#8a5fc9" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<rect x="-14" y="35" width="28" height="6" rx="3" fill="#8a5fc9" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + faceParts(mood);
+  }
+  function setMascot(mood, text){
+    $('mascotSvg').innerHTML = svgMixy(mood);
+    if(text) $('speechBubble').textContent = text;
+    var wrap = $('mascotWrap');
+    wrap.classList.remove('happy','listening');
+    if(mood === 'happy') wrap.classList.add('happy');
+    if(mood === 'listening') wrap.classList.add('listening');
+  }
+
+  /* ================= PATH STONES ================= */
+  var STONE_LABELS = ['🎙️ Record','🧽 Clean','✂️ Trim','⏳ Gaps','🎵 Music','🔊 Volume'];
+  function buildPath(){
+    var track = $('pathTrack');
+    track.innerHTML = '';
+    STONE_LABELS.forEach(function(label, i){
+      var s = document.createElement('div');
+      s.className = 'stone';
+      s.id = 'stone-' + i;
+      s.textContent = label;
+      track.appendChild(s);
+    });
+    var trophy = document.createElement('div');
+    trophy.className = 'stone trophy';
+    trophy.id = 'stone-trophy';
+    trophy.textContent = '🏆 Done';
+    track.appendChild(trophy);
+  }
+  function updatePath(){
+    var current = state.stepIndex + 1; // 0 = record stone index
+    for(var i=0;i<STONE_LABELS.length;i++){
+      var s = $('stone-'+i);
+      s.classList.remove('done','current');
+      if(i < current) s.classList.add('done');
+      else if(i === current) s.classList.add('current');
+    }
+    var trophy = $('stone-trophy');
+    trophy.classList.remove('current');
+    if(state.stepIndex >= TOOL_STEPS.length) trophy.classList.add('current');
+  }
+
+  /* ================= AUDIO HELPERS ================= */
+  function floatTo16(input){
+    var out = new Int16Array(input.length);
+    for(var i=0;i<input.length;i++){
+      var s = Math.max(-1, Math.min(1, input[i]));
+      out[i] = s < 0 ? s*0x8000 : s*0x7fff;
+    }
+    return out;
+  }
+  function encodeWAV(samples, sampleRate){
+    var buffer = new ArrayBuffer(44 + samples.length*2);
+    var view = new DataView(buffer);
+    function writeString(offset, str){ for(var i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
+    writeString(0,'RIFF'); view.setUint32(4, 36 + samples.length*2, true); writeString(8,'WAVE');
+    writeString(12,'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate*2, true);
+    view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+    writeString(36,'data'); view.setUint32(40, samples.length*2, true);
+    var offset = 44;
+    for(var i=0;i<samples.length;i++){ view.setInt16(offset, samples[i], true); offset += 2; }
+    return new Blob([view], {type:'audio/wav'});
+  }
+  function bufferToWavBlob(floatData, sampleRate){ return encodeWAV(floatTo16(floatData), sampleRate); }
+
+  function rms(arr, start, len){
+    var sum = 0; var end = Math.min(arr.length, start+len); var n = end - start;
+    if(n<=0) return 0;
+    for(var i=start;i<end;i++) sum += arr[i]*arr[i];
+    return Math.sqrt(sum/n);
+  }
+
+  function trimAudio(data, startFrac, endFrac){
+    var s = Math.floor(data.length*startFrac);
+    var e = Math.floor(data.length*endFrac);
+    if(e<=s) e = Math.min(data.length, s+1);
+    return data.slice(s,e);
+  }
+
+  function desilence(data, sampleRate, sensitivity){
+    var winSize = Math.floor(sampleRate*0.03);
+    var windows = []; var maxRms = 0;
+    for(var i=0;i<data.length;i+=winSize){ var r = rms(data, i, winSize); windows.push(r); if(r>maxRms) maxRms = r; }
+    if(maxRms === 0) return data;
+    var threshold = maxRms * (0.03 + sensitivity*0.12);
+    var minSilenceWindows = Math.max(2, Math.round((0.35 - sensitivity*0.2) * sampleRate / winSize));
+    var padWindows = 2;
+    var keepMask = new Array(windows.length).fill(true);
+    var i2 = 0;
+    while(i2 < windows.length){
+      if(windows[i2] < threshold){
+        var j = i2;
+        while(j < windows.length && windows[j] < threshold) j++;
+        var runLen = j - i2;
+        if(runLen >= minSilenceWindows){
+          var cutStart = i2 + padWindows, cutEnd = j - padWindows;
+          for(var k=cutStart;k<cutEnd;k++){ if(k>=0 && k<keepMask.length) keepMask[k] = false; }
+        }
+        i2 = j;
+      } else { i2++; }
+    }
+    var totalKeep = 0;
+    for(var m=0;m<windows.length;m++){ if(keepMask[m]) totalKeep += Math.min(winSize, data.length - m*winSize); }
+    var out = new Float32Array(totalKeep); var pos = 0;
+    for(var n=0;n<windows.length;n++){
+      if(keepMask[n]){
+        var start = n*winSize; var len = Math.min(winSize, data.length - start);
+        out.set(data.subarray(start, start+len), pos); pos += len;
+      }
+    }
+    return out.subarray(0,pos);
+  }
+
+  function denoise(data, sampleRate, strength){
+    var winSize = Math.floor(sampleRate*0.02);
+    var nWin = Math.ceil(data.length/winSize);
+    var levels = new Float32Array(nWin);
+    for(var i=0;i<nWin;i++){ levels[i] = rms(data, i*winSize, winSize); }
+    var sorted = Array.prototype.slice.call(levels).sort(function(a,b){return a-b;});
+    var noiseFloor = sorted[Math.floor(sorted.length*0.15)] || 0;
+    var gateThreshold = noiseFloor * (1.4 + strength*2.2);
+    var out = new Float32Array(data.length);
+    var currentGain = 1; var attack = 0.35, release = 0.06;
+    for(var w=0; w<nWin; w++){
+      var targetGain = levels[w] < gateThreshold ? Math.max(0, 1 - strength*0.9) : 1;
+      var start = w*winSize, end = Math.min(data.length, start+winSize);
+      for(var s=start; s<end; s++){
+        var rate = targetGain < currentGain ? attack : release;
+        currentGain += (targetGain - currentGain) * rate;
+        out[s] = data[s] * currentGain;
+      }
+    }
+    return out;
+  }
+
+  function applyGain(data, gain){
+    var out = new Float32Array(data.length);
+    for(var i=0;i<data.length;i++){ out[i] = Math.tanh(data[i]*gain*0.9); }
+    return out;
+  }
+
+  function midiToFreq(note){ return 440 * Math.pow(2, (note-69)/12); }
+
+  function renderMusic(presetId, durationSec, sampleRate){
+    var OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    var ctx = new OfflineCtx(1, Math.max(1,Math.ceil(durationSec*sampleRate)), sampleRate);
+    var master = ctx.createGain(); master.gain.value = 0.6; master.connect(ctx.destination);
+    function note(freq, startT, dur, type, gainVal){
+      var osc = ctx.createOscillator(); var g = ctx.createGain();
+      osc.type = type || 'sine'; osc.frequency.setValueAtTime(freq, startT);
+      g.gain.setValueAtTime(0, startT); g.gain.linearRampToValueAtTime(gainVal||0.2, startT+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, startT+dur);
+      osc.connect(g); g.connect(master); osc.start(startT); osc.stop(startT+dur+0.02);
+    }
+    function hit(startT, dur, gainVal){
+      var bufSize = Math.max(1,Math.floor(sampleRate*dur));
+      var buf = ctx.createBuffer(1, bufSize, sampleRate);
+      var d = buf.getChannelData(0);
+      for(var i=0;i<bufSize;i++){ d[i] = (Math.random()*2-1) * (1 - i/bufSize); }
+      var src = ctx.createBufferSource(); src.buffer = buf;
+      var g = ctx.createGain(); g.gain.setValueAtTime(gainVal||0.25, startT);
+      src.connect(g); g.connect(master); src.start(startT);
+    }
+    var scaleMajor = [60,62,64,65,67,69,71,72];
+    var scaleMinorish = [60,62,63,65,67,68,70,72];
+    var t;
+    if(presetId === 'happy'){
+      var seq = [0,2,4,2,5,4,2,0]; var beat = 0.28; t = 0;
+      while(t < durationSec){
+        for(var i=0;i<seq.length && t<durationSec;i++){
+          note(midiToFreq(scaleMajor[seq[i]]+12), t, beat*0.9, 'triangle', 0.22);
+          if(i%2===0) hit(t, 0.06, 0.12);
+          t += beat;
+        }
+      }
+    } else if(presetId === 'calm'){
+      var chordSets = [[60,64,67],[65,69,72],[62,65,69],[60,64,67]];
+      var chordDur = 2.2; t = 0; var ci=0;
+      while(t < durationSec){
+        var chord = chordSets[ci % chordSets.length];
+        chord.forEach(function(nn){ note(midiToFreq(nn), t, chordDur*1.6, 'sine', 0.09); });
+        t += chordDur; ci++;
+      }
+    } else if(presetId === 'space'){
+      var pattern = [0,3,5,7,5,3]; var beat2 = 0.22; t = 0;
+      while(t < durationSec){
+        for(var j=0;j<pattern.length && t<durationSec;j++){
+          note(midiToFreq(scaleMinorish[pattern[j]]+12), t, beat2*0.8, 'square', 0.14);
+          t += beat2;
+        }
+      }
+    } else {
+      var bassSeq = [0,0,3,0,4,0,3,0]; var beat3 = 0.3; t = 0; var idx=0;
+      while(t < durationSec){
+        hit(t, 0.12, 0.28);
+        if(idx%2===1) hit(t+beat3*0.5, 0.08, 0.16);
+        note(midiToFreq(scaleMinorish[bassSeq[idx%bassSeq.length]]), t, beat3*0.9, 'triangle', 0.18);
+        t += beat3; idx++;
+      }
+    }
+    return ctx.startRendering();
+  }
+
+  function loopToLength(shortData, targetLength){
+    var out = new Float32Array(targetLength);
+    var fadeLen = Math.min(shortData.length, 400, Math.floor(targetLength/2));
+    for(var i=0;i<targetLength;i++){ out[i] = shortData[i % shortData.length]; }
+    for(var f=0; f<fadeLen; f++){ out[f] *= f/fadeLen; out[targetLength-1-f] *= f/fadeLen; }
+    return out;
+  }
+  function mixMusic(voiceData, musicData, musicVolume){
+    var out = new Float32Array(voiceData.length);
+    var loopedMusic = loopToLength(musicData, voiceData.length);
+    for(var i=0;i<out.length;i++){ out[i] = Math.tanh(voiceData[i] + loopedMusic[i]*musicVolume); }
+    return out;
+  }
+
+  function formatTime(sec){
+    if(!isFinite(sec) || sec<0) sec = 0;
+    var m = Math.floor(sec/60); var s = Math.floor(sec%60);
+    return m + ':' + (s<10?'0':'') + s;
+  }
+
+  /* ================= WAVEFORM DRAWING ================= */
+  function drawWaveform(canvas, data, color){
+    if(!data || !data.length) return;
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    var w = Math.max(1, Math.floor(rect.width * dpr));
+    var h = Math.max(1, Math.floor(rect.height * dpr));
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    var step = Math.max(1, Math.ceil(data.length / w));
+    var amp = h/2;
+    ctx.fillStyle = color || 'rgba(27,107,120,.55)';
+    for(var i=0;i<w;i++){
+      var min=1.0, max=-1.0;
+      var base = i*step;
+      for(var j=0;j<step;j++){
+        var idx = base+j;
+        if(idx<data.length){ var v = data[idx]; if(v<min) min=v; if(v>max) max=v; }
+      }
+      if(min>max){ min=0; max=0; }
+      var y = (1+min)*amp;
+      var hh = Math.max(1,(max-min)*amp);
+      ctx.fillRect(i, y, 1, hh);
+    }
+  }
+
+  /* ================= PLAYBACK (shared) ================= */
+  var playerAudio = new Audio();
+  var currentPlayerCtx = null; // {canvas, playheadEl, playBtnIconEl, durationLabelEl, data}
+
+  function setupPlayer(data, canvas, playheadEl, playIconEl, durationLabelEl, color){
+    var blob = bufferToWavBlob(data, state.sampleRate);
+    var url = URL.createObjectURL(blob);
+    return {canvas:canvas, playheadEl:playheadEl, playIconEl:playIconEl, durationLabelEl:durationLabelEl, url:url, data:data, color:color};
+  }
+  function renderPlayerVisual(ctxObj){
+    drawWaveform(ctxObj.canvas, ctxObj.data, ctxObj.color);
+    var durSec = ctxObj.data.length / state.sampleRate;
+    if(ctxObj.durationLabelEl) ctxObj.durationLabelEl.textContent = formatTime(durSec);
+    if(ctxObj.playheadEl) ctxObj.playheadEl.style.left = '0px';
+  }
+  function stopPlayback(){
+    playerAudio.pause();
+    if(state.playRAF){ cancelAnimationFrame(state.playRAF); state.playRAF = null; }
+    if(currentPlayerCtx && currentPlayerCtx.playIconEl){
+      currentPlayerCtx.playIconEl.setAttribute('d','M8 5v14l11-7z');
+    }
+  }
+  function togglePlay(ctxObj){
+    if(currentPlayerCtx && currentPlayerCtx !== ctxObj){
+      stopPlayback();
+    }
+    currentPlayerCtx = ctxObj;
+    if(playerAudio.src !== ctxObj.url){ playerAudio.src = ctxObj.url; }
+    if(playerAudio.paused){
+      playerAudio.play();
+      ctxObj.playIconEl.setAttribute('d','M6 5h4v14H6zM14 5h4v14h-4z');
+      loopPlayhead();
+    } else {
+      playerAudio.pause();
+      ctxObj.playIconEl.setAttribute('d','M8 5v14l11-7z');
+      if(state.playRAF){ cancelAnimationFrame(state.playRAF); state.playRAF = null; }
+    }
+  }
+  playerAudio.addEventListener('ended', function(){
+    if(currentPlayerCtx){
+      currentPlayerCtx.playIconEl.setAttribute('d','M8 5v14l11-7z');
+      currentPlayerCtx.playheadEl.style.left = '0px';
+    }
+    if(state.playRAF){ cancelAnimationFrame(state.playRAF); state.playRAF = null; }
+  });
+  function loopPlayhead(){
+    if(!currentPlayerCtx) return;
+    var frac = playerAudio.duration ? (playerAudio.currentTime / playerAudio.duration) : 0;
+    var w = currentPlayerCtx.canvas.getBoundingClientRect().width;
+    currentPlayerCtx.playheadEl.style.left = (frac*w) + 'px';
+    if(!playerAudio.paused){
+      state.playRAF = requestAnimationFrame(loopPlayhead);
+    }
+  }
+
+  /* ================= RECORD STAGE ================= */
+  var recCtx = null; // {canvas, playheadEl, ...}
+  function initRecordUI(){
+    $('recordBtn').addEventListener('click', onRecordBtn);
+    $('reRecordBtn').addEventListener('click', resetToRecording);
+    $('continueBtn').addEventListener('click', function(){
+      playClink();
+      state.working = state.original.slice();
+      goToStep(0);
+    });
+    $('rawPlayBtn').addEventListener('click', function(){
+      if(!recCtx) return;
+      togglePlay(recCtx);
+    });
+    $('uploadBtn').addEventListener('click', function(){
+      $('fileInput').click();
+    });
+    $('fileInput').addEventListener('change', function(e){
+      var f = e.target.files && e.target.files[0];
+      if(f) handleFileUpload(f);
+      e.target.value = '';
+    });
+  }
+
+  function handleFileUpload(file){
+    if(!file) return;
+    stopPlayback();
+    setMascot('listening', "Let's take a listen to your file!");
+    $('recordBtnLabel').textContent = 'Tap to start recording';
+    file.arrayBuffer().then(function(ab){
+      return getCtx().decodeAudioData(ab);
+    }).then(function(audioBuffer){
+      state.sampleRate = audioBuffer.sampleRate;
+      var mono = downmix(audioBuffer);
+      state.original = mono;
+      state.working = mono.slice();
+      showRawPreview(mono);
+      setMascot('happy', "Nice pick! I can hear your sound clearly. Ready to make it shine?");
+      playSuccess();
+    }).catch(function(){
+      setMascot('worried', "Hmm, I couldn't read that file. Try a different audio file, like mp3 or wav!");
+      playOops();
+    });
+  }
+
+  var micAnalyser, micDataArray, micSourceNode;
+
+  function onRecordBtn(){
+    if(state.mediaRecorder && state.mediaRecorder.state === 'recording'){
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
+
+  function startRecording(){
+    getCtx();
+    navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:false, autoGainControl:false}})
+      .then(function(stream){
+        state.mediaStream = stream;
+        state.recordedChunks = [];
+        var mimeCandidates = ['audio/webm','audio/ogg','audio/mp4'];
+        var mimeType = '';
+        for(var i=0;i<mimeCandidates.length;i++){
+          if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(mimeCandidates[i])){ mimeType = mimeCandidates[i]; break; }
+        }
+        var options = mimeType ? {mimeType:mimeType} : undefined;
+        state.mediaRecorder = new MediaRecorder(stream, options);
+        state.mediaRecorder.ondataavailable = function(e){ if(e.data && e.data.size>0) state.recordedChunks.push(e.data); };
+        state.mediaRecorder.onstop = onRecordingStopped;
+        state.mediaRecorder.start();
+
+        var ctx = getCtx();
+        micSourceNode = ctx.createMediaStreamSource(stream);
+        micAnalyser = ctx.createAnalyser();
+        micAnalyser.fftSize = 1024;
+        micDataArray = new Float32Array(micAnalyser.fftSize);
+        micSourceNode.connect(micAnalyser);
+
+        state.recStartTime = Date.now();
+        updateRecordUIRecording(true);
+        runDistanceMeter();
+        recTick();
+      })
+      .catch(function(err){
+        setMascot('worried', "I can't hear anything! Please allow the microphone so we can record. 🎤");
+        $('recordBtnLabel').textContent = 'Microphone access needed';
+      });
+  }
+
+  function recTick(){
+    if(!state.mediaRecorder || state.mediaRecorder.state !== 'recording') return;
+    var elapsed = (Date.now() - state.recStartTime)/1000;
+    $('recordTimer').textContent = formatTime(elapsed);
+    state.recTimerHandle = setTimeout(recTick, 200);
+  }
+
+  function stopRecording(){
+    if(state.mediaRecorder && state.mediaRecorder.state === 'recording'){
+      state.mediaRecorder.stop();
+    }
+    if(state.mediaStream){
+      state.mediaStream.getTracks().forEach(function(t){ t.stop(); });
+    }
+    if(state.distRAF){ cancelAnimationFrame(state.distRAF); state.distRAF = null; }
+    if(state.recTimerHandle){ clearTimeout(state.recTimerHandle); state.recTimerHandle = null; }
+    updateRecordUIRecording(false);
+    $('distanceMeterWrap').style.display = 'none';
+  }
+
+  function onRecordingStopped(){
+    var blob = new Blob(state.recordedChunks, {type: state.mediaRecorder.mimeType || 'audio/webm'});
+    blob.arrayBuffer().then(function(ab){
+      return getCtx().decodeAudioData(ab);
+    }).then(function(audioBuffer){
+      state.sampleRate = audioBuffer.sampleRate;
+      var mono = downmix(audioBuffer);
+      state.original = mono;
+      state.working = mono.slice();
+      showRawPreview(mono);
+      setMascot('happy', "Great job! I can hear you loud and clear. Ready to make it shine?");
+      playSuccess();
+    }).catch(function(){
+      setMascot('worried', "Hmm, that recording didn't work. Let's try again!");
+    });
+  }
+
+  function downmix(audioBuffer){
+    var ch = audioBuffer.numberOfChannels;
+    var len = audioBuffer.length;
+    var out = new Float32Array(len);
+    for(var c=0;c<ch;c++){
+      var data = audioBuffer.getChannelData(c);
+      for(var i=0;i<len;i++){ out[i] += data[i]/ch; }
+    }
+    return out;
+  }
+
+  function updateRecordUIRecording(isRecording){
+    var btn = $('recordBtn');
+    btn.classList.toggle('recording', isRecording);
+    $('micRing1').classList.toggle('active', isRecording);
+    $('micRing2').classList.toggle('active', isRecording);
+    $('recordBtnLabel').textContent = isRecording ? 'Tap to stop' : 'Tap to start recording';
+    $('distanceMeterWrap').style.display = isRecording ? 'flex' : 'none';
+    $('uploadZone').style.display = isRecording ? 'none' : 'flex';
+    if(isRecording){
+      $('recordPreview').classList.remove('show');
+      $('recordTimer').textContent = '0:00';
+      setMascot('listening', "I'm listening! Talk, sing, or tell me a story!");
+    }
+  }
+
+  function runDistanceMeter(){
+    var smoothed = 0;
+    var lastLabelUpdate = 0;
+    function loop(){
+      if(!micAnalyser){ return; }
+      micAnalyser.getFloatTimeDomainData(micDataArray);
+      var sum = 0;
+      for(var i=0;i<micDataArray.length;i++){ sum += micDataArray[i]*micDataArray[i]; }
+      var level = Math.sqrt(sum/micDataArray.length);
+      smoothed = smoothed*0.85 + level*0.15;
+      var pct = Math.min(100, Math.round(smoothed*300));
+      $('distanceFill').style.width = pct + '%';
+
+      var now = Date.now();
+      if(now - lastLabelUpdate > 350){
+        lastLabelUpdate = now;
+        var label;
+        if(smoothed < 0.015) label = "I can barely hear you — come a little closer! 🐣";
+        else if(smoothed > 0.28) label = "Whoa, that's loud! Try backing away a bit. 🙉";
+        else label = "Perfect distance — sounding great! 🎯";
+        $('distanceLabel').textContent = label;
+      }
+      state.distRAF = requestAnimationFrame(loop);
+    }
+    loop();
+  }
+
+  function showRawPreview(data){
+    recCtx = setupPlayer(data, $('rawWaveCanvas'), $('rawPlayhead'), $('rawPlayIcon'), $('rawDurationLabel'), 'var(--wave-color-strong)');
+    $('recordPreview').classList.add('show');
+    setTimeout(function(){ renderPlayerVisual(recCtx); }, 30);
+  }
+
+  function resetToRecording(){
+    playClink();
+    stopPlayback();
+    $('recordPreview').classList.remove('show');
+    $('recordTimer').textContent = '';
+    $('recordBtnLabel').textContent = 'Tap to start recording';
+    setMascot('idle', "No worries! Let's record another take.");
+  }
+
+  /* ================= STAGE NAVIGATION ================= */
+  function showStage(name){
+    $('stageRecord').style.display = name === 'record' ? 'block' : 'none';
+    $('stageTool').style.display = name === 'tool' ? 'block' : 'none';
+    $('stageDone').style.display = name === 'done' ? 'block' : 'none';
+  }
+
+  function goToStep(index){
+    stopPlayback();
+    stopMusicPreview();
+    state.stepIndex = index;
+    updatePath();
+    if(index >= TOOL_STEPS.length){
+      showDoneStage();
+      return;
+    }
+    showStage('tool');
+    var key = TOOL_STEPS[index];
+    var meta = TOOL_META[key];
+    $('toolBadge').textContent = meta.badge;
+    $('toolTitle').textContent = meta.title;
+    $('toolInstruction').textContent = meta.instr;
+    $('hintMsg').textContent = '';
+    setMascot('idle', MASCOT_LINES[key]);
+    resetTrimUI();
+    state.stepEntryWorking = state.working.slice();
+    $('skipBtn').style.display = 'inline-flex';
+    $('applyBtn').style.display = 'inline-flex';
+    $('applyBtn').disabled = false;
+    $('redoBtn').style.display = 'none';
+    $('continueStepBtn').style.display = 'none';
+    renderToolBody(key);
+    refreshMainWave();
+  }
+
+  function refreshMainWave(){
+    var ctxObj = setupPlayer(state.working, $('waveCanvas'), $('playhead'), $('playIcon'), $('durationLabel'), 'var(--wave-color-strong)');
+    renderPlayerVisual(ctxObj);
+    $('playBtn').onclick = function(){ togglePlay(ctxObj); };
+  }
+
+  function resetTrimUI(){
+    $('trimHandleL').style.display = 'none';
+    $('trimHandleR').style.display = 'none';
+    $('trimShadeL').style.width = '0px';
+    $('trimShadeR').style.width = '0px';
+    state.trimStart = 0; state.trimEnd = 1;
+  }
+
+  function disableToolControls(disable){
+    var body = $('toolBody');
+    var inputs = body.querySelectorAll('input, button');
+    for(var i=0;i<inputs.length;i++){
+      inputs[i].disabled = disable;
+    }
+    $('trimHandleL').style.pointerEvents = disable ? 'none' : '';
+    $('trimHandleR').style.pointerEvents = disable ? 'none' : '';
+  }
+
+  /* ================= TOOL BODIES ================= */
+  function renderToolBody(key){
+    var body = $('toolBody');
+    body.innerHTML = '';
+    $('applyBtn').style.display = 'inline-flex';
+    $('applyBtn').textContent = 'Apply ✅';
+
+    if(key === 'clean'){
+      body.innerHTML =
+        '<div class="slider-row">'+
+          '<div class="slabel"><span>Gentle</span><span>Strong</span></div>'+
+          '<input type="range" id="cleanSlider" min="0" max="100" value="'+Math.round(state.denoiseStrength*100)+'">'+
+        '</div>';
+      $('applyBtn').onclick = function(){
+        var strength = parseInt($('cleanSlider').value,10)/100;
+        state.denoiseStrength = strength;
+        state.working = denoise(state.stepEntryWorking, state.sampleRate, strength);
+        finishStepApply("Nice and clean! ✨ Have a listen below.");
+      };
+    }
+
+    if(key === 'trim'){
+      $('trimHandleL').style.display = 'block';
+      $('trimHandleR').style.display = 'block';
+      setupTrimHandles();
+      $('applyBtn').textContent = 'Cut It! ✂️';
+      $('applyBtn').onclick = function(){
+        if(state.trimEnd - state.trimStart < 0.02){
+          $('hintMsg').textContent = "Keep at least a little bit of your recording!";
+          playOops();
+          return;
+        }
+        state.working = trimAudio(state.stepEntryWorking, state.trimStart, state.trimEnd);
+        finishStepApply("Snip snip! Clip trimmed. ✂️ Have a listen below.");
+      };
+    }
+
+    if(key === 'gaps'){
+      body.innerHTML =
+        '<div class="slider-row">'+
+          '<div class="slabel"><span>A little</span><span>A lot</span></div>'+
+          '<input type="range" id="gapsSlider" min="0" max="100" value="'+Math.round(state.silenceSensitivity*100)+'">'+
+        '</div>';
+      $('applyBtn').onclick = function(){
+        var sensitivity = parseInt($('gapsSlider').value,10)/100;
+        state.silenceSensitivity = sensitivity;
+        var before = state.stepEntryWorking.length;
+        state.working = desilence(state.stepEntryWorking, state.sampleRate, sensitivity);
+        var savedSec = ((before - state.working.length)/state.sampleRate).toFixed(1);
+        finishStepApply("Removed " + savedSec + "s of quiet gaps! ⏳ Have a listen below.");
+      };
+    }
+
+    if(key === 'music'){
+      var grid = document.createElement('div');
+      grid.className = 'preset-grid';
+      MUSIC_PRESETS.forEach(function(p){
+        var b = document.createElement('button');
+        b.className = 'preset-btn';
+        b.setAttribute('data-id', p.id);
+        b.innerHTML = '<span class="pemoji">'+p.emoji+'</span><span>'+p.name+'</span>';
+        b.addEventListener('click', function(){
+          playClink();
+          Array.prototype.forEach.call(grid.children, function(c){ c.classList.remove('selected'); });
+          b.classList.add('selected');
+          state.musicChoice = p.id;
+          previewMusic(p.id);
+        });
+        grid.appendChild(b);
+      });
+      var noneBtn = document.createElement('button');
+      noneBtn.className = 'preset-btn none-btn';
+      noneBtn.innerHTML = '<span class="pemoji">🚫</span><span>No music, thanks</span>';
+      noneBtn.addEventListener('click', function(){
+        playClink();
+        Array.prototype.forEach.call(grid.children, function(c){ c.classList.remove('selected'); });
+        state.musicChoice = null;
+        stopMusicPreview();
+      });
+      grid.appendChild(noneBtn);
+      body.appendChild(grid);
+
+      var volRow = document.createElement('div');
+      volRow.className = 'slider-row';
+      volRow.innerHTML = '<div class="slabel"><span>Quiet music</span><span>Loud music</span></div>'+
+        '<input type="range" id="musicVolSlider" min="5" max="80" value="'+Math.round(state.musicVolume*100)+'">';
+      body.appendChild(volRow);
+
+      $('applyBtn').onclick = function(){
+        stopMusicPreview();
+        state.musicVolume = parseInt($('musicVolSlider').value,10)/100;
+        if(!state.musicChoice){
+          state.working = state.stepEntryWorking.slice();
+          finishStepApply("Okay, keeping it plain and simple!");
+          return;
+        }
+        $('applyBtn').disabled = true;
+        $('hintMsg').textContent = "Mixing your music in...";
+        var durationSec = state.stepEntryWorking.length / state.sampleRate;
+        var musicDur = Math.min(8, Math.max(3, durationSec));
+        renderMusic(state.musicChoice, musicDur, state.sampleRate).then(function(buf){
+          var musicData = buf.getChannelData(0);
+          state.working = mixMusic(state.stepEntryWorking, musicData, state.musicVolume);
+          finishStepApply("Ta-da! Music added. 🎵 Have a listen below.");
+        });
+      };
+    }
+
+    if(key === 'volume'){
+      body.innerHTML =
+        '<div class="slider-row">'+
+          '<div class="slabel"><span>Quieter</span><span>Louder</span></div>'+
+          '<input type="range" id="volSlider" min="20" max="300" value="'+Math.round(state.volumeGain*100)+'">'+
+        '</div>';
+      $('applyBtn').onclick = function(){
+        var gain = parseInt($('volSlider').value,10)/100;
+        state.volumeGain = gain;
+        state.working = applyGain(state.stepEntryWorking, gain);
+        finishStepApply("Volume adjusted! 🔊 Have a listen below.");
+      };
+    }
+  }
+
+  function finishStepApply(message){
+    playSuccess();
+    state.stepsDone += 1;
+    $('stepsDoneCount').textContent = state.stepsDone;
+    $('hintMsg').textContent = message;
+    setMascot('happy', message);
+    burstConfetti(18);
+    refreshMainWave();
+    $('skipBtn').style.display = 'none';
+    $('applyBtn').style.display = 'none';
+    $('redoBtn').style.display = 'inline-flex';
+    $('continueStepBtn').style.display = 'inline-flex';
+    disableToolControls(true);
+  }
+
+  $('skipBtn').addEventListener('click', function(){
+    playClink();
+    stopMusicPreview();
+    goToStep(state.stepIndex + 1);
+  });
+
+  $('redoBtn').addEventListener('click', function(){
+    playClink();
+    stopPlayback();
+    stopMusicPreview();
+    state.working = state.stepEntryWorking.slice();
+    state.stepsDone = Math.max(0, state.stepsDone - 1);
+    $('stepsDoneCount').textContent = state.stepsDone;
+    $('hintMsg').textContent = '';
+    var key = TOOL_STEPS[state.stepIndex];
+    setMascot('idle', MASCOT_LINES[key]);
+    $('skipBtn').style.display = 'inline-flex';
+    $('applyBtn').style.display = 'inline-flex';
+    $('applyBtn').disabled = false;
+    $('redoBtn').style.display = 'none';
+    $('continueStepBtn').style.display = 'none';
+    disableToolControls(false);
+    resetTrimUI();
+    renderToolBody(key);
+    refreshMainWave();
+  });
+
+  $('continueStepBtn').addEventListener('click', function(){
+    playClink();
+    goToStep(state.stepIndex + 1);
+  });
+
+  /* ================= TRIM HANDLES ================= */
+  function setupTrimHandles(){
+    var wrap = $('waveWrap');
+    var hl = $('trimHandleL'), hr = $('trimHandleR');
+    hl.style.left = '0%'; hr.style.left = '100%';
+    updateTrimShades();
+    bindDrag(hl, function(fracX){
+      state.trimStart = Math.min(fracX, state.trimEnd - 0.01);
+      state.trimStart = Math.max(0, state.trimStart);
+      hl.style.left = (state.trimStart*100) + '%';
+      updateTrimShades();
+    });
+    bindDrag(hr, function(fracX){
+      state.trimEnd = Math.max(fracX, state.trimStart + 0.01);
+      state.trimEnd = Math.min(1, state.trimEnd);
+      hr.style.left = (state.trimEnd*100) + '%';
+      updateTrimShades();
+    });
+  }
+  function updateTrimShades(){
+    var wrap = $('waveWrap');
+    var w = wrap.getBoundingClientRect().width;
+    $('trimShadeL').style.width = (state.trimStart*w) + 'px';
+    $('trimShadeR').style.width = ((1-state.trimEnd)*w) + 'px';
+  }
+  function bindDrag(handle, onMove){
+    var wrap = $('waveWrap');
+    function pointerMove(e){
+      var rect = wrap.getBoundingClientRect();
+      var clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+      var frac = (clientX - rect.left) / rect.width;
+      frac = Math.max(0, Math.min(1, frac));
+      onMove(frac);
+    }
+    function pointerUp(){
+      document.removeEventListener('mousemove', pointerMove);
+      document.removeEventListener('mouseup', pointerUp);
+      document.removeEventListener('touchmove', pointerMove);
+      document.removeEventListener('touchend', pointerUp);
+    }
+    handle.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      document.addEventListener('mousemove', pointerMove);
+      document.addEventListener('mouseup', pointerUp);
+    });
+    handle.addEventListener('touchstart', function(e){
+      document.addEventListener('touchmove', pointerMove, {passive:false});
+      document.addEventListener('touchend', pointerUp);
+    }, {passive:true});
+  }
+
+  /* ================= MUSIC PREVIEW ================= */
+  var previewSourceNode = null;
+  function previewMusic(presetId){
+    stopMusicPreview();
+    renderMusic(presetId, 3, getCtx().sampleRate).then(function(buf){
+      var ctx = getCtx();
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      var g = ctx.createGain();
+      g.gain.value = 0.5;
+      src.connect(g); g.connect(ctx.destination);
+      src.start();
+      previewSourceNode = src;
+    });
+  }
+  function stopMusicPreview(){
+    if(previewSourceNode){
+      try{ previewSourceNode.stop(); }catch(e){}
+      previewSourceNode = null;
+    }
+  }
+
+  /* ================= DONE STAGE ================= */
+  var doneCtx = null;
+  function showDoneStage(){
+    showStage('done');
+    doneCtx = setupPlayer(state.working, $('doneWaveCanvas'), $('donePlayhead'), $('donePlayIcon'), $('doneDurationLabel'), 'var(--wave-color-strong)');
+    renderPlayerVisual(doneCtx);
+    $('donePlayBtn').onclick = function(){ togglePlay(doneCtx); };
+    setMascot('happy', "You did it! Your sound is ready to download and share!");
+    burstConfetti(48);
+  }
+
+  $('downloadBtn').addEventListener('click', function(){
+    playClink();
+    var blob = bufferToWavBlob(state.working, state.sampleRate);
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-sound-studio-clip.wav';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  });
+
+  $('startOverBtn').addEventListener('click', function(){
+    playClink();
+    stopPlayback();
+    state.stepIndex = -1;
+    state.stepsDone = 0;
+    state.musicChoice = null;
+    state.volumeGain = 1.0;
+    state.denoiseStrength = 0.5;
+    state.silenceSensitivity = 0.5;
+    $('stepsDoneCount').textContent = '0';
+    updatePath();
+    showStage('record');
+    resetToRecording();
+    $('recordTimer').textContent = '';
+  });
+
+  /* ================= CONFETTI ================= */
+  var confettiColors = ['#f2555a','#ffd85c','#4fc98a','#4aa8e0','#a679e0','#ff8fc0'];
+  function burstConfetti(count){
+    count = count || 30;
+    var layer = $('confettiLayer');
+    for(var i=0;i<count;i++){
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      var size = 6 + Math.random()*8;
+      p.style.width = size + 'px';
+      p.style.height = (size*0.6) + 'px';
+      p.style.left = (Math.random()*100) + 'vw';
+      p.style.background = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+      var dur = 2.2 + Math.random()*1.6;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random()*0.3) + 's';
+      layer.appendChild(p);
+      (function(node, life){ setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, (life+0.5)*1000); })(p, dur);
+    }
+  }
+
+  /* ================= TOP BAR ================= */
+  $('muteBtn').addEventListener('click', function(){
+    state.muted = !state.muted;
+    $('muteBtn').textContent = state.muted ? '🔇' : '🔊';
+  });
+
+  /* ================= INIT ================= */
+  buildPath();
+  initRecordUI();
+  setMascot('idle');
+  showStage('record');
+  updatePath();
+
+  window.addEventListener('resize', function(){
+    if(state.stepIndex === -1 && recCtx) renderPlayerVisual(recCtx);
+    else if(state.stepIndex >= 0 && state.stepIndex < TOOL_STEPS.length && state.working){
+      drawWaveform($('waveCanvas'), state.working, 'var(--wave-color-strong)');
+      updateTrimShades();
+    } else if(doneCtx){ renderPlayerVisual(doneCtx); }
+  });
+
+})();
+</script>
+</body>
+</html>
