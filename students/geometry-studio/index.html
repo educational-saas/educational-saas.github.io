@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geometry Studio</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root, html[data-theme="light"] {
+      color-scheme: light;
+
+      --teal-900:#0d2b30;
+      --teal-800:#123c43;
+      --teal-700:#1b6e78;
+      --teal-600:#2f8b96;
+      --teal-100:#e5f4f5;
+      --gold-600:#c9860f;
+      --gold-500:#e2a530;
+      --gold-400:#f0c168;
+      --gold-100:#fbeed7;
+      --cream:#faf8f4;
+      --ink-900:#1a2422;
+      --ink-500:#5f7371;
+      --white:#ffffff;
+
+      --bg-tint-gold: rgba(226,165,48,.10);
+      --bg-tint-teal: rgba(27,110,120,.08);
+      --border-card: rgba(13,43,48,.10);
+      --border-card-hover: rgba(201,134,15,.35);
+
+      --shadow-card: 0 18px 36px -22px rgba(13,43,48,.25);
+      --shadow-card-hover: 0 22px 44px -18px rgba(13,43,48,.30);
+
+      --error-color:#c0392b;
+      --error-bg:#e0645a;
+      --error-hover:#c94f45;
+      --accent-button-text: var(--teal-900);
+      --scrollbar-thumb: rgba(13,43,48,.25);
+
+      --canvas-bg:#fffdf8;
+      --canvas-grid: rgba(13,43,48,.14);
+
+      --z-header: 10;
+    }
+
+    html[data-theme="dark"]{
+      color-scheme: dark;
+
+      --teal-900:#092227;
+      --teal-800:#8fe1ec;
+      --teal-700:#5fd0de;
+      --teal-600:#7fdbe6;
+      --teal-100:#173338;
+      --gold-600:#ffb648;
+      --gold-500:#ffc65c;
+      --gold-400:#ffd685;
+      --gold-100:#2b2110;
+      --cream:#0d1517;
+      --ink-900:#eef3f2;
+      --ink-500:#a4b6b7;
+      --white:#182425;
+
+      --bg-tint-gold: rgba(255,182,72,.07);
+      --bg-tint-teal: rgba(95,208,222,.10);
+      --border-card: rgba(255,255,255,.08);
+      --border-card-hover: rgba(255,198,92,.4);
+
+      --shadow-card: 0 18px 40px -22px rgba(0,0,0,.55);
+      --shadow-card-hover: 0 24px 50px -18px rgba(0,0,0,.65);
+
+      --error-color:#ff6b5e;
+      --error-bg:#a13c34;
+      --error-hover:#b8483e;
+      --accent-button-text: #0d1517;
+      --scrollbar-thumb: rgba(255,255,255,.18);
+
+      /* Paper stays light even in dark mode -- it's the drawing surface */
+      --canvas-bg:#fffdf8;
+      --canvas-grid: rgba(13,43,48,.14);
+
+      --z-header: 10;
+    }
+
+    *,*::before,*::after{ box-sizing:border-box; }
+    html{ scroll-behavior:smooth; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+      transition: background .3s ease, color .3s ease, border-color .3s ease;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--ink-900);
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border-card);
+      padding: 14px 18px;
+      z-index: var(--z-header);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--ink-900);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header h1 i { color: var(--gold-500); }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border-card);
+      color: var(--ink-900);
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background .2s ease, border-color .2s ease, transform .2s ease;
+    }
+    .icon-btn:hover {
+      background: var(--bg-tint-gold);
+      border-color: var(--border-card-hover);
+      transform: scale(1.05);
+    }
+
+    /* Main Content Area */
+    .main-content { display: flex; flex: 1; overflow: hidden; }
+
+    /* Toolbar */
+    .toolbar {
+      background: var(--white);
+      border-right: 1px solid var(--border-card);
+      padding: 18px;
+      width: 280px;
+      overflow-y: auto;
+      transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease, max-height 0.3s ease;
+      opacity: 1;
+      flex-shrink: 0;
+    }
+    .toolbar::-webkit-scrollbar { width: 6px; }
+    .toolbar::-webkit-scrollbar-track { background: transparent; }
+    .toolbar::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; }
+
+    @media (min-width: 769px) {
+      .main-content.toolbar-hidden .toolbar {
+        width: 0;
+        padding-left: 0;
+        padding-right: 0;
+        opacity: 0;
+        overflow: hidden;
+      }
+    }
+
+    .tool-section { margin-bottom: 25px; }
+    .tool-section h3 {
+      color: var(--ink-500);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tool-section h3 i { color: var(--gold-500); }
+
+    .tool-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .tool-btn {
+      background: var(--cream);
+      border: 1px solid var(--border-card);
+      color: var(--ink-900);
+      padding: 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .tool-btn i { font-size: 1.4rem; color: var(--teal-700); }
+    .tool-btn:hover {
+      background: var(--bg-tint-teal);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card);
+    }
+    .tool-btn.active {
+      background: var(--gold-500);
+      color: var(--accent-button-text);
+      border-color: var(--gold-500);
+    }
+    .tool-btn.active i { color: var(--accent-button-text); }
+
+    .templates-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .template-btn {
+      background: var(--cream);
+      border: 1px solid var(--border-card);
+      color: var(--ink-900);
+      padding: 12px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .template-btn i { font-size: 1.1rem; color: var(--teal-700); width: 18px; text-align: center; }
+    .template-btn:hover {
+      background: var(--gold-500);
+      color: var(--accent-button-text);
+      transform: translateX(4px);
+    }
+    .template-btn:hover i { color: var(--accent-button-text); }
+
+    /* Canvas Area */
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--cream);
+      overflow: hidden;
+    }
+    .canvas-controls {
+      background: var(--white);
+      border-bottom: 1px solid var(--border-card);
+      padding: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .control-btn {
+      background: var(--cream);
+      border: 1px solid var(--border-card);
+      color: var(--ink-900);
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control-btn:hover {
+      background: var(--gold-500);
+      color: var(--accent-button-text);
+      transform: scale(1.03);
+    }
+    .control-btn.danger { background: var(--error-bg); color: #fff; border-color: var(--error-bg); }
+    .control-btn.danger:hover { background: var(--error-hover); border-color: var(--error-hover); }
+
+    .canvas-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 16px;
+      box-shadow: var(--shadow-card);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-card);
+    }
+    #canvas {
+      background: var(--canvas-bg);
+      cursor: crosshair;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Info Panel */
+    .info-panel {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: var(--white);
+      border: 1px solid var(--border-card);
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: var(--shadow-card-hover);
+      z-index: 100;
+      min-width: 200px;
+    }
+    .info-panel h4 {
+      font-family: 'Fraunces', serif;
+      color: var(--gold-600);
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .info-panel p { color: var(--ink-500); font-size: 0.85rem; margin: 4px 0; }
+
+    /* Tooltip */
+    .tooltip {
+      position: fixed;
+      background: var(--ink-900);
+      color: var(--cream);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      box-shadow: var(--shadow-card);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .toolbar {
+        width: 100%;
+        max-height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border-card);
+        transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease, border-width 0.3s ease;
+      }
+      .main-content.toolbar-hidden .toolbar {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        opacity: 0;
+        overflow: hidden;
+        border-bottom-width: 0;
+      }
+      .main-content { flex-direction: column; }
+      .header h1 { font-size: 1.1rem; }
+      .canvas-wrapper { margin: 8px; }
+      .info-panel { bottom: 8px; right: 8px; left: 8px; }
+    }
+
+    /* Color Picker -- literal swatch colors are the user's drawing palette, not themed */
+    .color-picker-wrapper { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+    .color-option:hover { transform: scale(1.15); }
+    .color-option.active {
+      border-color: var(--gold-500);
+      box-shadow: 0 0 0 2px var(--white);
+    }
+
+    /* Slider */
+    .slider-wrapper { margin-top: 12px; }
+    .slider-wrapper label { color: var(--ink-500); font-size: 0.85rem; display: block; margin-bottom: 6px; }
+    input[type="range"] {
+      width: 100%;
+      height: 5px;
+      border-radius: 5px;
+      background: var(--border-card);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--gold-500);
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--gold-500);
+      cursor: pointer;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <h1><i class="fas fa-drafting-compass"></i> Construction Studio</h1>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="toggle-toolbar-btn" title="Toggle Toolbar">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </div>
+    <div class="main-content">
+      <div class="toolbar">
+        <div class="tool-section">
+          <h3><i class="fas fa-tools"></i>Drawing Tools</h3>
+          <div class="tool-grid">
+            <button class="tool-btn" onclick="selectTool('pencil')" data-tool="pencil">
+              <i class="fas fa-pencil-alt"></i>
+              <span>Pencil</span>
+            </button>
+            <button class="tool-btn" onclick="selectTool('line')" data-tool="line">
+              <i class="fas fa-minus"></i>
+              <span>Line</span>
+            </button>
+            <button class="tool-btn" onclick="selectTool('ruler')" data-tool="ruler">
+              <i class="fas fa-ruler"></i>
+              <span>Ruler</span>
+            </button>
+            <button class="tool-btn" onclick="selectTool('compass')" data-tool="compass">
+              <i class="fas fa-compass"></i>
+              <span>Compass</span>
+            </button>
+            <button class="tool-btn" onclick="selectTool('protractor')" data-tool="protractor">
+              <i class="fas fa-angle-right"></i>
+              <span>Protractor</span>
+            </button>
+            <button class="tool-btn" onclick="selectTool('eraser')" data-tool="eraser">
+              <i class="fas fa-eraser"></i>
+              <span>Eraser</span>
+            </button>
+          </div>
+        </div>
+        <div class="tool-section">
+          <h3><i class="fas fa-palette"></i>Line Color</h3>
+          <div class="color-picker-wrapper">
+            <div class="color-option active" style="background: #2196F3" onclick="selectColor(event, '#2196F3')"></div>
+            <div class="color-option" style="background: #000000" onclick="selectColor(event, '#000000')"></div>
+            <div class="color-option" style="background: #FF5722" onclick="selectColor(event, '#FF5722')"></div>
+            <div class="color-option" style="background: #4CAF50" onclick="selectColor(event, '#4CAF50')"></div>
+            <div class="color-option" style="background: #9C27B0" onclick="selectColor(event, '#9C27B0')"></div>
+            <div class="color-option" style="background: #FF9800" onclick="selectColor(event, '#FF9800')"></div>
+          </div>
+        </div>
+        <div class="tool-section">
+          <h3><i class="fas fa-sliders-h"></i>Line Thickness</h3>
+          <div class="slider-wrapper">
+            <label>Thickness: <span id="thickness-value">2</span>px</label>
+            <input type="range" min="1" max="10" value="2" id="thickness-slider" oninput="updateThickness(this.value)">
+          </div>
+        </div>
+        <div class="tool-section">
+          <h3><i class="fas fa-shapes"></i>Quick Templates</h3>
+          <div class="templates-grid">
+            <button class="template-btn" onclick="drawTemplate('triangle')">
+              <i class="fas fa-play"></i>
+              <span>Equilateral Triangle</span>
+            </button>
+            <button class="template-btn" onclick="drawTemplate('square')">
+              <i class="fas fa-square"></i>
+              <span>Square</span>
+            </button>
+            <button class="template-btn" onclick="drawTemplate('pentagon')">
+              <i class="fas fa-stop"></i>
+              <span>Pentagon</span>
+            </button>
+            <button class="template-btn" onclick="drawTemplate('hexagon')">
+              <i class="fas fa-hexagon"></i>
+              <span>Hexagon</span>
+            </button>
+            <button class="template-btn" onclick="drawTemplate('angle60')">
+              <i class="fas fa-angle-right"></i>
+              <span>60&deg; Angle</span>
+            </button>
+            <button class="template-btn" onclick="drawTemplate('perpendicular')">
+              <i class="fas fa-plus"></i>
+              <span>Perpendicular Lines</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-area">
+        <div class="canvas-controls">
+          <button class="control-btn" onclick="toggleGrid()">
+            <i class="fas fa-th"></i>
+            <span>Toggle Grid</span>
+          </button>
+          <button class="control-btn" onclick="undo()">
+            <i class="fas fa-undo"></i>
+            <span>Undo</span>
+          </button>
+          <button class="control-btn" onclick="downloadCanvas()">
+            <i class="fas fa-download"></i>
+            <span>Save</span>
+          </button>
+          <button class="control-btn danger" onclick="clearCanvas(true)">
+            <i class="fas fa-trash"></i>
+            <span>Clear All</span>
+          </button>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas id="canvas"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="info-panel" id="info-panel">
+      <h4>Tool Selected</h4>
+      <p id="tool-info">Select a tool to begin</p>
+      <p id="instruction-info"></p>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('tooltip');
+    const canvasWrapper = document.querySelector('.canvas-wrapper');
+    const toggleBtn = document.getElementById('toggle-toolbar-btn');
+    const mainContent = document.querySelector('.main-content');
+
+    let currentTool = 'pencil';
+    let isDrawing = false;
+    let startX, startY;
+    let currentColor = '#2196F3';
+    let lineThickness = 2;
+    let showGrid = true;
+    let history = [];
+    let compassCenter = null;
+    let compassRadius = 0;
+
+    // Initialize
+    resizeCanvas();
+    saveState();
+    selectTool('pencil');
+
+    // Toolbar Toggle Listener
+    toggleBtn.addEventListener('click', () => {
+        mainContent.classList.toggle('toolbar-hidden');
+        setTimeout(resizeCanvas, 300);
+    });
+
+    // Resize Canvas Function
+    function resizeCanvas() {
+        const rect = canvasWrapper.getBoundingClientRect();
+        if (canvas.width !== rect.width || canvas.height !== rect.height) {
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            redrawCanvas();
+        }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Helper function to get coordinates from mouse or touch event
+    function getEventCoords(e) {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    // Tool selection
+    function selectTool(tool) {
+        currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+
+        const toolInfo = {
+            'pencil': 'Draw freehand lines',
+            'line': 'Draw straight lines',
+            'ruler': 'Draw measured lines with length display',
+            'compass': 'Draw circles',
+            'protractor': 'Measure and draw angles',
+            'eraser': 'Remove drawings'
+        };
+
+        const instructions = {
+            'pencil': 'Click/touch and drag to draw',
+            'line': 'Click/touch start point, then drag to end point',
+            'ruler': 'Click/touch start point, then drag to end point',
+            'compass': 'Click/touch center, then drag to set radius',
+            'protractor': 'Click/touch vertex, then drag for angle',
+            'eraser': 'Click/touch and drag to erase'
+        };
+
+        document.getElementById('tool-info').textContent = toolInfo[tool];
+        document.getElementById('instruction-info').textContent = instructions[tool];
+    }
+
+    // Color selection
+    function selectColor(event, color) {
+        currentColor = color;
+        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    // Thickness update
+    function updateThickness(value) {
+        lineThickness = parseInt(value);
+        document.getElementById('thickness-value').textContent = value;
+    }
+
+    // Grid drawing
+    function drawGrid() {
+        if (!showGrid) return;
+
+        ctx.save();
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-grid');
+        ctx.lineWidth = 0.5;
+
+        const gridSize = 20;
+        for (let x = 0; x <= canvas.width; x += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+
+        for (let y = 0; y <= canvas.height; y += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function toggleGrid() {
+        showGrid = !showGrid;
+        redrawCanvas();
+    }
+
+    // Canvas event listeners
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('mousemove', updateTooltip);
+    canvas.addEventListener('mouseout', () => { tooltip.style.display = 'none'; });
+
+    // Touch event listeners
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+    canvas.addEventListener('touchmove', updateTooltip);
+
+    function startDrawing(e) {
+        if (e.type.startsWith('touch')) {
+            e.preventDefault();
+        }
+
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+
+        const coords = getEventCoords(e);
+        startX = coords.x - rect.left;
+        startY = coords.y - rect.top;
+
+        if (currentTool === 'pencil') {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+        }
+        else if (currentTool === 'compass') {
+            compassCenter = {x: startX, y: startY};
+            compassRadius = 0;
+        }
+    }
+
+    function draw(e) {
+        if (e.type.startsWith('touch')) {
+            e.preventDefault();
+        }
+
+        if (!isDrawing) return;
+
+        const rect = canvas.getBoundingClientRect();
+
+        const coords = getEventCoords(e);
+        const currentX = coords.x - rect.left;
+        const currentY = coords.y - rect.top;
+
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = lineThickness;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (currentTool === 'pencil') {
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+        } else if (currentTool === 'eraser') {
+            ctx.clearRect(currentX - lineThickness * 2, currentY - lineThickness * 2,
+                         lineThickness * 4, lineThickness * 4);
+        } else if (currentTool === 'compass' && compassCenter) {
+            redrawCanvas();
+            compassRadius = Math.sqrt(
+                Math.pow(currentX - compassCenter.x, 2) +
+                Math.pow(currentY - compassCenter.y, 2)
+            );
+            ctx.beginPath();
+            ctx.arc(compassCenter.x, compassCenter.y, compassRadius, 0, Math.PI * 2);
+            ctx.stroke();
+        } else if (currentTool === 'line' || currentTool === 'ruler') {
+            redrawCanvas();
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+
+            if (currentTool === 'ruler') {
+                const distance = Math.sqrt(
+                    Math.pow(currentX - startX, 2) +
+                    Math.pow(currentY - startY, 2)
+                ).toFixed(1);
+                ctx.fillStyle = currentColor;
+                ctx.font = '14px Manrope';
+                ctx.fillText(`${distance}px`, (startX + currentX) / 2, (startY + currentY) / 2 - 10);
+            }
+        } else if (currentTool === 'protractor') {
+            redrawCanvas();
+            const angle = Math.atan2(currentY - startY, currentX - startX);
+            const degrees = (angle * 180 / Math.PI);
+            const positiveDegrees = (degrees < 0 ? degrees + 360 : degrees).toFixed(1);
+            const lineLength = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+            const radius = Math.min(50, lineLength);
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX + lineLength, startY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(startX, startY, radius, 0, angle);
+            ctx.stroke();
+
+            ctx.fillStyle = currentColor;
+            ctx.font = '16px Manrope';
+            ctx.fillText(`${positiveDegrees}°`, startX + radius + 10, startY + (angle > 0 ? 20 : -10));
+        }
+    }
+
+    function stopDrawing(e) {
+        if (e && e.type.startsWith('touch')) {
+            e.preventDefault();
+            tooltip.style.display = 'none';
+        }
+
+        if (isDrawing) {
+            isDrawing = false;
+            compassCenter = null;
+            saveState();
+        }
+    }
+
+    // State management
+    function saveState() {
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        if (history.length > 20) {
+            history.shift();
+        }
+    }
+
+    function undo() {
+        if (history.length > 1) {
+            history.pop();
+            const lastState = history[history.length - 1];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            ctx.putImageData(lastState, 0, 0);
+        } else if (history.length === 1) {
+            history.pop();
+            clearCanvas(false);
+        }
+    }
+
+    function redrawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+
+        if (history.length > 0) {
+            const lastState = history[history.length - 1];
+            ctx.putImageData(lastState, 0, 0);
+        }
+    }
+
+    // Canvas controls
+    function clearCanvas(save = true) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        if (save) {
+            history = [];
+            saveState();
+        }
+    }
+
+    function downloadCanvas() {
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg');
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        const link = document.createElement('a');
+        link.download = 'construction.png';
+        link.href = canvas.toDataURL();
+        link.click();
+
+        redrawCanvas();
+    }
+
+    // Template drawing
+    function drawTemplate(template) {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const size = 100;
+
+        redrawCanvas();
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = lineThickness;
+        ctx.beginPath();
+
+        switch(template) {
+            case 'triangle':
+                const h = size * (Math.sqrt(3)/2);
+                ctx.moveTo(cx, cy - h / 1.5);
+                ctx.lineTo(cx - size / 2, cy + h / 3);
+                ctx.lineTo(cx + size / 2, cy + h / 3);
+                ctx.closePath();
+                break;
+            case 'square':
+                ctx.rect(cx - size / 2, cy - size / 2, size, size);
+                break;
+            case 'pentagon':
+                drawPolygon(ctx, cx, cy, 5, size / 1.5);
+                break;
+            case 'hexagon':
+                drawPolygon(ctx, cx, cy, 6, size / 1.5);
+                break;
+            case 'angle60':
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + size, cy);
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + size * Math.cos(Math.PI / 3), cy - size * Math.sin(Math.PI / 3));
+                ctx.arc(cx, cy, 30, 0, -Math.PI / 3, true);
+                break;
+            case 'perpendicular':
+                ctx.moveTo(cx - size, cy);
+                ctx.lineTo(cx + size, cy);
+                ctx.moveTo(cx, cy - size);
+                ctx.lineTo(cx, cy + size);
+                break;
+        }
+        ctx.stroke();
+        saveState();
+    }
+
+    function drawPolygon(ctx, cx, cy, sides, radius) {
+        const angle = (Math.PI * 2) / sides;
+        ctx.moveTo(cx + radius * Math.cos(-Math.PI / 2), cy + radius * Math.sin(-Math.PI / 2));
+        for (let i = 1; i <= sides; i++) {
+            ctx.lineTo(cx + radius * Math.cos(angle * i - Math.PI / 2), cy + radius * Math.sin(angle * i - Math.PI / 2));
+        }
+    }
+
+    // Tooltip
+    function updateTooltip(e) {
+        if (e.type.startsWith('touch')) {
+            e.preventDefault();
+        }
+
+        const coords = getEventCoords(e);
+
+        const rect = canvas.getBoundingClientRect();
+        const x = (coords.x - rect.left).toFixed(0);
+        const y = (coords.y - rect.top).toFixed(0);
+
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${coords.x + 15}px`;
+        tooltip.style.top = `${coords.y + 15}px`;
+        tooltip.textContent = `X: ${x}, Y: ${y}`;
+    }
+  </script>
+</body>
+</html>
