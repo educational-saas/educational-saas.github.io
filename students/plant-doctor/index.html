@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Plant Doctor 🌱 — Heal &amp; Grow!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- Kid-friendly accents ---------- */
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    /* ---------- Plant Doctor semantic tokens ---------- */
+    --plum:var(--ink-900);
+    --ink-soft:var(--ink-500);
+    --leaf-green:#4fb673;
+    --leaf-green-dark:#2f8c53;
+    --leaf-yellow:#e8d24a;
+    --soil-moist:#5b3a24;
+    --soil-dry:#c9a876;
+    --pot-body:#c96a3e;
+    --pot-rim:#a8502b;
+    --water-blue:#4aa8e0;
+    --bug-brown:#7a4a2b;
+    --stone-locked: var(--teal-100);
+    --stone-locked-ink: var(--ink-500);
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --leaf-green-dark:#256e40; --soil-moist:#3a2416;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--plum);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+    user-select:none;
+  }
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--gold-500) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.35);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .leaf-drift{position:absolute;opacity:.4;font-size:26px;animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(140deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--plum);
+  }
+  .brand .mascot-mini{font-size:1.3em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .score-counter{
+    display:flex;align-items:center;gap:8px;
+    background:var(--white);border:3px solid var(--leaf-green);
+    border-radius:999px;padding:8px 16px;
+    font-weight:800;font-size:17px;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    color:var(--plum);transition:transform .18s ease;
+  }
+  .score-counter.bump{animation:bump .4s ease;}
+  @keyframes bump{0%,100%{transform:scale(1);}40%{transform:scale(1.16);}}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- path of stepping stones ---------- */
+  .path-wrap{
+    position:relative;z-index:2;
+    margin:6px auto 10px;max-width:1000px;
+    overflow-x:auto;overflow-y:hidden;
+    padding:14px 18px 22px;
+  }
+  .path{
+    display:flex;align-items:flex-end;gap:14px;min-width:max-content;padding:0 6px;
+    position:relative;
+  }
+  .path::before{
+    content:"";position:absolute;left:0;right:0;top:50%;height:0;
+    border-top:5px dashed var(--border-card);z-index:0;
+  }
+  .stone{
+    position:relative;z-index:1;
+    width:46px;height:46px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:700;font-size:16px;
+    background:var(--stone-locked);color:var(--stone-locked-ink);
+    border:4px solid var(--white);box-shadow:0 4px 0 var(--edge-shadow-soft);
+    flex:0 0 auto;transition:transform .2s ease, background .2s ease;
+  }
+  .stone:nth-child(odd){transform:translateY(-6px);}
+  .stone:nth-child(even){transform:translateY(6px);}
+  .stone.done{background:var(--leaf-green);color:#fff;}
+  .stone.current{background:var(--gold-500);color:#5a3c00;transform:translateY(-6px) scale(1.18);box-shadow:0 0 0 5px rgba(245,166,35,.35), 0 4px 0 var(--edge-shadow-soft);animation:stonepulse 1.6s ease-in-out infinite;}
+  @keyframes stonepulse{0%,100%{box-shadow:0 0 0 5px rgba(245,166,35,.35),0 4px 0 var(--edge-shadow-soft);}50%{box-shadow:0 0 0 9px rgba(245,166,35,.16),0 4px 0 var(--edge-shadow-soft);}}
+  .stone.trophy{background:linear-gradient(160deg,var(--gold-500),var(--fun-pink));color:#fff;font-size:22px;}
+
+  /* ---------- main stage ---------- */
+  .stage{
+    position:relative;z-index:2;
+    max-width:980px;margin:0 auto;padding:10px 18px 60px;
+    display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .buddy-card{
+    background:var(--white);border-radius:var(--r-lg);padding:18px 16px;
+    text-align:center;box-shadow:0 8px 0 var(--edge-shadow-soft);
+    position:sticky;top:14px;border:1px solid var(--border-card);
+  }
+  .buddy-svg-wrap{display:inline-block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .buddy-svg-wrap.happy{animation:jump .6s ease-in-out 2;}
+  @keyframes jump{0%,100%{transform:translateY(0) rotate(0);}30%{transform:translateY(-16px) rotate(-8deg);}60%{transform:translateY(0) rotate(6deg);}}
+  .speech-bubble{
+    margin-top:10px;background:var(--bubble-tint);border-radius:var(--r-md);padding:12px;
+    font-size:15px;font-weight:700;color:var(--plum);line-height:1.35;
+    min-height:60px;display:flex;align-items:center;justify-content:center;
+  }
+  .buddy-name{font-family:var(--font-display);font-weight:700;color:var(--fun-purple);font-size:14px;margin-top:6px;}
+  .switch-link{margin-top:10px;background:none;border:none;font-family:var(--font-body);font-weight:700;font-size:12.5px;color:var(--teal-700);cursor:pointer;text-decoration:underline;padding:4px;}
+
+  .score-box{margin-top:16px;padding-top:14px;border-top:2px dashed var(--border-card);}
+  .score-box .flower-icon{font-size:34px;line-height:1;}
+  .score-label{font-weight:800;font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .score-total{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--leaf-green-dark);}
+
+  .task-card{
+    background:var(--white);border-radius:var(--r-lg);padding:24px 24px 20px;
+    box-shadow:0 10px 0 var(--edge-shadow-soft);
+    position:relative;overflow:hidden;border:1px solid var(--border-card);
+  }
+  .task-badge{
+    display:inline-block;background:var(--gold-500);color:#5a3c00;font-weight:800;
+    font-family:var(--font-display);font-size:13px;letter-spacing:.3px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;
+  }
+  .task-title{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,4vw,32px);margin:2px 0 6px;color:var(--plum);}
+  .task-instruction{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 14px;color:var(--ink-soft);}
+
+  /* ---------- needs checklist ---------- */
+  .needs-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+  .need-pill{
+    display:flex;align-items:center;gap:6px;
+    background:var(--input-bg);border:1.5px solid var(--input-border);
+    border-radius:999px;padding:7px 14px 7px 10px;
+    font-weight:800;font-size:13.5px;color:var(--ink-soft);
+    transition:background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease;
+  }
+  .need-pill .n-icon{font-size:17px;}
+  .need-pill.done{background:var(--bg-tint-teal);border-color:var(--leaf-green);color:var(--leaf-green-dark);transform:scale(1.03);}
+  .need-pill.done::after{content:"✓";font-weight:900;}
+
+  /* ---------- plant stage / drop zone ---------- */
+  .plant-stage{
+    position:relative;height:250px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:18px;border-radius:var(--r-md);
+    background:radial-gradient(ellipse at 50% 90%, var(--bg-tint-teal), transparent 70%);
+    border:3px dashed transparent;transition:border-color .2s ease, background .2s ease;
+  }
+  .plant-stage.drop-hover{border-color:var(--gold-500);background:var(--bg-tint-gold);}
+  .plant-stage svg#plantSvg{width:200px;height:auto;overflow:visible;}
+
+  /* --- soil --- */
+  .soil{fill:var(--soil-moist);transition:fill .6s ease;}
+  .soil.dry{fill:var(--soil-dry);}
+  #soilCracks{opacity:0;transition:opacity .5s ease;stroke:var(--soil-moist);stroke-width:1.6;fill:none;}
+  #soilCracks.show{opacity:.55;}
+
+  /* --- plant scale (stunted <-> grown) --- */
+  #plantGroup{transform-box:fill-box;transform-origin:50% 100%;transform:scale(1);transition:transform .8s cubic-bezier(.34,1.56,.64,1);}
+  #plantGroup.stunted{transform:scale(.62);}
+  #plantGroup.celebrate{animation:plantJump .7s ease-in-out 1;}
+  @keyframes plantJump{0%,100%{transform:scale(1) translateY(0) rotate(0);}30%{transform:scale(1.08) translateY(-10px) rotate(-4deg);}60%{transform:scale(1.04) translateY(0) rotate(4deg);}}
+  #plantGroup.shake{animation:shakeIt .45s ease;}
+  @keyframes shakeIt{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+
+  /* --- stem / leaves --- */
+  #stemGroup{transform-box:fill-box;transform-origin:50% 100%;animation:sway 3.4s ease-in-out infinite;transition:transform .7s ease, opacity .6s ease;}
+  #stemGroup.wilted{animation:none;transform:rotate(-11deg);opacity:.82;}
+  @keyframes sway{0%,100%{transform:rotate(-2deg);}50%{transform:rotate(2deg);}}
+  #stemPath{stroke:var(--leaf-green-dark);}
+
+  .leaf-fill{fill:var(--leaf-green);transition:fill .6s ease;}
+  .leaf.yellow .leaf-fill{fill:var(--leaf-yellow);}
+  .leaf-vein{stroke:var(--leaf-green-dark);stroke-width:1.4;opacity:.5;transition:stroke .6s ease;}
+  .leaf.yellow .leaf-vein{stroke:#b3a02a;}
+
+  /* --- flower --- */
+  #flowerGroup{transform-box:fill-box;transform-origin:50% 50%;transition:transform .6s cubic-bezier(.34,1.56,.64,1), opacity .5s ease;animation:flowerBob 2.6s ease-in-out infinite;}
+  #flowerGroup.no-flower{transform:scale(0);opacity:0;animation:none;}
+  @keyframes flowerBob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-3px) rotate(3deg);}}
+
+  /* --- bugs --- */
+  .bug{transform-box:fill-box;transform-origin:50% 50%;transition:transform .5s ease, opacity .5s ease;animation:bugWiggle 1.3s ease-in-out infinite;}
+  .bug:nth-child(2){animation-delay:.2s;transition-delay:.08s;}
+  .bug:nth-child(3){animation-delay:.4s;transition-delay:.16s;}
+  @keyframes bugWiggle{0%,100%{transform:translate(0,0) rotate(0);}50%{transform:translate(1.5px,-1.5px) rotate(8deg);}}
+  #bugsGroup.no-bugs .bug{transform:scale(0) translateY(8px);opacity:0;animation:none;}
+
+  /* --- effect particles --- */
+  .particle{position:absolute;font-size:26px;pointer-events:none;left:50%;top:52%;z-index:5;}
+  @keyframes waterDropFall{0%{transform:translate(-50%,-130px) scale(.5);opacity:0;}30%{opacity:1;}100%{transform:translate(-50%,30px) scale(1);opacity:0;}}
+  .particle.water{animation:waterDropFall .9s ease-in forwards;}
+  @keyframes sunGlow{0%{transform:translate(-50%,-150px) scale(.3) rotate(0deg);opacity:0;}45%{opacity:1;transform:translate(-50%,-96px) scale(1.4) rotate(30deg);}100%{transform:translate(-50%,-96px) scale(1.1) rotate(60deg);opacity:0;}}
+  .particle.sunfx{animation:sunGlow 1.1s ease-out forwards;font-size:44px;}
+  @keyframes fertFall{0%{transform:translate(-50%,-110px) scale(.4);opacity:0;}40%{opacity:1;}100%{transform:translate(-50%,26px) scale(.85) rotate(200deg);opacity:0;}}
+  .particle.fert{animation:fertFall .9s ease-in forwards;}
+  @keyframes mistPuff{0%{transform:translate(-50%,-30px) scale(.3);opacity:0;}50%{opacity:.9;}100%{transform:translate(-50%,-30px) scale(2.6);opacity:0;}}
+  .particle.mist{animation:mistPuff .8s ease-out forwards;font-size:52px;}
+  @keyframes sparklePop{0%{transform:translate(-50%,-50%) scale(0);opacity:0;}50%{opacity:1;transform:translate(-50%,-50%) scale(1.2);}100%{transform:translate(-50%,-50%) scale(.8);opacity:0;}}
+  .particle.spark{animation:sparklePop .7s ease-out forwards;font-size:30px;}
+
+  /* ---------- tool tray ---------- */
+  .tray-label{font-weight:800;font-size:13.5px;color:var(--ink-soft);margin:0 0 8px;}
+  .tray-row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-bottom:14px;}
+  .tool-btn{
+    background:var(--white);border:1px solid var(--border-card);border-radius:18px;
+    box-shadow:0 5px 0 var(--edge-shadow-soft);cursor:grab;padding:10px 12px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-family:var(--font-body);font-weight:800;font-size:12.5px;color:var(--plum);
+    transition:transform .12s ease, box-shadow .12s ease;touch-action:none;
+  }
+  .tool-btn:hover{transform:translateY(-3px);}
+  .tool-btn:active,.tool-btn.dragging{transform:translateY(2px) scale(.96);box-shadow:0 2px 0 var(--edge-shadow-soft);cursor:grabbing;}
+  .tool-icon-svg{width:58px;height:58px;pointer-events:none;}
+
+  .tool-ghost{position:fixed;z-index:80;pointer-events:none;width:58px;height:58px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.25));transition:none;}
+
+  .action-row{display:flex;gap:10px;justify-content:center;margin-bottom:6px;flex-wrap:wrap;}
+  .btn-ghost{
+    font-family:var(--font-body);font-weight:800;font-size:14px;color:var(--teal-700);
+    background:var(--panel-tint);border:none;border-radius:999px;padding:10px 18px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn-ghost:hover{transform:translateY(-2px);}
+  .btn-ghost:active{transform:translateY(1px);}
+
+  .hint-msg{margin-top:6px;font-weight:800;font-size:15px;min-height:22px;text-align:center;}
+  .hint-msg.err{color:var(--fun-red);}
+  .hint-msg.ok{color:var(--leaf-green-dark);}
+
+  /* ---------- confetti ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:3px;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:fixed;inset:0;background:var(--overlay-tint);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .overlay.show{display:flex;}
+  .overlay-card{
+    background:var(--white);border-radius:var(--r-lg);padding:30px 28px;text-align:center;
+    max-width:460px;width:100%;box-shadow:0 12px 0 var(--edge-shadow);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--border-card);
+  }
+  @keyframes pop{0%{transform:scale(.6);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .celebrate-emoji{font-size:64px;animation:jump .6s ease-in-out 3;display:inline-block;}
+  .celebrate-title{font-family:var(--font-display);font-weight:700;font-size:26px;margin:8px 0 4px;color:var(--plum);}
+  .celebrate-msg{font-weight:700;color:var(--ink-soft);margin-bottom:18px;}
+
+  .btn-big{background:var(--fun-red);color:#fff;font-family:var(--font-body);font-weight:800;font-size:19px;border:none;border-radius:999px;padding:16px 34px;box-shadow:0 5px 0 #c23b41;cursor:pointer;transition:transform .12s ease;}
+  .btn-big:hover{transform:translateY(-2px);}
+  .btn-big:active{transform:translateY(3px);box-shadow:0 2px 0 #c23b41;}
+
+  /* ---------- buddy picker ---------- */
+  .pick-title{font-family:var(--font-display);font-weight:700;font-size:24px;margin:6px 0 2px;color:var(--plum);}
+  .pick-sub{font-weight:600;color:var(--ink-soft);margin:0 0 6px;font-size:14.5px;}
+  .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 6px;}
+  @media (max-width:480px){.char-grid{grid-template-columns:repeat(2,1fr);}}
+  .char-btn{
+    background:var(--panel-tint);border:3px solid transparent;border-radius:var(--r-md);
+    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease;font-family:var(--font-body);
+    font-weight:700;font-size:12px;color:var(--plum);
+  }
+  .char-btn:hover{transform:translateY(-3px);border-color:var(--gold-500);}
+  .char-btn.selected{border-color:var(--leaf-green);background:var(--bg-tint-teal);}
+
+  /* ---------- final certificate ---------- */
+  .final-overlay .certificate{
+    background:var(--cream);border-radius:var(--r-lg);padding:38px 32px;text-align:center;
+    max-width:520px;width:100%;border:10px solid var(--gold-500);
+    box-shadow:0 14px 0 var(--edge-shadow);animation:pop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .certificate .trophy-emoji{font-size:70px;}
+  .certificate h2{font-family:var(--font-display);font-weight:700;font-size:27px;color:var(--plum);margin:6px 0;}
+  .certificate .cert-name{font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--fun-red);margin:10px 0;}
+  .certificate p{font-weight:700;color:var(--ink-soft);}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+  @media (max-width:480px){
+    .task-card{padding:18px 16px 16px;}
+    .tool-btn{padding:8px 8px 6px;}
+    .tool-icon-svg{width:48px;height:48px;}
+    .plant-stage svg#plantSvg{width:170px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="leaf-drift" style="top:14%;left:6%;animation-duration:30s;">🍃</div>
+  <div class="leaf-drift" style="top:30%;left:82%;animation-duration:38s;animation-direction:reverse;">🦋</div>
+  <div class="leaf-drift" style="top:60%;left:46%;animation-duration:44s;">🍃</div>
+  <div class="leaf-drift" style="top:74%;left:16%;animation-duration:34s;animation-direction:reverse;">🐝</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">🌱</span> Plant Doctor</div>
+  <div class="top-right">
+    <div class="score-counter" id="scoreCounterBar">🌼 <span id="grandTotal">0</span></div>
+    <button class="icon-btn" id="switchBtn" title="Change friend">🔁</button>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off">🔊</button>
+  </div>
+</div>
+
+<div class="path-wrap">
+  <div class="path" id="pathTrack"></div>
+</div>
+
+<main class="stage">
+  <div class="buddy-card">
+    <div class="buddy-svg-wrap" id="buddyWrap">
+      <svg id="buddySvg" viewBox="-40 -40 80 80" width="86" height="86"></svg>
+    </div>
+    <div class="speech-bubble" id="speechBubble">Pick a garden friend and let's help some plants!</div>
+    <div class="buddy-name" id="buddyName">Choose a Friend</div>
+    <button class="switch-link" id="switchLink">🔁 Change friend</button>
+
+    <div class="score-box">
+      <div class="flower-icon">🌻</div>
+      <div class="score-label">Garden Score</div>
+      <div class="score-total">🌼 <span id="sideTotal">0</span></div>
+    </div>
+  </div>
+
+  <div class="task-card" id="taskCard">
+    <div class="task-badge" id="taskBadge">Level 1</div>
+    <h2 class="task-title" id="taskTitle"></h2>
+    <p class="task-instruction" id="taskInstruction"></p>
+
+    <div class="needs-row" id="needsRow"></div>
+
+    <div class="plant-stage" id="plantStage">
+      <svg id="plantSvg" viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="110" cy="223" rx="52" ry="9" fill="rgba(13,56,65,.10)"></ellipse>
+        <path d="M62,168 L158,168 L147,224 L73,224 Z" fill="var(--pot-body)" stroke="var(--char-line)" stroke-width="3"></path>
+        <ellipse cx="110" cy="168" rx="48" ry="11" fill="var(--pot-rim)" stroke="var(--char-line)" stroke-width="3"></ellipse>
+        <ellipse id="soilEllipse" class="soil dry" cx="110" cy="166" rx="40" ry="7.5"></ellipse>
+        <path id="soilCracks" d="M84,166 L94,162 M100,168 L108,161 M118,167 L112,163 M132,166 L124,162" ></path>
+
+        <g id="plantGroup">
+          <g id="stemGroup">
+            <path id="stemPath" d="M110,164 C107,132 113,104 110,66" stroke-width="6" fill="none" stroke-linecap="round"></path>
+
+            <g class="leaf" transform="translate(103,140) rotate(-32)">
+              <path class="leaf-fill" d="M0,0 C-9,-16 -30,-16 -36,0 C-30,16 -9,16 0,0 Z"></path>
+              <path class="leaf-vein" d="M-3,0 L-30,0"></path>
+            </g>
+            <g class="leaf" transform="translate(117,140) rotate(32) scale(-1,1)">
+              <path class="leaf-fill" d="M0,0 C-9,-16 -30,-16 -36,0 C-30,16 -9,16 0,0 Z"></path>
+              <path class="leaf-vein" d="M-3,0 L-30,0"></path>
+            </g>
+            <g class="leaf" transform="translate(101,104) rotate(-26)">
+              <path class="leaf-fill" d="M0,0 C-8,-14 -26,-14 -31,0 C-26,14 -8,14 0,0 Z"></path>
+              <path class="leaf-vein" d="M-2,0 L-26,0"></path>
+            </g>
+            <g class="leaf" transform="translate(119,104) rotate(26) scale(-1,1)">
+              <path class="leaf-fill" d="M0,0 C-8,-14 -26,-14 -31,0 C-26,14 -8,14 0,0 Z"></path>
+              <path class="leaf-vein" d="M-2,0 L-26,0"></path>
+            </g>
+
+            <g id="bugsGroup">
+              <g class="bug" transform="translate(88,140)">
+                <ellipse rx="5" ry="3.6" fill="var(--bug-brown)" stroke="var(--char-line)" stroke-width="1"></ellipse>
+                <circle cx="-4" cy="-1" r="1.1" fill="#fff"></circle>
+              </g>
+              <g class="bug" transform="translate(133,143)">
+                <ellipse rx="4.4" ry="3.2" fill="var(--bug-brown)" stroke="var(--char-line)" stroke-width="1"></ellipse>
+                <circle cx="-3.5" cy="-1" r="1" fill="#fff"></circle>
+              </g>
+              <g class="bug" transform="translate(105,100)">
+                <ellipse rx="4.6" ry="3.3" fill="var(--bug-brown)" stroke="var(--char-line)" stroke-width="1"></ellipse>
+                <circle cx="-3.6" cy="-1" r="1" fill="#fff"></circle>
+              </g>
+            </g>
+          </g>
+
+          <g id="flowerGroup" transform="translate(110,62)">
+            <g fill="var(--fun-pink)" stroke="var(--char-line)" stroke-width="1.6">
+              <circle cx="0" cy="-13" r="9"></circle>
+              <circle cx="12" cy="-6" r="9"></circle>
+              <circle cx="8" cy="9" r="9"></circle>
+              <circle cx="-8" cy="9" r="9"></circle>
+              <circle cx="-12" cy="-6" r="9"></circle>
+            </g>
+            <circle cx="0" cy="0" r="8.5" fill="var(--gold-500)" stroke="var(--char-line)" stroke-width="1.6"></circle>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <p class="tray-label">Drag a tool onto the plant (or tap it):</p>
+    <div class="tray-row" id="trayRow"></div>
+
+    <div class="action-row">
+      <button class="btn-ghost" id="hintBtn">🔍 Give me a hint</button>
+      <button class="btn-ghost" id="resetBtn">🔄 New plant</button>
+    </div>
+    <div class="hint-msg" id="hintMsg"></div>
+  </div>
+</main>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<div class="overlay" id="celebrateOverlay">
+  <div class="overlay-card">
+    <div class="celebrate-emoji" id="celebrateEmoji">🎉</div>
+    <div class="celebrate-title" id="celebrateTitle">Great job, Doctor!</div>
+    <div class="celebrate-msg" id="celebrateMsg">You healed the plant!</div>
+    <button class="btn-big" id="nextBtn">Next ▶️</button>
+  </div>
+</div>
+
+<div class="overlay show" id="pickOverlay">
+  <div class="overlay-card">
+    <div class="pick-title">Who will be your garden buddy?</div>
+    <p class="pick-sub">Tap a friend to start your Plant Doctor adventure!</p>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+</div>
+
+<div class="overlay final-overlay" id="finalOverlay">
+  <div class="certificate">
+    <div class="trophy-emoji">🏆</div>
+    <h2>Certificate of Plant Doctoring</h2>
+    <div class="cert-name" id="certName">Garden Star</div>
+    <p>healed every plant with <span id="certFriend">a friend</span> and earned <span id="certTotal">🌼 0</span>! 🌟</p>
+    <p style="font-size:14px;margin-top:16px;">🎊 You are a super plant doctor! 🎊</p>
+    <button class="btn-big" id="restartBtn" style="margin-top:10px;">Play Again 🔁</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var CHAR_LINE = 'var(--char-line)';
+
+  function faceParts(){
+    return ''
+      + '<circle cx="-12" cy="-2" r="5.5" fill="#fff"/><circle cx="-10" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + '<circle cx="12" cy="-2" r="5.5" fill="#fff"/><circle cx="14" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + '<path d="M -10 12 Q 0 20 10 12" stroke="'+CHAR_LINE+'" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      + '<ellipse cx="-20" cy="12" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>'
+      + '<ellipse cx="20" cy="12" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>';
+  }
+
+  /* ---------- garden buddy friends ---------- */
+  function svgSprout(){
+    return ''
+      + '<circle cx="0" cy="8" r="26" fill="#c9a876" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M-4,-8 C-14,-20 -10,-30 -2,-30 C-2,-20 0,-14 -4,-8 Z" fill="#4fb673" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + '<path d="M4,-8 C14,-22 10,-32 2,-32 C1,-22 0,-14 4,-8 Z" fill="#3f9d5f" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + faceParts();
+  }
+  function svgLadybird(){
+    return ''
+      + '<ellipse cx="0" cy="2" rx="30" ry="26" fill="#f2555a" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M0,-24 L0,28" stroke="'+CHAR_LINE+'" stroke-width="2.5"/>'
+      + '<circle cx="-14" cy="-6" r="4" fill="'+CHAR_LINE+'"/><circle cx="13" cy="-4" r="4" fill="'+CHAR_LINE+'"/>'
+      + '<circle cx="-10" cy="14" r="3.4" fill="'+CHAR_LINE+'"/><circle cx="11" cy="15" r="3.4" fill="'+CHAR_LINE+'"/>'
+      + '<path d="M-16,-22 Q-24,-30 -30,-24" stroke="'+CHAR_LINE+'" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+      + '<path d="M16,-22 Q24,-30 30,-24" stroke="'+CHAR_LINE+'" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+      + faceParts();
+  }
+  function svgBuzzy(){
+    return ''
+      + '<ellipse cx="0" cy="4" rx="27" ry="23" fill="#ffd85c" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M-27,-4 L27,-4 M-24,10 L24,10" stroke="'+CHAR_LINE+'" stroke-width="6"/>'
+      + '<ellipse cx="-20" cy="-22" rx="14" ry="10" fill="rgba(255,255,255,.55)" stroke="'+CHAR_LINE+'" stroke-width="1.6" transform="rotate(-18 -20 -22)"/>'
+      + '<ellipse cx="20" cy="-22" rx="14" ry="10" fill="rgba(255,255,255,.55)" stroke="'+CHAR_LINE+'" stroke-width="1.6" transform="rotate(18 20 -22)"/>'
+      + faceParts();
+  }
+  function svgFern(){
+    return ''
+      + '<ellipse cx="-20" cy="-6" rx="16" ry="22" fill="#a679e0" stroke="'+CHAR_LINE+'" stroke-width="3" transform="rotate(-20 -20 -6)"/>'
+      + '<ellipse cx="20" cy="-6" rx="16" ry="22" fill="#a679e0" stroke="'+CHAR_LINE+'" stroke-width="3" transform="rotate(20 20 -6)"/>'
+      + '<ellipse cx="-14" cy="14" rx="11" ry="15" fill="#ff8fc0" stroke="'+CHAR_LINE+'" stroke-width="3" transform="rotate(-14 -14 14)"/>'
+      + '<ellipse cx="14" cy="14" rx="11" ry="15" fill="#ff8fc0" stroke="'+CHAR_LINE+'" stroke-width="3" transform="rotate(14 14 14)"/>'
+      + '<rect x="-3" y="-20" width="6" height="42" rx="3" fill="'+CHAR_LINE+'"/>'
+      + faceParts();
+  }
+  function svgSunny(){
+    return ''
+      + '<g>'
+      + '<path d="M0,-34 L6,-20 L-6,-20 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M0,34 L6,20 L-6,20 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M-34,0 L-20,6 L-20,-6 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M34,0 L20,6 L20,-6 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M-24,-24 L-13,-13 L-19,-6 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M24,-24 L13,-13 L19,-6 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M-24,24 L-13,13 L-19,6 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '<path d="M24,24 L13,13 L19,6 Z" fill="#f5a623" stroke="'+CHAR_LINE+'" stroke-width="2"/>'
+      + '</g>'
+      + '<circle cx="0" cy="0" r="21" fill="#8a5a1a" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + faceParts();
+  }
+  function svgWiggles(){
+    return ''
+      + '<path d="M-26,10 C-26,-18 22,-18 22,4 C22,20 -4,20 -4,6 C-4,-4 10,-4 10,4" stroke="#7fbf7a" stroke-width="13" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="18" cy="-6" r="15" fill="#8fd08a" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + faceParts();
+  }
+
+  var CHAR_LIST = [
+    {id:'sprout', name:'Sprout', color:'#4fb673', svg:svgSprout},
+    {id:'ladybird', name:'Lucy Ladybird', color:'#f2555a', svg:svgLadybird},
+    {id:'buzzy', name:'Buzzy Bee', color:'#ffd85c', svg:svgBuzzy},
+    {id:'fern', name:'Fern Butterfly', color:'#a679e0', svg:svgFern},
+    {id:'sunny', name:'Sunny', color:'#f5a623', svg:svgSunny},
+    {id:'wiggles', name:'Wiggles the Worm', color:'#7fbf7a', svg:svgWiggles}
+  ];
+
+  /* ================= TOOL ICONS ================= */
+  function sunToolSVG(){
+    return '<svg class="tool-icon-svg" viewBox="-40 -40 80 80" xmlns="http://www.w3.org/2000/svg">'
+      + '<g stroke="var(--gold-600)" stroke-width="4" stroke-linecap="round">'
+      + '<path d="M0,-30 L0,-22"/><path d="M0,30 L0,22"/><path d="M-30,0 L-22,0"/><path d="M30,0 L22,0"/>'
+      + '<path d="M-21,-21 L-15,-15"/><path d="M21,-21 L15,-15"/><path d="M-21,21 L-15,-15"/>'
+      + '</g>'
+      + '<circle cx="0" cy="0" r="17" fill="var(--gold-400)" stroke="var(--char-line)" stroke-width="2.5"/>'
+      + '<circle cx="-5" cy="-3" r="2.4" fill="#8a5a00"/><circle cx="5" cy="-3" r="2.4" fill="#8a5a00"/>'
+      + '<path d="M-5,5 Q0,9 5,5" stroke="#8a5a00" stroke-width="2" fill="none" stroke-linecap="round"/>'
+      + '</svg>';
+  }
+  function waterCanSVG(){
+    return '<svg class="tool-icon-svg" viewBox="-40 -40 80 80" xmlns="http://www.w3.org/2000/svg">'
+      + '<path d="M-22,4 L-22,20 Q-22,26 -16,26 L14,26 Q20,26 20,20 L20,4 Z" fill="var(--water-blue)" stroke="var(--char-line)" stroke-width="3"/>'
+      + '<path d="M-22,10 L-36,4 L-33,-2 L-22,2 Z" fill="var(--water-blue)" stroke="var(--char-line)" stroke-width="3"/>'
+      + '<ellipse cx="-35" cy="-3" rx="4" ry="3" fill="#dff1fb" stroke="var(--char-line)" stroke-width="2"/>'
+      + '<path d="M-6,4 Q4,-16 16,-8" stroke="var(--char-line)" stroke-width="3" fill="none"/>'
+      + '<circle cx="-33" cy="-9" r="1.6" fill="var(--water-blue)"/><circle cx="-29" cy="-13" r="1.6" fill="var(--water-blue)"/><circle cx="-37" cy="-14" r="1.6" fill="var(--water-blue)"/>'
+      + '</svg>';
+  }
+  function fertilizerSVG(){
+    return '<svg class="tool-icon-svg" viewBox="-40 -40 80 80" xmlns="http://www.w3.org/2000/svg">'
+      + '<path d="M-16,-20 L16,-20 L20,26 Q20,30 14,30 L-14,30 Q-20,30 -20,26 Z" fill="#c98a4e" stroke="var(--char-line)" stroke-width="3"/>'
+      + '<rect x="-16" y="-26" width="32" height="9" rx="3" fill="#a8683a" stroke="var(--char-line)" stroke-width="2.5"/>'
+      + '<path d="M0,-6 L0,10 M-8,2 L8,2" stroke="#fff" stroke-width="4" stroke-linecap="round"/>'
+      + '</svg>';
+  }
+  function sprayBottleSVG(){
+    return '<svg class="tool-icon-svg" viewBox="-40 -40 80 80" xmlns="http://www.w3.org/2000/svg">'
+      + '<path d="M-12,-2 L12,-2 L14,28 Q14,32 8,32 L-8,32 Q-14,32 -14,28 Z" fill="#7fbf7a" stroke="var(--char-line)" stroke-width="3"/>'
+      + '<rect x="-8" y="-18" width="14" height="18" rx="3" fill="#5aa855" stroke="var(--char-line)" stroke-width="2.5"/>'
+      + '<path d="M6,-16 L20,-22" stroke="var(--char-line)" stroke-width="3" stroke-linecap="round"/>'
+      + '<path d="M22,-30 L26,-26 M26,-34 L28,-28 M18,-33 L22,-30" stroke="#7fbf7a" stroke-width="2.4" stroke-linecap="round"/>'
+      + '</svg>';
+  }
+
+  var TOOLS = [
+    {id:'sun', label:'Sunlight', svg:sunToolSVG},
+    {id:'water', label:'Water', svg:waterCanSVG},
+    {id:'fert', label:'Plant Food', svg:fertilizerSVG},
+    {id:'bug', label:'Bug Spray', svg:sprayBottleSVG}
+  ];
+  var NEED_META = {
+    sun:{icon:'☀️', label:'Sunlight'},
+    water:{icon:'💧', label:'Water'},
+    fert:{icon:'🌱', label:'Plant food'},
+    bug:{icon:'🐛', label:'Bug spray'}
+  };
+
+  /* ================= LEVELS ================= */
+  var LEVELS = [
+    {name:'Thirsty Sprout', instruction:"This little plant's leaves are drooping and the soil feels dry. What does it need?", needs:['water']},
+    {name:'Pale Leaves', instruction:"The leaves have turned pale and yellow. This plant needs something from the sky!", needs:['sun']},
+    {name:'Itchy Bugs', instruction:"Uh oh — tiny bugs are crawling on the leaves! Time to spray them away.", needs:['bug']},
+    {name:'Tiny & Stuck', instruction:"This plant hasn't grown at all and won't flower. It needs a boost of plant food.", needs:['fert']},
+    {name:'Double Trouble', instruction:"This plant is dry AND covered in bugs! Can you fix both problems?", needs:['water','bug']},
+    {name:'Garden Doctor Challenge', instruction:"Yellow leaves, dry soil, bugs, and no flowers — use everything you've learned!", needs:['sun','water','fert','bug']}
+  ];
+
+  var encourage = ["Great job, Doctor! 🌟","You healed the plant! 🎉","Amazing plant care! 🥳","Fantastic work! ⭐","Yes! Just what it needed! 🙌","Super gardener! 🚀"];
+  var tryAgainNotNeeded = ["This plant doesn't need that right now! 🤔","Take a closer look at the plant first! 🔎","Hmm, try something else! 🌈"];
+  var tryAgainAlready = ["Already taken care of! ✅","That's already fixed — try another tool! 😊"];
+
+  /* ================= STATE ================= */
+  var state = {
+    levelIndex: 0,
+    grandTotal: 0,
+    muted: false,
+    character: CHAR_LIST[0],
+    remainingNeeds: []
+  };
+
+  /* ================= ELEMENTS ================= */
+  var el = {
+    pathTrack: document.getElementById('pathTrack'),
+    grandTotal: document.getElementById('grandTotal'),
+    sideTotal: document.getElementById('sideTotal'),
+    scoreCounterBar: document.getElementById('scoreCounterBar'),
+    muteBtn: document.getElementById('muteBtn'),
+    switchBtn: document.getElementById('switchBtn'),
+    switchLink: document.getElementById('switchLink'),
+    buddyWrap: document.getElementById('buddyWrap'),
+    buddySvg: document.getElementById('buddySvg'),
+    speechBubble: document.getElementById('speechBubble'),
+    buddyName: document.getElementById('buddyName'),
+    taskBadge: document.getElementById('taskBadge'),
+    taskTitle: document.getElementById('taskTitle'),
+    taskInstruction: document.getElementById('taskInstruction'),
+    needsRow: document.getElementById('needsRow'),
+    plantStage: document.getElementById('plantStage'),
+    plantGroup: document.getElementById('plantGroup'),
+    stemGroup: document.getElementById('stemGroup'),
+    soilEllipse: document.getElementById('soilEllipse'),
+    soilCracks: document.getElementById('soilCracks'),
+    flowerGroup: document.getElementById('flowerGroup'),
+    bugsGroup: document.getElementById('bugsGroup'),
+    trayRow: document.getElementById('trayRow'),
+    hintBtn: document.getElementById('hintBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    hintMsg: document.getElementById('hintMsg'),
+    confettiLayer: document.getElementById('confettiLayer'),
+    celebrateOverlay: document.getElementById('celebrateOverlay'),
+    celebrateEmoji: document.getElementById('celebrateEmoji'),
+    celebrateTitle: document.getElementById('celebrateTitle'),
+    celebrateMsg: document.getElementById('celebrateMsg'),
+    nextBtn: document.getElementById('nextBtn'),
+    pickOverlay: document.getElementById('pickOverlay'),
+    charGrid: document.getElementById('charGrid'),
+    finalOverlay: document.getElementById('finalOverlay'),
+    certFriend: document.getElementById('certFriend'),
+    certTotal: document.getElementById('certTotal'),
+    restartBtn: document.getElementById('restartBtn')
+  };
+  var leaves = Array.prototype.slice.call(document.querySelectorAll('.leaf'));
+
+  /* ================= AUDIO ================= */
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(Ctx) audioCtx = new Ctx();
+    }
+    return audioCtx;
+  }
+  function beep(freq, dur, delay, vol){
+    if(state.muted) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.15, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0+dur+0.02);
+  }
+  function playFix(){ beep(660,0.09,0,0.09); beep(880,0.12,0.08,0.08); }
+  function playSuccess(){ beep(523.25,0.16,0); beep(659.25,0.16,0.12); beep(783.99,0.28,0.24); beep(1046.5,0.3,0.36); }
+  function playOops(){ beep(300,0.16,0,0.08); beep(240,0.2,0.1,0.08); }
+  function speak(text){
+    if(state.muted) return;
+    if(!('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.88; u.pitch = 1.12;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  /* ================= BUDDY PICKER ================= */
+  function buildCharGrid(){
+    el.charGrid.innerHTML = '';
+    CHAR_LIST.forEach(function(c){
+      var b = document.createElement('button');
+      b.className = 'char-btn';
+      b.setAttribute('data-id', c.id);
+      b.innerHTML = '<svg viewBox="-40 -40 80 80" width="58" height="58">'+c.svg()+'</svg><span>'+c.name+'</span>';
+      b.addEventListener('click', function(){
+        playFix();
+        selectCharacter(c);
+        el.pickOverlay.classList.remove('show');
+      });
+      el.charGrid.appendChild(b);
+    });
+  }
+  function selectCharacter(c){
+    state.character = c;
+    el.buddySvg.innerHTML = c.svg();
+    el.buddyName.textContent = c.name;
+    Array.prototype.forEach.call(el.charGrid.children, function(btn){
+      btn.classList.toggle('selected', btn.getAttribute('data-id') === c.id);
+    });
+    el.speechBubble.textContent = "Let's go help some plants, " + c.name.split(' ')[0] + "-style!";
+  }
+
+  /* ================= PATH STONES ================= */
+  function buildPath(){
+    el.pathTrack.innerHTML = '';
+    LEVELS.forEach(function(t, i){
+      var s = document.createElement('div');
+      s.className = 'stone';
+      s.textContent = (i+1);
+      s.id = 'stone-' + i;
+      el.pathTrack.appendChild(s);
+    });
+    var trophy = document.createElement('div');
+    trophy.className = 'stone trophy';
+    trophy.textContent = '🏆';
+    el.pathTrack.appendChild(trophy);
+  }
+  function updatePathStones(){
+    LEVELS.forEach(function(t, i){
+      var s = document.getElementById('stone-' + i);
+      s.classList.remove('done','current');
+      if(i < state.levelIndex) s.classList.add('done');
+      else if(i === state.levelIndex) s.classList.add('current');
+    });
+  }
+
+  /* ================= TOOL TRAY (built once) ================= */
+  function buildTray(){
+    el.trayRow.innerHTML = '';
+    TOOLS.forEach(function(t){
+      var btn = document.createElement('button');
+      btn.className = 'tool-btn';
+      btn.setAttribute('data-tool', t.id);
+      btn.innerHTML = t.svg() + '<span>' + t.label + '</span>';
+      attachDrag(btn, t.id);
+      el.trayRow.appendChild(btn);
+    });
+  }
+
+  /* ================= DRAG + TAP HANDLING ================= */
+  function attachDrag(btn, toolId){
+    var ghost = null, startX = 0, startY = 0, moved = false, originRect = null;
+
+    btn.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      try{ btn.setPointerCapture(e.pointerId); }catch(err){}
+      startX = e.clientX; startY = e.clientY; moved = false;
+      originRect = btn.getBoundingClientRect();
+      btn.classList.add('dragging');
+
+      ghost = document.createElement('div');
+      ghost.className = 'tool-ghost';
+      ghost.innerHTML = btn.querySelector('svg').outerHTML;
+      ghost.style.left = (originRect.left + originRect.width/2 - 29) + 'px';
+      ghost.style.top = (originRect.top + originRect.height/2 - 29) + 'px';
+      document.body.appendChild(ghost);
+
+      function onMove(ev){
+        var dx = ev.clientX - startX, dy = ev.clientY - startY;
+        if(Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
+        ghost.style.left = (originRect.left + originRect.width/2 - 29 + dx) + 'px';
+        ghost.style.top = (originRect.top + originRect.height/2 - 29 + dy) + 'px';
+        var stageRect = el.plantStage.getBoundingClientRect();
+        var over = ev.clientX >= stageRect.left && ev.clientX <= stageRect.right && ev.clientY >= stageRect.top && ev.clientY <= stageRect.bottom;
+        el.plantStage.classList.toggle('drop-hover', over);
+      }
+
+      function onUp(ev){
+        btn.removeEventListener('pointermove', onMove);
+        btn.removeEventListener('pointerup', onUp);
+        btn.removeEventListener('pointercancel', onUp);
+        btn.classList.remove('dragging');
+        el.plantStage.classList.remove('drop-hover');
+
+        var stageRect = el.plantStage.getBoundingClientRect();
+        var overStage = ev.clientX >= stageRect.left && ev.clientX <= stageRect.right && ev.clientY >= stageRect.top && ev.clientY <= stageRect.bottom;
+        var used = (!moved) || overStage;
+
+        if(ghost){
+          if(used){
+            ghost.style.transition = 'transform .18s ease, opacity .18s ease';
+            ghost.style.transform = 'scale(.3)';
+            ghost.style.opacity = '0';
+          } else {
+            var backLeft = originRect.left + originRect.width/2 - 29;
+            var backTop = originRect.top + originRect.height/2 - 29;
+            ghost.style.transition = 'left .25s ease, top .25s ease, opacity .25s ease';
+            ghost.style.left = backLeft + 'px';
+            ghost.style.top = backTop + 'px';
+            ghost.style.opacity = '0';
+          }
+          var deadGhost = ghost;
+          setTimeout(function(){ if(deadGhost.parentNode) deadGhost.parentNode.removeChild(deadGhost); }, 260);
+          ghost = null;
+        }
+
+        if(used){ applyTool(toolId); }
+      }
+
+      btn.addEventListener('pointermove', onMove);
+      btn.addEventListener('pointerup', onUp);
+      btn.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  /* ================= LEVEL RENDERING ================= */
+  function renderLevel(){
+    var level = LEVELS[state.levelIndex];
+    state.remainingNeeds = level.needs.slice();
+
+    el.taskBadge.textContent = 'Level ' + (state.levelIndex+1) + ' of ' + LEVELS.length;
+    el.taskTitle.textContent = level.name;
+    el.taskInstruction.textContent = level.instruction;
+
+    el.needsRow.innerHTML = '';
+    level.needs.forEach(function(n){
+      var pill = document.createElement('div');
+      pill.className = 'need-pill';
+      pill.setAttribute('data-need', n);
+      pill.innerHTML = '<span class="n-icon">' + NEED_META[n].icon + '</span><span>' + NEED_META[n].label + '</span>';
+      el.needsRow.appendChild(pill);
+    });
+
+    applySymptoms(level.needs);
+
+    el.hintMsg.textContent = '';
+    el.hintMsg.className = 'hint-msg';
+    el.buddyWrap.classList.remove('happy');
+    el.speechBubble.textContent = "Look closely — what does this plant need?";
+    updatePathStones();
+    setTimeout(function(){ speak(level.instruction); }, 300);
+  }
+
+  function applySymptoms(needs){
+    clearSymptoms();
+    if(needs.indexOf('water') !== -1){
+      el.soilEllipse.classList.add('dry');
+      el.soilCracks.classList.add('show');
+      el.stemGroup.classList.add('wilted');
+    }
+    if(needs.indexOf('sun') !== -1){
+      leaves.forEach(function(l){ l.classList.add('yellow'); });
+    }
+    if(needs.indexOf('bug') !== -1){
+      el.bugsGroup.classList.remove('no-bugs');
+    }
+    if(needs.indexOf('fert') !== -1){
+      el.plantGroup.classList.add('stunted');
+      el.flowerGroup.classList.add('no-flower');
+    }
+  }
+  function clearSymptoms(){
+    el.soilEllipse.classList.remove('dry');
+    el.soilCracks.classList.remove('show');
+    el.stemGroup.classList.remove('wilted');
+    leaves.forEach(function(l){ l.classList.remove('yellow'); });
+    el.bugsGroup.classList.add('no-bugs');
+    el.plantGroup.classList.remove('stunted');
+    el.flowerGroup.classList.remove('no-flower');
+  }
+
+  function fixSymptom(toolId){
+    if(toolId === 'water'){
+      el.soilEllipse.classList.remove('dry');
+      el.soilCracks.classList.remove('show');
+      el.stemGroup.classList.remove('wilted');
+    } else if(toolId === 'sun'){
+      leaves.forEach(function(l){ l.classList.remove('yellow'); });
+    } else if(toolId === 'bug'){
+      el.bugsGroup.classList.add('no-bugs');
+    } else if(toolId === 'fert'){
+      el.plantGroup.classList.remove('stunted');
+      el.flowerGroup.classList.remove('no-flower');
+    }
+  }
+
+  function updateNeedsChecklist(){
+    Array.prototype.forEach.call(el.needsRow.children, function(pill){
+      var n = pill.getAttribute('data-need');
+      pill.classList.toggle('done', state.remainingNeeds.indexOf(n) === -1);
+    });
+  }
+
+  /* ================= PARTICLE EFFECTS ================= */
+  function spawnParticles(kind){
+    var config = {
+      water: {emoji:['💧','💧','💧'], cls:'water', count:5, spread:60},
+      sun: {emoji:['☀️'], cls:'sunfx', count:1, spread:0},
+      fert: {emoji:['✨','🌟','✨'], cls:'fert', count:6, spread:70},
+      bug: {emoji:['💨'], cls:'mist', count:1, spread:0}
+    }[kind];
+    if(!config) return;
+    for(var i=0;i<config.count;i++){
+      var p = document.createElement('div');
+      p.className = 'particle ' + config.cls;
+      p.textContent = config.emoji[i % config.emoji.length];
+      var offset = (Math.random()*config.spread) - (config.spread/2);
+      p.style.marginLeft = offset + 'px';
+      p.style.animationDelay = (i*0.06) + 's';
+      el.plantStage.appendChild(p);
+      (function(node){ setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, 1300); })(p);
+    }
+    if(kind === 'sun'){
+      for(var s=0;s<3;s++){
+        var sp = document.createElement('div');
+        sp.className = 'particle spark';
+        sp.textContent = '✨';
+        sp.style.marginLeft = ((Math.random()*80)-40) + 'px';
+        sp.style.marginTop = ((Math.random()*40)-70) + 'px';
+        sp.style.animationDelay = (s*0.12) + 's';
+        el.plantStage.appendChild(sp);
+        (function(node){ setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, 1000); })(sp);
+      }
+    }
+  }
+
+  /* ================= TOOL APPLICATION ================= */
+  function applyTool(toolId){
+    var idx = state.remainingNeeds.indexOf(toolId);
+    if(idx !== -1){
+      state.remainingNeeds.splice(idx,1);
+      fixSymptom(toolId);
+      spawnParticles(toolId);
+      playFix();
+      updateNeedsChecklist();
+      el.hintMsg.textContent = '';
+      el.hintMsg.className = 'hint-msg';
+      var line = encourage[Math.floor(Math.random()*encourage.length)];
+      el.speechBubble.textContent = line;
+      if(state.remainingNeeds.length === 0){
+        setTimeout(succeedLevel, 650);
+      }
+    } else {
+      playOops();
+      el.plantGroup.classList.remove('shake'); void el.plantGroup.offsetWidth; el.plantGroup.classList.add('shake');
+      var wasNeeded = LEVELS[state.levelIndex].needs.indexOf(toolId) !== -1;
+      var msg = wasNeeded
+        ? tryAgainAlready[Math.floor(Math.random()*tryAgainAlready.length)]
+        : tryAgainNotNeeded[Math.floor(Math.random()*tryAgainNotNeeded.length)];
+      el.hintMsg.textContent = msg;
+      el.hintMsg.className = 'hint-msg err';
+      el.speechBubble.textContent = msg;
+    }
+  }
+
+  el.hintBtn.addEventListener('click', function(){
+    if(state.remainingNeeds.length === 0){
+      el.speechBubble.textContent = "This plant is already happy and healthy!";
+      return;
+    }
+    var need = state.remainingNeeds[0];
+    var msg = "Try the " + NEED_META[need].label.toLowerCase() + " " + NEED_META[need].icon + "!";
+    el.speechBubble.textContent = msg;
+    speak(msg);
+  });
+
+  el.resetBtn.addEventListener('click', function(){
+    renderLevel();
+  });
+
+  /* ================= SUCCESS / CELEBRATION ================= */
+  function succeedLevel(){
+    playSuccess();
+    state.grandTotal += 10;
+    el.grandTotal.textContent = state.grandTotal;
+    el.sideTotal.textContent = state.grandTotal;
+    el.scoreCounterBar.classList.remove('bump'); void el.scoreCounterBar.offsetWidth; el.scoreCounterBar.classList.add('bump');
+    el.buddyWrap.classList.add('happy');
+    el.plantGroup.classList.remove('celebrate'); void el.plantGroup.offsetWidth; el.plantGroup.classList.add('celebrate');
+    burstConfetti();
+    var line = encourage[Math.floor(Math.random()*encourage.length)];
+    el.speechBubble.textContent = line;
+    el.celebrateEmoji.textContent = ['🎉','🌟','🥳','🌸','🌼','🏅','✨'][Math.floor(Math.random()*7)];
+    el.celebrateTitle.textContent = line;
+    el.celebrateMsg.textContent = (state.levelIndex === LEVELS.length-1)
+      ? "You healed every plant in the garden!"
+      : "The plant is happy and healthy! Ready for the next level?";
+    el.celebrateOverlay.classList.add('show');
+  }
+
+  el.nextBtn.addEventListener('click', function(){
+    el.celebrateOverlay.classList.remove('show');
+    if(state.levelIndex >= LEVELS.length-1){
+      showFinal();
+    } else {
+      state.levelIndex += 1;
+      renderLevel();
+    }
+  });
+
+  function showFinal(){
+    el.certFriend.textContent = state.character.name;
+    el.certTotal.textContent = '🌼 ' + state.grandTotal;
+    el.finalOverlay.classList.add('show');
+    burstConfetti(60);
+  }
+
+  el.restartBtn.addEventListener('click', function(){
+    state.levelIndex = 0;
+    state.grandTotal = 0;
+    el.grandTotal.textContent = 0;
+    el.sideTotal.textContent = 0;
+    el.finalOverlay.classList.remove('show');
+    renderLevel();
+  });
+
+  /* ================= CONFETTI ================= */
+  var confettiColors = ['#f2555a','#ffd85c','#4fb673','#4aa8e0','#a679e0','#ff8fc0'];
+  function burstConfetti(count){
+    count = count || 36;
+    for(var i=0;i<count;i++){
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      var size = 6 + Math.random()*8;
+      p.style.width = size + 'px';
+      p.style.height = (size*0.6) + 'px';
+      p.style.left = (Math.random()*100) + 'vw';
+      p.style.background = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+      var dur = 2.2 + Math.random()*1.6;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random()*0.3) + 's';
+      el.confettiLayer.appendChild(p);
+      (function(node, life){
+        setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, (life+0.5)*1000);
+      })(p, dur);
+    }
+  }
+
+  /* ================= TOP BAR BUTTONS ================= */
+  el.muteBtn.addEventListener('click', function(){
+    state.muted = !state.muted;
+    el.muteBtn.textContent = state.muted ? '🔇' : '🔊';
+    if(state.muted && 'speechSynthesis' in window){ window.speechSynthesis.cancel(); }
+  });
+  function openPicker(){ el.pickOverlay.classList.add('show'); }
+  el.switchBtn.addEventListener('click', openPicker);
+  el.switchLink.addEventListener('click', openPicker);
+
+  /* ================= INIT ================= */
+  buildCharGrid();
+  buildPath();
+  buildTray();
+  selectCharacter(CHAR_LIST[0]);
+  renderLevel();
+
+})();
+</script>
+</body>
+</html>
