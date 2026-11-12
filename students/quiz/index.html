@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  /* Apply saved/preferred theme immediately to avoid a flash of the wrong theme */
+  (function(){
+    try{
+      var saved = localStorage.getItem('gsms-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Treasure Quiz 🗝️ — Pick a Card, Win Big!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="ai-hint.js"></script>
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- Kid-friendly accents ---------- */
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    /* ---------- Quiz-specific card tiers ---------- */
+    --tier-10: #b5722f;   /* bronze */
+    --tier-10-dark: #8a5522;
+    --tier-25: var(--teal-600); /* teal-silver */
+    --tier-25-dark: var(--teal-800);
+    --tier-50: var(--gold-500); /* gold */
+    --tier-50-dark: var(--gold-600);
+    --tier-75: var(--fun-purple); /* amethyst */
+    --tier-75-dark: #7c4fc4;
+    --tier-100: var(--fun-red); /* ruby */
+    --tier-100-dark: #c23b41;
+
+    --correct: var(--fun-green);
+    --correct-dark: #399c6c;
+    --wrong: var(--fun-red);
+    --wrong-dark: #c23b41;
+    --skip: var(--ink-500);
+
+    --stone-locked: var(--teal-100);
+    --stone-locked-ink: var(--ink-500);
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --tier-10:#d68a46; --tier-10-dark:#a3672f;
+    --correct-dark:#2c8f60; --wrong-dark:#c23b41;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--gold-500) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.30);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .gem-drift{position:absolute;opacity:.35;font-size:26px;animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(20deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:3;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--ink-900);
+  }
+  .brand .mascot-mini{font-size:1.2em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .score-counter{
+    display:flex;align-items:center;gap:8px;
+    background:var(--white);border:3px solid var(--gold-500);
+    border-radius:999px;padding:8px 16px;
+    font-weight:800;font-size:17px;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    color:var(--ink-900);transition:transform .18s ease;
+  }
+  .score-counter.bump{animation:bump .4s ease;}
+  .score-counter.shake{animation:shakeScore .4s ease;}
+  @keyframes bump{0%,100%{transform:scale(1);}40%{transform:scale(1.16);}}
+  @keyframes shakeScore{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+  .score-counter .neg{color:var(--wrong-dark);}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- progress path ---------- */
+  .path-wrap{
+    position:relative;z-index:2;
+    margin:6px auto 10px;max-width:760px;
+    overflow-x:auto;overflow-y:hidden;
+    padding:10px 18px 18px;
+  }
+  .path{
+    display:flex;align-items:center;justify-content:center;gap:16px;min-width:max-content;padding:0 6px;
+  }
+  .stone{
+    width:16px;height:16px;border-radius:50%;
+    background:var(--stone-locked);
+    border:3px solid var(--white);box-shadow:0 3px 0 var(--edge-shadow-soft);
+    transition:background .25s ease, transform .25s ease;
+  }
+  .stone.done{background:var(--correct);}
+  .stone.wrong{background:var(--wrong);}
+  .stone.skipped{background:var(--skip);}
+
+  /* ---------- main stage: card board ---------- */
+  .stage{
+    position:relative;z-index:2;
+    max-width:920px;margin:0 auto;padding:6px 18px 50px;
+  }
+  .stage-intro{
+    text-align:center;margin:6px 0 26px;
+  }
+  .stage-intro h1{
+    font-family:var(--font-display);font-weight:700;font-size:clamp(24px,4vw,34px);
+    margin:0 0 6px;color:var(--ink-900);
+  }
+  .stage-intro p{margin:0;font-weight:600;color:var(--ink-500);font-size:15.5px;}
+
+  .stack-board{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:22px 52px;
+  }
+  @media (max-width:760px){ .stack-board{grid-template-columns:repeat(2,1fr);row-gap:34px;} }
+  @media (max-width:420px){ .stack-board{grid-template-columns:1fr 1fr;} }
+
+  .stack-wrap{
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+
+  .stack-zone{
+    position:relative;width:100%;aspect-ratio:3/4;
+  }
+  .stack-pile{position:absolute;inset:0;}
+
+  /* ---------- the physical card ---------- */
+  .stack-card{
+    position:absolute;inset:0;border:none;padding:0;background:none;
+    font-family:inherit;-webkit-tap-highlight-color:transparent;
+    transition:transform .38s var(--ease);
+    transform-origin:50% 85%;
+  }
+  .stack-card.is-behind{pointer-events:none;}
+  .stack-card.is-top{cursor:pointer;}
+  .stack-card:focus-visible .card-face{outline:3px solid var(--gold-600);outline-offset:3px;}
+
+  .card-face{
+    position:absolute;inset:0;border-radius:var(--r-md);
+    background:linear-gradient(155deg, var(--tier-bg), var(--tier-bg-dark));
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.35) inset,
+      0 6px 0 var(--edge-shadow-soft),
+      0 12px 20px -8px var(--edge-shadow);
+    border:1px solid rgba(255,255,255,.28);
+    overflow:hidden;display:flex;align-items:center;justify-content:center;
+    transition:transform .16s var(--ease), box-shadow .16s var(--ease);
+  }
+  .card-pattern{
+    position:absolute;inset:0;
+    background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.10) 0 7px, transparent 7px 15px);
+    opacity:.55;
+  }
+  .card-sheen{
+    position:absolute;inset:0;
+    background:linear-gradient(115deg, rgba(255,255,255,.22) 0%, transparent 30%);
+    pointer-events:none;
+  }
+  .card-frame{
+    position:absolute;inset:9px;border:2px dashed rgba(255,255,255,.38);
+    border-radius:calc(var(--r-md) - 7px);pointer-events:none;
+  }
+  .card-core{
+    position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+    color:#fff;text-align:center;padding:10px;
+  }
+  .card-icon{font-size:clamp(24px,5.6vw,36px);filter:drop-shadow(0 3px 2px rgba(0,0,0,.25));}
+  .card-value{font-family:var(--font-display);font-weight:800;font-size:clamp(17px,3.4vw,23px);}
+  .card-label{font-weight:700;font-size:10px;letter-spacing:.2px;opacity:.85;}
+
+  /* tactile hover/press — only the clickable top card responds */
+  .stack-card.is-top:hover .card-face{
+    transform:translateY(-5px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.4) inset,
+      0 10px 0 var(--edge-shadow-soft),
+      0 18px 26px -8px var(--edge-shadow);
+  }
+  .stack-card.is-top:active .card-face{
+    transform:translateY(2px) scale(.97);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.3) inset,
+      0 3px 0 var(--edge-shadow-soft),
+      0 6px 10px -6px var(--edge-shadow);
+  }
+
+  /* the "drawn" pick animation — card lifts, flips a little, and sails off */
+  .stack-card.picking{
+    animation:cardPick .5s var(--ease) forwards;
+    z-index:999 !important;
+    pointer-events:none;
+  }
+  @keyframes cardPick{
+    0%{transform:translate(0,0) scale(1) rotate(0deg);}
+    28%{transform:translate(-8px,-20px) scale(1.05) rotate(-7deg);}
+    62%{transform:translate(6px,-46px) scale(1.08) rotate(6deg);}
+    100%{transform:translate(0,-78px) scale(.82) rotate(0deg);opacity:0;}
+  }
+
+  /* empty-stack placeholder */
+  .stack-empty{
+    position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    flex-direction:column;gap:5px;border-radius:var(--r-md);
+    border:3px dashed var(--input-border);background:var(--input-bg);color:var(--ink-500);
+  }
+  .stack-empty.show{display:flex;}
+  .stack-empty-icon{font-size:24px;opacity:.45;}
+  .stack-empty-text{font-weight:700;font-size:11px;text-align:center;padding:0 8px;}
+
+  .stack-label{
+    font-weight:800;font-size:12.5px;color:var(--ink-900);background:var(--white);
+    padding:5px 13px;border-radius:999px;box-shadow:0 3px 0 var(--edge-shadow-soft);
+    border:1px solid var(--border-card);white-space:nowrap;
+  }
+  .stack-wrap.depleted .stack-label{color:var(--ink-500);}
+
+  .stack-collected{
+    display:flex;flex-wrap:wrap;gap:5px;justify-content:center;min-height:24px;max-width:100%;
+  }
+  .collected-badge{
+    width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11.5px;background:var(--white);border:2px solid var(--border-card);
+    box-shadow:0 2px 0 var(--edge-shadow-soft);animation:badgeIn .3s var(--ease);
+  }
+  @keyframes badgeIn{from{transform:scale(.4);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .collected-badge.correct{border-color:var(--correct-dark);}
+  .collected-badge.wrong{border-color:var(--wrong-dark);}
+  .collected-badge.skipped{border-color:var(--skip);}
+
+  /* ---------- question overlay ---------- */
+  .overlay{position:fixed;inset:0;background:var(--overlay-tint);display:none;align-items:center;justify-content:center;z-index:60;padding:16px;}
+  .overlay.show{display:flex;}
+  .qpanel{
+    background:var(--white);border-radius:var(--r-lg);padding:26px 24px 22px;
+    max-width:560px;width:100%;max-height:92vh;overflow-y:auto;
+    box-shadow:0 14px 0 var(--edge-shadow);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--border-card);
+  }
+  @keyframes pop{0%{transform:scale(.85);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .qpanel-badge{
+    display:inline-flex;align-items:center;gap:6px;color:#fff;font-weight:800;
+    font-family:var(--font-display);font-size:13px;padding:5px 14px;border-radius:999px;margin-bottom:12px;
+  }
+  .qpanel-title{font-family:var(--font-display);font-weight:700;font-size:clamp(19px,3.6vw,23px);
+    margin:0 0 14px;color:var(--ink-900);line-height:1.35;}
+
+  .qmedia{margin-bottom:16px;border-radius:var(--r-md);overflow:hidden;background:var(--input-bg);}
+  .qmedia img{width:100%;display:block;object-fit:cover;}
+  .qmedia .video-wrap{position:relative;width:100%;padding-top:56.25%;}
+  .qmedia .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  .qmedia .audio-badge{
+    display:flex;align-items:center;gap:10px;padding:18px;font-weight:700;color:var(--teal-700);
+  }
+  .qmedia .audio-badge .pulse-dot{width:12px;height:12px;border-radius:50%;background:var(--fun-red);animation:audiopulse 1.1s ease-in-out infinite;}
+  @keyframes audiopulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.3);}}
+  .qmedia .yt-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+
+  /* ---------- media reveal (clue pre-audio + Show/Play button) ---------- */
+  .media-reveal{padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;}
+  .reveal-btn{
+    font-family:var(--font-body);font-weight:800;font-size:15px;color:#fff;
+    background:var(--teal-700);border:none;border-radius:999px;padding:13px 24px;cursor:pointer;
+    box-shadow:0 4px 0 var(--teal-900);transition:transform .12s ease;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .reveal-btn:hover:not(:disabled){transform:translateY(-2px);}
+  .reveal-btn:active:not(:disabled){transform:translateY(1px);box-shadow:0 2px 0 var(--teal-900);}
+  .reveal-btn:disabled{opacity:.7;cursor:default;transform:none;}
+  .reveal-btn.replay{background:var(--gold-600);box-shadow:0 4px 0 var(--gold-600);}
+  .reveal-btn.stop{background:var(--fun-red);box-shadow:0 4px 0 var(--wrong-dark);}
+  .reveal-hint{font-weight:600;font-size:12.5px;color:var(--ink-500);}
+  .reveal-hint .pulse-dot{width:9px;height:9px;border-radius:50%;background:var(--fun-red);display:inline-block;
+    animation:audiopulse 1.1s ease-in-out infinite;margin-right:6px;vertical-align:middle;}
+  .media-content{width:100%;}
+
+  .choices{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+  .choice-btn{
+    text-align:left;background:var(--input-bg);border:2px solid var(--input-border);
+    border-radius:var(--r-sm);padding:13px 16px;font-family:var(--font-body);font-weight:700;
+    font-size:15px;color:var(--ink-900);cursor:pointer;transition:transform .12s ease, border-color .15s ease, background .15s ease;
+    display:flex;align-items:center;gap:10px;
+  }
+  .choice-btn .choice-letter{
+    width:26px;height:26px;border-radius:50%;background:var(--white);border:2px solid var(--input-border);
+    display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;flex:0 0 auto;
+  }
+  .choice-btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--gold-500);}
+  .choice-btn:active:not(:disabled){transform:translateY(1px);}
+  .choice-btn:disabled{cursor:default;}
+  .choice-btn.correct{background:color-mix(in srgb, var(--correct) 22%, var(--white));border-color:var(--correct-dark);}
+  .choice-btn.correct .choice-letter{background:var(--correct-dark);color:#fff;border-color:var(--correct-dark);}
+  .choice-btn.wrong{background:color-mix(in srgb, var(--wrong) 20%, var(--white));border-color:var(--wrong-dark);}
+  .choice-btn.wrong .choice-letter{background:var(--wrong-dark);color:#fff;border-color:var(--wrong-dark);}
+  .choice-btn.dim{opacity:.55;}
+
+  .qpanel-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .skip-btn{
+    font-family:var(--font-body);font-weight:800;font-size:14px;color:var(--teal-700);
+    background:var(--panel-tint);border:none;border-radius:999px;padding:10px 18px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .skip-btn:hover{transform:translateY(-2px);}
+  .skip-btn:disabled{opacity:.4;cursor:default;transform:none;}
+
+  .feedback-line{font-weight:800;font-size:15px;min-height:22px;flex:1 1 auto;text-align:right;}
+  .feedback-line.ok{color:var(--correct-dark);}
+  .feedback-line.no{color:var(--wrong-dark);}
+
+  .continue-btn{
+    font-family:var(--font-body);font-weight:800;font-size:15px;color:#fff;
+    background:var(--gold-600);border:none;border-radius:999px;padding:11px 22px;cursor:pointer;
+    box-shadow:0 4px 0 var(--gold-600);transition:transform .12s ease;display:none;
+  }
+  .continue-btn.show{display:inline-block;}
+  .continue-btn:hover{transform:translateY(-2px);}
+  .continue-btn:active{transform:translateY(1px);}
+
+  /* ---------- confetti ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:80;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:3px;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+
+  /* ---------- summary overlay ---------- */
+  .summary-card{
+    background:var(--cream);border-radius:var(--r-lg);padding:30px 26px;
+    max-width:560px;width:100%;max-height:90vh;overflow-y:auto;
+    border:8px solid var(--gold-500);box-shadow:0 14px 0 var(--edge-shadow);
+    animation:pop .4s cubic-bezier(.34,1.56,.64,1);text-align:center;
+  }
+  .summary-card .trophy{font-size:56px;}
+  .summary-card h2{font-family:var(--font-display);font-weight:700;font-size:24px;margin:4px 0;color:var(--ink-900);}
+  .summary-card .final-score{font-family:var(--font-display);font-weight:800;font-size:38px;margin:6px 0 2px;}
+  .summary-card .final-score.pos{color:var(--correct-dark);}
+  .summary-card .final-score.neg{color:var(--wrong-dark);}
+  .summary-card .rank-tag{font-weight:800;color:var(--gold-600);margin-bottom:16px;font-size:14.5px;}
+
+  .summary-list{text-align:left;display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+  .summary-item{
+    background:var(--white);border-radius:var(--r-sm);padding:12px 14px;
+    border-left:5px solid var(--skip);display:flex;flex-direction:column;gap:4px;
+  }
+  .summary-item.ok{border-left-color:var(--correct-dark);}
+  .summary-item.no{border-left-color:var(--wrong-dark);}
+  .summary-item .sq{font-weight:700;font-size:14px;color:var(--ink-900);}
+  .summary-item .sa{font-weight:600;font-size:13px;color:var(--ink-500);}
+  .summary-item .sp{font-weight:800;font-size:13px;}
+  .summary-item .sp.pos{color:var(--correct-dark);}
+  .summary-item .sp.neg{color:var(--wrong-dark);}
+  .summary-item .sp.zero{color:var(--ink-500);}
+
+  .btn-big{
+    background:var(--fun-red);color:#fff;font-family:var(--font-body);font-weight:800;font-size:17px;
+    border:none;border-radius:999px;padding:14px 30px;box-shadow:0 5px 0 var(--wrong-dark);cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn-big:hover{transform:translateY(-2px);}
+  .btn-big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--wrong-dark);}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+
+  /* ---------- lifelines ---------- */
+.lifeline-bar{
+  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;
+}
+.lifeline-label{
+  font-family:var(--font-display);font-weight:700;font-size:12.5px;
+  letter-spacing:.4px;text-transform:uppercase;
+  color:var(--ink-500);margin:0 0 8px;
+  display:flex;align-items:center;gap:6px;
+}
+.lifeline-label::before{content:"🎯";font-size:13px;}
+.lifeline-btn{
+  display:flex;align-items:center;gap:7px;
+  background:var(--panel-tint);border:2px solid var(--input-border);
+  border-radius:999px;padding:8px 14px;
+  font-family:var(--font-body);font-weight:800;font-size:13px;color:var(--teal-700);
+  cursor:pointer;transition:transform .12s ease, opacity .15s ease, border-color .15s ease;
+}
+.lifeline-btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--gold-500);}
+.lifeline-btn:active:not(:disabled){transform:translateY(1px);}
+.ll-icon-svg{
+  width:18px;height:18px;flex:0 0 auto;
+  display:inline-block;vertical-align:middle;
+}
+.ll-icon-svg svg{display:block;width:100%;height:100%;}
+.ll-spin{
+  transform-origin:center;
+  animation:llSpin .8s linear infinite;
+}
+@keyframes llSpin{ to{ transform:rotate(360deg); } }
+.lifeline-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.lifeline-btn.used{opacity:.35;text-decoration:line-through;cursor:not-allowed;transform:none;}
+.lifeline-btn.loading{opacity:.8;cursor:wait;}
+
+.hint-bubble{
+  display:none;align-items:flex-start;gap:8px;
+  background:var(--bubble-tint);border:2px dashed var(--gold-500);
+  border-radius:var(--r-sm);padding:12px 14px;margin-bottom:14px;
+  font-weight:700;font-size:14px;color:var(--ink-900);
+  animation:pop .3s cubic-bezier(.34,1.56,.64,1);
+}
+.hint-bubble .hint-icon{font-size:16px;flex:0 0 auto;}
+
+.choice-btn.removed{display:none;}
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="gem-drift" style="top:14%;left:6%;animation-duration:34s;">💎</div>
+  <div class="gem-drift" style="top:30%;left:84%;animation-duration:42s;animation-direction:reverse;">🔑</div>
+  <div class="gem-drift" style="top:62%;left:44%;animation-duration:48s;">✨</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">🗝️</span> Treasure Quiz</div>
+  <div class="top-right">
+    <div class="score-counter" id="scoreCounter">🏆 <span id="scoreVal">0</span> pts</div>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off">🔊</button>
+    <button style="display: none" class="icon-btn" id="themeBtn" title="Light/Dark mode">🌙</button>
+  </div>
+</div>
+
+<div class="path-wrap">
+  <div class="path" id="pathTrack"></div>
+</div>
+
+<main class="stage">
+  <div class="stage-intro">
+    <h1>Pick a card, answer the question!</h1>
+    <p>Bigger piles hold harder questions — and bigger rewards (and risks)!</p>
+  </div>
+  <div class="stack-board" id="stackBoard"></div>
+</main>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<div class="overlay" id="qOverlay">
+  <div class="qpanel" id="qPanel">
+    <div class="qpanel-badge" id="qBadge">10 points</div>
+    <h2 class="qpanel-title" id="qTitle"></h2>
+    <div class="lifeline-label">Lifelines</div>
+    <div class="lifeline-bar" id="lifelineBar"></div>
+    <div class="hint-bubble" id="hintBubble"></div>
+    <div class="qmedia" id="qMedia" style="display:none;"></div>
+    <div class="choices" id="qChoices"></div>
+    <div class="qpanel-footer">
+      <button class="skip-btn" id="skipBtn">Skip question</button>
+      <span class="feedback-line" id="feedbackLine"></span>
+      <button class="continue-btn" id="continueBtn">Continue ▶️</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="summaryOverlay">
+  <div class="summary-card">
+    <div class="trophy">🏆</div>
+    <h2>Quest Complete!</h2>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="rank-tag" id="rankTag">Treasure Hunter</div>
+    <div class="summary-list" id="summaryList"></div>
+    <button class="btn-big" id="restartBtn">Play Again 🔁</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =================================================================
+     PRE-AUDIO CLUE CLIPS
+     — Placeholder clips only. Swap these URLs for your own recorded
+       clue clips (one per media type). Suggested lines:
+         image: "Now the computer will show you an amazing picture..."
+         audio: "Get ready for an audio..."
+         video: "Get ready for a video..."
+     ================================================================= */
+  var PRE_AUDIO = {
+    image: "https://sourabhsuneja.github.io/quiz/play/sounds/before-image.mp3", // TODO: replace with your own "get ready for a picture" clue clip
+    audio: "https://sourabhsuneja.github.io/quiz/play/sounds/before-audio.mp3", // TODO: replace with your own "get ready for an audio" clue clip
+    video: "https://sourabhsuneja.github.io/quiz/play/sounds/before-video.mp3"  // TODO: replace with your own "get ready for a video" clue clip
+  };
+  var PRE_AUDIO_MAX_WAIT_MS = 6000; // cap how long we wait for the clue clip before revealing, in case a placeholder clip runs long
+  var soundCache = {};
+  function preloadAudio(url){
+    var a = new Audio();
+    a.preload = 'auto';
+    a.src = url;
+    a.load();
+    soundCache[url] = a;
+  }
+  [
+    "https://sourabhsuneja.github.io/quiz/play/sounds/correct.wav",
+    "https://sourabhsuneja.github.io/quiz/play/sounds/wrong.wav",
+    PRE_AUDIO.image, PRE_AUDIO.audio, PRE_AUDIO.video
+  ].forEach(preloadAudio);
+
+  /* =================================================================
+     QUESTION DATA
+     — Hardcoded for now; shape is intended to map 1:1 onto a future
+       Supabase table (e.g. `questions`), one row per question:
+         id, difficulty, text, media_type, media_url, media_start,
+         media_end, choices (jsonb), correct_index
+
+     media.start / media.end (both OPTIONAL, audio & video only):
+       Clip the YouTube media to a specific time range instead of
+       playing the whole thing. Accepts plain seconds (e.g. 75) or
+       "mm:ss" / "h:mm:ss" strings (e.g. "1:15"). Playback starts at
+       `start` (default: beginning) and is automatically paused once
+       it reaches `end`. Leave both unset to play the full clip as
+       before. Regardless of whether a range is set, the play/show
+       button doubles as a Stop button while media is playing, so the
+       user can always cut playback short once they know the answer.
+     ================================================================= */
+  var QUESTIONS = [
+  {
+    id: "q2",
+    difficulty: 25,
+    text: "Which is the longest river in India?",
+    media: null,
+    choices: [
+      "Ganges",
+      "Brahmaputra",
+      "Yamuna",
+      "Godavari"
+    ],
+    correctIndex: 0
+  },
+  {
+    id: "q5",
+    difficulty: 100,
+    text: "Identify this famous Indian temple from the image.",
+    media: {
+      type: "image",
+      url: "https://images.pexels.com/photos/6040175/pexels-photo-6040175.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    choices: [
+      "Somnath Temple",
+      "Vishwanath Temple",
+      "Konark Sun Temple",
+      "Kedarnath Temple"
+    ],
+    correctIndex: 2
+  },
+  {
+    id: "q6",
+    difficulty: 25,
+    text: "The Indian national flower is:",
+    media: null,
+    choices: [
+      "Rose",
+      "Lotus",
+      "Jasmine",
+      "Marigold"
+    ],
+    correctIndex: 1
+  },
+  {
+    id: "q8",
+    difficulty: 75,
+    text: "The first Indian to go into space was:",
+    media: null,
+    choices: [
+      "Kalpana Chawla",
+      "Rakesh Sharma",
+      "Sunita Williams",
+      "Ravish Malhotra"
+    ],
+    correctIndex: 1
+  },
+    {
+    id: "q9",
+    difficulty: 25,
+    text: "Which popular brand does this radio ad belong to?",
+    media: {
+      type: "audio",
+      url: "https://youtu.be/K5UNz3GVlcE?si=PcYbDvfzGHevYUhs",
+      start: "0:00",
+      end: "0:42"
+    },
+    choices: [
+      "Reid & Taylor",
+      "Cadbury",
+      "Amul",
+      "Nestle"
+    ],
+    correctIndex: 1
+  },
+  {
+    id: "q10",
+    difficulty: 10,
+    text: "Whose poster is this girl holding in her hands?",
+    media: {
+      type: "image",
+      url: "https://images.pexels.com/photos/12249238/pexels-photo-12249238.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    choices: [
+      "Abraham Lincoln",
+      "Joe Biden",
+      "Boris Johnson",
+      "Vladimir Putin"
+    ],
+    correctIndex: 3
+  },
+  {
+    id: "q11",
+    difficulty: 50,
+    text: "Which renowned company aired this television advertisement with a societal plea to conserve water?",
+    media: {
+      type: "video",
+      url: "https://youtu.be/2bdvoVr64HI?si=XJutJY2hlmgQSB6R",
+      start: "0:00",
+      end: "1:09"
+    },
+    choices: [
+      "Euroka Forbes (Aquaguard)",
+      "Kent",
+      "Havells",
+      "Hindustan Unilever"
+    ],
+    correctIndex: 3
+  },
+  {
+    id: "q12",
+    difficulty: 25,
+    text: "The Indian city known as the \"City of Joy\" is:",
+    media: null,
+    choices: [
+      "Kolkata",
+      "Mumbai",
+      "Delhi",
+      "Bangalore"
+    ],
+    correctIndex: 0
+  },
+  {
+    id: "q13",
+    difficulty: 50,
+    text: "The Indian city known as the \"Silicon Valley of India\" is:",
+    media: null,
+    choices: [
+      "Bangalore",
+      "Hyderabad",
+      "Chennai",
+      "Pune"
+    ],
+    correctIndex: 0
+  }
+];
+
+  function escapeHtml(str){
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+var LIFELINES = [
+  {
+    id: 'hint',
+    icon: '💡',
+    label: 'Hint From AI',
+    isAvailable: function(q){ return true; },
+    use: function(q, btnEl){ useHintLifeline(q, btnEl); }
+  },
+  {
+    id: 'fifty',
+    icon: '➗',
+    label: '50-50',
+    isAvailable: function(q){ return q.choices.length >= 4; },
+    use: function(q, btnEl){ useFiftyFiftyLifeline(q, btnEl); }
+  },
+  {
+    id: 'second',
+    icon: '🔄',
+    label: 'Second Chance',
+    isAvailable: function(q){ return true; },
+    use: function(q, btnEl){ useSecondChanceLifeline(q, btnEl); }
+  }
+  // Add future lifelines here — same shape: id, icon, label, isAvailable(q), use(q, btnEl)
+];
+
+var LIFELINE_ICONS = {
+  hint:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M9 18h6"/>' +
+      '<path d="M10 21h4"/>' +
+      '<path d="M12 3a6 6 0 0 0-4 10.5c.6.55 1 1.3 1 2.1V16h6v-.4c0-.8.4-1.55 1-2.1A6 6 0 0 0 12 3Z"/>' +
+      '<path d="M12 3V1.5"/>' +
+      '<path d="M18.5 6.5l1-1"/>' +
+      '<path d="M5.5 6.5l-1-1"/>' +
+    '</svg>',
+  fifty:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="7" cy="7" r="2.6"/>' +
+      '<circle cx="17" cy="17" r="2.6"/>' +
+      '<path d="M5 19 19 5"/>' +
+    '</svg>',
+  second:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M3 12a9 9 0 1 0 3-6.7"/>' +
+      '<path d="M3 4v5h5"/>' +
+    '</svg>',
+  loading:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">' +
+      '<path d="M12 3a9 9 0 1 0 9 9" class="ll-spin"/>' +
+    '</svg>'
+};
+
+function renderLifelines(q){
+  el.lifelineBar.innerHTML = '';
+  el.hintBubble.style.display = 'none';
+  el.hintBubble.innerHTML = '';
+
+  LIFELINES.forEach(function(ll){
+    if(!ll.isAvailable(q)) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'lifeline-btn';
+    btn.id = 'lifeline-' + ll.id;
+    btn.innerHTML = '<span class="ll-icon-svg">' + LIFELINE_ICONS[ll.id] + '</span><span>' + ll.label + '</span>';
+
+    if(state.lifelines[ll.id]){
+      btn.classList.add('used');
+      btn.disabled = true;
+    }
+
+    btn.addEventListener('click', function(){
+      if(state.lifelines[ll.id] || answered) return;
+      ll.use(q, btn);
+    });
+
+    el.lifelineBar.appendChild(btn);
+  });
+}
+
+function useSecondChanceLifeline(q, btnEl){
+  state.lifelines.second = true;
+  state.secondChanceArmed = true;   // active for the CURRENT question only
+  btnEl.classList.add('used');
+  btnEl.disabled = true;
+
+  el.hintBubble.innerHTML = '<span class="ll-icon-svg">' + LIFELINE_ICONS.second + '</span><span>Second Chance armed — your next wrong pick won\'t count!</span>';
+  el.hintBubble.style.display = 'flex';
+  playCorrect();
+}
+  
+function useFiftyFiftyLifeline(q, btnEl){
+  state.lifelines.fifty = true;
+  btnEl.classList.add('used');
+  btnEl.disabled = true;
+
+  var wrongIndexes = [];
+  q.choices.forEach(function(c, i){ if(i !== q.correctIndex) wrongIndexes.push(i); });
+
+  // shuffle wrong-answer indexes
+  for(var i = wrongIndexes.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = wrongIndexes[i]; wrongIndexes[i] = wrongIndexes[j]; wrongIndexes[j] = tmp;
+  }
+
+  var numToRemove = Math.floor(q.choices.length / 2); // "half of the options"
+  var toRemove = wrongIndexes.slice(0, numToRemove);
+
+  var allBtns = el.qChoices.querySelectorAll('.choice-btn');
+  toRemove.forEach(function(idx){
+    var b = allBtns[idx];
+    if(b){
+      b.disabled = true;
+      b.classList.add('removed');
+    }
+  });
+  playCorrect();
+}
+
+function useHintLifeline(q, btnEl){
+  state.lifelines.hint = true;
+  btnEl.classList.add('loading');
+  btnEl.disabled = true;
+  btnEl.innerHTML = '<span class="ll-icon-svg">' + LIFELINE_ICONS.loading + '</span><span>Thinking…</span>';
+
+  var promptObj = {
+    question: q.text,
+    choices: q.choices,
+    answer: q.choices[q.correctIndex]
+  };
+  var prompt = JSON.stringify(promptObj);
+
+  window.reword(prompt).then(function(hintText){
+    btnEl.classList.remove('loading');
+    btnEl.classList.add('used');
+    btnEl.innerHTML = '<span class="ll-icon-svg">' + LIFELINE_ICONS.hint + '</span><span>Hint</span>';
+    el.hintBubble.innerHTML = '<span class="ll-icon-svg">' + LIFELINE_ICONS.hint + '</span><span>' + escapeHtml(hintText) + '</span>';
+    el.hintBubble.style.display = 'flex';
+    playCorrect();
+  }).catch(function(){
+    // allow retry on failure instead of burning the lifeline
+    state.lifelines.hint = false;
+    btnEl.classList.remove('loading', 'used');
+    btnEl.disabled = false;
+    btnEl.innerHTML = '<span class="ll-icon-svg">' + LIFELINE_ICONS.hint + '</span><span>Hint</span>';
+    el.hintBubble.innerHTML = '<span class="hint-icon">⚠️</span><span>Could not fetch a hint — try again.</span>';
+    el.hintBubble.style.display = 'flex';
+  });
+}
+
+  var TIER_ORDER = [10, 25, 50, 75, 100];
+
+  var TIER_META = {
+    10:  { icon: "🥉", label: "Bronze",   bg: "var(--tier-10)",  bgDark: "var(--tier-10-dark)" },
+    25:  { icon: "🥈", label: "Silver",   bg: "var(--tier-25)",  bgDark: "var(--tier-25-dark)" },
+    50:  { icon: "🥇", label: "Gold",     bg: "var(--tier-50)",  bgDark: "var(--tier-50-dark)" },
+    75:  { icon: "💜", label: "Amethyst", bg: "var(--tier-75)",  bgDark: "var(--tier-75-dark)" },
+    100: { icon: "❤️", label: "Ruby",     bg: "var(--tier-100)", bgDark: "var(--tier-100-dark)" }
+  };
+
+  var RANKS = [
+    { min: -Infinity, label: "Better Luck Next Time!" },
+    { min: 1,   label: "Treasure Hunter" },
+    { min: 100, label: "Vault Explorer" },
+    { min: 180, label: "Master of the Vault" },
+    { min: 260, label: "Legendary Treasure Champion" }
+  ];
+
+  /* ================= STATE ================= */
+  var state = {
+    score: 0,
+    muted: false,
+    results: {}, // id -> { status: 'correct'|'wrong'|'skipped', chosenIndex, points }
+    stacks: {}   // tier -> remaining question objects, in draw order (index 0 = next to draw)
+  };
+  state.lifelines = { hint: false, fifty: false, second: false }; // true = already used this game
+
+  var el = {
+    scoreCounter: document.getElementById('scoreCounter'),
+    scoreVal: document.getElementById('scoreVal'),
+    muteBtn: document.getElementById('muteBtn'),
+    themeBtn: document.getElementById('themeBtn'),
+    pathTrack: document.getElementById('pathTrack'),
+    stackBoard: document.getElementById('stackBoard'),
+    confettiLayer: document.getElementById('confettiLayer'),
+    qOverlay: document.getElementById('qOverlay'),
+    qBadge: document.getElementById('qBadge'),
+    qTitle: document.getElementById('qTitle'),
+    qMedia: document.getElementById('qMedia'),
+    qChoices: document.getElementById('qChoices'),
+    skipBtn: document.getElementById('skipBtn'),
+    feedbackLine: document.getElementById('feedbackLine'),
+    continueBtn: document.getElementById('continueBtn'),
+    summaryOverlay: document.getElementById('summaryOverlay'),
+    finalScore: document.getElementById('finalScore'),
+    rankTag: document.getElementById('rankTag'),
+    summaryList: document.getElementById('summaryList'),
+    restartBtn: document.getElementById('restartBtn'),
+    lifelineBar: document.getElementById('lifelineBar'),
+    hintBubble: document.getElementById('hintBubble'),
+  };
+
+  var activeQuestion = null;
+  var answered = false;
+  var pickingLock = false;   // true while a card's pick animation is mid-flight
+  var preAudioEl = null;     // currently playing clue-clip <audio>, tracked so we can stop it if the panel closes
+
+  var activeMediaIframe = null;   // the YouTube iframe currently playing (video or hidden audio), if any
+  var activeMediaTimeout = null;  // scheduled auto-stop timer for a clipped start/end range
+  var clipWatchEndSec = null;     // when set, we're watching real playback time for this end second
+  var clipWatchOnEnd = null;      // callback to run once clipWatchEndSec is reached
+
+  /* ================= AUDIO (simple beeps, no external files) ================= */
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(Ctx) audioCtx = new Ctx();
+    }
+    return audioCtx;
+  }
+  function playSound(url){
+  if(state.muted) return;
+  try{
+    var cached = soundCache[url];
+    var a = cached ? cached.cloneNode(true) : new Audio(url);
+    a.play().catch(function(){});
+  }catch(e){}
+}
+  function beep(freq, dur, delay, vol){
+    if(state.muted) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.15, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0+dur+0.02);
+  }
+  function playDraw(){ beep(460,0.05,0,0.07); beep(700,0.07,0.06,0.06); beep(940,0.06,0.13,0.045); }
+  function playCorrect(){ playSound("https://sourabhsuneja.github.io/quiz/play/sounds/correct.wav"); }
+  function playWrong(){ playSound("https://sourabhsuneja.github.io/quiz/play/sounds/wrong.wav"); }
+  function playSkip(){ beep(400,0.1,0,0.06); }
+
+  /* ================= HELPERS ================= */
+  function getYouTubeId(url){
+    var m = url.match(/(?:youtu\.be\/|v=|embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+  function letterFor(i){ return String.fromCharCode(65 + i); }
+
+  // small deterministic hash so each card's "natural" tilt stays consistent across re-renders
+  function hashStr(s){
+    var h = 0;
+    for(var i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
+    return Math.abs(h);
+  }
+
+  /* Parses an optional media.start / media.end value into whole seconds.
+     Accepts a plain number, a numeric string ("75"), or "mm:ss" / "h:mm:ss"
+     strings ("1:15", "0:00"). Returns null when the value is missing. */
+  function parseTimestamp(val){
+    if(val === null || val === undefined || val === '') return null;
+    if(typeof val === 'number' && isFinite(val)) return Math.max(0, Math.floor(val));
+    var str = String(val).trim();
+    if(!str.length) return null;
+    if(/^\d+$/.test(str)) return parseInt(str, 10);
+    var parts = str.split(':');
+    var secs = 0;
+    for(var i=0;i<parts.length;i++){
+      var n = parseInt(parts[i], 10);
+      if(isNaN(n)) n = 0;
+      secs = secs * 60 + n;
+    }
+    return Math.max(0, secs);
+  }
+
+  /* Builds a YouTube embed URL with the given query params. */
+  function buildYouTubeSrc(url, params){
+    var ytid = getYouTubeId(url);
+    var qs = Object.keys(params || {}).map(function(k){
+      return k + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    return 'https://www.youtube.com/embed/' + ytid + (qs ? ('?' + qs) : '');
+  }
+
+  /* Sends a playback command to an embedded YouTube iframe via postMessage.
+     Requires the iframe to have been created with enablejsapi=1. */
+  function ytPostMessage(iframe, func, args){
+    if(!iframe || !iframe.contentWindow) return;
+    try{
+      iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args || [] }), '*');
+    }catch(e){ /* ignore — iframe may not be ready yet */ }
+  }
+
+  function ytStartListening(iframe){
+    if(!iframe || !iframe.contentWindow) return;
+    // Tells YouTube's player to start sending "infoDelivery" status messages,
+    // which include the real current playback time.
+    ytPostMessage(iframe, 'addEventListener', ['onStateChange']);
+    try{
+      iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: iframe.id }), '*');
+    }catch(e){}
+  }
+
+  window.addEventListener('message', function(e){
+    if(clipWatchEndSec === null) return; // we're not watching for an end-time right now
+    var data;
+    try{ data = JSON.parse(e.data); }catch(err){ return; }
+    if(data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number'){
+      if(data.info.currentTime >= clipWatchEndSec){
+        var cb = clipWatchOnEnd;
+        clipWatchEndSec = null;
+        clipWatchOnEnd = null;
+        if(activeMediaIframe) ytPostMessage(activeMediaIframe, 'pauseVideo');
+        if(typeof cb === 'function') cb();
+      }
+    }
+  });
+
+  /* Stops whatever media (video or hidden audio) is currently playing, and
+     cancels any pending auto-stop timer for a clipped start/end range. */
+  function stopActiveMedia(){
+    if(activeMediaTimeout){ clearTimeout(activeMediaTimeout); activeMediaTimeout = null; }
+    clipWatchEndSec = null;
+    clipWatchOnEnd = null;
+    if(activeMediaIframe){
+      ytPostMessage(activeMediaIframe, 'stopVideo');
+      activeMediaIframe = null;
+    }
+  }
+
+  function stopPreAudio(){
+    if(preAudioEl){
+      try{ preAudioEl.pause(); }catch(e){}
+      preAudioEl = null;
+    }
+  }
+
+  /* Plays the clue pre-audio for a media type, then resolves (via callback) once
+     it finishes — or after PRE_AUDIO_MAX_WAIT_MS, or immediately on load error,
+     whichever comes first. */
+  function playPreAudioThen(mediaType, callback){
+    var src = PRE_AUDIO[mediaType];
+    if(!src){ callback(); return; }
+
+    var settled = false;
+    var timeoutId = null;
+    var audio = soundCache[src] ? soundCache[src].cloneNode(true) : new Audio(src);
+    preAudioEl = audio;
+
+    function finish(){
+      if(settled) return;
+      settled = true;
+      if(timeoutId) clearTimeout(timeoutId);
+      if(preAudioEl === audio) preAudioEl = null;
+      callback();
+    }
+
+    audio.addEventListener('ended', finish);
+    audio.addEventListener('error', finish);
+    timeoutId = setTimeout(finish, PRE_AUDIO_MAX_WAIT_MS);
+
+    var playPromise = audio.play();
+    if(playPromise && typeof playPromise.catch === 'function'){
+      playPromise.catch(finish); // e.g. autoplay blocked — don't get stuck, just reveal
+    }
+  }
+
+  /* ================= GROUP QUESTIONS INTO TIER STACKS ================= */
+  function groupIntoStacks(){
+    var groups = {};
+    TIER_ORDER.forEach(function(t){ groups[t] = []; });
+    QUESTIONS.forEach(function(q){ groups[q.difficulty].push(q); });
+    return groups;
+  }
+
+  /* Computes the resting transform for a card at a given depth from the top
+     of its pile (0 = top, drawable card; higher = further back / more offset)
+     so the pile reads as a natural, slightly messy stack of physical cards. */
+  function depthTransform(qid, depth){
+    if(depth === 0) return { dx: 0, dy: 0, angle: 0 };
+    var seed = hashStr(qid);
+    var angle = (seed % 13) - 6;                      // -6..6 deg, per-card
+    var side = (seed % 2 === 0) ? 1 : -1;
+    var dx = (((seed >> 3) % 5) - 2) + depth * 3 * side;
+    var dy = depth * 6;
+    return { dx: dx, dy: dy, angle: angle };
+  }
+
+  function applyCardTransform(cardEl, depth, total){
+    var qid = cardEl.id.replace('card-', '');
+    var t = depthTransform(qid, depth);
+    cardEl.style.transform = 'translate(' + t.dx + 'px,' + t.dy + 'px) rotate(' + t.angle + 'deg)';
+    cardEl.style.zIndex = String(total - depth);
+    if(depth === 0){
+      cardEl.classList.remove('is-behind');
+      cardEl.classList.add('is-top');
+      cardEl.disabled = false;
+      cardEl.tabIndex = 0;
+    } else {
+      cardEl.classList.remove('is-top');
+      cardEl.classList.add('is-behind');
+      cardEl.disabled = true;
+      cardEl.tabIndex = -1;
+    }
+  }
+
+  function buildCardEl(q, tier, meta){
+    var card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'stack-card';
+    card.id = 'card-' + q.id;
+    card.setAttribute('aria-label', 'Draw a ' + meta.label + ' card, ' + tier + ' points');
+    card.style.setProperty('--tier-bg', meta.bg);
+    card.style.setProperty('--tier-bg-dark', meta.bgDark);
+    card.innerHTML =
+      '<div class="card-face">' +
+        '<div class="card-pattern"></div>' +
+        '<div class="card-frame"></div>' +
+        '<div class="card-sheen"></div>' +
+        '<div class="card-core">' +
+          '<div class="card-icon">' + meta.icon + '</div>' +
+          '<div class="card-value">' + tier + ' pts</div>' +
+          '<div class="card-label">' + meta.label + ' Card</div>' +
+        '</div>' +
+      '</div>';
+    card.addEventListener('click', function(){
+      if(card.classList.contains('is-top')) pickFromStack(tier);
+    });
+    return card;
+  }
+
+  /* ================= BUILD BOARD ================= */
+  function buildStacks(){
+    state.stacks = groupIntoStacks();
+    el.stackBoard.innerHTML = '';
+    el.pathTrack.innerHTML = '';
+
+    TIER_ORDER.forEach(function(tier){
+      var meta = TIER_META[tier];
+      var wrap = document.createElement('div');
+      wrap.className = 'stack-wrap';
+      wrap.id = 'wrap-' + tier;
+      wrap.innerHTML =
+        '<div class="stack-zone" id="zone-' + tier + '">' +
+          '<div class="stack-pile" id="pile-' + tier + '"></div>' +
+          '<div class="stack-empty" id="empty-' + tier + '">' +
+            '<div class="stack-empty-icon">' + meta.icon + '</div>' +
+            '<div class="stack-empty-text">All picked up!</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="stack-label" id="label-' + tier + '"></div>' +
+        '<div class="stack-collected" id="collected-' + tier + '"></div>';
+      el.stackBoard.appendChild(wrap);
+
+      var pile = wrap.querySelector('#pile-' + tier);
+      var arr = state.stacks[tier];
+      arr.forEach(function(q, depth){
+        var card = buildCardEl(q, tier, meta);
+        pile.appendChild(card);
+        applyCardTransform(card, depth, arr.length);
+      });
+
+      updateStackLabel(tier);
+    });
+
+    QUESTIONS.forEach(function(q){
+      var stone = document.createElement('div');
+      stone.className = 'stone';
+      stone.id = 'stone-' + q.id;
+      el.pathTrack.appendChild(stone);
+    });
+  }
+
+  function updateStackLabel(tier){
+    var n = state.stacks[tier].length;
+    var labelEl = document.getElementById('label-' + tier);
+    labelEl.textContent = n === 0 ? 'No cards left' : (n + (n === 1 ? ' card left' : ' cards left'));
+  }
+
+  /* ================= DRAW A CARD FROM A STACK ================= */
+  function pickFromStack(tier){
+    if(activeQuestion || pickingLock) return;
+    var arr = state.stacks[tier];
+    if(!arr || arr.length === 0) return;
+
+    var q = arr[0];
+    var cardEl = document.getElementById('card-' + q.id);
+    if(!cardEl || cardEl.disabled) return;
+
+    pickingLock = true;
+    cardEl.classList.add('picking');
+    cardEl.disabled = true;
+    playDraw();
+
+    setTimeout(function(){
+      arr.shift();
+      if(cardEl.parentNode) cardEl.parentNode.removeChild(cardEl);
+
+      var pile = document.getElementById('pile-' + tier);
+      var remaining = Array.prototype.slice.call(pile.querySelectorAll('.stack-card'));
+      remaining.forEach(function(el2, depth){ applyCardTransform(el2, depth, remaining.length); });
+
+      updateStackLabel(tier);
+      if(remaining.length === 0){
+        document.getElementById('empty-' + tier).classList.add('show');
+        document.getElementById('wrap-' + tier).classList.add('depleted');
+      }
+
+      pickingLock = false;
+      showQuestion(q);
+    }, 480);
+  }
+
+  /* ================= SHOW QUESTION ================= */
+  function showQuestion(q){
+    activeQuestion = q;
+    answered = false;
+    state.secondChanceArmed = false;
+    var meta = TIER_META[q.difficulty];
+
+    el.qBadge.textContent = q.difficulty + ' points';
+    el.qBadge.style.background = meta.bg;
+    el.qTitle.textContent = q.text;
+    el.feedbackLine.textContent = '';
+    el.feedbackLine.className = 'feedback-line';
+    el.continueBtn.classList.remove('show');
+    el.skipBtn.disabled = false;
+
+    renderLifelines(q);
+    renderMedia(q);
+    renderChoices(q);
+
+    el.qOverlay.classList.add('show');
+  }
+
+  /* Builds the "reveal" UI for a question's media: a Show/Play button that first
+     plays a short clue pre-audio, then reveals (or restarts) the actual media.
+     Nothing plays or displays until the user taps the button. For audio/video,
+     the same button doubles as a Stop control once playback has started, so the
+     user can cut a clip short as soon as they know the answer. */
+  function renderMedia(q){
+    stopPreAudio();
+    stopActiveMedia();
+    el.qMedia.innerHTML = '';
+    if(!q.media){ el.qMedia.style.display = 'none'; return; }
+    el.qMedia.style.display = 'block';
+
+    var isToggleable = (q.media.type === 'audio' || q.media.type === 'video');
+    var mediaPlayState = 'idle'; // 'idle' | 'playing' | 'stopped'
+
+    var labels = {
+      image: { initial: '🖼️ Show Picture', replay: '🔁 Show Picture Again', getReady: '🖼️ Get ready…' },
+      audio: { initial: '🎧 Play Audio', replay: '🔁 Replay Audio', getReady: '🎧 Get ready…', stop: '⏹️ Stop Audio' },
+      video: { initial: '🎬 Play Video', replay: '🔁 Replay Video', getReady: '🎬 Get ready…', stop: '⏹️ Stop Video' }
+    };
+    var label = labels[q.media.type];
+
+    var revealWrap = document.createElement('div');
+    revealWrap.className = 'media-reveal';
+
+    var revealBtn = document.createElement('button');
+    revealBtn.type = 'button';
+    revealBtn.className = 'reveal-btn';
+    revealBtn.textContent = label.initial;
+
+    var hint = document.createElement('div');
+    hint.className = 'reveal-hint';
+    hint.style.display = 'none';
+    hint.innerHTML = '<span class="pulse-dot"></span>';
+
+    var contentEl = document.createElement('div');
+    contentEl.className = 'media-content';
+    contentEl.style.display = 'none';
+
+    function setStoppedState(){
+      mediaPlayState = 'stopped';
+      revealBtn.disabled = false;
+      revealBtn.textContent = label.replay;
+      revealBtn.classList.remove('stop');
+      revealBtn.classList.add('replay');
+      contentEl.style.display = 'none';
+      contentEl.innerHTML = '';
+    }
+
+    revealBtn.addEventListener('click', function(){
+      // Second tap while playing: act as the Stop button.
+      if(isToggleable && mediaPlayState === 'playing'){
+        stopActiveMedia();
+        setStoppedState();
+        return;
+      }
+
+      // First tap, or a replay: play the clue, then reveal/restart the media.
+      revealBtn.disabled = true;
+      revealBtn.textContent = label.getReady;
+      hint.style.display = 'block';
+
+      playPreAudioThen(q.media.type, function(){
+        hint.style.display = 'none';
+        renderActualMedia(q, contentEl, function autoEndCallback(){
+          if(!isToggleable) return;
+          setStoppedState();
+        });
+        contentEl.style.display = 'block';
+        revealBtn.disabled = false;
+
+        if(isToggleable){
+          mediaPlayState = 'playing';
+          revealBtn.textContent = label.stop;
+          revealBtn.classList.add('stop');
+          revealBtn.classList.remove('replay');
+        } else {
+          revealBtn.textContent = label.replay;
+          revealBtn.classList.add('replay');
+        }
+      });
+    });
+
+    revealWrap.appendChild(revealBtn);
+    revealWrap.appendChild(hint);
+    revealWrap.appendChild(contentEl);
+    el.qMedia.appendChild(revealWrap);
+  }
+
+  /* Actually renders/restarts the picture, audio player, or video player into
+     the given container. Called only after the clue pre-audio has played.
+     For audio/video, honors optional media.start / media.end (see QUESTION
+     DATA comment above) and, when both are set, schedules an auto-stop timer
+     so playback pauses itself at `end` — calling onAutoEnd so the reveal
+     button can flip back from "Stop" to "Replay" on its own. */
+  function renderActualMedia(q, container, onAutoEnd){
+    container.innerHTML = '';
+    if(activeMediaTimeout){ clearTimeout(activeMediaTimeout); activeMediaTimeout = null; }
+    activeMediaIframe = null;
+
+    if(q.media.type === 'image'){
+      var img = document.createElement('img');
+      img.src = q.media.url;
+      img.alt = 'Question image';
+      container.appendChild(img);
+      return;
+    }
+
+    var startSec = parseTimestamp(q.media.start);
+    var endSec = parseTimestamp(q.media.end);
+
+    var ytParams = { autoplay: 1, rel: 0, enablejsapi: 1 };
+    if(startSec !== null) ytParams.start = startSec;
+    if(endSec !== null) ytParams.end = endSec;
+
+      if(q.media.type === 'video'){
+      var wrap = document.createElement('div');
+      wrap.className = 'video-wrap';
+      var iframe = document.createElement('iframe');
+      iframe.id = 'yt-' + q.id;
+      iframe.src = buildYouTubeSrc(q.media.url, ytParams);
+      iframe.title = 'Question video';
+      iframe.setAttribute('allow', 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture');
+      iframe.allowFullscreen = true;
+      iframe.addEventListener('load', function(){ ytStartListening(iframe); });
+      wrap.appendChild(iframe);
+      container.appendChild(wrap);
+      activeMediaIframe = iframe;
+    } else if(q.media.type === 'audio'){
+      var badge = document.createElement('div');
+      badge.className = 'audio-badge';
+      badge.innerHTML = '<span class="pulse-dot"></span> Playing audio clip…';
+      container.appendChild(badge);
+      var hiddenParams = {};
+      Object.keys(ytParams).forEach(function(k){ hiddenParams[k] = ytParams[k]; });
+      hiddenParams.controls = 0;
+      var hiddenIframe = document.createElement('iframe');
+      hiddenIframe.id = 'yt-' + q.id;
+      hiddenIframe.className = 'yt-hidden';
+      hiddenIframe.src = buildYouTubeSrc(q.media.url, hiddenParams);
+      hiddenIframe.allow = 'autoplay';
+      hiddenIframe.title = 'Question audio (player hidden)';
+      hiddenIframe.addEventListener('load', function(){ ytStartListening(hiddenIframe); });
+      container.appendChild(hiddenIframe);
+      activeMediaIframe = hiddenIframe;
+    }
+
+    // If an end timestamp was given, watch YouTube's real playback time and
+    // auto-pause once it's actually reached — instead of guessing with a timer.
+    if(endSec !== null){
+      clipWatchEndSec = endSec;
+      clipWatchOnEnd = onAutoEnd;
+    }
+  }
+
+  function renderChoices(q){
+    el.qChoices.innerHTML = '';
+    q.choices.forEach(function(choiceText, i){
+      var btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.innerHTML = '<span class="choice-letter">' + letterFor(i) + '</span><span>' + choiceText + '</span>';
+      btn.addEventListener('click', function(){ selectAnswer(q, i, btn); });
+      el.qChoices.appendChild(btn);
+    });
+  }
+
+  function selectAnswer(q, chosenIndex, btnEl){
+    if(answered) return;
+
+    var correct = chosenIndex === q.correctIndex;
+
+    // Second Chance: forgive exactly one wrong pick, don't lock the question in yet
+    if(!correct && state.secondChanceArmed){
+      state.secondChanceArmed = false;
+      var wrongBtn = el.qChoices.querySelectorAll('.choice-btn')[chosenIndex];
+      wrongBtn.disabled = true;
+      wrongBtn.classList.add('wrong');
+      el.feedbackLine.textContent = 'Not quite — but Second Chance saved you. Try again!';
+      el.feedbackLine.className = 'feedback-line no';
+      return; // answered stays false — player can pick another option
+    }
+    
+    answered = true;
+    el.skipBtn.disabled = true;
+
+    
+    var allBtns = el.qChoices.querySelectorAll('.choice-btn');
+    allBtns.forEach(function(b, i){
+      b.disabled = true;
+      if(i === q.correctIndex) b.classList.add('correct');
+      if(i === chosenIndex && !correct) b.classList.add('wrong');
+      if(i !== chosenIndex && i !== q.correctIndex) b.classList.add('dim');
+    });
+
+    var points = correct ? q.difficulty : -q.difficulty;
+    state.score += points;
+    state.results[q.id] = { status: correct ? 'correct' : 'wrong', chosenIndex: chosenIndex, points: points };
+
+    if(correct){
+      playCorrect();
+      burstConfetti(24);
+      el.feedbackLine.textContent = 'Correct! +' + q.difficulty + ' points 🎉';
+      el.feedbackLine.className = 'feedback-line ok';
+    } else {
+      playWrong();
+      el.feedbackLine.textContent = 'Not quite — ' + q.difficulty + ' points lost.';
+      el.feedbackLine.className = 'feedback-line no';
+    }
+
+    updateScoreDisplay(correct);
+    el.continueBtn.classList.add('show');
+  }
+
+  el.skipBtn.addEventListener('click', function(){
+    if(answered || !activeQuestion) return;
+    answered = true;
+    stopActiveMedia();
+    playSkip();
+    var q = activeQuestion;
+    var allBtns = el.qChoices.querySelectorAll('.choice-btn');
+    allBtns.forEach(function(b, i){
+      b.disabled = true;
+      if(i === q.correctIndex) b.classList.add('correct');
+      else b.classList.add('dim');
+    });
+    state.results[q.id] = { status: 'skipped', chosenIndex: null, points: 0 };
+    el.feedbackLine.textContent = 'Skipped — no points lost. The answer was "' + q.choices[q.correctIndex] + '".';
+    el.feedbackLine.className = 'feedback-line';
+    el.skipBtn.disabled = true;
+    el.continueBtn.classList.add('show');
+  });
+
+  el.continueBtn.addEventListener('click', function(){
+    if(!activeQuestion) return;
+    var q = activeQuestion;
+    stopPreAudio();
+    stopActiveMedia();
+    el.qOverlay.classList.remove('show');
+    addCollectedBadge(q);
+    activeQuestion = null;
+
+    if(Object.keys(state.results).length === QUESTIONS.length){
+      setTimeout(showSummary, 500);
+    }
+  });
+
+  function addCollectedBadge(q){
+    var result = state.results[q.id];
+    var collected = document.getElementById('collected-' + q.difficulty);
+    var badge = document.createElement('div');
+    var icon = result.status === 'correct' ? '✅' : (result.status === 'wrong' ? '❌' : '⏭️');
+    badge.className = 'collected-badge ' + result.status;
+    badge.title = q.text;
+    badge.textContent = icon;
+    collected.appendChild(badge);
+
+    var stone = document.getElementById('stone-' + q.id);
+    stone.classList.add(result.status === 'correct' ? 'done' : (result.status === 'wrong' ? 'wrong' : 'skipped'));
+  }
+
+  function updateScoreDisplay(correct){
+    el.scoreVal.textContent = state.score;
+    el.scoreCounter.classList.remove('bump','shake');
+    void el.scoreCounter.offsetWidth;
+    el.scoreCounter.classList.add(correct ? 'bump' : 'shake');
+  }
+
+  /* ================= SUMMARY ================= */
+  function getRank(score){
+    var rank = RANKS[0];
+    RANKS.forEach(function(r){ if(score >= r.min) rank = r; });
+    return rank.label;
+  }
+
+  function showSummary(){
+    el.finalScore.textContent = state.score + ' pts';
+    el.finalScore.className = 'final-score ' + (state.score >= 0 ? 'pos' : 'neg');
+    el.rankTag.textContent = getRank(state.score);
+
+    el.summaryList.innerHTML = '';
+    QUESTIONS.forEach(function(q){
+      var r = state.results[q.id];
+      var item = document.createElement('div');
+      item.className = 'summary-item ' + (r.status === 'correct' ? 'ok' : (r.status === 'wrong' ? 'no' : ''));
+      var chosenText = r.status === 'skipped' ? 'Skipped' : q.choices[r.chosenIndex];
+      var pointsClass = r.points > 0 ? 'pos' : (r.points < 0 ? 'neg' : 'zero');
+      var pointsText = r.points > 0 ? ('+' + r.points) : (r.points < 0 ? String(r.points) : '0');
+      item.innerHTML =
+        '<div class="sq">' + q.text + '</div>' +
+        '<div class="sa">Your answer: ' + chosenText + ' &nbsp;·&nbsp; Correct answer: ' + q.choices[q.correctIndex] + '</div>' +
+        '<div class="sp ' + pointsClass + '">' + pointsText + ' points</div>';
+      el.summaryList.appendChild(item);
+    });
+
+    el.summaryOverlay.classList.add('show');
+    burstConfetti(state.score > 0 ? 60 : 20);
+  }
+
+  el.restartBtn.addEventListener('click', function(){
+    state.score = 0;
+    state.results = {};
+    state.lifelines = { hint: false, fifty: false, second: false };
+    el.scoreVal.textContent = '0';
+    el.summaryOverlay.classList.remove('show');
+    buildStacks();
+  });
+
+  /* ================= CONFETTI ================= */
+  var confettiColors = ['#f2555a','#ffd85c','#4fc98a','#4aa8e0','#a679e0','#f5a623'];
+  function burstConfetti(count){
+    count = count || 30;
+    for(var i=0;i<count;i++){
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      var size = 6 + Math.random()*8;
+      p.style.width = size + 'px';
+      p.style.height = (size*0.6) + 'px';
+      p.style.left = (Math.random()*100) + 'vw';
+      p.style.background = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+      var dur = 2.2 + Math.random()*1.6;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random()*0.3) + 's';
+      el.confettiLayer.appendChild(p);
+      (function(node, life){
+        setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, (life+0.5)*1000);
+      })(p, dur);
+    }
+  }
+
+  /* ================= TOP BAR CONTROLS ================= */
+  el.muteBtn.addEventListener('click', function(){
+    state.muted = !state.muted;
+    el.muteBtn.textContent = state.muted ? '🔇' : '🔊';
+  });
+  el.themeBtn.addEventListener('click', function(){
+    var html = document.documentElement;
+    var isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    el.themeBtn.textContent = isDark ? '🌙' : '☀️';
+  });
+
+  /* ================= INIT ================= */
+  buildStacks();
+
+})();
+</script>
+</body>
+</html>
