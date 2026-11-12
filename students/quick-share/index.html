@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Quick Share 📦 — Send &amp; Get Files!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    --grass:var(--fun-green);
+    --grass-dark:#399c6c;
+    --berry:var(--fun-red);
+    --berry-dark:#d1454a;
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --grass-dark:#2c8f60; --berry-dark:#c23b41;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--ink-900);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:110px;height:110px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--gold-500) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.30);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .drift{position:absolute;opacity:.35;font-size:26px;animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(14deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+  @keyframes pop{0%{transform:scale(.6);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--ink-900);
+  }
+  .brand .mascot-mini{font-size:1.25em;display:inline-block;animation:bob 2.6s ease-in-out infinite;}
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+    text-decoration:none;color:inherit;display:none;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- main stage ---------- */
+  .stage{
+    position:relative;z-index:2;flex:1;
+    max-width:620px;width:100%;margin:0 auto;padding:6px 18px 50px;
+  }
+
+  .mascot-row{display:flex;align-items:center;gap:14px;margin-bottom:14px;display:none;}
+  .mascot-card-svg{flex-shrink:0;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .mascot-speech{
+    background:var(--bubble-tint);border-radius:var(--r-md);padding:12px 16px;
+    font-size:15px;font-weight:700;color:var(--ink-900);line-height:1.4;flex:1;
+  }
+
+  .card{
+    background:var(--white);border-radius:var(--r-lg);padding:26px 24px 22px;
+    box-shadow:0 10px 0 var(--edge-shadow-soft);
+    position:relative;overflow:hidden;border:1px solid var(--border-card);
+    animation:fadeInUp .45s var(--ease);
+  }
+
+  .eyebrow-badge{
+    display:inline-block;background:var(--gold-500);color:#5a3c00;font-weight:800;
+    font-family:var(--font-display);font-size:13px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;
+  }
+  html[data-theme="dark"] .eyebrow-badge{ color:#3a2600; }
+
+  .title{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,4vw,30px);margin:2px 0 6px;color:var(--ink-900);}
+  .lede{font-size:15.5px;font-weight:600;line-height:1.55;margin:0 0 18px;color:var(--ink-500);}
+
+  /* ---------- section switching ---------- */
+  .panel{display:none;}
+  .panel.active{display:block;animation:fadeInUp .4s var(--ease);}
+
+  /* ---------- choice buttons ---------- */
+  .choice-grid{display:flex;flex-direction:column;gap:14px;}
+  .choice-btn{
+    display:flex;align-items:center;gap:14px;text-align:left;
+    border:none;border-radius:var(--r-md);padding:18px 20px;cursor:pointer;
+    font-family:var(--font-body);color:#fff;
+    transition:transform .14s ease, box-shadow .14s ease;
+  }
+  .choice-btn:hover{transform:translateY(-3px);}
+  .choice-btn:active{transform:translateY(2px);}
+  .choice-btn .choice-emoji{font-size:34px;flex-shrink:0;line-height:1;}
+  .choice-btn .choice-text strong{display:block;font-family:var(--font-display);font-weight:700;font-size:19px;}
+  .choice-btn .choice-text span{display:block;font-size:13px;font-weight:600;opacity:.92;margin-top:2px;}
+  .choice-send{background:linear-gradient(135deg, var(--teal-600), var(--teal-800));box-shadow:0 6px 0 var(--teal-900);}
+  .choice-get{background:linear-gradient(135deg, var(--gold-500), var(--gold-600));box-shadow:0 6px 0 #a4650c;}
+
+  /* ---------- back button ---------- */
+  .back-btn{
+    display:inline-flex;align-items:center;gap:6px;background:var(--panel-tint);
+    color:var(--teal-700);border:none;border-radius:999px;padding:9px 16px 9px 12px;
+    font-family:var(--font-body);font-weight:800;font-size:13.5px;cursor:pointer;margin-bottom:16px;
+    transition:transform .12s ease;
+  }
+  .back-btn:hover{transform:translateY(-2px);}
+
+  /* ---------- fields ---------- */
+  .field{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
+  .field-label{font-weight:800;font-size:13.5px;color:var(--ink-900);display:flex;align-items:center;gap:6px;}
+  .field-help{font-size:12px;font-weight:600;color:var(--ink-500);margin-top:-3px;}
+
+  .field-row{display:flex;gap:8px;align-items:flex-start;}
+  .field-row .field{flex:1;margin-bottom:0;}
+
+  input[type="text"], input[type="password"], select, textarea{
+    width:100%;font-family:var(--font-body);font-size:15px;color:var(--ink-900);
+    background:var(--input-bg);border:2px solid var(--input-border);
+    border-radius:var(--r-sm);padding:12px 14px;outline:none;
+    transition:border-color .18s ease, box-shadow .18s ease;
+  }
+  input::placeholder, textarea::placeholder{color:var(--ink-500);opacity:.7;}
+  input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:focus{
+    border-color:var(--teal-600);box-shadow:0 0 0 4px var(--bg-tint-teal);
+  }
+  select{
+    appearance:none;cursor:pointer;padding-right:38px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235f6f70' stroke-width='2.4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;background-size:16px;
+  }
+  input#retrievePin{ text-align:center;font-family:var(--font-display);font-size:1.2rem;font-weight:700;letter-spacing:.03em; }
+
+  .shuffle-btn{
+    flex-shrink:0;background:var(--gold-500);color:#5a3c00;border:none;border-radius:var(--r-sm);
+    padding:12px 16px;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 4px 0 #a4650c;
+    display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .12s ease;
+    font-family:var(--font-body);white-space:nowrap;
+  }
+  .shuffle-btn:hover{transform:translateY(-2px);}
+  .shuffle-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #a4650c;}
+  .shuffle-btn .em{font-size:18px;}
+
+  /* ---------- drop zone ---------- */
+  .drop-zone{
+    border:3px dashed var(--gold-400);border-radius:var(--r-md);
+    padding:28px 16px;text-align:center;cursor:pointer;background:var(--bg-tint-gold);
+    transition:border-color .18s ease, background .18s ease, transform .12s ease;
+    margin-bottom:14px;user-select:none;
+  }
+  .drop-zone:hover, .drop-zone.over{border-color:var(--gold-600);background:var(--gold-100);transform:translateY(-2px);}
+  .drop-zone .dz-emoji{font-size:40px;display:block;margin-bottom:8px;}
+  .drop-zone .dz-label{font-size:15px;font-weight:700;color:var(--ink-900);line-height:1.5;}
+  .drop-zone .dz-label strong{color:var(--teal-700);text-decoration:underline;}
+  .drop-zone .dz-sub{font-size:12.5px;color:var(--ink-500);margin-top:4px;font-weight:600;}
+
+  .text-toggle-row{text-align:center;margin:-6px 0 14px;}
+  .text-toggle-link{font-size:13.5px;color:var(--teal-700);font-weight:800;cursor:pointer;text-decoration:underline;background:none;border:none;font-family:var(--font-body);}
+
+  .text-panel{margin-bottom:14px;}
+  .text-input{min-height:120px;resize:vertical;}
+  .text-panel-actions{display:flex;gap:8px;margin-top:8px;}
+  .btn-ghost{
+    flex:1;background:var(--panel-tint);color:var(--teal-700);border:none;border-radius:999px;
+    padding:10px 14px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:var(--font-body);
+    transition:transform .12s ease;
+  }
+  .btn-ghost:hover{transform:translateY(-2px);}
+
+  .file-chip{
+    display:flex;align-items:center;gap:12px;background:var(--panel-tint);
+    border:2px solid var(--border-card);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:14px;
+  }
+  .file-chip .chip-emoji{font-size:28px;flex-shrink:0;}
+  .file-chip-info{flex:1;min-width:0;}
+  .file-chip-name{font-weight:800;font-size:14.5px;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .file-chip-size{font-size:12px;color:var(--ink-500);font-weight:600;margin-top:2px;}
+  .file-chip-remove{
+    background:var(--white);border:none;cursor:pointer;color:var(--berry-dark);width:34px;height:34px;
+    border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;
+    box-shadow:0 2px 0 var(--edge-shadow-soft);transition:transform .12s ease;
+  }
+  .file-chip-remove:hover{transform:scale(1.08);}
+
+  /* ---------- progress ---------- */
+  .progress-block{margin-bottom:14px;}
+  .progress-meta{display:flex;justify-content:space-between;font-weight:800;font-size:13px;color:var(--ink-500);margin-bottom:6px;}
+  .progress-pct{color:var(--teal-700);}
+  .progress-track{height:14px;background:var(--panel-tint);border-radius:999px;overflow:hidden;}
+  .progress-fill{height:100%;width:0;background:linear-gradient(90deg, var(--gold-500), var(--teal-600));border-radius:999px;transition:width .25s ease;}
+
+  /* ---------- alerts ---------- */
+  .alert{display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border-radius:var(--r-sm);font-size:14px;font-weight:600;line-height:1.5;margin-bottom:14px;}
+  .alert-icon{flex-shrink:0;font-size:19px;line-height:1;}
+  .alert-title{font-weight:800;display:block;margin-bottom:2px;font-family:var(--font-display);}
+  .alert-success{background:rgba(79,201,138,.15);color:var(--grass-dark);}
+  .alert-error{background:rgba(242,85,90,.13);color:var(--berry-dark);}
+  .alert-info{background:var(--bg-tint-teal);color:var(--teal-700);}
+
+  /* ---------- ticket (success) ---------- */
+  .ticket{
+    border:3px dashed var(--gold-400);border-radius:var(--r-md);
+    background:var(--bg-tint-gold);overflow:hidden;margin-bottom:10px;
+  }
+  .ticket-top{padding:12px 16px 4px;display:flex;align-items:center;justify-content:space-between;}
+  .ticket-label{font-size:11.5px;font-weight:800;letter-spacing:.03em;color:var(--ink-500);}
+  .ticket-expiry{font-size:11px;color:var(--ink-500);font-weight:700;}
+  .ticket-pin-row{display:flex;align-items:center;border-top:2px dashed var(--gold-400);padding:14px 16px;gap:12px;}
+  .ticket-pin{font-family:var(--font-display);font-size:1.7rem;font-weight:700;color:var(--teal-800);letter-spacing:.03em;flex:1;}
+  .copy-btn{
+    background:linear-gradient(135deg, var(--teal-600), var(--teal-800));color:#fff;border:none;
+    border-radius:999px;padding:10px 16px;font-size:13px;font-weight:800;font-family:var(--font-body);
+    cursor:pointer;transition:transform .14s ease;white-space:nowrap;box-shadow:0 4px 0 var(--teal-900);
+  }
+  .copy-btn:hover{transform:translateY(-2px);}
+  .copy-btn.copied{background:linear-gradient(135deg, var(--fun-green), var(--grass-dark));box-shadow:0 4px 0 var(--grass-dark);}
+  .share-link-row{display:flex;gap:8px;align-items:center;margin-top:6px;}
+  .share-link-input{
+    flex:1;min-width:0;padding:10px 12px;border:2px solid var(--gold-400);border-radius:var(--r-sm);
+    font-size:12.5px;font-family:var(--font-body);color:var(--teal-800);background:var(--white);
+    outline:none;cursor:text;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+
+  .info-box{background:var(--bg-tint-teal);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--teal-700);line-height:1.6;font-weight:600;margin-top:6px;}
+
+  /* ---------- buttons ---------- */
+  .btn-big{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--font-body);font-weight:800;font-size:17px;color:#fff;border:none;
+    border-radius:999px;padding:16px 22px;cursor:pointer;transition:transform .12s ease;
+  }
+  .btn-big:disabled{opacity:.55;cursor:not-allowed;transform:none !important;}
+  .btn-big:not(:disabled):hover{transform:translateY(-2px);}
+  .btn-big:not(:disabled):active{transform:translateY(2px);}
+  .btn-send{background:linear-gradient(135deg, var(--teal-600), var(--teal-800));box-shadow:0 5px 0 var(--teal-900);}
+  .btn-send:not(:disabled):active{box-shadow:0 2px 0 var(--teal-900);}
+  .btn-get{background:linear-gradient(135deg, var(--gold-500), var(--gold-600));box-shadow:0 5px 0 #a4650c;}
+  .btn-get:not(:disabled):active{box-shadow:0 2px 0 #a4650c;}
+
+  .spinner{width:17px;height:17px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+
+  /* ---------- footer ---------- */
+  .footer{position:relative;z-index:2;text-align:center;padding:8px 20px 26px;font-size:12.5px;font-weight:700;color:var(--ink-500);}
+
+  .hidden{display:none !important;}
+
+  /* ---------- confetti ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:3px;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+
+  @media (max-width:480px){
+    .card{padding:20px 16px 18px;}
+    .choice-btn{padding:16px;}
+    .choice-btn .choice-emoji{font-size:28px;}
+    .field-row{flex-direction:column;align-items:stretch;}
+    .shuffle-btn{width:100%;flex-direction:row;justify-content:center;padding:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="drift" style="top:16%;left:8%;animation-duration:34s;">📄</div>
+  <div class="drift" style="top:60%;left:85%;animation-duration:42s;animation-direction:reverse;">✨</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">📦</span> Quick Share</div>
+  <div class="top-right">
+    <a href="/" class="icon-btn" title="Back to Portal" aria-label="Back to Portal">🏠</a>
+    <button class="icon-btn" id="themeToggle" title="Switch light/dark" aria-label="Switch light or dark mode">🌙</button>
+  </div>
+</div>
+
+<main class="stage">
+
+  <div class="mascot-row">
+    <svg class="mascot-card-svg" viewBox="-40 -40 80 80" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+      <path d="M -30 -6 L -6 -6 L 2 4 L 30 4 L 30 26 Q 30 30 26 30 L -30 30 Q -34 30 -34 26 L -34 -2 Q -34 -6 -30 -6 Z"
+            fill="var(--gold-400)" stroke="var(--char-line)" stroke-width="3"/>
+      <rect x="-32" y="4" width="62" height="24" rx="4" fill="var(--gold-500)" stroke="var(--char-line)" stroke-width="3"/>
+      <circle cx="-10" cy="10" r="4.4" fill="#fff"/><circle cx="-8.4" cy="10.8" r="2.2" fill="var(--char-line)"/>
+      <circle cx="10" cy="10" r="4.4" fill="#fff"/><circle cx="11.6" cy="10.8" r="2.2" fill="var(--char-line)"/>
+      <path d="M -8 19 Q 0 25 8 19" stroke="var(--char-line)" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="mascot-speech" id="mascotSpeech">Hi, I'm Filo! Want to send a file to a friend, or get one they shared with you?</div>
+  </div>
+
+  <!-- ═══════ CHOICE PANEL ═══════ -->
+  <div class="panel active" id="choicePanel">
+    <div class="card">
+      <span class="eyebrow-badge">Quick Share</span>
+      <h2 class="title">What would you like to do?</h2>
+      <p class="lede">No login needed — just a secret code!</p>
+      <div class="choice-grid">
+        <button class="choice-btn choice-send" id="goSend">
+          <span class="choice-emoji">📤</span>
+          <span class="choice-text"><strong>Send a File</strong><span>Share a file, some text, or a link</span></span>
+        </button>
+        <button class="choice-btn choice-get" id="goGet">
+          <span class="choice-emoji">📥</span>
+          <span class="choice-text"><strong>Get a File</strong><span>Type a code someone shared with you</span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SEND PANEL ═══════ -->
+  <div class="panel" id="sendPanel">
+    <div class="card">
+      <button class="back-btn" id="backFromSend">⬅ Back</button>
+      <span class="eyebrow-badge">Send a File</span>
+      <h2 class="title">Let's share something!</h2>
+      <p class="lede">Add your file below, then tap Send It!</p>
+
+      <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="Tap or drag a file here to add it">
+        <span class="dz-emoji">📂</span>
+        <p class="dz-label">Drag a file here, or <strong id="browseLink">tap to choose one</strong></p>
+        <p class="dz-sub">Any kind of file · up to 200 MB</p>
+      </div>
+
+      <p class="text-toggle-row"><button type="button" class="text-toggle-link" id="toggleTextMode">✏️ Or type some text or a link instead</button></p>
+
+      <div id="textPanel" class="text-panel hidden">
+        <textarea id="textInput" class="text-input" placeholder="Type or paste your words, or a link, here…"></textarea>
+        <div class="text-panel-actions">
+          <button class="btn-ghost" id="useTextBtn" type="button">✅ Use this</button>
+          <button class="btn-ghost" id="cancelTextBtn" type="button">✖️ Cancel</button>
+        </div>
+      </div>
+
+      <div id="fileChip" class="file-chip hidden">
+        <span class="chip-emoji">📄</span>
+        <div class="file-chip-info">
+          <div class="file-chip-name" id="chipName"></div>
+          <div class="file-chip-size" id="chipSize"></div>
+        </div>
+        <button class="file-chip-remove" id="removeFile" title="Remove this" aria-label="Remove this file">✕</button>
+      </div>
+
+      <input type="file" id="fileInput" class="hidden" aria-hidden="true">
+
+      <div class="field">
+        <label class="field-label" for="uploadKey">🔑 Grown-Up Password</label>
+        <div class="field-help">Ask your teacher if you don't know it.</div>
+        <input type="password" id="uploadKey" placeholder="Type the password" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="downloadPin">🎫 Secret Code</label>
+        <div class="field-help">Share this with your friend so they can get the file.</div>
+        <div class="field-row">
+          <div class="field">
+            <input type="text" id="downloadPin" placeholder="e.g. sunny491" autocomplete="off" spellcheck="false">
+          </div>
+          <button class="shuffle-btn" id="genPinBtn" title="Get a new code" type="button">
+            <span class="em">🎲</span> New
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="expiry">⏰ How long should it stay?</label>
+        <select id="expiry">
+          <option value="5">5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+          <option value="240" selected>4 hours</option>
+          <option value="720">12 hours</option>
+          <option value="1440">24 hours</option>
+          <option value="2880">2 days</option>
+          <option value="4320">3 days</option>
+          <option value="10080">1 week</option>
+        </select>
+      </div>
+
+      <div id="progressBlock" class="progress-block hidden">
+        <div class="progress-meta">
+          <span id="progressLabel">Sending…</span>
+          <span class="progress-pct" id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <div id="uploadStatus" class="hidden"></div>
+
+      <button class="btn-big btn-send" id="uploadBtn">📤 Send It!</button>
+    </div>
+  </div>
+
+  <!-- ═══════ GET PANEL ═══════ -->
+  <div class="panel" id="getPanel">
+    <div class="card">
+      <button class="back-btn" id="backFromGet">⬅ Back</button>
+      <span class="eyebrow-badge">Get a File</span>
+      <h2 class="title">Type your secret code</h2>
+      <p class="lede">Enter the code your friend or teacher gave you.</p>
+
+      <div class="field">
+        <label class="field-label" for="retrievePin">🎫 Secret Code</label>
+        <input type="text" id="retrievePin" placeholder="e.g. sunny491" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div id="downloadStatus" class="hidden"></div>
+
+      <button class="btn-big btn-get" id="downloadBtn">📥 Get My File!</button>
+
+      <div class="info-box">💡 Your file link will work for <strong>5 minutes</strong> after you tap the button.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">Quick Share · Files disappear after their time is up · For school use only.</footer>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════════════════════ */
+var SUPABASE_URL, SUPABASE_ANON_KEY;
+  (function(){
+    var institutionId = localStorage.getItem('gsms_last_institution_id');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('cp_institution_' + institutionId)); } catch(e) {}
+
+    if (!cached || !cached.data || !cached.data.supabase_url || !cached.data.supabase_anon_key) {
+      window.location.href = 'https://educational-saas.github.io/'; // no credentials on record — back to login
+      throw new Error('Redirecting to sign-in.');
+    }
+    SUPABASE_URL = cached.data.supabase_url;
+    SUPABASE_ANON_KEY = cached.data.supabase_anon_key;
+  })();
+
+  async function wipeInstitutionData(){
+    try{
+      const { clearInstitutionCache } = await import('https://educational-saas.github.io/commons/control-plane.js');
+      clearInstitutionCache(); // wipes every cached cp_institution_* entry on this device
+    }catch(e){ /* ignore — nothing to clean up if this fails */ }
+    localStorage.removeItem('gsms_last_institution_id');
+  }
+var EDGE_BASE = SUPABASE_URL + '/functions/v1/quick-share';
+var MAX_FILE_BYTES = 200 * 1024 * 1024; // 200 MB hard limit
+
+function authHeaders(extra){
+  return extra || {};
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THEME (light / dark)
+   ═══════════════════════════════════════════════════════════════════════ */
+var themeToggle = document.getElementById('themeToggle');
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  themeToggle.textContent = t === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem('qs-theme', t); } catch(e){}
+}
+(function initTheme(){
+  var saved = null;
+  try { saved = localStorage.getItem('qs-theme'); } catch(e){}
+  if (saved === 'light' || saved === 'dark') { applyTheme(saved); return; }
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? 'dark' : 'light');
+})();
+themeToggle.addEventListener('click', function(){
+  var current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PANEL NAVIGATION
+   ═══════════════════════════════════════════════════════════════════════ */
+var panels = {
+  choice: document.getElementById('choicePanel'),
+  send: document.getElementById('sendPanel'),
+  get: document.getElementById('getPanel')
+};
+var mascotSpeech = document.getElementById('mascotSpeech');
+function showPanel(name){
+  Object.keys(panels).forEach(function(k){ panels[k].classList.toggle('active', k === name); });
+  if (name === 'choice') mascotSpeech.textContent = "Hi, I'm Filo! Want to send a file to a friend, or get one they shared with you?";
+  if (name === 'send')   mascotSpeech.textContent = "Add your file, pick a secret code, then tap Send It!";
+  if (name === 'get')    mascotSpeech.textContent = "Type the secret code you were given, then tap Get My File!";
+}
+document.getElementById('goSend').addEventListener('click', function(){ showPanel('send'); });
+document.getElementById('goGet').addEventListener('click', function(){ showPanel('get'); });
+document.getElementById('backFromSend').addEventListener('click', function(){ showPanel('choice'); });
+document.getElementById('backFromGet').addEventListener('click', function(){ showPanel('choice'); });
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECRET CODE GENERATOR — friendly word + 3 digits
+   ═══════════════════════════════════════════════════════════════════════ */
+var WORDS = [
+  'azure','beach','blaze','brave','cedar','cloud','comet','crisp','dream','drift',
+  'eagle','elite','ember','extra','flame','flare','frost','giant','globe','grace',
+  'happy','haven','hedge','honor','island','ivory','jewel','joker','karma','knack',
+  'lemon','light','lunar','magic','mango','maple','marsh','nexus','night','noble',
+  'novel','ocean','olive','orbit','ozone','pearl','pilot','plaza','prism','quest',
+  'quiet','radar','rapid','ridge','river','silver','storm','sugar','sunny','tiger',
+  'trace','trend','ultra','unity','valor','vivid','voice','waltz','wheat','yacht',
+  'yield','acorn','apple','arena','beans','berry','birth','black','bloom','brave',
+  'bread','brick','bring','brush','build','candy','cargo','chain','chalk','charm',
+  'cheer','chess','chick','choir','claim','class','click','cliff','climb','clock',
+  'cloth','coach','coast','color','comic','couch','crazy','cream','crown','curve',
+  'daisy','dance','dozen','draft','dream','eager','early','earth','eight','elder',
+  'enjoy','equal','fable','fairy','fancy','feast','fence','ferry','field','fifty',
+  'fight','final','first','flash','fleet','float','flock','flood','floor','flour',
+  'focus','force','forge','forty','frame','fresh','front','fruit','funny','glass',
+  'glory','grand','grant','graph','grass','great','green','greet','group','grove',
+  'guard','guest','guide','habit','happy','harsh','heart','heavy','hello','hobby',
+  'honey','horse','hotel','house','human','humor','hurry','ideal','image','input',
+  'jelly','joint','judge','juice','koala','label','large','laser','later','laugh',
+  'learn','level','light','lucky','lunch','magic','major','maker','march','match',
+  'medal','melon','merit','metal','model','money','month','moral','motor','mount',
+  'mouse','movie','music','noble','north','nurse','ocean','offer','onion','order',
+  'other','owner','paint','panda','panel','paper','party','pasta','peace','peach',
+  'phone','photo','piano','piece','pizza','place','plain','plant','plate','point',
+  'power','press','price','pride','prize','proud','puppy','queen','quick','rabbit',
+  'radio','raise','ready','river','robot','rocket','round','safe','salad','shine'
+];
+
+function generatePin() {
+  var word = WORDS[Math.floor(Math.random() * WORDS.length)];
+  var digits = String(Math.floor(100 + Math.random() * 900));
+  return word + digits;
+}
+document.getElementById('genPinBtn').addEventListener('click', function(){
+  document.getElementById('downloadPin').value = generatePin();
+});
+document.getElementById('downloadPin').value = generatePin();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════════════ */
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(2) + ' GB';
+}
+function fmtDate(iso) {
+  return new Date(iso).toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function show(id){ document.getElementById(id).classList.remove('hidden'); }
+function hide(id){ document.getElementById(id).classList.add('hidden'); }
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function renderAlert(containerId, type, title, body) {
+  var icons = { success:'🎉', error:'😕', info:'💡' };
+  var el = document.getElementById(containerId);
+  el.innerHTML = '<div class="alert alert-' + type + '">'
+    + '<span class="alert-icon">' + (icons[type] || '💡') + '</span>'
+    + '<div class="alert-body">' + (title ? '<span class="alert-title">' + title + '</span>' : '') + body + '</div></div>';
+  el.classList.remove('hidden');
+}
+function clearStatus(id) {
+  var el = document.getElementById(id);
+  el.innerHTML = '';
+  el.classList.add('hidden');
+}
+var UPLOAD_BTN_INNER = '📤 Send It!';
+var DOWNLOAD_BTN_INNER = '📥 Get My File!';
+function setBtnLoading(id, isLoading, innerHtml) {
+  var btn = document.getElementById(id);
+  btn.disabled = isLoading;
+  btn.innerHTML = isLoading ? '<div class="spinner"></div> One sec…' : innerHtml;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FILE SELECTION — drag & drop + click-to-browse
+   ═══════════════════════════════════════════════════════════════════════ */
+var selectedFile = null;
+var dropZone = document.getElementById('dropZone');
+var fileInput = document.getElementById('fileInput');
+var fileChip = document.getElementById('fileChip');
+var textToggleRow = document.querySelector('.text-toggle-row');
+
+dropZone.addEventListener('click', function(){ fileInput.click(); });
+document.getElementById('browseLink').addEventListener('click', function(e){ e.stopPropagation(); fileInput.click(); });
+dropZone.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+dropZone.addEventListener('dragenter', function(e){ e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragover', function(e){ e.preventDefault(); });
+dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('over'); });
+dropZone.addEventListener('drop', function(e){
+  e.preventDefault(); dropZone.classList.remove('over');
+  if (e.dataTransfer.files.length) applyFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', function(){ if (fileInput.files.length) applyFile(fileInput.files[0]); });
+
+function applyFile(f) {
+  if (f.size > MAX_FILE_BYTES) {
+    renderAlert('uploadStatus', 'error', 'That file is too big', 'The biggest file we can take is 200 MB. Yours is ' + fmtBytes(f.size) + '.');
+    return;
+  }
+  selectedFile = f;
+  document.getElementById('chipName').textContent = f.name;
+  document.getElementById('chipSize').textContent = fmtBytes(f.size);
+  dropZone.classList.add('hidden');
+  textToggleRow.classList.add('hidden');
+  fileChip.classList.remove('hidden');
+}
+
+/* ── Plain-text → safe HTML file conversion ─────────────────────────── */
+function textToSafeHtml(text) {
+  var urlRegex = /((?:https?:\/\/|www\.)[^\s<>"']+)/gi;
+  var lastIndex = 0, html = '', match;
+  while ((match = urlRegex.exec(text)) !== null) {
+    html += escapeHtml(text.slice(lastIndex, match.index));
+    var raw = match[0];
+    var href = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    html += '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(raw) + '</a>';
+    lastIndex = match.index + raw.length;
+  }
+  html += escapeHtml(text.slice(lastIndex));
+  return html;
+}
+function buildHtmlFromText(text) {
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Shared Text</title>'
+    + '<style>body{font-family:Arial,Helvetica,sans-serif;max-width:700px;margin:2rem auto;padding:0 1rem;'
+    + 'line-height:1.6;color:#222;white-space:pre-wrap;word-wrap:break-word;}a{color:#3366cc;word-break:break-all;}</style>'
+    + '</head><body>' + textToSafeHtml(text) + '</body></html>';
+}
+function textToFile(text) {
+  var blob = new Blob([buildHtmlFromText(text)], { type: 'text/html' });
+  return new File([blob], 'shared-text-' + Date.now() + '.html', { type: 'text/html' });
+}
+
+var toggleTextMode = document.getElementById('toggleTextMode');
+var textPanel = document.getElementById('textPanel');
+var textInput = document.getElementById('textInput');
+
+toggleTextMode.addEventListener('click', function(){
+  dropZone.classList.add('hidden');
+  textToggleRow.classList.add('hidden');
+  textPanel.classList.remove('hidden');
+  textInput.focus();
+});
+document.getElementById('cancelTextBtn').addEventListener('click', function(){
+  textInput.value = '';
+  textPanel.classList.add('hidden');
+  dropZone.classList.remove('hidden');
+  textToggleRow.classList.remove('hidden');
+});
+document.getElementById('useTextBtn').addEventListener('click', function(){
+  var text = textInput.value;
+  if (!text.trim()) { renderAlert('uploadStatus', 'error', '', 'Please type something first.'); return; }
+  applyFile(textToFile(text));
+  textPanel.classList.add('hidden');
+});
+document.getElementById('removeFile').addEventListener('click', function(){
+  selectedFile = null;
+  fileInput.value = '';
+  fileChip.classList.add('hidden');
+  dropZone.classList.remove('hidden');
+  textToggleRow.classList.remove('hidden');
+  clearStatus('uploadStatus');
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CONFETTI (little celebration on success)
+   ═══════════════════════════════════════════════════════════════════════ */
+var confettiColors = ['#f2555a','#ffd85c','#4fc98a','#4aa8e0','#a679e0','#ff8fc0'];
+var confettiLayer = document.getElementById('confettiLayer');
+function burstConfetti(count) {
+  count = count || 30;
+  for (var i = 0; i < count; i++) {
+    (function(){
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      var size = 6 + Math.random() * 8;
+      p.style.width = size + 'px';
+      p.style.height = (size * 0.6) + 'px';
+      p.style.left = (Math.random() * 100) + 'vw';
+      p.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+      var dur = 2.2 + Math.random() * 1.6;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random() * 0.3) + 's';
+      confettiLayer.appendChild(p);
+      setTimeout(function(){ if (p.parentNode) p.parentNode.removeChild(p); }, (dur + 0.5) * 1000);
+    })();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UPLOAD FLOW
+   ═══════════════════════════════════════════════════════════════════════ */
+document.getElementById('uploadBtn').addEventListener('click', handleUpload);
+
+function setProgress(pct, label) {
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+function putToR2(url, file, contentType) {
+  return new Promise(function(resolve, reject){
+    var xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.setRequestHeader('Content-Type', contentType);
+    xhr.timeout = 180000;
+    xhr.upload.onprogress = function(e){
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100), 'Sending your file…');
+    };
+    xhr.onload = function(){
+      if (xhr.status >= 200 && xhr.status < 300) { setProgress(100, 'All done! ✓'); resolve(); }
+      else reject(new Error('The file storage said no (status ' + xhr.status + '). Please try again.'));
+    };
+    xhr.onerror = function(){ reject(new Error("Couldn't reach the internet. Check your connection and try again.")); };
+    xhr.ontimeout = function(){ reject(new Error('That took too long. Please try again.')); };
+    xhr.send(file);
+  });
+}
+
+function handleUpload() {
+  clearStatus('uploadStatus');
+  hide('progressBlock');
+
+  var uploadKey = document.getElementById('uploadKey').value.trim();
+  var pin = document.getElementById('downloadPin').value.trim().toLowerCase();
+  var expiry = document.getElementById('expiry').value;
+
+  if (!selectedFile) { renderAlert('uploadStatus', 'error', '', 'Please add a file, or some text, first.'); return; }
+  if (!uploadKey) { renderAlert('uploadStatus', 'error', '', 'Please type the grown-up password.'); return; }
+  if (!pin || pin.length < 4) { renderAlert('uploadStatus', 'error', '', 'The secret code needs at least 4 letters or numbers.'); return; }
+
+  setBtnLoading('uploadBtn', true, UPLOAD_BTN_INNER);
+  renderAlert('uploadStatus', 'info', '', 'Getting things ready…');
+
+  var recordId = null;
+  var keySnapshot = uploadKey;
+
+  var fd = new FormData();
+  fd.append('upload_key', uploadKey);
+  fd.append('download_pin', pin);
+  fd.append('expiry_duration', expiry);
+  fd.append('filename', selectedFile.name);
+  fd.append('file_type', selectedFile.type || 'application/octet-stream');
+  fd.append('file_size', String(selectedFile.size));
+
+  fetch(EDGE_BASE + '/upload', { method: 'POST', headers: authHeaders(), body: fd })
+    .then(function(initRes){
+      return initRes.json().then(function(initData){ return { ok: initRes.ok, data: initData }; });
+    })
+    .then(function(result){
+      if (!result.ok) throw new Error(result.data.error || "That didn't work. Please try again.");
+      var initData = result.data;
+      recordId = initData.record_id;
+
+      clearStatus('uploadStatus');
+      show('progressBlock');
+      setProgress(0, 'Sending your file…');
+
+      return putToR2(initData.presigned_upload_url, selectedFile, initData.content_type).then(function(){
+        return initData;
+      });
+    })
+    .then(function(initData){
+      hide('progressBlock');
+
+      var shareUrl = new URL(window.location.pathname, window.location.origin);
+      shareUrl.searchParams.set('pin', pin);
+      var shareUrlStr = shareUrl.toString();
+      var expiresAt = initData.expires_at;
+
+      document.getElementById('uploadStatus').innerHTML =
+        '<div class="alert alert-success">'
+        + '<span class="alert-icon">🎉</span>'
+        + '<div class="alert-body"><span class="alert-title">Yay! Your file is ready to share!</span>'
+        + 'Give your friend the code or the link below. It works until ' + fmtDate(expiresAt) + '.</div></div>'
+        + '<div class="ticket">'
+        +   '<div class="ticket-top"><span class="ticket-label">SECRET CODE</span><span class="ticket-expiry">Until ' + fmtDate(expiresAt) + '</span></div>'
+        +   '<div class="ticket-pin-row"><span class="ticket-pin" id="ticketPin">' + escapeHtml(pin) + '</span>'
+        +   '<button class="copy-btn" id="copyPinBtn">Copy Code</button></div>'
+        + '</div>'
+        + '<div class="ticket">'
+        +   '<div class="ticket-top"><span class="ticket-label">SHARE LINK</span>'
+        +   '<a href="' + escapeHtml(shareUrlStr) + '" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--teal-700);font-weight:800;text-decoration:none;">Open ↗</a></div>'
+        +   '<div class="ticket-pin-row" style="flex-direction:column;align-items:stretch;gap:8px;">'
+        +     '<div class="share-link-row"><input class="share-link-input" id="shareLinkInput" type="text" value="' + escapeHtml(shareUrlStr) + '" readonly onclick="this.select()">'
+        +     '<button class="copy-btn" id="copyLinkBtn">Copy Link</button></div>'
+        +   '</div>'
+        + '</div>';
+      document.getElementById('uploadStatus').classList.remove('hidden');
+
+      document.getElementById('copyPinBtn').addEventListener('click', function(){
+        var btn = this;
+        navigator.clipboard.writeText(pin).then(function(){
+          btn.textContent = '✓ Copied!'; btn.classList.add('copied');
+          setTimeout(function(){ btn.textContent = 'Copy Code'; btn.classList.remove('copied'); }, 2000);
+        });
+      });
+      document.getElementById('copyLinkBtn').addEventListener('click', function(){
+        var btn = this;
+        navigator.clipboard.writeText(shareUrlStr).then(function(){
+          btn.textContent = '✓ Copied!'; btn.classList.add('copied');
+          setTimeout(function(){ btn.textContent = 'Copy Link'; btn.classList.remove('copied'); }, 2000);
+        });
+      });
+
+      burstConfetti(30);
+      mascotSpeech.textContent = 'Great job! Your file is safely shared. 🎉';
+    })
+    .catch(function(err){
+      hide('progressBlock');
+      if (recordId) {
+        fetch(EDGE_BASE + '/cleanup', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ record_id: recordId, upload_key: keySnapshot })
+        }).catch(function(){});
+      }
+      renderAlert('uploadStatus', 'error', 'Hmm, that did not work', escapeHtml(err.message));
+    })
+    .finally(function(){
+      setBtnLoading('uploadBtn', false, UPLOAD_BTN_INNER);
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DOWNLOAD FLOW
+   ═══════════════════════════════════════════════════════════════════════ */
+document.getElementById('downloadBtn').addEventListener('click', handleDownload);
+document.getElementById('retrievePin').addEventListener('keydown', function(e){ if (e.key === 'Enter') handleDownload(); });
+document.getElementById('retrievePin').addEventListener('input', function(){
+  var pos = this.selectionStart;
+  this.value = this.value.replace(/\s/g, '');
+  this.setSelectionRange(pos, pos);
+});
+
+function handleDownload() {
+  clearStatus('downloadStatus');
+  var pin = document.getElementById('retrievePin').value.trim().toLowerCase();
+  if (!pin) { renderAlert('downloadStatus', 'error', '', 'Please type the secret code first.'); return; }
+
+  setBtnLoading('downloadBtn', true, DOWNLOAD_BTN_INNER);
+
+  fetch(EDGE_BASE + '/download', {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ download_pin: pin })
+  })
+    .then(function(res){ return res.json().then(function(data){ return { ok: res.ok, data: data }; }); })
+    .then(function(result){
+      if (!result.ok) throw new Error(result.data.error || "We couldn't find that code.");
+      var download_url = result.data.download_url;
+      window.location.href = download_url;
+      document.getElementById('downloadStatus').innerHTML =
+        '<div class="alert alert-success"><span class="alert-icon">✅</span><div class="alert-body">'
+        + '<span class="alert-title">Your file is on its way!</span>'
+        + "If it didn't start, <a href=\"" + escapeHtml(download_url) + "\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:var(--teal-700);font-weight:800;\">tap here</a>."
+        + '<br><span style="font-size:11px;opacity:.8">This link works for 5 minutes.</span></div></div>';
+      document.getElementById('downloadStatus').classList.remove('hidden');
+      burstConfetti(18);
+    })
+    .catch(function(err){
+      renderAlert('downloadStatus', 'error', 'We could not get that file', escapeHtml(err.message));
+    })
+    .finally(function(){
+      setBtnLoading('downloadBtn', false, DOWNLOAD_BTN_INNER);
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AUTO-DOWNLOAD via ?pin=<value>
+   ═══════════════════════════════════════════════════════════════════════ */
+(function autoDownloadFromUrl() {
+  var pinFromUrl = new URLSearchParams(window.location.search).get('pin');
+  if (!pinFromUrl) return;
+  document.getElementById('retrievePin').value = pinFromUrl.trim().toLowerCase();
+  showPanel('get');
+  handleDownload();
+})();
+
+})();
+</script>
+
+</body>
+</html>
