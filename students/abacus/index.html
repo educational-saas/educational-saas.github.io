@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maths Abacus</title>
+  <meta name="description" content="Interactive Maths Abacus tool for kids to learn counting, place value and basic arithmetic through hands-on practice.">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root, html[data-theme="light"] {
+      color-scheme: light;
+
+      --teal-900:#0d2b30;
+      --teal-800:#123c43;
+      --teal-700:#1b6e78;
+      --teal-600:#2f8b96;
+      --teal-100:#e5f4f5;
+      --gold-600:#c9860f;
+      --gold-500:#e2a530;
+      --gold-400:#f0c168;
+      --gold-100:#fbeed7;
+      --cream:#faf8f4;
+      --ink-900:#1a2422;
+      --ink-500:#5f7371;
+      --white:#ffffff;
+
+      --bg-tint-gold: rgba(226,165,48,.10);
+      --bg-tint-teal: rgba(27,110,120,.08);
+      --border-card: rgba(13,43,48,.10);
+      --border-card-hover: rgba(201,134,15,.35);
+
+      --shadow-card: 0 18px 36px -22px rgba(13,43,48,.25);
+      --shadow-card-hover: 0 22px 44px -18px rgba(13,43,48,.30);
+
+      --success:#2e8b57;
+      --error-color:#c0392b;
+      --accent-button-text: var(--teal-900);
+
+      --rod-color: var(--ink-500);
+      --top-bead: linear-gradient(145deg, var(--gold-400), var(--gold-600));
+      --bottom-bead: linear-gradient(145deg, var(--teal-600), var(--teal-700));
+      --bead-border: var(--cream);
+      --z-signin: 99999;
+    }
+
+    html[data-theme="dark"]{
+      color-scheme: dark;
+
+      --teal-900:#092227;
+      --teal-800:#8fe1ec;
+      --teal-700:#5fd0de;
+      --teal-600:#7fdbe6;
+      --teal-100:#173338;
+      --gold-600:#ffb648;
+      --gold-500:#ffc65c;
+      --gold-400:#ffd685;
+      --gold-100:#2b2110;
+      --cream:#0d1517;
+      --ink-900:#eef3f2;
+      --ink-500:#a4b6b7;
+      --white:#182425;
+
+      --bg-tint-gold: rgba(255,182,72,.07);
+      --bg-tint-teal: rgba(95,208,222,.10);
+      --border-card: rgba(255,255,255,.08);
+      --border-card-hover: rgba(255,198,92,.4);
+
+      --shadow-card: 0 18px 40px -22px rgba(0,0,0,.55);
+      --shadow-card-hover: 0 24px 50px -18px rgba(0,0,0,.65);
+
+      --success:#5fd08b;
+      --error-color:#ff6b5e;
+      --accent-button-text: #0d1517;
+
+      --rod-color: var(--ink-500);
+      --top-bead: linear-gradient(145deg, var(--gold-400), var(--gold-600));
+      --bottom-bead: linear-gradient(145deg, var(--teal-600), var(--teal-700));
+      --bead-border: var(--cream);
+      --z-signin: 99999;
+    }
+
+    *,*::before,*::after{ box-sizing:border-box; }
+    html{ scroll-behavior:smooth; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', sans-serif;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--ink-900);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background .3s ease, color .3s ease;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .title {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      font-size: 1.5rem;
+      color: var(--ink-900);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .title i { color: var(--gold-500); font-size: 1.2rem; }
+
+    /* Score Section */
+    .score-section {
+      background: var(--white);
+      border: 1px solid var(--border-card);
+      padding: 18px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .score-item { text-align: center; }
+    .score-label {
+      color: var(--ink-500);
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+    .score-value {
+      font-family: 'Fraunces', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--ink-900);
+    }
+
+    /* Game Modes */
+    .game-modes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      background: var(--white);
+      color: var(--ink-900);
+      border: 1px solid var(--border-card);
+      padding: 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all .2s ease;
+      box-shadow: var(--shadow-card);
+    }
+    .mode-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+    .mode-btn.active {
+      border-color: var(--gold-500);
+      background: var(--bg-tint-gold);
+      color: var(--ink-900);
+    }
+
+    /* Challenge Section */
+    .challenge-section {
+      background: linear-gradient(145deg, var(--bg-tint-teal), var(--bg-tint-gold));
+      border: 1px solid var(--border-card);
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .challenge-text {
+      font-family: 'Fraunces', serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--ink-900);
+    }
+
+    /* Abacus Container */
+    .abacus-container {
+      background: var(--white);
+      border: 1px solid var(--border-card);
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+      overflow-x: auto;
+    }
+    .abacus {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      align-items: center;
+      min-width: 600px;
+      padding: 20px;
+    }
+    .column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .column-label {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--ink-500);
+      margin-bottom: 8px;
+      font-family: 'Fraunces', serif;
+    }
+    .rod {
+      width: 6px;
+      height: 300px;
+      background: var(--rod-color);
+      opacity: 0.35;
+      border-radius: 5px;
+      position: relative;
+      box-shadow: none;
+    }
+    .divider {
+      position: absolute;
+      width: 120%;
+      height: 3px;
+      background: var(--gold-500);
+      left: -10%;
+      top: 60px;
+      border-radius: 5px;
+      z-index: 1;
+      opacity: 1;
+    }
+    .bead {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: top 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow .2s ease;
+      box-shadow: var(--shadow-card);
+      border: 3px solid var(--bead-border);
+    }
+    .bead:hover { transform: translateX(-50%) scale(1.08); box-shadow: var(--shadow-card-hover); }
+    .bead.active { animation: beadPop 0.3s ease; }
+    @keyframes beadPop {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.15); }
+    }
+
+    .top-bead { background: var(--top-bead); }
+    .bottom-bead { background: var(--bottom-bead); }
+
+    /* Answer Section */
+    .answer-section {
+      background: var(--white);
+      border: 1px solid var(--border-card);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .answer-display {
+      font-family: 'Fraunces', serif;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--ink-900);
+      text-align: center;
+      margin-bottom: 16px;
+      padding: 18px;
+      background: var(--bg-tint-teal);
+      border-radius: 10px;
+    }
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 14px 26px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-card);
+    }
+    .btn-primary { background: var(--gold-500); color: var(--accent-button-text); }
+    .btn-primary:hover { background: var(--gold-600); transform: translateY(-2px); }
+
+    .btn-reset { background: transparent; color: var(--error-color); border: 1px solid var(--border-card); box-shadow: none; }
+    .btn-reset:hover { background: rgba(192,57,43,.08); border-color: var(--error-color); transform: translateY(-2px); }
+
+    /* Feedback */
+    .feedback {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: var(--white);
+      border: 1px solid var(--border-card);
+      padding: 30px;
+      border-radius: 14px;
+      box-shadow: var(--shadow-card-hover);
+      z-index: var(--z-signin);
+      text-align: center;
+      transition: transform .3s ease;
+      min-width: 300px;
+    }
+    .feedback.show { transform: translate(-50%, -50%) scale(1); }
+    .feedback-icon { font-size: 3.6rem; margin-bottom: 16px; }
+    .feedback.correct .feedback-icon { color: var(--success); }
+    .feedback.incorrect .feedback-icon { color: var(--error-color); }
+    .feedback-text {
+      font-family: 'Fraunces', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--ink-900);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .title { font-size: 1.25rem; }
+      .abacus { min-width: 400px; gap: 12px; }
+      .bead { width: 30px; height: 30px; }
+      .rod { height: 250px; }
+    }
+
+    /* Confetti Canvas */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: var(--z-signin);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+  <div class="container">
+    <div class="title">
+      <i class="fas fa-calculator"></i>
+      Abacus Learning Game
+    </div>
+
+    <div class="score-section">
+      <div class="score-item">
+        <div class="score-label">Score</div>
+        <div class="score-value" id="score">0</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Streak</div>
+        <div class="score-value" id="streak">0</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Best</div>
+        <div class="score-value" id="best">0</div>
+      </div>
+    </div>
+
+    <div class="game-modes">
+      <button class="mode-btn active" onclick="setMode('learn')" id="mode-learn">
+        <i class="fas fa-book"></i> Learn Mode
+      </button>
+      <button class="mode-btn" onclick="setMode('challenge')" id="mode-challenge">
+        <i class="fas fa-trophy"></i> Challenge Mode
+      </button>
+      <button class="mode-btn" onclick="setMode('practice')" id="mode-practice">
+        <i class="fas fa-dumbbell"></i> Practice Mode
+      </button>
+    </div>
+
+    <div class="challenge-section" id="challenge-section">
+      <div class="challenge-text" id="challenge-text">
+        Move the beads to explore!
+      </div>
+    </div>
+
+    <div class="abacus-container">
+      <div class="abacus" id="abacus"></div>
+    </div>
+
+    <div class="answer-section">
+      <div class="answer-display" id="answer-display">0</div>
+      <div class="button-group">
+        <button class="btn btn-primary" onclick="checkAnswer()" id="check-btn" style="display: none;">
+          <i class="fas fa-check"></i>
+          Check Answer
+        </button>
+        <button class="btn btn-primary" onclick="nextChallenge()" id="next-btn" style="display: none;">
+          <i class="fas fa-forward"></i>
+          Next Challenge
+        </button>
+        <button class="btn btn-reset" onclick="resetAbacus()">
+          <i class="fas fa-redo"></i>
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="feedback" id="feedback">
+    <div class="feedback-icon" id="feedback-icon"></div>
+    <div class="feedback-text" id="feedback-text"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    let currentMode = 'learn';
+    let targetNumber = 0;
+    let score = 0;
+    let streak = 0;
+    let bestScore = localStorage.getItem('abacusBest') || 0;
+    document.getElementById('best').textContent = bestScore;
+
+    const columns = 5; // Representing ones, tens, hundreds, thousands, ten-thousands
+
+    function initAbacus() {
+        const abacus = document.getElementById('abacus');
+        abacus.innerHTML = '';
+
+        const labels = ['10000', '1000', '100', '10', '1'];
+
+        for (let i = 0; i < columns; i++) {
+            const column = document.createElement('div');
+            column.className = 'column';
+            column.dataset.column = i;
+
+            const label = document.createElement('div');
+            label.className = 'column-label';
+            label.textContent = labels[i];
+            column.appendChild(label);
+
+            const rod = document.createElement('div');
+            rod.className = 'rod';
+
+            const divider = document.createElement('div');
+            divider.className = 'divider';
+            rod.appendChild(divider);
+
+            // Top bead (value of 5)
+            const topBead = document.createElement('div');
+            topBead.className = 'bead top-bead';
+            topBead.dataset.value = '5';
+            topBead.dataset.position = 'top';
+            topBead.style.top = '10px';
+            topBead.onclick = () => toggleBead(topBead, i);
+            rod.appendChild(topBead);
+
+            // Bottom beads (4 beads, each value of 1)
+            for (let j = 0; j < 4; j++) {
+                const bottomBead = document.createElement('div');
+                bottomBead.className = 'bead bottom-bead';
+                bottomBead.dataset.value = '1';
+                bottomBead.dataset.position = 'bottom';
+                bottomBead.dataset.index = j;
+                bottomBead.style.top = (240 - j * 45) + 'px';
+                bottomBead.onclick = () => toggleBead(bottomBead, i);
+                rod.appendChild(bottomBead);
+            }
+
+            column.appendChild(rod);
+            abacus.appendChild(column);
+        }
+    }
+
+    function toggleBead(bead, columnIndex) {
+        bead.classList.add('active');
+        setTimeout(() => bead.classList.remove('active'), 300);
+
+        const position = bead.dataset.position;
+        const rod = bead.parentElement;
+
+        if (position === 'top') {
+            const currentTop = parseInt(bead.style.top);
+            if (currentTop < 60) {
+                bead.style.top = '85px'; // Move down (activated)
+            } else {
+                bead.style.top = '10px'; // Move up (deactivated)
+            }
+        } else {
+            const index = parseInt(bead.dataset.index);
+            const currentTop = parseInt(bead.style.top);
+            if (currentTop > 80) {
+                bead.style.top = (55 - index * 45) + 'px'; // Move up (activated)
+            } else {
+                bead.style.top = (240 - index * 45) + 'px'; // Move down (deactivated)
+            }
+        }
+
+        playSound();
+        updateDisplay();
+    }
+
+    function calculateValue() {
+        let total = 0;
+        const columns = document.querySelectorAll('.column');
+
+        columns.forEach((column, colIndex) => {
+            const multiplier = Math.pow(10, 4 - colIndex);
+            let columnValue = 0;
+
+            const topBead = column.querySelector('.top-bead');
+            const topPosition = parseInt(topBead.style.top);
+            if (topPosition > 60) {
+                columnValue += 5;
+            }
+
+            const bottomBeads = column.querySelectorAll('.bottom-bead');
+            bottomBeads.forEach(bead => {
+                const position = parseInt(bead.style.top);
+                if (position < 80) {
+                    columnValue += 1;
+                }
+            });
+
+            total += columnValue * multiplier;
+        });
+
+        return total;
+    }
+
+    function updateDisplay() {
+        const value = calculateValue();
+        document.getElementById('answer-display').textContent = value;
+    }
+
+    function resetAbacus() {
+        const beads = document.querySelectorAll('.bead');
+        beads.forEach(bead => {
+            if (bead.dataset.position === 'top') {
+                bead.style.top = '10px';
+            } else {
+                const index = parseInt(bead.dataset.index);
+                bead.style.top = (240 - index * 45) + 'px';
+            }
+        });
+        updateDisplay();
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`mode-${mode}`).classList.add('active');
+
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const challengeText = document.getElementById('challenge-text');
+
+        if (mode === 'learn') {
+            checkBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+            challengeText.textContent = 'Move the beads to explore!';
+        } else if (mode === 'challenge') {
+            checkBtn.style.display = 'flex';
+            nextBtn.style.display = 'none';
+            nextChallenge();
+        } else if (mode === 'practice') {
+            checkBtn.style.display = 'flex';
+            nextBtn.style.display = 'none';
+            generatePractice();
+        }
+
+        resetAbacus();
+    }
+
+    function nextChallenge() {
+        targetNumber = Math.floor(Math.random() * 100) + 1;
+        document.getElementById('challenge-text').textContent = `Show the number: ${targetNumber}`;
+        document.getElementById('check-btn').style.display = 'flex';
+        document.getElementById('next-btn').style.display = 'none';
+        resetAbacus();
+    }
+
+    function generatePractice() {
+        targetNumber = Math.floor(Math.random() * 500) + 1;
+        document.getElementById('challenge-text').textContent = `Show the number: ${targetNumber}`;
+    }
+
+    function checkAnswer() {
+        const userAnswer = calculateValue();
+        const feedback = document.getElementById('feedback');
+        const feedbackIcon = document.getElementById('feedback-icon');
+        const feedbackText = document.getElementById('feedback-text');
+
+        if (userAnswer === targetNumber) {
+            feedback.className = 'feedback correct show';
+            feedbackIcon.innerHTML = '<i class="fas fa-star"></i>';
+            feedbackText.textContent = 'Awesome! Correct!';
+
+            score += 10;
+            streak++;
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('abacusBest', bestScore);
+                document.getElementById('best').textContent = bestScore;
+            }
+
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+
+            launchConfetti();
+
+            if (currentMode === 'challenge') {
+                document.getElementById('check-btn').style.display = 'none';
+                document.getElementById('next-btn').style.display = 'flex';
+            } else {
+                setTimeout(() => generatePractice(), 2000);
+            }
+        } else {
+            feedback.className = 'feedback incorrect show';
+            feedbackIcon.innerHTML = '<i class="fas fa-times"></i>';
+            feedbackText.textContent = `Try again! You showed ${userAnswer}`;
+            streak = 0;
+            document.getElementById('streak').textContent = streak;
+        }
+
+        setTimeout(() => {
+            feedback.classList.remove('show');
+        }, 2000);
+    }
+
+    function playSound() {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    }
+
+    function launchConfetti() {
+        const count = 200;
+        const defaults = {
+            origin: { y: 0.7 }
+        };
+
+        function fire(particleRatio, opts) {
+            confetti(Object.assign({}, defaults, opts, {
+                particleCount: Math.floor(count * particleRatio)
+            }));
+        }
+
+        fire(0.25, {
+            spread: 26,
+            startVelocity: 55,
+        });
+
+        fire(0.2, {
+            spread: 60,
+        });
+
+        fire(0.35, {
+            spread: 100,
+            decay: 0.91,
+            scalar: 0.8
+        });
+
+        fire(0.1, {
+            spread: 120,
+            startVelocity: 25,
+            decay: 0.92,
+            scalar: 1.2
+        });
+
+        fire(0.1, {
+            spread: 120,
+            startVelocity: 45,
+        });
+    }
+
+    // Initialize
+    initAbacus();
+    updateDisplay();
+  </script>
+</body>
+</html>
