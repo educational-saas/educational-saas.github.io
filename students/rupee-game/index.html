@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Rupee Game 🐷 — Count &amp; Save!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- Kid-friendly accents ---------- */
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    /* ---------- Rupee Game semantic tokens ---------- */
+    --plum:var(--ink-900);
+    --ink-soft:var(--ink-500);
+    --purple:var(--fun-purple);
+    --grass:var(--fun-green);
+    --grass-dark:#399c6c;
+    --sun:var(--gold-500);
+    --sun-dark:var(--gold-600);
+    --berry:var(--fun-red);
+    --berry-dark:#d1454a;
+    --stone-locked: var(--teal-100);
+    --stone-locked-ink: var(--ink-500);
+
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --grass-dark:#2c8f60; --berry-dark:#c23b41;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:var(--font-body);
+    color:var(--plum);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--sun) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.35);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .rupee-drift{position:absolute;opacity:.45;font-size:30px;font-weight:800;color:var(--gold-600);animation:drift linear infinite;font-family:var(--font-display);}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(20deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--plum);
+  }
+  .brand .mascot-mini{font-size:1.3em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .piggy-counter{
+    display:flex;align-items:center;gap:8px;
+    background:var(--white);border:3px solid var(--sun);
+    border-radius:999px;padding:8px 16px;
+    font-weight:800;font-size:17px;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    color:var(--plum);transition:transform .18s ease;
+  }
+  .piggy-counter.bump{animation:bump .4s ease;}
+  @keyframes bump{0%,100%{transform:scale(1);}40%{transform:scale(1.16);}}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- path of stepping stones ---------- */
+  .path-wrap{
+    position:relative;z-index:2;
+    margin:6px auto 10px;max-width:1000px;
+    overflow-x:auto;overflow-y:hidden;
+    padding:14px 18px 22px;
+  }
+  .path{
+    display:flex;align-items:flex-end;gap:14px;min-width:max-content;padding:0 6px;
+    position:relative;
+  }
+  .path::before{
+    content:"";position:absolute;left:0;right:0;top:50%;height:0;
+    border-top:5px dashed var(--border-card);z-index:0;
+  }
+  .stone{
+    position:relative;z-index:1;
+    width:46px;height:46px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:700;font-size:16px;
+    background:var(--stone-locked);color:var(--stone-locked-ink);
+    border:4px solid var(--white);box-shadow:0 4px 0 var(--edge-shadow-soft);
+    flex:0 0 auto;transition:transform .2s ease, background .2s ease;
+  }
+  .stone:nth-child(odd){transform:translateY(-6px);}
+  .stone:nth-child(even){transform:translateY(6px);}
+  .stone.done{background:var(--grass);color:#fff;}
+  .stone.current{background:var(--sun);color:#5a3c00;transform:translateY(-6px) scale(1.18);box-shadow:0 0 0 5px rgba(245,166,35,.35), 0 4px 0 var(--edge-shadow-soft);animation:stonepulse 1.6s ease-in-out infinite;}
+  @keyframes stonepulse{0%,100%{box-shadow:0 0 0 5px rgba(245,166,35,.35),0 4px 0 var(--edge-shadow-soft);}50%{box-shadow:0 0 0 9px rgba(245,166,35,.16),0 4px 0 var(--edge-shadow-soft);}}
+  .stone.trophy{background:linear-gradient(160deg,var(--sun),var(--berry));color:#fff;font-size:22px;}
+
+  /* ---------- main stage ---------- */
+  .stage{
+    position:relative;z-index:2;
+    max-width:980px;margin:0 auto;padding:10px 18px 60px;
+    display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .mascot-card{
+    background:var(--white);border-radius:var(--r-lg);padding:18px 16px;
+    text-align:center;box-shadow:0 8px 0 var(--edge-shadow-soft);
+    position:sticky;top:14px;border:1px solid var(--border-card);
+  }
+  .mascot-svg-wrap{display:inline-block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .mascot-svg-wrap.happy{animation:jump .6s ease-in-out 2;}
+  @keyframes jump{0%,100%{transform:translateY(0) rotate(0);}30%{transform:translateY(-16px) rotate(-8deg);}60%{transform:translateY(0) rotate(6deg);}}
+  .speech-bubble{
+    margin-top:10px;background:var(--bubble-tint);border-radius:var(--r-md);padding:12px;
+    font-size:15px;font-weight:700;color:var(--plum);line-height:1.35;
+    min-height:60px;display:flex;align-items:center;justify-content:center;
+  }
+  .mascot-name{font-family:var(--font-display);font-weight:700;color:var(--purple);font-size:14px;margin-top:6px;}
+  .switch-link{margin-top:10px;background:none;border:none;font-family:var(--font-body);font-weight:700;font-size:12.5px;color:var(--teal-700);cursor:pointer;text-decoration:underline;padding:4px;}
+
+  /* persistent piggy visual under mascot */
+  .piggy-box{margin-top:16px;padding-top:14px;border-top:2px dashed var(--border-card);}
+  .piggy-box svg{width:76px;height:auto;}
+  .piggy-label{font-weight:800;font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .piggy-total{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--grass-dark);}
+
+  .task-card{
+    background:var(--white);border-radius:var(--r-lg);padding:24px 24px 20px;
+    box-shadow:0 10px 0 var(--edge-shadow-soft);
+    position:relative;overflow:hidden;border:1px solid var(--border-card);
+  }
+  .task-badge{
+    display:inline-block;background:var(--sun);color:#5a3c00;font-weight:800;
+    font-family:var(--font-display);font-size:13px;letter-spacing:.3px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;
+  }
+  .task-title{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,4vw,32px);margin:2px 0 6px;color:var(--plum);}
+  .task-instruction{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 14px;color:var(--ink-soft);}
+
+  /* ---------- goal + collected readout ---------- */
+  .amount-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .amount-card{
+    flex:1 1 140px;background:var(--input-bg);border:1px solid var(--input-border);
+    border-radius:var(--r-md);padding:14px;text-align:center;
+  }
+  .amount-card .lbl{font-weight:800;font-size:12.5px;color:var(--ink-soft);text-transform:none;}
+  .amount-card .val{font-family:var(--font-display);font-weight:700;font-size:30px;margin-top:2px;}
+  .amount-card.target .val{color:var(--berry-dark);}
+  .amount-card.collected .val{color:var(--teal-700);}
+  .amount-card.collected.match .val{color:var(--grass-dark);}
+
+  /* ---------- piggy stage where coins fly into ---------- */
+  .piggy-stage{
+    position:relative;height:150px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:18px;
+  }
+  .piggy-stage svg{height:130px;width:auto;transition:transform .18s ease;}
+  .piggy-stage.wobble svg{animation:wobble .5s ease;}
+  @keyframes wobble{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
+  .flying-coin{position:absolute;pointer-events:none;transition:transform .55s cubic-bezier(.3,.6,.4,1), opacity .55s ease;z-index:5;}
+
+  /* ---------- money tray ---------- */
+  .tray-label{font-weight:800;font-size:13.5px;color:var(--ink-soft);margin:0 0 8px;}
+  .tray-row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:14px;}
+  .money-btn{
+    background:var(--white);border:1px solid var(--border-card);border-radius:18px;
+    box-shadow:0 5px 0 var(--edge-shadow-soft);cursor:pointer;padding:8px 10px 6px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-family:var(--font-body);font-weight:800;font-size:12px;color:var(--plum);
+    transition:transform .12s ease;position:relative;
+  }
+  .money-btn:hover{transform:translateY(-3px);}
+  .money-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--edge-shadow-soft);}
+  .money-btn .piece-count{
+    position:absolute;top:-8px;right:-8px;background:var(--berry);color:#fff;
+    border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;padding:0 4px;box-shadow:0 2px 0 var(--berry-dark);
+  }
+  .coin-svg{width:56px;height:56px;}
+  .note-svg{width:74px;height:44px;}
+
+  .action-row{display:flex;gap:10px;justify-content:center;margin-bottom:6px;flex-wrap:wrap;}
+  .btn-ghost{
+    font-family:var(--font-body);font-weight:800;font-size:14px;color:var(--teal-700);
+    background:var(--panel-tint);border:none;border-radius:999px;padding:10px 18px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn-ghost:hover{transform:translateY(-2px);}
+  .btn-ghost:active{transform:translateY(1px);}
+
+  .hint-msg{margin-top:6px;font-weight:800;font-size:15px;min-height:22px;text-align:center;}
+  .hint-msg.err{color:var(--berry-dark);}
+  .hint-msg.ok{color:var(--grass-dark);}
+
+  /* ---------- confetti ---------- */
+  .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:3px;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:fixed;inset:0;background:var(--overlay-tint);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .overlay.show{display:flex;}
+  .overlay-card{
+    background:var(--white);border-radius:var(--r-lg);padding:30px 28px;text-align:center;
+    max-width:460px;width:100%;box-shadow:0 12px 0 var(--edge-shadow);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--border-card);
+  }
+  @keyframes pop{0%{transform:scale(.6);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .celebrate-emoji{font-size:64px;animation:jump .6s ease-in-out 3;display:inline-block;}
+  .celebrate-title{font-family:var(--font-display);font-weight:700;font-size:26px;margin:8px 0 4px;color:var(--plum);}
+  .celebrate-msg{font-weight:700;color:var(--ink-soft);margin-bottom:18px;}
+
+  .btn-big{background:var(--berry);color:#fff;font-family:var(--font-body);font-weight:800;font-size:19px;border:none;border-radius:999px;padding:16px 34px;box-shadow:0 5px 0 var(--berry-dark);cursor:pointer;transition:transform .12s ease;}
+  .btn-big:hover{transform:translateY(-2px);}
+  .btn-big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--berry-dark);}
+
+  /* ---------- character picker ---------- */
+  .pick-title{font-family:var(--font-display);font-weight:700;font-size:24px;margin:6px 0 2px;color:var(--plum);}
+  .pick-sub{font-weight:600;color:var(--ink-soft);margin:0 0 6px;font-size:14.5px;}
+  .char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 6px;}
+  @media (max-width:480px){.char-grid{grid-template-columns:repeat(2,1fr);}}
+  .char-btn{
+    background:var(--panel-tint);border:3px solid transparent;border-radius:var(--r-md);
+    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease;font-family:var(--font-body);
+    font-weight:700;font-size:12px;color:var(--plum);
+  }
+  .char-btn:hover{transform:translateY(-3px);border-color:var(--sun);}
+  .char-btn.selected{border-color:var(--grass);background:var(--bg-tint-teal);}
+
+  /* ---------- final certificate ---------- */
+  .final-overlay .certificate{
+    background:var(--cream);border-radius:var(--r-lg);padding:38px 32px;text-align:center;
+    max-width:520px;width:100%;border:10px solid var(--sun);
+    box-shadow:0 14px 0 var(--edge-shadow);animation:pop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .certificate .trophy-emoji{font-size:70px;}
+  .certificate h2{font-family:var(--font-display);font-weight:700;font-size:27px;color:var(--plum);margin:6px 0;}
+  .certificate .cert-name{font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--berry-dark);margin:10px 0;}
+  .certificate p{font-weight:700;color:var(--ink-soft);}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+  @media (max-width:480px){
+    .task-card{padding:18px 16px 16px;}
+    .money-btn{padding:6px 8px 4px;}
+    .coin-svg{width:48px;height:48px;}
+    .note-svg{width:64px;height:38px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="rupee-drift" style="top:14%;left:6%;animation-duration:32s;">₹</div>
+  <div class="rupee-drift" style="top:26%;left:82%;animation-duration:40s;animation-direction:reverse;">₹</div>
+  <div class="rupee-drift" style="top:58%;left:46%;animation-duration:46s;">₹</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">🐷</span> Rupee Game</div>
+  <div class="top-right">
+    <div class="piggy-counter" id="piggyCounterBar">🐷 ₹<span id="grandTotal">0</span></div>
+    <button class="icon-btn" id="switchBtn" title="Change friend">🔁</button>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off">🔊</button>
+  </div>
+</div>
+
+<div class="path-wrap">
+  <div class="path" id="pathTrack"></div>
+</div>
+
+<main class="stage">
+  <div class="mascot-card">
+    <div class="mascot-svg-wrap" id="mascotWrap">
+      <svg id="mascotSvg" viewBox="-40 -40 80 80" width="86" height="86"></svg>
+    </div>
+    <div class="speech-bubble" id="speechBubble">Pick a friend and let's fill the piggy bank!</div>
+    <div class="mascot-name" id="mascotName">Choose a Friend</div>
+    <button class="switch-link" id="switchLink">🔁 Change friend</button>
+
+    <div class="piggy-box">
+      <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="45" rx="38" ry="26" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="3"/>
+        <ellipse cx="80" cy="42" rx="10" ry="9" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="3"/>
+        <ellipse cx="83" cy="41" rx="4" ry="3.4" fill="#fff"/><circle cx="84" cy="41" r="1.6" fill="var(--char-line)"/>
+        <ellipse cx="18" cy="34" rx="7" ry="9" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="3"/>
+        <rect x="42" y="12" width="16" height="7" rx="3.5" fill="#e2941a" stroke="var(--char-line)" stroke-width="2.5"/>
+        <circle cx="30" cy="66" r="7" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="3"/>
+        <circle cx="66" cy="66" r="7" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="3"/>
+      </svg>
+      <div class="piggy-label">Our Piggy Bank</div>
+      <div class="piggy-total">₹<span id="sideTotal">0</span></div>
+    </div>
+  </div>
+
+  <div class="task-card" id="taskCard">
+    <div class="task-badge" id="taskBadge">Level 1</div>
+    <h2 class="task-title" id="taskTitle"></h2>
+    <p class="task-instruction" id="taskInstruction"></p>
+
+    <div class="amount-row">
+      <div class="amount-card target">
+        <div class="lbl">Make this much</div>
+        <div class="val" id="targetVal">₹0</div>
+      </div>
+      <div class="amount-card collected" id="collectedCard">
+        <div class="lbl">You collected</div>
+        <div class="val" id="collectedVal">₹0</div>
+      </div>
+    </div>
+
+    <div class="piggy-stage" id="piggyStage">
+      <svg viewBox="0 0 140 110" xmlns="http://www.w3.org/2000/svg" id="mainPiggySvg">
+        <ellipse cx="70" cy="62" rx="52" ry="36" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="4"/>
+        <ellipse cx="114" cy="58" rx="14" ry="12" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="4"/>
+        <ellipse cx="119" cy="56" rx="5.4" ry="4.6" fill="#fff"/><circle cx="120.5" cy="56" r="2.1" fill="var(--char-line)"/>
+        <ellipse cx="24" cy="46" rx="10" ry="13" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="4"/>
+        <ellipse cx="24" cy="46" rx="4.5" ry="6" fill="#e06fa3"/>
+        <rect x="58" y="14" width="24" height="10" rx="5" fill="#e2941a" stroke="var(--char-line)" stroke-width="3"/>
+        <ellipse cx="70" cy="19" rx="12" ry="5" fill="#f5a623" stroke="var(--char-line)" stroke-width="2"/>
+        <circle cx="42" cy="94" r="10" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="4"/>
+        <circle cx="94" cy="94" r="10" fill="#ff8fc0" stroke="var(--char-line)" stroke-width="4"/>
+        <path d="M 46 55 Q 52 62 58 55" stroke="var(--char-line)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <p class="tray-label">Tap coins and notes to add them:</p>
+    <div class="tray-row" id="trayRow"></div>
+
+    <div class="action-row">
+      <button class="btn-ghost" id="undoBtn">↩️ Remove last</button>
+      <button class="btn-ghost" id="resetBtn">🔄 Start over</button>
+    </div>
+    <div class="hint-msg" id="hintMsg"></div>
+  </div>
+</main>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<div class="overlay" id="celebrateOverlay">
+  <div class="overlay-card">
+    <div class="celebrate-emoji" id="celebrateEmoji">🎉</div>
+    <div class="celebrate-title" id="celebrateTitle">Ka-ching!</div>
+    <div class="celebrate-msg" id="celebrateMsg">You made the exact amount!</div>
+    <button class="btn-big" id="nextBtn">Next ▶️</button>
+  </div>
+</div>
+
+<div class="overlay show" id="pickOverlay">
+  <div class="overlay-card">
+    <div class="pick-title">Who will save with you?</div>
+    <p class="pick-sub">Tap a friend to start your Rupee Game adventure!</p>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+</div>
+
+<div class="overlay final-overlay" id="finalOverlay">
+  <div class="certificate">
+    <div class="trophy-emoji">🏆</div>
+    <h2>Certificate of Super Saving</h2>
+    <div class="cert-name" id="certName">Rupee Star</div>
+    <p>filled the piggy bank with <span id="certFriend">a friend</span> and saved <span id="certTotal">₹0</span>! 🌟</p>
+    <p style="font-size:14px;margin-top:16px;">🎊 You are a money-counting superstar! 🎊</p>
+    <button class="btn-big" id="restartBtn" style="margin-top:10px;">Play Again 🔁</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var CHAR_LINE = 'var(--char-line)';
+
+  function faceParts(){
+    return ''
+      + '<circle cx="-12" cy="-2" r="5.5" fill="#fff"/><circle cx="-10" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + '<circle cx="12" cy="-2" r="5.5" fill="#fff"/><circle cx="14" cy="-1" r="2.8" fill="'+CHAR_LINE+'"/>'
+      + '<path d="M -10 12 Q 0 20 10 12" stroke="'+CHAR_LINE+'" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      + '<ellipse cx="-20" cy="12" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>'
+      + '<ellipse cx="20" cy="12" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>';
+  }
+
+  /* ---------- money-themed friends ---------- */
+  function svgCoiny(){
+    return ''
+      + '<circle cx="0" cy="0" r="34" fill="#f5c95c" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<circle cx="0" cy="0" r="26" fill="none" stroke="#e2941a" stroke-width="2" stroke-dasharray="3 4"/>'
+      + '<text x="0" y="-20" text-anchor="middle" font-size="11" font-weight="800" fill="#8a5a00">₹</text>'
+      + faceParts();
+  }
+  function svgRuby(){
+    return ''
+      + '<circle cx="0" cy="0" r="34" fill="#f2555a" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<circle cx="0" cy="0" r="26" fill="none" stroke="#c23b41" stroke-width="2" stroke-dasharray="3 4"/>'
+      + '<text x="0" y="-20" text-anchor="middle" font-size="11" font-weight="800" fill="#7a1f24">₹</text>'
+      + faceParts();
+  }
+  function svgBenny(){
+    return ''
+      + '<rect x="-34" y="-24" width="68" height="48" rx="8" fill="#9bd7c9" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<rect x="-26" y="-16" width="52" height="32" rx="16" fill="none" stroke="#399c6c" stroke-width="2"/>'
+      + faceParts();
+  }
+  function svgPiggy(){
+    return ''
+      + '<ellipse cx="0" cy="0" r="34" fill="#ff8fc0" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<ellipse cx="24" cy="-2" rx="9" ry="8" fill="#ff8fc0" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<ellipse cx="27" cy="-3" rx="3.4" ry="2.8" fill="#fff"/><circle cx="28" cy="-3" r="1.3" fill="'+CHAR_LINE+'"/>'
+      + faceParts();
+  }
+  function svgSunny(){
+    return ''
+      + '<circle cx="0" cy="0" r="30" fill="#ffd85c" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<path d="M -34 0 A 34 34 0 0 1 34 0 M -30 -18 A 34 34 0 0 1 30 -18" stroke="#e2941a" stroke-width="4" fill="none" stroke-linecap="round" opacity=".6"/>'
+      + '<text x="0" y="-18" text-anchor="middle" font-size="10" font-weight="800" fill="#8a5a00">₹</text>'
+      + faceParts();
+  }
+  function svgZiggy(){
+    return ''
+      + '<rect x="-30" y="-30" width="60" height="60" rx="14" fill="#227d8b" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<rect x="-18" y="-14" width="36" height="12" rx="3" fill="#f5a623" opacity=".85"/>'
+      + '<circle cx="0" cy="-6" r="4" fill="#f5a623"/>'
+      + faceParts();
+  }
+
+  var CHAR_LIST = [
+    {id:'coiny', name:'Coiny the Coin', color:'#e2941a', svg:svgCoiny},
+    {id:'ruby', name:'Ruby Rupee', color:'#f2555a', svg:svgRuby},
+    {id:'benny', name:'Benny the Bill', color:'#399c6c', svg:svgBenny},
+    {id:'piggy', name:'Poppy the Piglet', color:'#ff8fc0', svg:svgPiggy},
+    {id:'sunny', name:'Sunny Saver', color:'#e2941a', svg:svgSunny},
+    {id:'ziggy', name:'Ziggy the Vault', color:'#227d8b', svg:svgZiggy}
+  ];
+
+  /* ================= MONEY VISUALS ================= */
+  function coinSVG(value){
+    var faceColor = value>=10 ? '#e8c874' : (value>=5 ? '#d9b45c' : '#cdd3da');
+    var ringColor = value>=10 ? '#b8944a' : (value>=5 ? '#a8823f' : '#9aa1ab');
+    return '<svg class="coin-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
+      + '<circle cx="50" cy="52" r="42" fill="'+ringColor+'"/>'
+      + '<circle cx="50" cy="50" r="42" fill="'+faceColor+'" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<circle cx="50" cy="50" r="32" fill="none" stroke="'+ringColor+'" stroke-width="3" stroke-dasharray="4 5"/>'
+      + '<text x="50" y="44" text-anchor="middle" font-family="Manrope,sans-serif" font-size="15" font-weight="800" fill="#5a4520">₹</text>'
+      + '<text x="50" y="66" text-anchor="middle" font-family="Fraunces,serif" font-size="22" font-weight="800" fill="#5a4520">'+value+'</text>'
+      + '</svg>';
+  }
+  var NOTE_COLORS = {10:'#a0673c', 20:'#c9b32b', 50:'#2fb6c9', 100:'#9b8fd1', 200:'#f2b705', 500:'#8a8f99'};
+  function noteSVG(value){
+    var c = NOTE_COLORS[value] || '#a0673c';
+    return '<svg class="note-svg" viewBox="0 0 160 96" xmlns="http://www.w3.org/2000/svg">'
+      + '<rect x="3" y="3" width="154" height="90" rx="10" fill="'+c+'" stroke="'+CHAR_LINE+'" stroke-width="3"/>'
+      + '<rect x="12" y="12" width="136" height="72" rx="6" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-dasharray="3 4"/>'
+      + '<circle cx="40" cy="48" r="22" fill="rgba(255,255,255,.28)"/>'
+      + '<path d="M 40 32 L 44 44 L 57 44 L 46 52 L 50 65 L 40 57 L 30 65 L 34 52 L 23 44 L 36 44 Z" fill="rgba(255,255,255,.55)"/>'
+      + '<text x="112" y="42" text-anchor="middle" font-family="Manrope,sans-serif" font-size="13" font-weight="800" fill="#fff">₹</text>'
+      + '<text x="112" y="70" text-anchor="middle" font-family="Fraunces,serif" font-size="26" font-weight="800" fill="#fff">'+value+'</text>'
+      + '</svg>';
+  }
+
+  /* ================= LEVELS ================= */
+  function rndMultiple(min, max, step){
+    var lo = Math.ceil(min/step), hi = Math.floor(max/step);
+    return (lo + Math.floor(Math.random()*(hi-lo+1))) * step;
+  }
+  var LEVELS = [
+    {name:'Coin Pouch', instruction:"Tap coins to make the exact amount!", denoms:[{v:1,t:'coin'},{v:2,t:'coin'},{v:5,t:'coin'}], min:3, max:15, step:1},
+    {name:'Coin Jar', instruction:"More coins to play with — make the amount exactly!", denoms:[{v:1,t:'coin'},{v:2,t:'coin'},{v:5,t:'coin'},{v:10,t:'coin'}], min:10, max:30, step:1},
+    {name:'First Notes', instruction:"Time for notes! Use ₹10 and ₹20 notes.", denoms:[{v:10,t:'note'},{v:20,t:'note'}], min:20, max:100, step:10},
+    {name:'Fifty & More', instruction:"Add the ₹50 note to your toolkit!", denoms:[{v:10,t:'note'},{v:20,t:'note'},{v:50,t:'note'}], min:50, max:200, step:10},
+    {name:'Hundreds Club', instruction:"Big amounts now — use up to ₹100 notes!", denoms:[{v:10,t:'note'},{v:20,t:'note'},{v:50,t:'note'},{v:100,t:'note'}], min:100, max:400, step:10},
+    {name:'Big Saver', instruction:"Master level! Use any coin or note you like.", denoms:[{v:10,t:'note'},{v:20,t:'note'},{v:50,t:'note'},{v:100,t:'note'},{v:200,t:'note'},{v:500,t:'note'}], min:200, max:900, step:10}
+  ];
+
+  /* ================= STATE ================= */
+  var state = {
+    levelIndex: 0,
+    grandTotal: 0,
+    stars: 0,
+    muted: false,
+    character: CHAR_LIST[0],
+    target: 0,
+    collected: 0,
+    pieces: []
+  };
+
+  var encourage = ["Ka-ching! Perfect count! 🌟","Amazing saving! 🎉","You're a money star! ⭐","Fantastic counting! 🥳","Yes! Exact amount! 🙌","Super saver! 🚀"];
+  var tryAgain = ["Almost — try a different coin or note! 💪","Not quite the right amount yet! 🌈","Keep counting — you can do it! 🐷"];
+
+  /* ================= ELEMENTS ================= */
+  var el = {
+    pathTrack: document.getElementById('pathTrack'),
+    grandTotal: document.getElementById('grandTotal'),
+    sideTotal: document.getElementById('sideTotal'),
+    piggyCounterBar: document.getElementById('piggyCounterBar'),
+    muteBtn: document.getElementById('muteBtn'),
+    switchBtn: document.getElementById('switchBtn'),
+    switchLink: document.getElementById('switchLink'),
+    mascotWrap: document.getElementById('mascotWrap'),
+    mascotSvg: document.getElementById('mascotSvg'),
+    speechBubble: document.getElementById('speechBubble'),
+    mascotName: document.getElementById('mascotName'),
+    taskBadge: document.getElementById('taskBadge'),
+    taskTitle: document.getElementById('taskTitle'),
+    taskInstruction: document.getElementById('taskInstruction'),
+    targetVal: document.getElementById('targetVal'),
+    collectedVal: document.getElementById('collectedVal'),
+    collectedCard: document.getElementById('collectedCard'),
+    piggyStage: document.getElementById('piggyStage'),
+    trayRow: document.getElementById('trayRow'),
+    undoBtn: document.getElementById('undoBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    hintMsg: document.getElementById('hintMsg'),
+    confettiLayer: document.getElementById('confettiLayer'),
+    celebrateOverlay: document.getElementById('celebrateOverlay'),
+    celebrateEmoji: document.getElementById('celebrateEmoji'),
+    celebrateTitle: document.getElementById('celebrateTitle'),
+    celebrateMsg: document.getElementById('celebrateMsg'),
+    nextBtn: document.getElementById('nextBtn'),
+    pickOverlay: document.getElementById('pickOverlay'),
+    charGrid: document.getElementById('charGrid'),
+    finalOverlay: document.getElementById('finalOverlay'),
+    certFriend: document.getElementById('certFriend'),
+    certTotal: document.getElementById('certTotal'),
+    restartBtn: document.getElementById('restartBtn')
+  };
+
+  /* ================= AUDIO ================= */
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(Ctx) audioCtx = new Ctx();
+    }
+    return audioCtx;
+  }
+  function beep(freq, dur, delay, vol){
+    if(state.muted) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.15, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0+dur+0.02);
+  }
+  function playClink(){ beep(880,0.07,0,0.09); beep(1200,0.06,0.05,0.06); }
+  function playSuccess(){ beep(523.25,0.16,0); beep(659.25,0.16,0.12); beep(783.99,0.28,0.24); beep(1046.5,0.3,0.36); }
+  function playOops(){ beep(300,0.18,0,0.09); beep(240,0.22,0.1,0.09); }
+  function speak(text){
+    if(state.muted) return;
+    if(!('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.85; u.pitch = 1.15;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  /* ================= CHARACTER PICKER ================= */
+  function buildCharGrid(){
+    el.charGrid.innerHTML = '';
+    CHAR_LIST.forEach(function(c){
+      var b = document.createElement('button');
+      b.className = 'char-btn';
+      b.setAttribute('data-id', c.id);
+      b.innerHTML = '<svg viewBox="-40 -40 80 80" width="58" height="58">'+c.svg()+'</svg><span>'+c.name+'</span>';
+      b.addEventListener('click', function(){
+        playClink();
+        selectCharacter(c);
+        el.pickOverlay.classList.remove('show');
+      });
+      el.charGrid.appendChild(b);
+    });
+  }
+  function selectCharacter(c){
+    state.character = c;
+    el.mascotSvg.innerHTML = c.svg();
+    el.mascotName.textContent = c.name;
+    Array.prototype.forEach.call(el.charGrid.children, function(btn){
+      btn.classList.toggle('selected', btn.getAttribute('data-id') === c.id);
+    });
+    el.speechBubble.textContent = "Let's fill the piggy bank together, " + c.name.split(' ')[0] + "-style!";
+  }
+
+  /* ================= PATH STONES ================= */
+  function buildPath(){
+    el.pathTrack.innerHTML = '';
+    LEVELS.forEach(function(t, i){
+      var s = document.createElement('div');
+      s.className = 'stone';
+      s.textContent = (i+1);
+      s.id = 'stone-' + i;
+      el.pathTrack.appendChild(s);
+    });
+    var trophy = document.createElement('div');
+    trophy.className = 'stone trophy';
+    trophy.textContent = '🏆';
+    el.pathTrack.appendChild(trophy);
+  }
+  function updatePathStones(){
+    LEVELS.forEach(function(t, i){
+      var s = document.getElementById('stone-' + i);
+      s.classList.remove('done','current');
+      if(i < state.levelIndex) s.classList.add('done');
+      else if(i === state.levelIndex) s.classList.add('current');
+    });
+  }
+
+  /* ================= LEVEL RENDERING ================= */
+  function renderLevel(){
+    var level = LEVELS[state.levelIndex];
+    state.target = rndMultiple(level.min, level.max, level.step);
+    state.collected = 0;
+    state.pieces = [];
+
+    el.taskBadge.textContent = 'Level ' + (state.levelIndex+1) + ' of ' + LEVELS.length;
+    el.taskTitle.textContent = level.name;
+    el.taskInstruction.textContent = level.instruction;
+    el.targetVal.textContent = '₹' + state.target;
+    el.collectedVal.textContent = '₹0';
+    el.collectedCard.classList.remove('match');
+
+    el.trayRow.innerHTML = '';
+    level.denoms.forEach(function(d){
+      var btn = document.createElement('button');
+      btn.className = 'money-btn';
+      btn.setAttribute('data-value', d.v);
+      btn.innerHTML = (d.t === 'coin' ? coinSVG(d.v) : noteSVG(d.v)) + '<span>₹' + d.v + '</span>';
+      btn.addEventListener('click', function(){ addPiece(d.v); });
+      el.trayRow.appendChild(btn);
+    });
+
+    el.hintMsg.textContent = '';
+    el.hintMsg.className = 'hint-msg';
+    el.mascotWrap.classList.remove('happy');
+    el.speechBubble.textContent = "Make exactly ₹" + state.target + "!";
+    updatePathStones();
+    updatePieceBadges();
+    setTimeout(function(){ speak("Make exactly " + state.target + " rupees."); }, 300);
+  }
+
+  function updatePieceBadges(){
+    var counts = {};
+    state.pieces.forEach(function(v){ counts[v] = (counts[v]||0) + 1; });
+    Array.prototype.forEach.call(el.trayRow.children, function(btn){
+      var old = btn.querySelector('.piece-count');
+      if(old) old.remove();
+      var v = btn.getAttribute('data-value');
+      if(counts[v]){
+        var b = document.createElement('span');
+        b.className = 'piece-count';
+        b.textContent = counts[v];
+        btn.appendChild(b);
+      }
+    });
+  }
+
+  function flyCoinToPiggy(sourceBtn){
+    var srcRect = sourceBtn.getBoundingClientRect();
+    var dstRect = el.piggyStage.getBoundingClientRect();
+    var clone = sourceBtn.querySelector('svg').cloneNode(true);
+    clone.classList.add('flying-coin');
+    clone.style.position = 'fixed';
+    clone.style.left = srcRect.left + 'px';
+    clone.style.top = srcRect.top + 'px';
+    clone.style.width = srcRect.width + 'px';
+    clone.style.height = srcRect.height + 'px';
+    clone.style.opacity = '1';
+    clone.style.transform = 'translate(0,0) scale(1)';
+    document.body.appendChild(clone);
+    var dx = (dstRect.left + dstRect.width/2) - (srcRect.left + srcRect.width/2);
+    var dy = (dstRect.top + dstRect.height/2) - (srcRect.top + srcRect.height/2);
+    requestAnimationFrame(function(){
+      clone.style.transform = 'translate('+dx+'px,'+dy+'px) scale(.2)';
+      clone.style.opacity = '0.2';
+    });
+    setTimeout(function(){ if(clone.parentNode) clone.parentNode.removeChild(clone); }, 600);
+  }
+
+  function addPiece(value){
+    var level = LEVELS[state.levelIndex];
+    var btn = el.trayRow.querySelector('.money-btn[data-value="'+value+'"]');
+    if(state.collected + value > state.target){
+      playOops();
+      el.piggyStage.classList.remove('wobble'); void el.piggyStage.offsetWidth; el.piggyStage.classList.add('wobble');
+      var msg = tryAgain[Math.floor(Math.random()*tryAgain.length)];
+      el.hintMsg.textContent = msg;
+      el.hintMsg.className = 'hint-msg err';
+      el.speechBubble.textContent = msg;
+      return;
+    }
+    playClink();
+    flyCoinToPiggy(btn);
+    state.pieces.push(value);
+    state.collected += value;
+    el.hintMsg.textContent = '';
+    el.hintMsg.className = 'hint-msg';
+    el.collectedVal.textContent = '₹' + state.collected;
+    updatePieceBadges();
+
+    if(state.collected === state.target){
+      el.collectedCard.classList.add('match');
+      setTimeout(succeed, 350);
+    }
+  }
+
+  el.undoBtn.addEventListener('click', function(){
+    if(!state.pieces.length) return;
+    var v = state.pieces.pop();
+    state.collected -= v;
+    el.collectedVal.textContent = '₹' + state.collected;
+    el.collectedCard.classList.remove('match');
+    updatePieceBadges();
+    playClink();
+  });
+  el.resetBtn.addEventListener('click', function(){
+    state.pieces = [];
+    state.collected = 0;
+    el.collectedVal.textContent = '₹0';
+    el.collectedCard.classList.remove('match');
+    el.hintMsg.textContent = '';
+    updatePieceBadges();
+  });
+
+  /* ================= SUCCESS / CELEBRATION ================= */
+  function succeed(){
+    playSuccess();
+    state.stars += 1;
+    state.grandTotal += state.target;
+    el.grandTotal.textContent = state.grandTotal;
+    el.sideTotal.textContent = state.grandTotal;
+    el.piggyCounterBar.classList.remove('bump'); void el.piggyCounterBar.offsetWidth; el.piggyCounterBar.classList.add('bump');
+    el.mascotWrap.classList.add('happy');
+    burstConfetti();
+    var line = encourage[Math.floor(Math.random()*encourage.length)];
+    el.speechBubble.textContent = line;
+    el.celebrateEmoji.textContent = ['🎉','🌟','🥳','🎈','💰','🏅','✨'][Math.floor(Math.random()*7)];
+    el.celebrateTitle.textContent = line;
+    el.celebrateMsg.textContent = (state.levelIndex === LEVELS.length-1)
+      ? "You filled the piggy bank at every level!"
+      : "₹" + state.target + " safely in the piggy bank! Ready for the next level?";
+    el.celebrateOverlay.classList.add('show');
+  }
+
+  el.nextBtn.addEventListener('click', function(){
+    el.celebrateOverlay.classList.remove('show');
+    if(state.levelIndex >= LEVELS.length-1){
+      showFinal();
+    } else {
+      state.levelIndex += 1;
+      renderLevel();
+    }
+  });
+
+  function showFinal(){
+    el.certFriend.textContent = state.character.name;
+    el.certTotal.textContent = '₹' + state.grandTotal;
+    el.finalOverlay.classList.add('show');
+    burstConfetti(60);
+  }
+
+  el.restartBtn.addEventListener('click', function(){
+    state.levelIndex = 0;
+    state.stars = 0;
+    state.grandTotal = 0;
+    el.grandTotal.textContent = 0;
+    el.sideTotal.textContent = 0;
+    el.finalOverlay.classList.remove('show');
+    renderLevel();
+  });
+
+  /* ================= CONFETTI ================= */
+  var confettiColors = ['#f2555a','#ffd85c','#4fc98a','#4aa8e0','#a679e0','#ff8fc0'];
+  function burstConfetti(count){
+    count = count || 36;
+    for(var i=0;i<count;i++){
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      var size = 6 + Math.random()*8;
+      p.style.width = size + 'px';
+      p.style.height = (size*0.6) + 'px';
+      p.style.left = (Math.random()*100) + 'vw';
+      p.style.background = confettiColors[Math.floor(Math.random()*confettiColors.length)];
+      var dur = 2.2 + Math.random()*1.6;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random()*0.3) + 's';
+      el.confettiLayer.appendChild(p);
+      (function(node, life){
+        setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, (life+0.5)*1000);
+      })(p, dur);
+    }
+  }
+
+  /* ================= TOP BAR BUTTONS ================= */
+  el.muteBtn.addEventListener('click', function(){
+    state.muted = !state.muted;
+    el.muteBtn.textContent = state.muted ? '🔇' : '🔊';
+    if(state.muted && 'speechSynthesis' in window){ window.speechSynthesis.cancel(); }
+  });
+  function openPicker(){ el.pickOverlay.classList.add('show'); }
+  el.switchBtn.addEventListener('click', openPicker);
+  el.switchLink.addEventListener('click', openPicker);
+
+  /* ================= INIT ================= */
+  buildCharGrid();
+  buildPath();
+  selectCharacter(CHAR_LIST[0]);
+  renderLevel();
+
+})();
+</script>
+</body>
+</html>
