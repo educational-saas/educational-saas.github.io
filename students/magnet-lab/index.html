@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Magnet Lab 🧲 — Pull, Push &amp; Play!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+
+    /* ---------- Brand palette (light) — matches the parent portal ---------- */
+    --teal-900:#0d3841;
+    --teal-800:#124f59;
+    --teal-700:#1b6b78;
+    --teal-600:#227d8b;
+    --teal-100:#e3eef0;
+    --gold-600:#e2941a;
+    --gold-500:#f5a623;
+    --gold-400:#ffc65c;
+    --gold-100:#fdf1dc;
+    --cream:#faf8f3;
+    --ink-900:#1c2626;
+    --ink-500:#5f6f70;
+    --white:#ffffff;
+
+    --bg-tint-gold: rgba(245,166,35,.10);
+    --bg-tint-teal: rgba(27,107,120,.10);
+    --border-card: rgba(13,56,65,.08);
+
+    /* ---------- Kid-friendly accents ---------- */
+    --fun-red:#f2555a;
+    --fun-orange:#ff9f45;
+    --fun-yellow:#ffd85c;
+    --fun-green:#4fc98a;
+    --fun-blue:#4aa8e0;
+    --fun-purple:#a679e0;
+    --fun-pink:#ff8fc0;
+    --char-line:#2a2a2a;
+
+    /* ---------- Magnet Lab semantic tokens ---------- */
+    --plum:var(--ink-900);
+    --ink-soft:var(--ink-500);
+    --panel-tint: var(--bg-tint-teal);
+    --bubble-tint: var(--bg-tint-gold);
+    --input-bg: color-mix(in srgb, var(--white) 97%, var(--ink-900) 3%);
+    --input-border: color-mix(in srgb, var(--ink-900) 16%, transparent);
+    --overlay-tint: color-mix(in srgb, var(--teal-900) 55%, transparent);
+    --edge-shadow: rgba(13,56,65,.14);
+    --edge-shadow-soft: rgba(13,56,65,.08);
+
+    --pole-n:#e0483f;      /* North pole red */
+    --pole-n-dark:#b83630;
+    --pole-s:#3f7fd6;      /* South pole blue */
+    --pole-s-dark:#2f61a8;
+    --bench-top:#dce7e4;
+    --bench-edge:#c3d2ce;
+    --field-line: rgba(27,107,120,.35);
+    --spark:#ffe27a;
+
+    --r-lg:26px;
+    --r-md:18px;
+    --r-sm:14px;
+    --ease:cubic-bezier(.22,1,.36,1);
+
+    --font-display:'Fraunces',Georgia,serif;
+    --font-body:'Manrope',system-ui,sans-serif;
+  }
+
+  html[data-theme="dark"]{
+    color-scheme: dark;
+    --teal-900:#092227; --teal-800:#8fe1ec; --teal-700:#5fd0de; --teal-600:#7fdbe6; --teal-100:#173338;
+    --gold-600:#ffb648; --gold-500:#ffc65c; --gold-400:#ffd685; --gold-100:#2b2110;
+    --cream:#0d1517; --ink-900:#eef3f2; --ink-500:#a4b6b7; --white:#182425;
+    --bg-tint-gold: rgba(255,182,72,.08); --bg-tint-teal: rgba(95,208,222,.12);
+    --border-card: rgba(255,255,255,.10); --char-line:#0d1517;
+    --input-bg: color-mix(in srgb, var(--white) 90%, black 10%);
+    --input-border: color-mix(in srgb, var(--white) 22%, transparent);
+    --edge-shadow: rgba(0,0,0,.5); --edge-shadow-soft: rgba(0,0,0,.35);
+    --pole-n:#ff6b5e; --pole-n-dark:#c0453b;
+    --pole-s:#6ea6ff; --pole-s-dark:#3f6fc4;
+    --bench-top:#16292a; --bench-edge:#0e1d1e;
+    --field-line: rgba(127,219,230,.30);
+    --spark:#ffe27a;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    min-height:100dvh;
+    font-family:var(--font-body);
+    color:var(--plum);
+    background:linear-gradient(180deg,var(--bg-tint-teal) 0%, var(--cream) 55%, var(--bg-tint-gold) 100%);
+    overflow-x:hidden;
+    position:relative;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  button{touch-action:manipulation;}
+
+  /* ---------- decorative sky ---------- */
+  .sky-decor{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .sun-decor{
+    position:absolute;top:-40px;right:6%;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--gold-400), var(--gold-500) 70%);
+    box-shadow:0 0 60px 20px rgba(245,166,35,.30);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  .drift-icon{position:absolute;opacity:.35;font-size:26px;animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateX(-10vw) rotate(0deg);}to{transform:translateX(110vw) rotate(20deg);}}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  /* ---------- top bar ---------- */
+  .top-bar{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:12px;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(20px,3vw,28px);color:var(--plum);
+  }
+  .brand .mascot-mini{font-size:1.3em;animation:bob 2.4s ease-in-out infinite;display:inline-block;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-6px) rotate(3deg);}}
+
+  .top-right{display:flex;align-items:center;gap:10px;}
+  .icon-btn{
+    width:46px;height:46px;border-radius:50%;border:3px solid var(--white);
+    background:var(--white);font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--edge-shadow-soft);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s ease;
+    flex:0 0 auto;
+  }
+  .icon-btn:hover{transform:translateY(-2px) scale(1.05);}
+  .icon-btn:active{transform:translateY(1px) scale(.97);}
+
+  /* ---------- main stage ---------- */
+  .stage{
+    position:relative;z-index:2;
+    max-width:1080px;margin:0 auto;padding:10px 18px 50px;
+    display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start;
+  }
+
+  .mascot-card{
+    background:var(--white);border-radius:var(--r-lg);padding:18px 16px;
+    text-align:center;box-shadow:0 8px 0 var(--edge-shadow-soft);
+    position:sticky;top:14px;border:1px solid var(--border-card);
+  }
+  .mascot-svg-wrap{display:inline-block;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(0,0,0,.12));}
+  .mascot-svg-wrap.happy{animation:jump .6s ease-in-out 2;}
+  .mascot-svg-wrap.oops{animation:shake .5s ease-in-out 1;}
+  @keyframes jump{0%,100%{transform:translateY(0) rotate(0);}30%{transform:translateY(-16px) rotate(-8deg);}60%{transform:translateY(0) rotate(6deg);}}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px) rotate(-4deg);}75%{transform:translateX(6px) rotate(4deg);}}
+  .speech-bubble{
+    margin-top:10px;background:var(--bubble-tint);border-radius:var(--r-md);padding:12px;
+    font-size:14.5px;font-weight:700;color:var(--plum);line-height:1.35;
+    min-height:66px;display:flex;align-items:center;justify-content:center;
+    transition:background .2s ease;
+  }
+  .mascot-name{font-family:var(--font-display);font-weight:700;color:var(--teal-700);font-size:14px;margin-top:6px;}
+
+  .legend-box{margin-top:16px;padding-top:14px;border-top:2px dashed var(--border-card);text-align:left;}
+  .legend-title{font-weight:800;font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;text-align:center;}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--plum);margin-bottom:7px;}
+  .legend-dot{width:16px;height:16px;border-radius:50%;flex:0 0 auto;border:2px solid var(--char-line);}
+  .legend-dot.n{background:var(--pole-n);}
+  .legend-dot.s{background:var(--pole-s);}
+  .legend-dot.yes{background:var(--fun-green);}
+  .legend-dot.no{background:var(--ink-500);}
+
+  .field-toggle-row{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    margin-top:14px;padding-top:14px;border-top:2px dashed var(--border-card);
+    font-weight:800;font-size:12.5px;color:var(--plum);
+  }
+  .switch{position:relative;width:44px;height:25px;flex:0 0 auto;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .track{position:absolute;inset:0;background:var(--input-border);border-radius:999px;cursor:pointer;transition:background .2s ease;}
+  .switch .knob{position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--white);box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s ease;}
+  .switch input:checked + .track{background:var(--fun-green);}
+  .switch input:checked + .track .knob{transform:translateX(19px);}
+  .switch input:focus-visible + .track{outline:3px solid var(--teal-700);outline-offset:2px;}
+
+  .lab-card{
+    background:var(--white);border-radius:var(--r-lg);padding:22px 22px 18px;
+    box-shadow:0 10px 0 var(--edge-shadow-soft);
+    position:relative;overflow:hidden;border:1px solid var(--border-card);
+  }
+  .lab-badge{
+    display:inline-block;background:var(--gold-500);color:#5a3c00;font-weight:800;
+    font-family:var(--font-display);font-size:13px;letter-spacing:.3px;
+    padding:5px 14px;border-radius:999px;margin-bottom:10px;
+  }
+  html[data-theme="dark"] .lab-badge{color:#432d00;}
+  .lab-title{font-family:var(--font-display);font-weight:700;font-size:clamp(22px,3.6vw,30px);margin:2px 0 6px;color:var(--plum);}
+  .lab-instruction{font-size:15.5px;font-weight:600;line-height:1.5;margin:0 0 16px;color:var(--ink-soft);}
+
+  /* ---------- the lab bench (play surface) ---------- */
+  .bench-wrap{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3.1;
+    min-height:380px;
+    max-height:600px;
+    border-radius:var(--r-lg);
+    background:
+      radial-gradient(ellipse at 50% 8%, rgba(255,255,255,.5), transparent 55%),
+      linear-gradient(180deg, var(--bench-top), var(--bench-edge));
+    border:3px solid var(--bench-edge);
+    overflow:hidden;
+    /* the bench itself must not block page scrolling on phones — only the objects capture touches */
+    touch-action:pan-y;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.06);
+  }
+  .bench-grid{position:absolute;inset:0;opacity:.35;pointer-events:none;
+    background-image:
+      linear-gradient(var(--border-card) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-card) 1px, transparent 1px);
+    background-size:36px 36px;
+  }
+  .field-layer{position:absolute;inset:0;pointer-events:none;z-index:1;}
+  .field-layer svg{width:100%;height:100%;}
+  .field-path{fill:none;stroke:var(--field-line);stroke-width:2;stroke-dasharray:6 8;stroke-linecap:round;
+    animation:flow 2.4s linear infinite;transition:opacity .25s ease, stroke .25s ease;}
+  @keyframes flow{to{stroke-dashoffset:-56;}}
+  .glow-pulse{transition:opacity .18s ease, transform .18s ease; opacity:0; transform-origin:center;}
+  .glow-pulse.show{opacity:1;}
+
+  .tray-shelf{
+    position:absolute;left:0;right:0;bottom:0;height:22%;
+    background:linear-gradient(180deg, transparent, rgba(0,0,0,.05));
+    z-index:1;pointer-events:none;
+    border-top:2px dashed var(--border-card);
+  }
+
+  .magnet-wrap{position:absolute;z-index:3;pointer-events:none;filter:drop-shadow(0 6px 6px rgba(0,0,0,.18));}
+  .magnet-wrap svg{display:block;width:100%;height:100%;}
+
+  /* objects are positioned with transform (set from JS) — the box is exactly the artwork,
+     the label hangs below it, and an invisible margin makes small items easy to grab */
+  .lab-object{
+    position:absolute;left:0;top:0;z-index:5;
+    cursor:grab; touch-action:none;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    will-change:transform;
+  }
+  .lab-object::before{content:"";position:absolute;inset:-8px;border-radius:16px;}
+  .lab-object.dragging{cursor:grabbing;z-index:30;}
+  .lab-object:focus-visible{outline:3px solid var(--teal-700);outline-offset:4px;border-radius:12px;}
+  .lab-object .obj-svg-wrap{width:100%;height:100%;transition:transform .12s var(--ease), filter .15s ease;filter:drop-shadow(0 3px 4px rgba(0,0,0,.16));}
+  .lab-object .obj-svg-wrap svg{display:block;overflow:visible;transition:transform .28s var(--ease);}
+  .lab-object.dragging .obj-svg-wrap{transform:scale(1.14);filter:drop-shadow(0 10px 10px rgba(0,0,0,.25));}
+  .lab-object.attached .obj-svg-wrap{animation:none;}
+  .lab-object.bounce .obj-svg-wrap{animation:objbounce .45s ease;}
+  @keyframes objbounce{0%,100%{transform:scale(1);}40%{transform:scale(.88) rotate(-6deg);}70%{transform:scale(1.05) rotate(4deg);}}
+  .lab-object.snap .obj-svg-wrap{animation:objsnap .3s var(--ease);}
+  @keyframes objsnap{0%{transform:scale(1.14);}55%{transform:scale(.9);}100%{transform:scale(1);}}
+  .obj-label{
+    position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:3px;
+    font-family:var(--font-body);font-weight:800;font-size:10.5px;color:var(--plum);
+    background:rgba(255,255,255,.85);border-radius:8px;padding:1px 7px;white-space:nowrap;
+    box-shadow:0 1px 3px rgba(0,0,0,.12);pointer-events:none;transition:opacity .2s ease;
+  }
+  html[data-theme="dark"] .obj-label{background:rgba(24,36,37,.85);color:var(--ink-900);}
+  .lab-object.attached .obj-label,
+  .lab-object.dragging .obj-label{opacity:0;}
+
+  .flip-btn{
+    position:absolute;top:-10px;right:-12px;width:30px;height:30px;border-radius:50%;padding:0;
+    background:var(--teal-700);color:#fff;border:2px solid var(--white);font-size:15px;line-height:1;
+    font-family:var(--font-body);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;
+    box-shadow:0 3px 0 var(--edge-shadow-soft);
+  }
+  .flip-btn:active{transform:translateY(2px);box-shadow:none;}
+
+  .sparkle{position:absolute;pointer-events:none;font-size:20px;z-index:40;animation:sparkleFade .6s ease forwards;}
+  @keyframes sparkleFade{0%{opacity:1;transform:scale(.4) translateY(0);}100%{opacity:0;transform:scale(1.3) translateY(-18px);}}
+
+  .action-row{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+  .btn-ghost{
+    font-family:var(--font-body);font-weight:800;font-size:14px;color:var(--teal-700);
+    background:var(--panel-tint);border:none;border-radius:999px;padding:12px 20px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .btn-ghost:hover{transform:translateY(-2px);}
+  .btn-ghost:active{transform:translateY(1px);}
+  .btn-ghost:focus-visible,.icon-btn:focus-visible,.flip-btn:focus-visible{outline:3px solid var(--teal-700);outline-offset:2px;}
+
+  /* ---------- tablets & phones ---------- */
+  @media (max-width:800px){
+    .stage{display:flex;flex-direction:column;gap:14px;padding:6px 12px 40px;}
+
+    /* the card dissolves: mascot + speech bubble become a compact bar that
+       stays on screen while playing; legend & field toggle move below the bench */
+    .mascot-card{display:contents;}
+    .mascot-head{
+      position:sticky;top:8px;z-index:40;order:0;
+      display:flex;align-items:center;gap:10px;text-align:left;
+      background:var(--white);border:1px solid var(--border-card);border-radius:var(--r-lg);
+      padding:8px 12px;box-shadow:0 6px 0 var(--edge-shadow-soft);
+    }
+    .mascot-head .mascot-svg-wrap{flex:0 0 auto;}
+    .mascot-head .mascot-svg-wrap svg{width:54px;height:54px;}
+    .mascot-talk{flex:1;min-width:0;}
+    .speech-bubble{margin-top:0;min-height:46px;padding:8px 10px;font-size:13px;justify-content:flex-start;text-align:left;}
+    .mascot-name{font-size:11px;margin-top:3px;}
+    .lab-card{order:1;}
+    .mascot-extra{
+      order:2;background:var(--white);border:1px solid var(--border-card);border-radius:var(--r-lg);
+      padding:14px 16px;box-shadow:0 8px 0 var(--edge-shadow-soft);
+    }
+    .mascot-extra .legend-box{margin-top:0;padding-top:0;border-top:none;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
+    .mascot-extra .legend-title{grid-column:1/-1;}
+    .mascot-extra .legend-row{margin-bottom:4px;}
+  }
+  @media (max-width:720px){
+    .bench-wrap{aspect-ratio:auto;min-height:0;max-height:none;height:clamp(470px,132vw,590px);}
+    .tray-shelf{height:min(200px,40%);}
+    .lab-instruction{font-size:14px;margin-bottom:12px;}
+  }
+  @media (max-width:480px){
+    .top-bar{padding:10px 14px;}
+    .lab-card{padding:16px 14px 14px;}
+    .obj-label{font-size:9.5px;padding:1px 5px;}
+    .sun-decor{width:90px;height:90px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="sky-decor">
+  <div class="sun-decor"></div>
+  <div class="drift-icon" style="top:14%;left:6%;animation-duration:34s;">🧲</div>
+  <div class="drift-icon" style="top:30%;left:84%;animation-duration:42s;animation-direction:reverse;">✨</div>
+  <div class="drift-icon" style="top:62%;left:48%;animation-duration:48s;">⚡</div>
+</div>
+
+<div class="top-bar">
+  <div class="brand"><span class="mascot-mini">🧲</span> Magnet Lab</div>
+  <div class="top-right">
+    <button class="icon-btn" id="themeBtn" title="Light/Dark" aria-label="Switch light or dark theme">🌗</button>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off" aria-label="Sound on or off">🔊</button>
+  </div>
+</div>
+
+<main class="stage">
+  <div class="mascot-card">
+    <div class="mascot-head">
+      <div class="mascot-svg-wrap" id="mascotWrap">
+        <svg id="mascotSvg" viewBox="-40 -40 80 80" width="86" height="86"></svg>
+      </div>
+      <div class="mascot-talk">
+        <div class="speech-bubble" id="speechBubble" aria-live="polite">Drag an object near the magnet and see what happens!</div>
+        <div class="mascot-name">Maggie the Magnet</div>
+      </div>
+    </div>
+
+    <div class="mascot-extra">
+      <div class="legend-box">
+        <div class="legend-title">What do the colors mean?</div>
+        <div class="legend-row"><span class="legend-dot n"></span> Red end = North pole</div>
+        <div class="legend-row"><span class="legend-dot s"></span> Blue end = South pole</div>
+        <div class="legend-row"><span class="legend-dot yes"></span> Pulled by the magnet</div>
+        <div class="legend-row"><span class="legend-dot no"></span> Not magnetic</div>
+      </div>
+
+      <div class="field-toggle-row">
+        <span>Field lines</span>
+        <label class="switch">
+          <input type="checkbox" id="fieldToggle" checked aria-label="Show magnetic field lines">
+          <span class="track"><span class="knob"></span></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-badge">Free Play</div>
+    <h1 class="lab-title">The Magnet Playground</h1>
+    <p class="lab-instruction" id="instructionText">Pick up any object at the bottom and bring it close to the horseshoe magnet. Watch closely — some things get pulled in, some get pushed away, and some don't notice the magnet at all!</p>
+
+    <div class="bench-wrap" id="benchWrap">
+      <div class="bench-grid"></div>
+      <div class="tray-shelf"></div>
+      <div class="field-layer" id="fieldLayer"></div>
+      <div class="magnet-wrap" id="magnetWrap"></div>
+      <!-- lab-object elements injected here -->
+    </div>
+
+    <div class="action-row">
+      <button class="btn-ghost" id="resetBtn">🔄 Put everything back</button>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  var CL = 'var(--char-line)';
+
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+  function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
+
+  /* ================= THEME ================= */
+  var root = document.documentElement;
+  function applyTheme(t){ root.setAttribute('data-theme', t); }
+  (function initTheme(){
+    try{
+      var params = new URLSearchParams(window.location.search);
+      var qp = params.get('theme');
+      if(qp === 'dark' || qp === 'light'){ applyTheme(qp); return; }
+    }catch(e){}
+    if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){ applyTheme('dark'); }
+  })();
+  window.addEventListener('message', function(ev){
+    var d = ev && ev.data;
+    if(d && (d.theme === 'dark' || d.theme === 'light')) applyTheme(d.theme);
+    if(d && d.type === 'theme' && (d.value === 'dark' || d.value === 'light')) applyTheme(d.value);
+  });
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ================= AUDIO ================= */
+  var muted = false;
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(Ctx){ try{ audioCtx = new Ctx(); }catch(e){ audioCtx = null; } }
+    }
+    // phones start the audio engine "suspended" until a touch — wake it up
+    if(audioCtx && audioCtx.state === 'suspended'){ try{ audioCtx.resume(); }catch(e){} }
+    return audioCtx;
+  }
+  function beep(freq, dur, delay, vol, type){
+    if(muted) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    var t0 = ctx.currentTime + (delay||0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol||0.14, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+  }
+  function playPickup(){ beep(520,0.07,0,0.08); }
+  function playSnap(){ beep(660,0.08,0,0.1); beep(990,0.12,0.06,0.09); beep(1320,0.16,0.14,0.08); }
+  function playRepel(){ beep(220,0.09,0,0.1,'triangle'); beep(160,0.14,0.08,0.09,'triangle'); }
+  function playThud(){ beep(140,0.12,0,0.07,'sine'); }
+  function playFlip(){ beep(440,0.06,0,0.07); beep(560,0.06,0.05,0.06); }
+  document.getElementById('muteBtn').addEventListener('click', function(e){
+    muted = !muted;
+    e.currentTarget.textContent = muted ? '🔇' : '🔊';
+  });
+
+  /* ================= MASCOT (Maggie the Magnet) ================= */
+  var mascotSvg = document.getElementById('mascotSvg');
+  var mascotWrap = document.getElementById('mascotWrap');
+  var speechBubble = document.getElementById('speechBubble');
+  function faceParts(){
+    return ''
+      + '<circle cx="-9" cy="-4" r="5" fill="#fff"/><circle cx="-7.5" cy="-3" r="2.6" fill="'+CL+'"/>'
+      + '<circle cx="9" cy="-4" r="5" fill="#fff"/><circle cx="10.5" cy="-3" r="2.6" fill="'+CL+'"/>'
+      + '<path d="M -9 9 Q 0 16 9 9" stroke="'+CL+'" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+  }
+  function maggieSVG(){
+    return ''
+      + '<rect x="-30" y="-22" width="28" height="44" rx="10" fill="var(--pole-n)" stroke="'+CL+'" stroke-width="3"/>'
+      + '<rect x="2" y="-22" width="28" height="44" rx="10" fill="var(--pole-s)" stroke="'+CL+'" stroke-width="3"/>'
+      + '<text x="-16" y="-6" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="Manrope,sans-serif">N</text>'
+      + '<text x="16" y="-6" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="Manrope,sans-serif">S</text>'
+      + faceParts()
+      + '<path d="M -30 20 Q -34 30 -26 32" stroke="'+CL+'" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      + '<path d="M 30 20 Q 34 30 26 32" stroke="'+CL+'" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  }
+  mascotSvg.innerHTML = maggieSVG();
+  var speechTimer = null;
+  var lastSayAt = 0;
+  function say(text, mood){
+    lastSayAt = Date.now();
+    speechBubble.textContent = text;
+    mascotWrap.classList.remove('happy','oops');
+    if(mood) { void mascotWrap.offsetWidth; mascotWrap.classList.add(mood); }
+    clearTimeout(speechTimer);
+    speechTimer = setTimeout(function(){ mascotWrap.classList.remove('happy','oops'); }, 1300);
+  }
+  var idleLines = [
+    "Drag an object near the magnet and see what happens!",
+    "Which things do you think will get pulled in?",
+    "Try flipping the little bar magnet's poles!",
+    "Metal doesn't always mean magnetic — try the coin and foil!"
+  ];
+  var idleIndex = 0;
+
+  /* ================= OBJECT ART ================= */
+  function svgNail(){
+    return ''
+      + '<g transform="rotate(0)">'
+      + '<rect x="-4" y="-30" width="8" height="46" rx="2" fill="#b7c0c6" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<path d="M -4 16 L 0 30 L 4 16 Z" fill="#9aa5ab" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<rect x="-11" y="-34" width="22" height="8" rx="3" fill="#c7ced3" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<rect x="-2" y="-26" width="2.4" height="38" fill="rgba(255,255,255,.55)"/>'
+      + '</g>';
+  }
+  function svgPaperclip(){
+    return ''
+      + '<path d="M -6 -26 Q 16 -26 16 -10 Q 16 4 2 4 Q -8 4 -8 -6 Q -8 -14 0 -14 Q 6 -14 6 -8 L 6 10 Q 6 22 -6 22 Q -18 22 -18 10 L -18 -12"'
+      + ' fill="none" stroke="#8fa0aa" stroke-width="5" stroke-linecap="round"/>'
+      + '<path d="M -6 -26 Q 16 -26 16 -10 Q 16 4 2 4 Q -8 4 -8 -6 Q -8 -14 0 -14 Q 6 -14 6 -8 L 6 10 Q 6 22 -6 22 Q -18 22 -18 10 L -18 -12"'
+      + ' fill="none" stroke="'+CL+'" stroke-width="2" stroke-linecap="round" opacity=".5"/>';
+  }
+  function svgEraser(){
+    return ''
+      + '<rect x="-24" y="-14" width="48" height="28" rx="7" fill="#ff8fc0" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<rect x="-24" y="-14" width="48" height="10" rx="5" fill="#ffb7d8" opacity=".8"/>'
+      + '<rect x="-16" y="-4" width="32" height="4" rx="2" fill="rgba(255,255,255,.5)"/>';
+  }
+  function svgBucket(){
+    return ''
+      + '<path d="M -22 -14 L 20 -14 L 15 24 Q 14 28 10 28 L -12 28 Q -16 28 -17 24 Z" fill="#4aa8e0" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<ellipse cx="-1" cy="-14" rx="21" ry="5" fill="#6bbcec" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<path d="M -14 -16 Q -1 -34 12 -16" fill="none" stroke="'+CL+'" stroke-width="3" stroke-linecap="round"/>'
+      + '<rect x="-13" y="-2" width="24" height="4" rx="2" fill="rgba(255,255,255,.4)"/>';
+  }
+  function svgFoil(){
+    return ''
+      + '<path d="M 0 -22 C 16 -22 24 -10 20 0 C 26 6 22 20 8 22 C -4 26 -20 18 -22 4 C -26 -8 -14 -22 0 -22 Z"'
+      + ' fill="#cfd6db" stroke="'+CL+'" stroke-width="2.5" stroke-linejoin="round"/>'
+      + '<path d="M -14 -10 L -2 -2 L -12 6 M 4 -14 L 10 -2 L 2 8 L 14 10" fill="none" stroke="#9aa5ab" stroke-width="2" stroke-linecap="round"/>'
+      + '<ellipse cx="-8" cy="-10" rx="6" ry="4" fill="rgba(255,255,255,.5)"/>';
+  }
+  function svgCoin(){
+    return ''
+      + '<circle cx="0" cy="2" r="24" fill="#b8703f" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<circle cx="0" cy="0" r="24" fill="#d98a53" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<circle cx="0" cy="0" r="17" fill="none" stroke="#b8703f" stroke-width="2" stroke-dasharray="3 4"/>'
+      + '<ellipse cx="-8" cy="-9" rx="6" ry="4" fill="rgba(255,255,255,.4)"/>';
+  }
+  function svgWood(){
+    return ''
+      + '<rect x="-24" y="-16" width="48" height="32" rx="4" fill="#b5834f" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<path d="M -20 -8 Q 0 -4 20 -8 M -20 2 Q 0 6 20 2 M -20 12 Q 0 9 20 12" stroke="#8f6437" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>';
+  }
+  function svgBarMagnet(state){
+    var flipped = state.flipped;
+    var leftPole = flipped ? 'S' : 'N';
+    var rightPole = flipped ? 'N' : 'S';
+    var leftColor = leftPole === 'N' ? 'var(--pole-n)' : 'var(--pole-s)';
+    var rightColor = rightPole === 'N' ? 'var(--pole-n)' : 'var(--pole-s)';
+    return ''
+      + '<rect x="-26" y="-13" width="26" height="26" rx="6" fill="'+leftColor+'" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<rect x="0" y="-13" width="26" height="26" rx="6" fill="'+rightColor+'" stroke="'+CL+'" stroke-width="2.5"/>'
+      + '<text x="-13" y="5" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="Manrope,sans-serif">'+leftPole+'</text>'
+      + '<text x="13" y="5" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="Manrope,sans-serif">'+rightPole+'</text>'
+      + '<rect x="-26" y="-13" width="52" height="7" rx="3" fill="rgba(255,255,255,.35)"/>';
+  }
+
+  /* ================= OBJECT DEFINITIONS =================
+     w     – legacy size hint (artwork is drawn a little larger for easier grabbing)
+     reach – how far the magnet's pull reaches for this object (1 = normal)
+     ext   – how tall the object is (in artwork units) when hanging from a pole          */
+  var OBJECTS = [
+    {id:'nail', name:'Iron Nail', magnetic:true, isBar:false, w:34, reach:1.0, ext:64, svg:function(){return svgNail();}, fact:"Iron is magnetic — the nail zooms right in!"},
+    {id:'paperclip', name:'Steel Paperclip', magnetic:true, isBar:false, w:40, reach:0.9, ext:50, svg:function(){return svgPaperclip();}, fact:"Steel paperclips are pulled in too — steel has iron in it!"},
+    {id:'barmagnet', name:'Bar Magnet', magnetic:true, isBar:true, w:56, reach:1.15, ext:52, svg:svgBarMagnet, fact:"Two magnets! Opposite poles snap together, same poles push apart."},
+    {id:'rubber', name:'Rubber Eraser', magnetic:false, isBar:false, w:52, reach:1, ext:50, svg:function(){return svgEraser();}, fact:"Rubber isn't magnetic — nothing happens at all."},
+    {id:'bucket', name:'Plastic Bucket', magnetic:false, isBar:false, w:46, reach:1, ext:50, svg:function(){return svgBucket();}, fact:"Plastic isn't magnetic — it stays put no matter how close it gets."},
+    {id:'foil', name:'Aluminum Foil', magnetic:false, isBar:false, w:52, reach:1, ext:50, svg:function(){return svgFoil();}, fact:"It's a metal, but aluminum isn't magnetic — no pull at all!"},
+    {id:'coin', name:'Copper Coin', magnetic:false, isBar:false, w:50, reach:1, ext:50, svg:function(){return svgCoin();}, fact:"Copper is a metal too, but it isn't magnetic either — tricky!"},
+    {id:'wood', name:'Wooden Block', magnetic:false, isBar:false, w:50, reach:1, ext:50, svg:function(){return svgWood();}, fact:"Wood is never magnetic — the magnet doesn't even notice it."}
+  ];
+  var CAP = 3;                       // how many things can hang from one pole
+
+  /* ================= MAGNET (horseshoe) ================= */
+  var magnetWrap = document.getElementById('magnetWrap');
+  var MAGNET_VB_W = 200, MAGNET_VB_H = 190;
+  magnetWrap.innerHTML =
+    '<svg viewBox="0 0 '+MAGNET_VB_W+' '+MAGNET_VB_H+'" xmlns="http://www.w3.org/2000/svg">'
+    + '<path d="M 40 20 A 60 60 0 0 1 160 20 L 160 100 A 8 8 0 0 1 152 108 L 132 108 A 8 8 0 0 1 124 100 L 124 40 A 24 24 0 0 0 76 40 L 76 100 A 8 8 0 0 1 68 108 L 48 108 A 8 8 0 0 1 40 100 Z"'
+    + ' fill="#c7ced3" stroke="'+CL+'" stroke-width="4" stroke-linejoin="round"/>'
+    + '<path d="M 40 20 A 60 60 0 0 1 160 20" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="6" stroke-linecap="round"/>'
+    + '<rect x="48" y="132" width="24" height="46" rx="6" fill="var(--pole-n)" stroke="'+CL+'" stroke-width="4"/>'
+    + '<rect x="128" y="132" width="24" height="46" rx="6" fill="var(--pole-s)" stroke="'+CL+'" stroke-width="4"/>'
+    + '<rect x="48" y="108" width="24" height="26" fill="#c7ced3" stroke="'+CL+'" stroke-width="4"/>'
+    + '<rect x="128" y="108" width="24" height="26" fill="#c7ced3" stroke="'+CL+'" stroke-width="4"/>'
+    + '<text x="60" y="163" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="Manrope,sans-serif">N</text>'
+    + '<text x="140" y="163" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="Manrope,sans-serif">S</text>'
+    + '</svg>';
+
+  /* ================= WORLD / MEASUREMENTS ================= */
+  var bench = document.getElementById('benchWrap');
+  var W = 0, H = 0;                           // bench inner size in px
+  var mb = {x:0,y:0,w:150,h:142};             // horseshoe box inside the bench
+  var chains = {left:[], right:[]};           // things hanging from each pole (top → bottom)
+
+  function measure(){
+    W = bench.clientWidth; H = bench.clientHeight;
+    return bench.getBoundingClientRect();
+  }
+  function positionMagnet(){
+    var w = Math.min(150, Math.max(92, W*0.38));
+    var h = w*MAGNET_VB_H/MAGNET_VB_W;
+    mb = {x: W*0.5 - w/2, y: H*0.10, w: w, h: h};
+    magnetWrap.style.width = w+'px';
+    magnetWrap.style.height = h+'px';
+    magnetWrap.style.left = mb.x+'px';
+    magnetWrap.style.top = mb.y+'px';
+  }
+  function getTips(){
+    var ty = mb.y + mb.h*178/MAGNET_VB_H;     // bottom edge of each pole
+    return {
+      left:  {x: mb.x + mb.w*0.30, y: ty, pole:'N'},
+      right: {x: mb.x + mb.w*0.70, y: ty, pole:'S'}
+    };
+  }
+  function fieldRadius(){ return clamp(H*0.36, 100, 220); }
+
+  /* ================= FIELD LINES ================= */
+  var fieldLayer = document.getElementById('fieldLayer');
+  var fieldSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  fieldLayer.appendChild(fieldSvg);
+  var glowLeft = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  var glowRight = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  [glowLeft, glowRight].forEach(function(g){
+    g.setAttribute('r','26'); g.classList.add('glow-pulse');
+    g.setAttribute('fill','url(#glowGrad)');
+    fieldSvg.appendChild(g);
+  });
+  var defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML = '<radialGradient id="glowGrad"><stop offset="0%" style="stop-color:var(--spark);stop-opacity:.9"/><stop offset="100%" style="stop-color:var(--spark);stop-opacity:0"/></radialGradient>';
+  fieldSvg.insertBefore(defs, fieldSvg.firstChild);
+  var fieldPaths = [];
+  function buildFieldPaths(){
+    fieldPaths.forEach(function(p){ p.remove(); });
+    fieldPaths = [];
+    for(var i=0;i<4;i++){
+      var p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.classList.add('field-path');
+      p.style.animationDelay = (i*0.3)+'s';
+      fieldSvg.insertBefore(p, glowLeft);
+      fieldPaths.push(p);
+    }
+  }
+  buildFieldPaths();
+
+  var fieldOn = true;
+  var activeInfo = null;
+  document.getElementById('fieldToggle').addEventListener('change', function(e){
+    fieldOn = e.target.checked;
+    fieldLayer.style.display = fieldOn ? 'block' : 'none';
+    if(fieldOn) drawFieldLines(activeInfo);
+  });
+
+  function drawFieldLines(info){
+    if(!fieldOn || W === 0){ return; }
+    var tips = getTips();
+    fieldSvg.setAttribute('viewBox','0 0 '+W+' '+H);
+    fieldSvg.setAttribute('width', W);
+    fieldSvg.setAttribute('height', H);
+
+    var arcs = [
+      {from:tips.left,  spread: 0.55},
+      {from:tips.left,  spread: 1.0},
+      {from:tips.right, spread: 0.55},
+      {from:tips.right, spread: 1.0}
+    ];
+    var k = clamp(mb.w/150, 0.65, 1);         // keep the arcs in proportion on small screens
+    arcs.forEach(function(a, i){
+      var t = a.from;
+      var dir = t===tips.left ? -1 : 1;
+      var ex = t.x + dir*70*a.spread*k;
+      var ey = t.y + 90*a.spread*k;
+      var cx = t.x + dir*40*a.spread*k;
+      var cy = t.y + 30*a.spread*k;
+      fieldPaths[i].setAttribute('d', 'M '+t.x+' '+t.y+' Q '+cx+' '+cy+' '+ex+' '+ey);
+      fieldPaths[i].style.opacity = info ? 0.95 : 0.55;
+    });
+
+    function setGlow(circle, tip, active, mode){
+      circle.setAttribute('cx', tip.x);
+      circle.setAttribute('cy', tip.y);
+      if(active){
+        circle.classList.add('show');
+        circle.setAttribute('r', mode==='repel' ? 34 : 30);
+      } else {
+        circle.classList.remove('show');
+      }
+    }
+    // glow only where the magnet is really doing something (pulling or pushing)
+    var live = info && (info.mode==='attract' || info.mode==='repel');
+    setGlow(glowLeft, tips.left, live && info.key==='left', info && info.mode);
+    setGlow(glowRight, tips.right, live && info.key==='right', info && info.mode);
+  }
+
+  /* ================= OBJECT STATE ================= */
+  /* states: idle (resting) · drag (held) · fly (gliding to a target) · attached (hanging from a pole) */
+  var list = [];
+  var byId = {};
+  var draggingId = null;
+  var activePointer = null;
+
+  function artSize(def){ return Math.max(46, Math.round(def.w*1.25)); }
+
+  function buildObjects(){
+    OBJECTS.forEach(function(def, i){
+      var s = {
+        id:def.id, def:def, idx:i,
+        S:artSize(def), art:artSize(def), k:artSize(def)/68, ext:def.ext,
+        x:0, y:0, fx:0.5, fy:0.9,
+        dx:0, dy:0, rx:0, ry:0, gx:0, gy:0,
+        tx:0, ty:0, k0:8, ramp:0, t:0, onDone:null,
+        state:'idle', atHome:true, goHome:false,
+        tip:null, flipped:false, rot:0,
+        announced:false
+      };
+      list.push(s); byId[def.id] = s;
+
+      var el = document.createElement('div');
+      el.className = 'lab-object';
+      el.id = 'obj-'+def.id;
+      el.setAttribute('role','img');
+      el.setAttribute('aria-label', def.name);
+      el.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+      el.addEventListener('dragstart', function(e){ e.preventDefault(); });
+
+      var svgWrap = document.createElement('div');
+      svgWrap.className = 'obj-svg-wrap';
+      var vbPad = 34;
+      var svgEl = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svgEl.setAttribute('viewBox', (-vbPad)+' '+(-vbPad)+' '+(vbPad*2)+' '+(vbPad*2));
+      svgWrap.appendChild(svgEl);
+      el.appendChild(svgWrap);
+
+      var label = document.createElement('div');
+      label.className = 'obj-label';
+      label.textContent = def.name;
+      el.appendChild(label);
+
+      if(def.isBar){
+        var flipBtn = document.createElement('button');
+        flipBtn.type = 'button';
+        flipBtn.className = 'flip-btn';
+        flipBtn.textContent = '↻';
+        flipBtn.title = 'Flip poles';
+        flipBtn.setAttribute('aria-label','Flip the bar magnet poles');
+        el.appendChild(flipBtn);
+        flipBtn.addEventListener('pointerdown', function(ev){ ev.stopPropagation(); });
+        flipBtn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          flipBar(s);
+        });
+      }
+
+      bench.appendChild(el);
+      s.el = el; s.svgEl = svgEl; s.svgWrap = svgWrap;
+      renderArt(s);
+      attachDrag(s);
+    });
+  }
+
+  function renderArt(s){ s.svgEl.innerHTML = s.def.svg(s); }
+
+  function setRot(s, deg){
+    if(s.rot === deg) return;
+    s.rot = deg;
+    s.svgEl.style.transform = deg ? ('rotate('+deg+'deg)') : '';
+  }
+  function place(s){
+    s.el.style.transform = 'translate3d('+(s.x - s.art/2).toFixed(2)+'px,'+(s.y - s.art/2).toFixed(2)+'px,0)';
+  }
+  function setZ(s){
+    if(s.tip){ s.el.style.zIndex = 10 - chains[s.tip].indexOf(s); }
+    else { s.el.style.zIndex = ''; }
+  }
+
+  /* ---------- home (tray) layout: one row on wide screens, two rows on phones ---------- */
+  function homeXY(i){
+    var n = OBJECTS.length;
+    var cols = W >= 640 ? n : Math.ceil(n/2);
+    var rows = Math.ceil(n/cols);
+    var row = Math.floor(i/cols), col = i % cols;
+    var pad = 10, cw = (W - pad*2)/cols;
+    return { x: pad + cw*(col+0.5), y: H - 58 - (rows-1-row)*90 };
+  }
+
+  function sizeArts(){
+    var scale = W < 380 ? 0.88 : 1;
+    list.forEach(function(s){
+      s.art = Math.round(s.S*scale);
+      s.k = s.art/68;
+      s.el.style.width = s.art+'px';
+      s.el.style.height = s.art+'px';
+      s.svgEl.setAttribute('width', s.art);
+      s.svgEl.setAttribute('height', s.art);
+    });
+  }
+
+  /* ---------- hanging positions ---------- */
+  function holdAt(s, key, idx){
+    var tip = getTips()[key];
+    var arr = chains[key];
+    var acc = 0;
+    for(var i=0;i<idx && i<arr.length;i++){ acc += arr[i].ext*arr[i].k*0.82; }
+    var h = s.ext*s.k;
+    return { x: tip.x + (idx===0 ? 0 : (idx%2 ? 3 : -3)), y: tip.y + acc + h/2 - 2 };
+  }
+  function holdPoint(s){ return holdAt(s, s.tip, chains[s.tip].indexOf(s)); }
+
+  function removeFromChain(s){
+    if(!s.tip) return;
+    var key = s.tip, arr = chains[key];
+    var i = arr.indexOf(s);
+    if(i > -1) arr.splice(i,1);
+    s.tip = null;
+    s.el.classList.remove('attached');
+    arr.forEach(setZ);                        // the ones below slide up and stay hanging
+    setZ(s);
+    kick();
+  }
+
+  /* ================= PHYSICS ================= */
+  /* Works out what the magnet is doing to an object whose centre is at (x,y). */
+  function evalEffect(s, x, y){
+    var tips = getTips();
+    var reach = fieldRadius()*s.def.reach;
+    var dL = dist(x,y,tips.left.x,tips.left.y);
+    var dR = dist(x,y,tips.right.x,tips.right.y);
+    var key = dL <= dR ? 'left' : 'right';
+    var tip = tips[key];
+    var d = Math.min(dL,dR);
+    var res = {inField:d<reach, key:d<reach?key:null, tip:tip, dTip:d, reach:reach, mode:null, hold:null, dHold:Infinity};
+    if(!res.inField || !s.def.magnetic) return res;
+
+    var mode = 'attract';
+    if(s.def.isBar){
+      // the bar turns so its left end points at the magnet: that end decides push or pull
+      var facing = s.flipped ? 'S' : 'N';
+      mode = (facing === tip.pole) ? 'repel' : 'attract';
+    }
+    if(mode === 'attract'){
+      if(chains[key].length >= CAP){ mode = 'full'; }
+      else {
+        res.hold = holdAt(s, key, chains[key].length);
+        res.dHold = dist(x,y,res.hold.x,res.hold.y);
+      }
+    }
+    res.mode = mode;
+    return res;
+  }
+
+  /* Where the object is drawn while held: finger position + magnetic pull/push. */
+  function updateDesired(s){
+    var info = evalEffect(s, s.rx, s.ry);
+    var dx = s.rx, dy = s.ry;
+    var m = s.art/2 + 2;
+
+    if(info.mode === 'attract'){
+      var p = clamp(1 - info.dHold/info.reach, 0, 1);
+      var pull = Math.min(1, p*p*1.7);             // stronger and stronger as it gets close
+      dx = s.rx + (info.hold.x - s.rx)*pull;
+      dy = s.ry + (info.hold.y - s.ry)*pull;
+    } else if(info.mode === 'repel'){
+      var tip = info.tip;
+      var vx = s.rx - tip.x, vy = s.ry - tip.y;
+      var len = Math.sqrt(vx*vx+vy*vy);
+      if(len < 0.001){ vx = 0; vy = 1; len = 1; }
+      var pr = clamp(1 - info.dTip/info.reach, 0, 1);
+      var shift = pr*pr*80;
+      dx = s.rx + vx/len*shift;
+      dy = s.ry + vy/len*shift;
+      // an invisible cushion: the object can't be pushed onto the same pole
+      var minD = 36 + s.art*0.5;
+      var dd = dist(dx,dy,tip.x,tip.y);
+      if(dd < minD){
+        var ux = dd < 0.001 ? 0 : (dx-tip.x)/dd, uy = dd < 0.001 ? 1 : (dy-tip.y)/dd;
+        dx = tip.x + ux*minD; dy = tip.y + uy*minD;
+      }
+    }
+    s.dx = clamp(dx, m, W-m);
+    s.dy = clamp(dy, m, H-m);
+
+    // bar magnet turns to face the pole while it's in the field
+    if(s.def.isBar){
+      setRot(s, (info.inField && (info.mode==='attract' || info.mode==='repel')) ? 90 : 0);
+    }
+
+    // messages (once each time it enters the field)
+    if(info.inField){
+      if(!s.announced){
+        s.announced = true;
+        if(info.mode === 'repel')      say("Same poles push away — the magnet is repelling it!", null);
+        else if(info.mode === 'full')  say("This pole is holding as much as it can — try the other one!", null);
+        else                           say(s.def.fact, null);
+      }
+    } else { s.announced = false; }
+
+    s.info = info;
+    activeInfo = info.inField ? info : null;
+    drawFieldLines(activeInfo);
+    return info;
+  }
+
+  /* ---------- animation loop (only runs while something is moving) ---------- */
+  var raf = 0, last = 0;
+  function kick(){
+    if(raf) return;
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+  function frame(now){
+    raf = 0;
+    var dt = Math.min(0.05, Math.max(0.001, (now-last)/1000));
+    last = now;
+    var busy = false;
+
+    for(var i=0;i<list.length;i++){
+      var s = list[i];
+      if(s.state === 'drag'){
+        var a = 1 - Math.exp(-dt*26);
+        s.x += (s.dx - s.x)*a;
+        s.y += (s.dy - s.y)*a;
+        busy = true;
+      } else if(s.state === 'fly'){
+        if(s.tip){ var h0 = holdPoint(s); s.tx = h0.x; s.ty = h0.y; }
+        s.t += dt;
+        var kk = s.k0 + s.ramp*s.t;               // ramping up = it accelerates like a real pull
+        var a2 = 1 - Math.exp(-dt*kk);
+        s.x += (s.tx - s.x)*a2;
+        s.y += (s.ty - s.y)*a2;
+        if(Math.abs(s.tx-s.x)+Math.abs(s.ty-s.y) < 1.2 || s.t > 2.5){
+          s.x = s.tx; s.y = s.ty;
+          var cb = s.onDone; s.onDone = null;
+          if(cb) cb(s); else s.state = 'idle';
+        } else { busy = true; }
+      } else if(s.state === 'attached'){
+        var hp = holdPoint(s);
+        var a3 = 1 - Math.exp(-dt*16);
+        s.x += (hp.x - s.x)*a3;
+        s.y += (hp.y - s.y)*a3;
+        if(Math.abs(hp.x-s.x)+Math.abs(hp.y-s.y) > 0.3){ busy = true; }
+        else { s.x = hp.x; s.y = hp.y; }
+      }
+      place(s);
+    }
+    if(busy) raf = requestAnimationFrame(frame);
+  }
+
+  function flyTo(s, tx, ty, k0, ramp, done){
+    s.state = 'fly'; s.tx = tx; s.ty = ty; s.k0 = k0; s.ramp = ramp; s.t = 0; s.onDone = done || null;
+    kick();
+  }
+  function settle(s){
+    s.state = 'idle'; s.goHome = false; s.atHome = false;
+    if(W){ s.fx = s.x/W; s.fy = s.y/H; }
+  }
+
+  function attach(s, key){
+    chains[key].push(s);
+    s.tip = key;
+    s.el.classList.add('attached');
+    if(s.def.isBar) setRot(s, 90);
+    setZ(s);
+    var hp = holdPoint(s);
+    flyTo(s, hp.x, hp.y, 8, 50, function(o){
+      o.state = 'attached';
+      o.el.classList.add('snap');
+      setTimeout(function(){ o.el.classList.remove('snap'); }, 320);
+      var tp = getTips()[o.tip];
+      spawnSparkle(tp.x, tp.y + 8);
+      playSnap();
+      say(o.def.isBar ? "Opposite poles attract — snap!" : (o.def.name + " snapped right onto the magnet!"), 'happy');
+      setZ(o);
+    });
+  }
+
+  /* ================= DRAGGING ================= */
+  function attachDrag(s){
+    var el = s.el;
+
+    function pointerXY(ev){
+      var r = bench.getBoundingClientRect();
+      return { x: ev.clientX - r.left - bench.clientLeft, y: ev.clientY - r.top - bench.clientTop };
+    }
+
+    el.addEventListener('pointerdown', function(ev){
+      if(draggingId !== null) return;                                   // one finger at a time
+      if(ev.pointerType === 'mouse' && ev.button !== 0) return;
+      ev.preventDefault();
+      measure();
+      var p = pointerXY(ev);
+
+      if(s.tip) removeFromChain(s);                                     // pull it off the pole
+      s.state = 'drag'; s.goHome = false; s.atHome = false; s.onDone = null;
+      draggingId = s.id; activePointer = ev.pointerId;
+
+      // keep the grab point: the object doesn't jump to the finger, and on touch it floats just above it
+      var lift = ev.pointerType === 'touch' ? Math.min(26, s.art*0.5) : 0;
+      s.gx = s.x - p.x;
+      s.gy = s.y - p.y - lift;
+      s.rx = s.x; s.ry = s.y - lift; s.dx = s.rx; s.dy = s.ry;
+      s.announced = false;
+
+      el.classList.remove('attached');
+      el.classList.add('dragging');
+      el.style.zIndex = '';
+      try{ el.setPointerCapture(ev.pointerId); }catch(e){}
+      playPickup();
+      updateDesired(s);
+      kick();
+    });
+
+    el.addEventListener('pointermove', function(ev){
+      if(draggingId !== s.id || ev.pointerId !== activePointer) return;
+      measure();
+      var p = pointerXY(ev);
+      var m = s.art/2 + 2;
+      s.rx = clamp(p.x + s.gx, m, W-m);
+      s.ry = clamp(p.y + s.gy, m, H-m);
+      updateDesired(s);
+      kick();
+    });
+
+    function endDrag(ev){
+      if(draggingId !== s.id) return;
+      if(ev && ev.pointerId !== undefined && ev.pointerId !== activePointer) return;
+      draggingId = null; activePointer = null;
+      el.classList.remove('dragging');
+      try{ if(ev) el.releasePointerCapture(ev.pointerId); }catch(e){}
+
+      var info = evalEffect(s, s.rx, s.ry);
+      var m = s.art/2 + 2;
+      activeInfo = null;
+
+      if(info.mode === 'attract' && info.dHold < info.reach*0.62){
+        // close enough: the magnet grabs it and pulls it in
+        attach(s, info.key);
+      }
+      else if(info.mode === 'attract'){
+        flyTo(s, s.dx, s.dy, 22, 0, settle);
+        say("Almost! The pull gets stronger the closer you go.", null);
+      }
+      else if(info.mode === 'repel'){
+        // same poles: it gets shoved away from the pole
+        var tip = info.tip;
+        var vx = s.rx - tip.x, vy = s.ry - tip.y;
+        var len = Math.sqrt(vx*vx+vy*vy);
+        if(len < 0.001){ vx = 0; vy = 1; len = 1; }
+        var away = 36 + s.art*0.5 + info.reach*0.3;
+        var tx = clamp(tip.x + vx/len*away, m, W-m);
+        var ty = clamp(tip.y + vy/len*away, m, H-m);
+        el.classList.add('bounce');
+        setTimeout(function(){ el.classList.remove('bounce'); }, 460);
+        flyTo(s, tx, ty, 10, 6, settle);
+        playRepel();
+        say("Boing! Like poles push each other away.", 'oops');
+        if(s.def.isBar) setTimeout(function(){ if(s.state==='idle') setRot(s,0); }, 500);
+      }
+      else if(info.mode === 'full'){
+        flyTo(s, s.dx, s.dy, 22, 0, settle);
+        say("This pole is holding as much as it can — try the other one!", null);
+      }
+      else {
+        flyTo(s, s.dx, s.dy, 22, 0, settle);
+        if(!s.def.magnetic && info.inField){
+          playThud();
+          say(s.def.fact, null);
+        }
+      }
+      if(s.def.isBar && info.mode !== 'attract' && info.mode !== 'repel') setRot(s, 0);
+      drawFieldLines(null);
+      kick();
+    }
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+    el.addEventListener('lostpointercapture', function(ev){ endDrag(ev); });
+  }
+
+  /* ---------- flipping the bar magnet ---------- */
+  function flipBar(s){
+    s.flipped = !s.flipped;
+    renderArt(s);
+    playFlip();
+    if(s.tip){
+      // it was stuck by opposite poles — after flipping, like poles face each other, so it pops off
+      var key = s.tip;
+      removeFromChain(s);
+      setRot(s, 0);
+      var m = s.art/2 + 2;
+      var tx = clamp(s.x + (key==='left' ? -1 : 1)*Math.max(50, s.art*0.8), m, W-m);
+      var ty = clamp(s.y + 90, m, H-m);
+      s.el.classList.add('bounce');
+      setTimeout(function(){ s.el.classList.remove('bounce'); }, 460);
+      flyTo(s, tx, ty, 4, 30, settle);
+      playRepel();
+      say("Flip! Now the same poles face each other — it pops right off!", 'oops');
+    } else {
+      say("Flip! Now watch how the poles react.", null);
+    }
+  }
+
+  function spawnSparkle(x,y){
+    for(var i=0;i<4;i++){
+      var sp = document.createElement('div');
+      sp.className = 'sparkle';
+      sp.textContent = ['✨','⭐','💫','✨'][i];
+      sp.style.left = (x + (Math.random()*30-15))+'px';
+      sp.style.top = (y + (Math.random()*20-10))+'px';
+      bench.appendChild(sp);
+      (function(node){ setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, 650); })(sp);
+    }
+  }
+
+  /* ================= LAYOUT / RESIZE ================= */
+  function resizeAll(){
+    measure();
+    if(W === 0 || H === 0) return;
+    positionMagnet();
+    sizeArts();
+    list.forEach(function(s){
+      var m = s.art/2 + 2;
+      if(s.state === 'idle'){
+        if(s.atHome){ var h = homeXY(s.idx); s.x = h.x; s.y = h.y; }
+        else { s.x = clamp(s.fx*W, m, W-m); s.y = clamp(s.fy*H, m, H-m); }
+      } else if(s.state === 'fly' && s.goHome){
+        var hh = homeXY(s.idx); s.tx = hh.x; s.ty = hh.y;
+      } else if(s.state === 'drag'){
+        s.x = clamp(s.x, m, W-m); s.y = clamp(s.y, m, H-m);
+        s.dx = clamp(s.dx, m, W-m); s.dy = clamp(s.dy, m, H-m);
+        s.rx = clamp(s.rx, m, W-m); s.ry = clamp(s.ry, m, H-m);
+      }
+      place(s);
+    });
+    drawFieldLines(activeInfo);
+    kick();                                      // hanging things re-settle under the (moved) magnet
+  }
+
+  /* ================= RESET ================= */
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if(draggingId !== null) return;
+    chains.left.forEach(function(s){ s.tip = null; });
+    chains.right.forEach(function(s){ s.tip = null; });
+    chains.left.length = 0; chains.right.length = 0;
+    list.forEach(function(s){
+      s.el.classList.remove('attached');
+      setZ(s);
+      setRot(s, 0);
+      s.goHome = true;
+      var h = homeXY(s.idx);
+      flyTo(s, h.x, h.y, 7, 14, function(o){ o.state = 'idle'; o.atHome = true; o.goHome = false; });
+    });
+    activeInfo = null;
+    playPickup();
+    say("All tidied up! Ready to experiment again?", null);
+    drawFieldLines(null);
+  });
+
+  /* ================= IDLE MASCOT CHATTER ================= */
+  setInterval(function(){
+    if(draggingId !== null) return;
+    if(Date.now() - lastSayAt < 8000) return;      // don't talk over what just happened
+    idleIndex = (idleIndex+1) % idleLines.length;
+    say(idleLines[idleIndex], null);
+  }, 9000);
+
+  /* ================= INIT ================= */
+  buildObjects();
+  measure();
+  resizeAll();
+  window.addEventListener('resize', resizeAll);
+  window.addEventListener('orientationchange', function(){ setTimeout(resizeAll, 200); });
+  if(window.ResizeObserver){
+    new ResizeObserver(resizeAll).observe(bench);
+  }
+  setTimeout(resizeAll, 30);
+  setTimeout(resizeAll, 300);
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(resizeAll); }
+
+})();
+</script>
+</body>
+</html>
